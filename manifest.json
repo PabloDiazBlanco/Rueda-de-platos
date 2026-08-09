@@ -1,0 +1,13 @@
+{
+  "name": "Rueda de Platos",
+  "short_name": "Rueda de Platos",
+  "description": "Genera tus menús semanales a partir de tus propias comidas.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f1ede0",
+  "theme_color": "#1f4d38",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
