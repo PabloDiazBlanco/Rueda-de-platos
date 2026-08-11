@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Rueda de Platos</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍽️</text></svg>" />
+
+<!-- PWA: permite "Añadir a pantalla de inicio" en móvil y "Instalar" en ordenador -->
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1f4d38" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Rueda de Platos" />
+
+<style>
+  html, body { margin: 0; padding: 0; background: #f1ede0; min-height: 100vh; }
+  #root { min-height: 100vh; }
+</style>
+
+<!-- Mapa de importaciones: permite usar "import React from 'react'" tal cual en el navegador,
+     sin necesidad de instalar nada ni montar un proceso de build. -->
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+    "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18.3.1",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+  }
+}
+</script>
+
+<!-- Babel Standalone: transforma el JSX de app.jsx a JavaScript normal, en el propio navegador. -->
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<!-- El guardado de datos y el login se gestionan en auth-bootstrap.jsx (Firebase),
+     que se encarga de mostrar el login y, una vez dentro, cargar la app real (app.jsx). -->
+<script>
+  // Registro del service worker para que funcione offline y sea instalable como app.
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
+<script type="text/babel" data-type="module" data-presets="react" src="auth-bootstrap.jsx"></script>
+</body>
+</html>
