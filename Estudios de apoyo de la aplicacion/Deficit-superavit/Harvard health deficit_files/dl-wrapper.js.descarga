@@ -1,0 +1,734 @@
+(function (window) {
+  window.dataLayer = window.dataLayer || [];
+  var hmsgtm = {};
+  const version = "v1.1";
+
+  // General helper functions
+
+  hmsgtm.addListeners = function (elementType, listenerType, elementFunction) {
+    var elementList = document.querySelectorAll(elementType);
+    for (var i = 0; i < elementList.length; ++i) {
+      elementList[i].addEventListener(listenerType, function () {
+        elementFunction();
+      });
+    }
+  };
+
+  async function sha256(message) {
+    try {
+      //Encode as UTF-8
+      const msgBuffer = new TextEncoder().encode(message);
+      //Hash the message
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+      //Convert ArrayBuffer to Array
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      //Convert bytes to hex string
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+    catch(e) {
+      //If hashing function unavailable
+      return "";
+    }
+  }
+
+  function formatData(properties, obj) {
+    //First, ensure required properties are set, otherwise error
+    if (properties.required) {
+      isValid(properties.required, obj);
+    }
+
+    if (properties.optional) {
+      //Then clean up any optional properties provided
+      if (obj !== undefined) {
+        for (const prop of properties.optional) {
+          if (obj[prop] === undefined || obj[prop].trim() == "") {
+            obj[prop] = "";
+          }
+        }
+      }
+      //If optional obj not passed, create and set properties to null
+      else {
+        obj = [];
+        for (const prop of properties.optional) {
+          obj[prop] = "";
+        }
+      }
+    }
+
+    //Return formatted/serialized data
+    return obj;
+  }
+
+  function isValid(properties, obj) {
+    if (typeof(obj) !== "object") {
+      throw new ReferenceError(
+        "Please provide data in the form of an object."
+      );
+    }
+
+    if (obj === undefined || obj === null) {
+      throw new ReferenceError(
+        "Object not found; make sure the object exists and that it is spelled correctly."
+      );
+    }
+    
+    let valid = properties.every((e) => {
+      let nonBlank = true;
+      if (typeof(obj[e]) === "string") {
+        nonBlank = obj[e].trim() !== "" ? true : false;
+      }
+      return obj[e] !== undefined && obj[e] !== null && nonBlank;
+    });
+
+    if (!valid) {
+      throw new ReferenceError(
+        "Undefined or null property value found in a required value; make sure all data is filled out!"
+      );
+    }
+
+    //All checks pass, so the object and its properties are valid
+    return true;
+  }
+
+  function clearData(...args) {
+    for (const event of args) {
+      dataLayer.push({ [event]: null });
+    }
+  }
+
+  function addUserId(hmsaid) {
+    hmsaid && dataLayer.push({ "hmsaid": hmsaid });
+  }
+
+  // DataLayer event functions
+
+  hmsgtm.pageStart = function (page_data, user_data) {
+    clearData("event", "detailed_event", "page_data");
+    const page_properties = {
+      required: ["site_name"],
+      optional: [
+        "country",
+        "page_author",
+        "page_location",
+        "page_topic",
+        "page_type",
+        "page_update_date"
+      ]
+    };
+    const formattedPageData = formatData(page_properties, page_data);
+
+    const user_properties = {
+      optional: ["user_id"]
+    }
+    const formattedUserData = formatData(user_properties, user_data);
+
+    const pageUserId = formattedUserData.user_id;
+
+    if (pageUserId == "") {
+      pushData(pageUserId);
+    }
+    else {
+      sha256(pageUserId).then(value => {
+        pushData(value);
+      })
+    }
+
+    function pushData(userIdVal) {
+      dataLayer.push({
+        "event": "page_load_started",
+        "detailed_event": "Page Load Started",
+        "page_data": {
+          "country": formattedPageData.country,
+          "language": document.documentElement.lang,
+          "page_author": formattedPageData.page_author,
+          "page_location": formattedPageData.page_location,
+          "page_topic": formattedPageData.page_topic,
+          "page_type": formattedPageData.page_type,
+          "page_update_date": formattedPageData.page_update_date,
+          "site_name": formattedPageData.site_name,
+          "wrapper_version": version
+        },
+        "user_data": {
+          "user_id": userIdVal
+        }
+      });
+    }
+  };
+
+  hmsgtm.pageComplete = function () {
+    clearData("event", "detailed_event");
+    dataLayer.push({
+      "event": "page_view",
+      "detailed_event": "Page Load Completed"
+    });
+
+  };
+
+  hmsgtm.navClick = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["link_url", "type"],
+      optional: ["link_category", "link_text"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "nav_click",
+      "detailed_event": "Navigation Click",
+      "event_data": {
+        "link_category": formattedData.link_category,
+        "link_text": formattedData.link_text,
+        "link_url": formattedData.link_url,
+        "type": formattedData.type
+      }
+    });
+  };
+
+  hmsgtm.formStart = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["name"],
+      optional: ["identifier", "program", "type"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "form_start",
+      "detailed_event": "Form Started",
+      "event_data": {
+        "identifier": formattedData.identifier,
+        "name": formattedData.name,
+        "program": formattedData.program,
+        "type": formattedData.type
+      }
+    });
+  };
+
+  hmsgtm.formComplete = function (event_data, user_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["name"],
+      optional: ["event_form_email", "identifier", "program", "type"]
+    };
+    const formattedEventData = formatData(event_properties, event_data);
+
+    const user_properties = {
+      optional: ["user_interests"]
+    }
+    const formattedUserData = formatData(user_properties, user_data);
+
+    const formEmail = formattedEventData.event_form_email;
+    
+    if (formEmail == "") {
+      pushData(formEmail);
+    }
+    else {
+      sha256(formEmail).then(value => {
+        pushData(value);
+      })
+    }
+
+    function pushData(emailval) {
+      dataLayer.push({
+        "event": "form_complete",
+        "detailed_event": "Form Submission Succeeded",
+        "event_data": {
+          "event_form_hashemail": emailval,
+          "identifier": formattedEventData.identifier,
+          "name": formattedEventData.name,
+          "program": formattedEventData.program,
+          "type": formattedEventData.type
+        },
+        "user_data": {
+          "user_interests": formattedUserData.user_interests
+        }
+      });
+    }
+  };
+
+  hmsgtm.checkoutStarted = function (ecommerce) {
+    clearData("event", "detailed_event", "ecommerce");
+    const properties = {
+      required: ["currency", "value", "items"]
+    };
+    const formattedData = formatData(properties, ecommerce);
+
+    const item_properties = {
+      required: ["item_id", "item_name", "price", "quantity"],
+      optional: ["item_brand", "item_category", "item_variant"]
+    };
+
+    const formatItems = formattedData.items.map(item => {
+      const formattedItem = formatData(item_properties, item);
+
+      return {
+        "item_brand": formattedItem.item_brand,
+        "item_category": formattedItem.item_category,
+        "item_id": formattedItem.item_id,
+        "item_name": formattedItem.item_name,
+        "item_variant": formattedItem.item_variant,
+        "price": formattedItem.price,
+        "quantity": formattedItem.quantity
+      };
+    });
+
+    dataLayer.push({
+      "event": "begin_checkout",
+      "detailed_event": "Checkout Started",
+      "ecommerce": {
+        "currency": formattedData.currency,
+        "items": formatItems,
+        "value": formattedData.value
+      }
+    });
+  };
+
+  hmsgtm.orderPlaced = function (ecommerce) {
+    clearData("event", "detailed_event", "ecommerce");
+    const properties = {
+      required: [
+        "affiliation",
+        "currency",
+        "items",
+        "payment_method",
+        "shipping",
+        "tax",
+        "value"
+      ],
+      optional: ["transaction_id"]
+    };
+    const formattedData = formatData(properties, ecommerce);
+
+    const item_properties = {
+      required: ["item_id", "item_name", "price", "quantity"],
+      optional: ["item_brand", "item_category", "item_variant"]
+    };
+
+    const formatItems = formattedData.items.map(item => {
+      const formattedItem = formatData(item_properties, item);
+
+      return {
+        "item_brand": formattedItem.item_brand,
+        "item_category": formattedItem.item_category,
+        "item_id": formattedItem.item_id,
+        "item_name": formattedItem.item_name,
+        "item_variant": formattedItem.item_variant,
+        "price": formattedItem.price,
+        "quantity": formattedItem.quantity
+      };
+    });
+
+    dataLayer.push({
+      "event": "purchase",
+      "detailed_event": "Order Placed",
+      "ecommerce": {
+        "affiliation": formattedData.affiliation,
+        "currency": formattedData.currency,
+        "items": formatItems,
+        "payment_method": formattedData.payment_method,
+        "shipping": formattedData.shipping,
+        "tax": formattedData.tax,
+        "transaction_id": formattedData.transaction_id,
+        "value": formattedData.value
+      }
+    });
+  };
+
+  hmsgtm.productAddedToCart = function (ecommerce) {
+    clearData("event", "detailed_event", "ecommerce");
+    const properties = {
+      required: ["currency", "value", "items"],
+    };
+    const formattedData = formatData(properties, ecommerce);
+
+    const item_properties = {
+      required: ["item_id", "item_name", "price", "quantity"],
+      optional: ["item_brand", "item_category", "item_variant"]
+    };
+
+    const formatItems = formattedData.items.map(item => {
+      const formattedItem = formatData(item_properties, item);
+
+      return {
+        "item_brand": formattedItem.item_brand,
+        "item_category": formattedItem.item_category,
+        "item_id": formattedItem.item_id,
+        "item_name": formattedItem.item_name,
+        "item_variant": formattedItem.item_variant,
+        "price": formattedItem.price,
+        "quantity": formattedItem.quantity
+      };
+    });
+
+    dataLayer.push({
+      "event": "add_to_cart",
+      "detailed_event": "Product Added to Cart",
+      "ecommerce": {
+        "currency": formattedData.currency,
+        "items": formatItems,
+        "value": formattedData.value
+      }
+    });
+  };
+
+  hmsgtm.socialContentShared = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["identifier", "method"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "share",
+      "detailed_event": "Social Content Shared",
+      "event_data": {
+        "identifier": formattedData.identifier,
+        "method": formattedData.method
+      }
+    });
+  };
+
+  hmsgtm.userRegistered = function (event_data, page_data, user_data) {
+    clearData("event", "detailed_event", "event_data", "page_data");
+    const event_properties = {
+      required: ["name"],
+      optional: ["event_form_email", "identifier"]
+    };
+    const formattedEventData = formatData(event_properties, event_data);
+
+    const page_properties = {
+      required: ["user_login_state"]
+    };
+    const formattedPageData = formatData(page_properties, page_data);
+
+    const user_properties = {
+      optional: ["user_id"]
+    }
+    const formattedUserData = formatData(user_properties, user_data);
+
+    const formEmail = formattedEventData.event_form_email;
+
+    if (formEmail == "") {
+      pushData(formEmail);
+    }
+    else {
+      sha256(formEmail).then(value => {
+        pushData(value);
+      })
+    }
+
+    function pushData(emailval) {
+      dataLayer.push({
+        "event": "sign_up",
+        "detailed_event": "User Registered",
+        "event_data": {
+          "event_form_hashemail": emailval,
+          "identifier": formattedEventData.identifier,
+          "name": formattedEventData.name
+        },
+        "page_data": {
+          "user_login_state": formattedPageData.user_login_state
+        },
+        "user_data": {
+          "user_id": formattedUserData.user_id
+        }
+      });
+    }
+  };
+
+  hmsgtm.userRegistrationStarted = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["name"],
+      optional: ["identifier"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "sign_up_start",
+      "detailed_event": "User Registration Started",
+      "event_data": {
+        "identifier": formattedData.identifier,
+        "name": formattedData.name
+      }
+    });
+  };
+
+  hmsgtm.userSignedIn = function (event_data, page_data, user_data) {
+    clearData("event", "detailed_event", "event_data", "page_data");
+    const event_properties = {
+      required: ["method"]
+    };
+    const formattedEventData = formatData(event_properties, event_data);
+
+    const page_properties = {
+      required: ["user_login_state"]
+    };
+    const formattedPageData = formatData(page_properties, page_data);
+
+    const user_properties = {
+      optional: ["user_id"]
+    }
+    const formattedUserData = formatData(user_properties, user_data);
+
+    dataLayer.push({
+      "event": "login",
+      "detailed_event": "User Signed In",
+      "event_data": {
+        "method": formattedEventData.method
+      },
+      "page_data": {
+        "user_login_state": formattedPageData.user_login_state
+      },
+      "user_data": {
+        "user_id": formattedUserData.user_id
+      }
+    });
+  };
+
+  hmsgtm.userSignedOut = function (event_data, page_data) {
+    clearData("event", "detailed_event", "event_data", "page_data");
+    const event_properties = {
+      optional: ["method"]
+    };
+    const formattedEventData = formatData(event_properties, event_data);
+
+    const page_properties = {
+      optional: ["user_login_state"]
+    };
+    const formattedPageData = formatData(page_properties, page_data);
+
+    dataLayer.push({
+      "event": "logout",
+      "detailed_event": "User Signed Out",
+      "event_data": {
+        "method": formattedEventData.method
+      },
+      "page_data": {
+        "user_login_state": formattedPageData.user_login_state
+      }
+    });
+  };
+
+  hmsgtm.userSubscribed = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["event_form_email", "name", "type"],
+      optional: ["method"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    const formEmail = formattedData.event_form_email;
+
+    if (formEmail == "") {
+      pushData(formEmail);
+    }
+    else {
+      sha256(formEmail).then(value => {
+        pushData(value);
+      })
+    }
+
+    function pushData(emailval) {
+      dataLayer.push({
+        "event": "subscribe",
+        "detailed_event": "User Subscribed",
+        "event_data": {
+          "event_form_hashemail": emailval,
+          "method": formattedData.method,
+          "name": formattedData.name,
+          "type": formattedData.type
+        }
+      });
+    }
+  };
+
+  hmsgtm.userSubscriptionStarted = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["name", "type"],
+      optional: ["method"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "subscribe_start",
+      "detailed_event": "User Subscription Started",
+      "event_data": {
+        "method": formattedData.method,
+        "name": formattedData.name,
+        "type": formattedData.type
+      }
+    });
+  };
+
+  hmsgtm.applyToPortal = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["link_url"],
+      optional: ["link_category", "link_text"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "click_apply",
+      "detailed_event": "Click to Apply Online Portal",
+      "event_data": {
+        "link_category": formattedData.link_category,
+        "link_text": formattedData.link_text,
+        "link_url": formattedData.link_url
+      }
+    });
+  };
+
+  hmsgtm.contentClick = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["link_url", "type"],
+      optional: ["link_category", "link_text", "outbound"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "content_click",
+      "detailed_event": "Content Click",
+      "event_data": {
+        "link_category": formattedData.link_category,
+        "link_text": formattedData.link_text,
+        "link_url": formattedData.link_url,
+        "outbound": formattedData.outbound,
+        "type": formattedData.type
+      }
+    });
+  };
+
+  hmsgtm.downloadLinkClicked = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["name", "identifier"],
+      optional: ["file_extension"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "file_download",
+      "detailed_event": "Download Link Clicked",
+      "event_data": {
+        "file_extension": formattedData.file_extension,
+        "file_name": formattedData.file_name,
+        "identifier": formattedData.identifier
+      }
+    });
+  };
+
+  hmsgtm.eventLinkClicked = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["link_url", "link_text"],
+      optional: ["link_category"]
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "click_online_event",
+      "detailed_event": "Online Event Link Clicked",
+      "event_data": {
+        "link_category": formattedData.link_category,
+        "link_text": formattedData.link_text,
+        "link_url": formattedData.link_url
+      }
+    });
+  };
+
+  hmsgtm.coursePreview = function (event_data) {
+    clearData("event", "detailed_event", "event_data");
+    const event_properties = {
+      required: ["type"],
+    };
+    const formattedData = formatData(event_properties, event_data);
+
+    dataLayer.push({
+      "event": "course_preview",
+      "detailed_event": "Course Preview",
+      "event_data": {
+        "type": formattedData.type
+      }
+    });
+  };
+
+  // Retrieving + Setting Cookies
+  hmsgtm.getCookie = function (cookieName) {
+    let name = cookieName + "=";
+    let decodedCookie = decodeURIComponent(document.cookie);
+    let ca = decodedCookie.split(";");
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) == " ") {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
+  };
+
+  hmsgtm.setCookie = function (cname, cvalue, exdays) {
+    const d = new Date();
+    d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+    let expires = "expires=" + d.toUTCString();
+    document.cookie =
+      cname + "=" + cvalue + ";" + expires + ";path=/;domain=.hms.harvard.edu";
+  };
+
+  // Create uuid to be used as hmsaid
+  function uuidv4() {
+    return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+      (
+        c ^
+        (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+      ).toString(16)
+    );
+  }
+
+  hmsgtm.gethmsaid = function (cookieName = "hmsaid") {
+    return hmsgtm.getCookie(cookieName);
+  };
+
+  hmsgtm.getutms = function (cookieName = "traffic_src") {
+    let utms = hmsgtm.getCookie(cookieName);
+    if (utms) {
+      try {
+        return JSON.parse(atob(utms));
+      } catch {
+        return JSON.parse(utms);
+      }
+    }
+    return "";
+  };
+
+  // evaluate hmsaid
+  var cookieName = "hmsaid";
+  var hmsaid = hmsgtm.gethmsaid();
+  if (!hmsaid) {
+    hmsaid = uuidv4();
+    hmsgtm.setCookie(cookieName, hmsaid, 365);
+  }
+  addUserId(hmsaid);
+
+  /* Set utm cookie value
+    Currently this is done within GTM, it could be moved to this script.
+
+    HMX is currently using sf_src;
+      This is a problem and should be changed to traffic_src
+      either in this script or within GTM or both until the
+      GTM version is depricated.
+
+    HMS department specific sites are using traffic_src
+    HMS proper is not using traffic_src; but should be.
+    Unsure on others
+  */
+
+  window.hmsgtm = hmsgtm;
+})(window);

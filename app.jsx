@@ -1457,6 +1457,25 @@ const NIVELES_ACTIVIDAD_LEGACY = {
   alto: { palBaseKey: "exigente", protPerKg: 2.0, fatPerKg: 1.25 },
 };
 
+// Etapa de objetivo (opcional): aplica un ajuste de kcal sobre el TDEE de mantenimiento y, en
+// volumen/definición, sustituye la proteína g/kg de la tabla por volumen de entrenamiento por un
+// valor propio de la etapa (pensado para proteger masa muscular en déficit, o dar margen amplio
+// en superávit sin necesidad de forzar la proteína). La grasa y el reparto de comidas no cambian.
+const OBJETIVO_ETAPAS = {
+  mantenimiento: { label: "Mantenimiento", desc: "Mantener el peso actual", ajusteKcalPct: 0, protPerKg: null },
+  volumen: { label: "Volumen limpio", desc: "Sube de peso progresivamente, minimizando la grasa (+12%)", ajusteKcalPct: 12, protPerKg: 1.8 },
+  definicion: { label: "Definición conservadora", desc: "Baja de peso a ritmo lento y seguro (−15%)", ajusteKcalPct: -15, protPerKg: 2.2 },
+};
+
+// Límites de seguridad: no se vigila el lado "suave" (un déficit más pequeño de lo calculado, o un
+// superávit más pequeño, no hacen daño), pero sí el lado de riesgo de cada etapa — que el déficit se
+// pase de agresivo, o que el superávit se dispare y sea sobre todo grasa. Se aplican sobre el propio
+// porcentaje (no sobre las kcal), para ser igual de estrictos sea cual sea el TDEE de cada persona.
+// Con los valores actuales de OBJETIVO_ETAPAS estos límites no llegan a activarse; están pensados
+// como red de seguridad para si en el futuro se añaden etapas más agresivas.
+const LIMITE_DEFICIT_PCT = 17;
+const LIMITE_SUPERAVIT_PCT = 15;
+
 // Calcula los objetivos diarios a partir del perfil: Mifflin-St Jeor para el BMR, PAL_base para el
 // gasto del día a día, y las kcal de los entrenamientos habituales (vía METs) sumadas aparte.
 // La proteína y la grasa usan una tabla de gramos/kg según el volumen semanal de entrenamiento;
@@ -1479,11 +1498,19 @@ function calcularObjetivosPerfil(perfil) {
     if (!tipo || !e.horas || !e.frecuenciaSemanal) return sum;
     return sum + (tipo.mets * perfil.peso * e.horas * e.frecuenciaSemanal) / 7;
   }, 0);
-  const kcalTotal = kcalBase + kcalEntrenamiento;
+  const kcalMantenimiento = kcalBase + kcalEntrenamiento;
+
+  const objetivoKey = OBJETIVO_ETAPAS[perfil.objetivo] ? perfil.objetivo : "mantenimiento";
+  const etapa = OBJETIVO_ETAPAS[objetivoKey];
+  const ajustePct = etapa.ajusteKcalPct < 0
+    ? Math.max(etapa.ajusteKcalPct, -LIMITE_DEFICIT_PCT)
+    : Math.min(etapa.ajusteKcalPct, LIMITE_SUPERAVIT_PCT);
+  const kcalTotal = kcalMantenimiento * (1 + ajustePct / 100);
 
   const sesionesSemana = entrenamientos.reduce((sum, e) => sum + (Number(e.frecuenciaSemanal) || 0), 0);
   const nivelMacros = legacy || nivelMacrosPorSesiones(sesionesSemana);
-  const protG = nivelMacros.protPerKg * perfil.peso;
+  const protPerKg = etapa.protPerKg ?? nivelMacros.protPerKg;
+  const protG = protPerKg * perfil.peso;
   const fatG = nivelMacros.fatPerKg * perfil.peso;
   const carbKcal = Math.max(0, kcalTotal - protG * 4 - fatG * 9);
   const carbG = carbKcal / 4;
@@ -1495,6 +1522,9 @@ function calcularObjetivosPerfil(perfil) {
     carb: Math.round(carbG),
     kcalBase: Math.round(kcalBase),
     kcalEntrenamiento: Math.round(kcalEntrenamiento),
+    kcalMantenimiento: Math.round(kcalMantenimiento),
+    objetivo: objetivoKey,
+    ajustePct,
   };
 }
 
@@ -1522,7 +1552,7 @@ function objetivosPorComida(objetivosDiarios, mealType) {
 // para no mantener dos formularios duplicados con el riesgo de que se desincronicen.
 function ProfileFields({
   nombre, setNombre, sexo, setSexo, anioNacimiento, setAnioNacimiento, altura, setAltura, peso, setPeso,
-  palBase, setPalBase, entrenamientos, setEntrenamientos,
+  palBase, setPalBase, entrenamientos, setEntrenamientos, objetivo, setObjetivo,
 }) {
   function addEntrenamiento() {
     setEntrenamientos((rows) => [...rows, { id: uid(), tipo: TIPOS_ENTRENAMIENTO[0].key, horas: 1, frecuenciaSemanal: 1 }]);
@@ -1634,6 +1664,29 @@ function ProfileFields({
         </button>
       </Field>
 
+      <Field label="Objetivo actual">
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {Object.keys(OBJETIVO_ETAPAS).map((key) => {
+            const etapa = OBJETIVO_ETAPAS[key];
+            return (
+              <button
+                key={key}
+                onClick={() => setObjetivo(key)}
+                style={{
+                  textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                  padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
+                  background: objetivo === key ? "var(--green-soft)" : "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 700, color: objetivo === key ? "var(--green-dark)" : "var(--ink)" }}>{etapa.label}</div>
+                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>{etapa.desc}</div>
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+
       <div
         style={{
           fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)",
@@ -1658,6 +1711,7 @@ function ProfileOnboarding({ onComplete, onSkip }) {
   const [peso, setPeso] = useState("");
   const [palBase, setPalBase] = useState("escritorio");
   const [entrenamientos, setEntrenamientos] = useState([]);
+  const [objetivo, setObjetivo] = useState("mantenimiento");
 
   const valid = anioNacimiento && altura && peso;
 
@@ -1673,6 +1727,7 @@ function ProfileOnboarding({ onComplete, onSkip }) {
       entrenamientos: entrenamientos
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
+      objetivo,
     });
   }
 
@@ -1697,6 +1752,7 @@ function ProfileOnboarding({ onComplete, onSkip }) {
           peso={peso} setPeso={setPeso}
           palBase={palBase} setPalBase={setPalBase}
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
+          objetivo={objetivo} setObjetivo={setObjetivo}
         />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
@@ -1740,6 +1796,7 @@ function PerfilView({ perfil, onSave }) {
   const [entrenamientos, setEntrenamientos] = useState(
     (perfil?.entrenamientos || []).map((e) => ({ id: uid(), ...e }))
   );
+  const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
   const [saved, setSaved] = useState(false);
 
   const valid = anioNacimiento && altura && peso;
@@ -1756,6 +1813,7 @@ function PerfilView({ perfil, onSave }) {
       entrenamientos: entrenamientos
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
+      objetivo,
     });
     setSaved(true);
   }
@@ -1772,6 +1830,7 @@ function PerfilView({ perfil, onSave }) {
           peso={peso} setPeso={setPeso}
           palBase={palBase} setPalBase={setPalBase}
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
+          objetivo={objetivo} setObjetivo={setObjetivo}
         />
 
         <button
@@ -2452,6 +2511,12 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
             {objetivosCalculados.kcalEntrenamiento > 0 && (
               <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
                 {objetivosCalculados.kcalBase} kcal día a día + {objetivosCalculados.kcalEntrenamiento} kcal entrenamiento (media diaria)
+              </div>
+            )}
+            {objetivosCalculados.objetivo !== "mantenimiento" && (
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}>
+                TDEE mantenimiento {objetivosCalculados.kcalMantenimiento} kcal → {OBJETIVO_ETAPAS[objetivosCalculados.objetivo].label}
+                {" "}({objetivosCalculados.ajustePct > 0 ? "+" : ""}{objetivosCalculados.ajustePct}%)
               </div>
             )}
           </div>
