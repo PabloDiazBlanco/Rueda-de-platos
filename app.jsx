@@ -1476,10 +1476,35 @@ const OBJETIVO_ETAPAS = {
 const LIMITE_DEFICIT_PCT = 17;
 const LIMITE_SUPERAVIT_PCT = 15;
 
+// Suelo de grasa (salud hormonal): nunca por debajo del mayor de estos dos criterios, aunque la
+// etapa de definición sea muy estricta. Por debajo de esto hay riesgo real de fatiga crónica,
+// problemas hormonales (testosterona/estrógenos) o pérdida del ciclo menstrual en mujeres.
+const FAT_FLOOR_PER_KG = 0.6;
+const FAT_FLOOR_PCT_KCAL = 0.20;
+
+// Entrenamientos considerados "intensos" a efectos de proteger el glucógeno: MET ≥ 6 (cubre pesas,
+// HIIT, correr, ciclismo, natación y deporte de equipo; deja fuera cardio ligero y yoga/pilates).
+const MET_INTENSO_MIN = 6;
+
+// Gramos/kg de carbohidrato mínimo si hay entrenamiento intenso habitual, escalado por su volumen
+// semanal igual que la tabla de proteína/grasa. Sin entrenamiento intenso no se aplica ningún suelo:
+// el carbohidrato sigue siendo "lo que sobra" tras proteína y grasa, como hasta ahora.
+const CARB_MIN_NIVELES = [
+  { min: 1, max: 2, carbPerKg: 1.5 },
+  { min: 3, max: 5, carbPerKg: 1.75 },
+  { min: 6, max: Infinity, carbPerKg: 2.0 },
+];
+function carbMinPerKgPorSesiones(sesionesIntensasSemana) {
+  if (sesionesIntensasSemana <= 0) return null;
+  return (CARB_MIN_NIVELES.find((n) => sesionesIntensasSemana >= n.min && sesionesIntensasSemana <= n.max) || CARB_MIN_NIVELES[CARB_MIN_NIVELES.length - 1]).carbPerKg;
+}
+
 // Calcula los objetivos diarios a partir del perfil: Mifflin-St Jeor para el BMR, PAL_base para el
 // gasto del día a día, y las kcal de los entrenamientos habituales (vía METs) sumadas aparte.
-// La proteína y la grasa usan una tabla de gramos/kg según el volumen semanal de entrenamiento;
-// los carbohidratos son lo que resta de las calorías totales. Devuelve null si el perfil está
+// La proteína usa una tabla de gramos/kg según el volumen semanal de entrenamiento (o el valor fijo
+// de la etapa de objetivo). La grasa parte de esa misma tabla, pero puede cederle kcal al
+// carbohidrato —sin bajar nunca de su suelo de seguridad— si hay entrenamiento intenso y el
+// carbohidrato restante no llega a su mínimo de glucógeno. Devuelve null si el perfil está
 // incompleto, nunca calcula "a medias" con huecos.
 function calcularObjetivosPerfil(perfil) {
   if (!perfil || !perfil.anioNacimiento || !perfil.altura || !perfil.peso) return null;
@@ -1508,12 +1533,39 @@ function calcularObjetivosPerfil(perfil) {
   const kcalTotal = kcalMantenimiento * (1 + ajustePct / 100);
 
   const sesionesSemana = entrenamientos.reduce((sum, e) => sum + (Number(e.frecuenciaSemanal) || 0), 0);
+  const sesionesIntensasSemana = entrenamientos.reduce((sum, e) => {
+    const tipo = TIPOS_ENTRENAMIENTO.find((t) => t.key === e.tipo);
+    if (!tipo || tipo.mets < MET_INTENSO_MIN || !e.frecuenciaSemanal) return sum;
+    return sum + (Number(e.frecuenciaSemanal) || 0);
+  }, 0);
+
   const nivelMacros = legacy || nivelMacrosPorSesiones(sesionesSemana);
   const protPerKg = etapa.protPerKg ?? nivelMacros.protPerKg;
   const protG = protPerKg * perfil.peso;
-  const fatG = nivelMacros.fatPerKg * perfil.peso;
-  const carbKcal = Math.max(0, kcalTotal - protG * 4 - fatG * 9);
-  const carbG = carbKcal / 4;
+
+  const fatTargetG = nivelMacros.fatPerKg * perfil.peso;
+  const fatFloorG = Math.max(FAT_FLOOR_PER_KG * perfil.peso, (FAT_FLOOR_PCT_KCAL * kcalTotal) / 9);
+
+  const carbMinPerKg = carbMinPerKgPorSesiones(sesionesIntensasSemana);
+  const carbMinG = carbMinPerKg !== null ? carbMinPerKg * perfil.peso : null;
+
+  // Reparto "normal": la grasa se queda en su valor de tabla y el carbohidrato es lo que sobra.
+  const carbGConFatObjetivo = Math.max(0, kcalTotal - protG * 4 - fatTargetG * 9) / 4;
+
+  let fatG = fatTargetG;
+  let carbG = carbGConFatObjetivo;
+  let carbMinNotMet = false;
+
+  // Si hay un mínimo de carbohidrato (entrenamiento intenso) y el reparto normal no lo alcanza,
+  // se le ceden a la grasa las kcal que hagan falta, pero solo hasta su propio suelo de seguridad.
+  if (carbMinG !== null && carbGConFatObjetivo < carbMinG) {
+    const kcalFaltantes = (carbMinG - carbGConFatObjetivo) * 4;
+    const margenFatG = Math.max(0, fatTargetG - fatFloorG);
+    const reduccionFatG = Math.min(margenFatG, kcalFaltantes / 9);
+    fatG = fatTargetG - reduccionFatG;
+    carbG = carbGConFatObjetivo + (reduccionFatG * 9) / 4;
+    carbMinNotMet = carbG + 0.5 < carbMinG;
+  }
 
   return {
     kcal: Math.round(kcalTotal),
@@ -1525,6 +1577,9 @@ function calcularObjetivosPerfil(perfil) {
     kcalMantenimiento: Math.round(kcalMantenimiento),
     objetivo: objetivoKey,
     ajustePct,
+    fatFloor: Math.round(fatFloorG),
+    carbMin: carbMinG !== null ? Math.round(carbMinG) : null,
+    carbMinNotMet,
   };
 }
 
@@ -2525,6 +2580,23 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
             <MacroPill label="Grasa" value={`${objetivosCalculados.fat}g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
             <MacroPill label="Carbos" value={`${objetivosCalculados.carb}g`} color="var(--coffee)" bg="var(--coffee-soft)" />
           </div>
+
+          {objetivosCalculados.carbMinNotMet && (
+            <div
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--mustard-dark)",
+                background: "var(--mustard-soft)", borderRadius: 8, padding: "10px 12px", marginBottom: 16,
+                display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.5,
+              }}
+            >
+              <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>
+                Con tus entrenamientos intensos habituales, lo ideal sería un mínimo de {objetivosCalculados.carbMin}g
+                de carbohidrato, pero con estas kcal y la grasa ya en su suelo de seguridad ({objetivosCalculados.fatFloor}g)
+                no se puede llegar sin más margen calórico.
+              </span>
+            </div>
+          )}
 
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
             Reparto por comida
