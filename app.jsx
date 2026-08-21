@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText } from "lucide-react";
 
 // ---------- Datos iniciales (todo lo acordado hasta ahora) ----------
 
@@ -1486,14 +1486,27 @@ export default function RuedaDePlatos() {
         )}
 
         {tab === "perfil-root" && (
-          <BigCardGrid
-            onSelect={setTab}
-            cards={[
-              { key: "perfil-datos", label: "Datos personales", desc: "perfil y objetivos", icon: User, color: "var(--green)" },
-              { key: "perfil-peso", label: "Seguimiento de peso", desc: "pesadas y tendencia", icon: Scale, color: "var(--coffee)" },
-              { key: "perfil-medidas", label: "Medidas corporales", desc: "próximamente", icon: Ruler, color: "var(--berry)" },
-            ]}
-          />
+          <>
+            <BigCardGrid
+              onSelect={setTab}
+              cards={[
+                { key: "perfil-datos", label: "Datos personales", desc: "perfil y objetivos", icon: User, color: "var(--green)" },
+                { key: "perfil-peso", label: "Seguimiento de peso", desc: "pesadas y tendencia", icon: Scale, color: "var(--coffee)" },
+                { key: "perfil-medidas", label: "Medidas corporales", desc: "próximamente", icon: Ruler, color: "var(--berry)" },
+                { key: "perfil-documentos", label: "Documentos", desc: "por qué funciona así", icon: FileText, color: "var(--olive)" },
+              ]}
+            />
+            <button
+              onClick={() => descargarDatosJSON(data)}
+              style={{
+                display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+                cursor: "pointer", padding: 0, marginTop: 18,
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+              }}
+            >
+              <Download size={13} /> Descargar una copia de mis datos
+            </button>
+          </>
         )}
 
         {tab === "perfil-datos" && (
@@ -1521,6 +1534,13 @@ export default function RuedaDePlatos() {
           <>
             <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
             <MedidasPlaceholderView />
+          </>
+        )}
+
+        {tab === "perfil-documentos" && (
+          <>
+            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <DocumentosView />
           </>
         )}
       </main>
@@ -1840,6 +1860,21 @@ const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "s
 function formatFechaCorta(fechaStr) {
   const [y, m, d] = fechaStr.split("-").map(Number);
   return `${d} ${MESES_CORTOS[m - 1]}`;
+}
+
+// Descarga una copia de todos los datos guardados (perfil, ingredientes, seguimiento de peso...)
+// como un archivo .json — para que nada quede atrapado solo en Firestore. Es una acción puramente
+// del navegador (Blob + enlace temporal), no toca ni envía nada a ningún sitio.
+function descargarDatosJSON(data) {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `rueda-de-platos-datos-${fechaISO(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 function esDiaSugeridoPeso(vecesSemana, fecha = new Date()) {
@@ -2296,6 +2331,65 @@ function MedidasPlaceholderView() {
   );
 }
 
+// Documentos de apoyo: PDFs que viven como archivos estáticos en la carpeta "PDFs explicativos"
+// del propio repositorio (se sirven solos junto al resto de la app, sin ningún sistema de subida).
+// Se deja vacío a propósito hasta tener listo el conjunto completo — cuando se rellene, cada entrada
+// solo necesita { titulo, descripcion, archivo } con la ruta relativa al PDF.
+const DOCUMENTOS_ADJUNTOS = [];
+
+function DocumentosView() {
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <SectionIntro text="Aquí se podrán consultar documentos que, sin ser necesarios para que la app funcione, explican cómo funciona por dentro — y buscan dejar claro que decisiones como las fórmulas, los porcentajes o los umbrales no están puestas al azar." />
+
+      {DOCUMENTOS_ADJUNTOS.length === 0 ? (
+        <div
+          style={{
+            background: "var(--card)", border: "1px dashed var(--line)", borderRadius: 12,
+            padding: "34px 22px", textAlign: "center",
+          }}
+        >
+          <FileText size={26} color="var(--ink-soft)" style={{ marginBottom: 10 }} />
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
+            Todavía no hay documentos añadidos
+          </div>
+          <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
+            En cuanto estén listos, aquí aparecerán los documentos que explican y justifican el
+            funcionamiento interno de la app.
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {DOCUMENTOS_ADJUNTOS.map((doc) => (
+            <a
+              key={doc.archivo}
+              href={doc.archivo}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex", alignItems: "flex-start", gap: 12, textDecoration: "none",
+                background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "14px 16px",
+              }}
+            >
+              <FileText size={20} color="var(--olive)" style={{ flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
+                  {doc.titulo}
+                </div>
+                {doc.descripcion && (
+                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
+                    {doc.descripcion}
+                  </div>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RecordatorioPesoModal({ onClose }) {
   return (
     <ModalShell onClose={onClose} title="Hoy toca pesarte">
@@ -2347,7 +2441,7 @@ function PesoAnomaliaModal({ peso, onCancel, onConfirm }) {
 // Dibuja todas las pesadas (las atípicas en un color distinto) y la recta de tendencia calculada
 // sobre las pesadas normales.
 function PesoLineChart({ entradas, tendencia }) {
-  const W = 320, H = 150, PAD_X = 8, PAD_Y = 16;
+  const W = 320, H = 170, PAD_L = 32, PAD_R = 6, PAD_TOP = 10, PAD_BOTTOM = 20;
   const ordenadas = [...entradas].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
   const inicio = new Date(ordenadas[0].fecha + "T00:00:00");
   const puntos = ordenadas.map((e) => ({
@@ -2359,13 +2453,28 @@ function PesoLineChart({ entradas, tendencia }) {
   const ys = puntos.map((p) => p.y);
   const minX = 0, maxX = Math.max(1, ...xs);
   const minY = Math.min(...ys) - 0.4, maxY = Math.max(...ys) + 0.4;
-  const sx = (x) => PAD_X + ((x - minX) / (maxX - minX || 1)) * (W - PAD_X * 2);
-  const sy = (y) => H - PAD_Y - ((y - minY) / (maxY - minY || 1)) * (H - PAD_Y * 2);
+  const sx = (x) => PAD_L + ((x - minX) / (maxX - minX || 1)) * (W - PAD_L - PAD_R);
+  const sy = (y) => H - PAD_BOTTOM - ((y - minY) / (maxY - minY || 1)) * (H - PAD_TOP - PAD_BOTTOM);
 
   const pathPuntos = puntos.map((p) => `${sx(p.x)},${sy(p.y)}`).join(" ");
 
+  // Eje Y: mínimo, medio y máximo del rango visible (en kg).
+  const yTicks = [minY, (minY + maxY) / 2, maxY];
+  // Eje X: fecha de inicio, mitad y fin del rango representado.
+  const xTicks = [minX, Math.round((minX + maxX) / 2), maxX];
+  const fechaEnX = (x) => fechaISO(new Date(inicio.getTime() + x * 86400000));
+
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: "block" }}>
+      {yTicks.map((v, i) => (
+        <g key={`y${i}`}>
+          <line x1={PAD_L} y1={sy(v)} x2={W - PAD_R} y2={sy(v)} stroke="var(--line)" strokeWidth="1" strokeDasharray="2 3" />
+          <text x={PAD_L - 5} y={sy(v) + 3} textAnchor="end" fontSize="8" fill="var(--ink-soft)" fontFamily="'Helvetica Neue', Arial, sans-serif">
+            {Math.round(v * 10) / 10}
+          </text>
+        </g>
+      ))}
+
       <polyline points={pathPuntos} fill="none" stroke="var(--line)" strokeWidth="1.5" />
       {tendencia && (
         <line
@@ -2378,6 +2487,16 @@ function PesoLineChart({ entradas, tendencia }) {
         <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r={p.atipico ? 3.5 : 3}
           fill={p.atipico ? "var(--mustard)" : "var(--green-dark)"}
           stroke="#fff" strokeWidth="1" />
+      ))}
+
+      {xTicks.map((x, i) => (
+        <text
+          key={`x${i}`} x={sx(x)} y={H - 5}
+          textAnchor={i === 0 ? "start" : i === xTicks.length - 1 ? "end" : "middle"}
+          fontSize="8" fill="var(--ink-soft)" fontFamily="'Helvetica Neue', Arial, sans-serif"
+        >
+          {formatFechaCorta(fechaEnX(x))}
+        </text>
       ))}
     </svg>
   );
@@ -2897,7 +3016,7 @@ const MACRO_CATS = ["proteina", "carbo", "verdura", "grasa"];
 const ESPECIALES_CATS = ["desayuno", "merienda", "cerrado", "especial"];
 const CONFIG_LEAF_TABS = [...MACRO_CATS, ...ESPECIALES_CATS, "combos", "alimentos"];
 const CONFIG_TABS = ["config-root", "macros-root", "especiales-root", ...CONFIG_LEAF_TABS];
-const PERFIL_TABS = ["perfil-root", "perfil-datos", "perfil-peso", "perfil-medidas"];
+const PERFIL_TABS = ["perfil-root", "perfil-datos", "perfil-peso", "perfil-medidas", "perfil-documentos"];
 
 function groupOfCat(cat) {
   if (MACRO_CATS.includes(cat)) return "macros-root";
