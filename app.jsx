@@ -134,6 +134,7 @@ const initialData = () => {
       },
     ],
     pesoTracking: defaultPesoTracking(),
+    listaCompra: { marcados: {}, generadoEn: null },
   };
 };
 
@@ -230,6 +231,16 @@ function migrateData(rawData) {
   // Seguimiento de peso: perfiles guardados antes de esta función no tienen este campo.
   if (!data.pesoTracking) {
     data.pesoTracking = defaultPesoTracking();
+    changed = true;
+  } else if (!Array.isArray(data.pesoTracking.historial)) {
+    // Perfiles que ya tenían seguimiento de peso antes de que el historial fuera permanente.
+    data.pesoTracking.historial = [];
+    changed = true;
+  }
+
+  // Lista de la compra: guarda qué se ha ido marcando, ligado al último menú generado.
+  if (!data.listaCompra) {
+    data.listaCompra = { marcados: {}, generadoEn: null };
     changed = true;
   }
 
@@ -401,6 +412,43 @@ function mealExportParts(data, meal) {
     }
   });
   return parts;
+}
+
+// Agrega, para todo un menú generado (o solo una semana de él), cuántos gramos hacen falta de cada
+// alimento — la lista de la compra. Igual que mealExportParts, los platos compuestos (desayuno,
+// merienda, cerrados) se abren en sus alimentos reales, porque eso es lo que se compra; se agrupan
+// por la categoría del ingrediente al que pertenecen (así el pan/carne/queso de una hamburguesa
+// completa caen todos bajo "Platos cerrados", en vez de repartirse por categorías que no tienen).
+function calcularListaCompra(data, menu, weekFilter) {
+  if (!menu) return [];
+  const slots = menu.filter((s) => weekFilter === "todo" || s.week === weekFilter);
+  const totales = {};
+
+  function addItem(key, nombre, categoria, gramos) {
+    if (!gramos) return;
+    if (!totales[key]) totales[key] = { key, nombre, categoria, gramos: 0 };
+    totales[key].gramos += gramos;
+  }
+
+  slots.forEach((meal) => {
+    mealComponents(data, meal).forEach((c) => {
+      const ing = c.ingredient;
+      if (!ing) return;
+      const categoria = ing.category || (c.slotKey === "grasaExtra" || c.slotKey === "aceiteExtra" ? "grasa" : "especial");
+      if (Array.isArray(ing.composicion) && ing.composicion.length) {
+        ing.composicion.forEach((item) => {
+          const food = getFood(data, item.foodId);
+          const gramos = Number(item.gramos) * c.raciones;
+          addItem(item.foodId, food ? food.name : item.foodId, categoria, gramos);
+        });
+      } else if (c.macros) {
+        const food = getFood(data, ing.foodId);
+        addItem(ing.id || ing.foodId || c.label, food ? food.name : c.label, categoria, c.macros.gramos);
+      }
+    });
+  });
+
+  return Object.values(totales).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
 }
 
 // ---------- Motor de generación del menú (paso 3) ----------
@@ -946,6 +994,18 @@ export default function RuedaDePlatos() {
     } catch (e) {
       // el historial no es crítico: si falla el guardado, seguimos igualmente
     }
+    // Un menú nuevo es una lista de la compra nueva: se olvidan las marcas de la anterior.
+    setData((prev) => ({ ...prev, listaCompra: { marcados: {}, generadoEn: entry.generatedAt } }));
+  }
+
+  function toggleMarcadoCompra(key) {
+    setData((prev) => {
+      const lc = prev.listaCompra || { marcados: {}, generadoEn: null };
+      const marcados = { ...lc.marcados };
+      if (marcados[key]) delete marcados[key];
+      else marcados[key] = true;
+      return { ...prev, listaCompra: { ...lc, marcados } };
+    });
   }
 
   // Actualiza una comida concreta del menú (por ejemplo, al cambiar las raciones de un componente)
@@ -1072,32 +1132,49 @@ export default function RuedaDePlatos() {
     }));
   }
 
-  // Cierra el ciclo actual: calcula la tendencia real, y si se decide aplicar el ajuste sugerido,
-  // lo suma a la calibración existente (nunca cambia de etapa, solo afina dentro de ella). El ciclo
-  // cerrado queda archivado en el historial y se vacían las pesadas para empezar el siguiente.
-  function cerrarCicloPeso(decision) {
+  // Cierra el ciclo actual: calcula la tendencia real; si se decide aplicar el ajuste sugerido, lo
+  // suma a la calibración existente (nunca cambia de etapa, solo afina dentro de ella); si se decide
+  // actualizar el peso del perfil, se usa la última pesada normal (no atípica) del ciclo. Las pesadas
+  // del ciclo pasan al historial permanente (nunca se borran) y se vacía el ciclo activo para el siguiente.
+  function cerrarCicloPeso({ aplicarKcal, actualizarPeso }) {
     setData((prev) => {
       const pt = prev.pesoTracking || defaultPesoTracking();
       const tendencia = calcularTendenciaPeso(pt.entradas);
       const evaluacion = tendencia ? evaluarTendencia(tendencia.pctSemana, prev.perfil?.objetivo) : null;
-      const aplicar = decision === "aplicado" && evaluacion && evaluacion.sugerenciaKcal;
-      const perfilNuevo = aplicar
-        ? { ...prev.perfil, calibracionKcal: (prev.perfil?.calibracionKcal || 0) + evaluacion.sugerenciaKcal }
-        : prev.perfil;
+      const aplicaKcal = aplicarKcal && evaluacion && evaluacion.sugerenciaKcal;
+
+      const ultimaNormal = [...pt.entradas].reverse().find((e) => !e.atipico);
+      const aplicaPeso = actualizarPeso && ultimaNormal;
+
+      let perfilNuevo = prev.perfil;
+      if (aplicaKcal || aplicaPeso) {
+        perfilNuevo = { ...prev.perfil };
+        if (aplicaKcal) perfilNuevo.calibracionKcal = (prev.perfil?.calibracionKcal || 0) + evaluacion.sugerenciaKcal;
+        if (aplicaPeso) perfilNuevo.peso = ultimaNormal.peso;
+      }
+
       const cicloArchivado = {
         inicio: pt.cicloInicio,
         fin: fechaISO(new Date()),
         pctSemana: tendencia ? tendencia.pctSemana : null,
         nivel: evaluacion ? evaluacion.nivel : null,
-        decision,
-        ajusteKcalAplicado: aplicar ? evaluacion.sugerenciaKcal : 0,
+        ajusteKcalAplicado: aplicaKcal ? evaluacion.sugerenciaKcal : 0,
+        pesoActualizado: !!aplicaPeso,
       };
+
+      // Si el perfil cambió (peso y/o calibración), los objetivos guardados se recalculan ya mismo,
+      // igual que al guardar el perfil a mano — si no, el motor de menú y las gráficas seguirían
+      // usando el objetivo antiguo hasta la próxima visita a "Datos personales".
+      const objetivosNuevos = perfilNuevo !== prev.perfil ? calcularObjetivosPerfil(perfilNuevo) : null;
+
       return {
         ...prev,
         perfil: perfilNuevo,
+        objetivos: objetivosNuevos || prev.objetivos,
         pesoTracking: {
           ...pt,
           entradas: [],
+          historial: [...(pt.historial || []), ...pt.entradas],
           cicloInicio: null,
           recordatorioDescartadoFecha: null,
           historialCiclos: [cicloArchivado, ...(pt.historialCiclos || [])].slice(0, 12),
@@ -1168,6 +1245,7 @@ export default function RuedaDePlatos() {
             onUpdateMeal={updateMeal}
             objetivos={data.objetivos}
             onUpdateObjetivos={updateObjetivos}
+            onToggleMarcadoCompra={toggleMarcadoCompra}
           />
         )}
 
@@ -1736,10 +1814,20 @@ function defaultPesoTracking() {
     duracionSemanas: 3,
     cicloInicio: null,
     entradas: [],
+    // Registro permanente de todas las pesadas de ciclos ya cerrados — nunca se borra. Se alimenta
+    // solo al cerrar un ciclo, así lo que está abierto ahora mismo sigue oculto hasta su revisión.
+    historial: [],
     recordatorioDescartadoFecha: null,
     historialCiclos: [],
   };
 }
+
+// Rangos para ver la progresión a largo plazo sobre el historial permanente.
+const RANGOS_PROGRESION = [
+  { key: "3m", label: "3 meses", dias: 90 },
+  { key: "1a", label: "1 año", dias: 365 },
+  { key: "todo", label: "Histórico completo", dias: Infinity },
+];
 
 function fechaISO(d) {
   const yyyy = d.getFullYear();
@@ -2260,8 +2348,9 @@ function PesoAnomaliaModal({ peso, onCancel, onConfirm }) {
 // sobre las pesadas normales.
 function PesoLineChart({ entradas, tendencia }) {
   const W = 320, H = 150, PAD_X = 8, PAD_Y = 16;
-  const inicio = new Date(entradas[0].fecha + "T00:00:00");
-  const puntos = entradas.map((e) => ({
+  const ordenadas = [...entradas].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  const inicio = new Date(ordenadas[0].fecha + "T00:00:00");
+  const puntos = ordenadas.map((e) => ({
     x: Math.round((new Date(e.fecha + "T00:00:00") - inicio) / 86400000),
     y: e.peso,
     atipico: e.atipico,
@@ -2274,13 +2363,17 @@ function PesoLineChart({ entradas, tendencia }) {
   const sy = (y) => H - PAD_Y - ((y - minY) / (maxY - minY || 1)) * (H - PAD_Y * 2);
 
   const pathPuntos = puntos.map((p) => `${sx(p.x)},${sy(p.y)}`).join(" ");
-  const trendY1 = tendencia.intercepto + tendencia.pendiente * minX;
-  const trendY2 = tendencia.intercepto + tendencia.pendiente * maxX;
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: "block" }}>
       <polyline points={pathPuntos} fill="none" stroke="var(--line)" strokeWidth="1.5" />
-      <line x1={sx(minX)} y1={sy(trendY1)} x2={sx(maxX)} y2={sy(trendY2)} stroke="var(--green)" strokeWidth="2" strokeDasharray="5 4" />
+      {tendencia && (
+        <line
+          x1={sx(minX)} y1={sy(tendencia.intercepto + tendencia.pendiente * minX)}
+          x2={sx(maxX)} y2={sy(tendencia.intercepto + tendencia.pendiente * maxX)}
+          stroke="var(--green)" strokeWidth="2" strokeDasharray="5 4"
+        />
+      )}
       {puntos.map((p, i) => (
         <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r={p.atipico ? 3.5 : 3}
           fill={p.atipico ? "var(--mustard)" : "var(--green-dark)"}
@@ -2302,6 +2395,74 @@ function NivelBadge({ nivel }) {
   return <MacroPill label="" value={meta.label} color={meta.color} bg={meta.bg} />;
 }
 
+// Vista de impresión del seguimiento de peso — mismo patrón que PrintExport para el menú: un bloque
+// oculto en pantalla (@media screen) que solo se muestra al imprimir (@media print), para que
+// "Guardar como PDF" del propio navegador lo capture sin necesidad de ninguna librería.
+function PrintSeguimiento({ entradas, tendencia, titulo }) {
+  if (!entradas || entradas.length === 0) return null;
+  const ordenadas = [...entradas].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  return (
+    <div id="print-seguimiento">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #print-seguimiento, #print-seguimiento * { visibility: visible; }
+          #print-seguimiento { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+        @media screen {
+          #print-seguimiento { display: none; }
+        }
+      `}</style>
+      <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
+            Rueda de Platos
+          </div>
+          <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>Seguimiento de peso</h1>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
+            {titulo} · exportado el {formatFechaCorta(fechaISO(new Date()))}
+          </div>
+        </div>
+
+        <div style={{ marginTop: 18, maxWidth: 420 }}>
+          <PesoLineChart entradas={ordenadas} tendencia={tendencia || null} />
+        </div>
+
+        {tendencia && (
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "#1f4d38", fontWeight: 700, marginTop: 8 }}>
+            Tendencia: {tendencia.pctSemana > 0 ? "+" : ""}{tendencia.pctSemana.toFixed(2)}%/semana
+          </div>
+        )}
+
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11 }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>Fecha</th>
+              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>Peso (kg)</th>
+              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>Nota</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ordenadas.map((e) => (
+              <tr key={e.id || e.fecha}>
+                <td style={{ padding: "3px 6px", borderBottom: "1px solid #ddd6bf" }}>{formatFechaCorta(e.fecha)}</td>
+                <td style={{ padding: "3px 6px", borderBottom: "1px solid #ddd6bf" }}>{e.peso}</td>
+                <td style={{ padding: "3px 6px", borderBottom: "1px solid #ddd6bf", color: "#a9721f" }}>
+                  {e.atipico ? `Atípica${e.motivo ? `: ${e.motivo}` : ""}` : ""}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
+          Rueda de Platos — documento generado a partir de tu seguimiento de peso
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Vista de "Seguimiento de peso": mientras el ciclo está abierto, solo se enseña el progreso (cuántas
 // pesadas van, cuánto falta) sin cifras ni gráfica — para no fomentar la obsesión con el número del día.
 // Al llegar a la duración configurada, se enseña la tendencia real y una sugerencia de ajuste opcional.
@@ -2309,10 +2470,23 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
   const [pesoInput, setPesoInput] = useState("");
   const [pendienteAnomalia, setPendienteAnomalia] = useState(null);
   const [showConfig, setShowConfig] = useState(false);
+  const [showProgresion, setShowProgresion] = useState(false);
+  const [rangoProgresion, setRangoProgresion] = useState("3m");
+  const [aplicarKcalToggle, setAplicarKcalToggle] = useState(false);
+  const [actualizarPesoToggle, setActualizarPesoToggle] = useState(true);
+  const [printPayload, setPrintPayload] = useState(null);
+
+  // Deja el contenido a imprimir listo en el DOM y espera a que React lo pinte (doble
+  // requestAnimationFrame) antes de abrir el diálogo de impresión del navegador.
+  function exportarSeguimiento(entradasAExportar, tendenciaAExportar, titulo) {
+    setPrintPayload({ entradas: entradasAExportar, tendencia: tendenciaAExportar, titulo });
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  }
 
   const hoy = new Date();
   const hoyISO = fechaISO(hoy);
   const entradas = pesoTracking.entradas || [];
+  const historial = pesoTracking.historial || [];
   const yaRegistradoHoy = entradas.some((e) => e.fecha === hoyISO);
   const diaSugerido = esDiaSugeridoPeso(pesoTracking.vecesSemana, hoy);
   const [recordatorioAbierto, setRecordatorioAbierto] = useState(
@@ -2338,6 +2512,14 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
 
   const tendencia = cicloListoParaCierre ? calcularTendenciaPeso(entradas) : null;
   const evaluacion = tendencia ? evaluarTendencia(tendencia.pctSemana, perfil?.objetivo) : null;
+  const ultimaNormal = [...entradas].reverse().find((e) => !e.atipico);
+  const hayCambios = evaluacion && evaluacion.sugerenciaKcal !== 0 && perfil?.objetivo && perfil.objetivo !== "mantenimiento";
+
+  const rangoDias = (RANGOS_PROGRESION.find((r) => r.key === rangoProgresion) || RANGOS_PROGRESION[0]).dias;
+  const historialFiltrado = historial.filter((e) => {
+    if (rangoDias === Infinity) return true;
+    return (hoy - new Date(e.fecha + "T00:00:00")) / 86400000 <= rangoDias;
+  });
 
   return (
     <div style={{ maxWidth: 480 }}>
@@ -2378,35 +2560,52 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                   {evaluacion.mensaje}
                 </p>
               )}
-              {evaluacion && evaluacion.sugerenciaKcal !== 0 && perfil?.objetivo && perfil.objetivo !== "mantenimiento" && (
-                <div style={{ background: "var(--mustard-soft)", border: "1px solid var(--mustard)", borderRadius: 9, padding: "11px 13px", marginTop: 12 }}>
-                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--mustard-dark)", fontWeight: 700, marginBottom: 6 }}>
-                    Sugerencia: {evaluacion.sugerenciaKcal > 0 ? "+" : ""}{evaluacion.sugerenciaKcal} kcal/día
-                  </div>
-                  <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5, margin: "0 0 10px" }}>
-                    No cambia tu etapa ({OBJETIVO_ETAPAS[perfil.objetivo]?.label}) — solo afina la intensidad dentro de ella.
-                  </p>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button
-                      onClick={() => onCerrarCiclo("aplicado")}
-                      style={{ flex: 1, background: "var(--green)", color: "#fff", border: "none", borderRadius: 7, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer" }}
-                    >
-                      Aplicar ajuste
-                    </button>
-                    <button
-                      onClick={() => onCerrarCiclo("mantenido")}
-                      style={{ flex: 1, background: "#fff", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 7, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer" }}
-                    >
-                      Mantener como está
-                    </button>
-                  </div>
-                </div>
+
+              {ultimaNormal && (
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "var(--green-soft)", border: "1px solid var(--green)", borderRadius: 9, padding: "11px 13px", marginTop: 12, cursor: "pointer" }}>
+                  <input type="checkbox" checked={actualizarPesoToggle} onChange={(e) => setActualizarPesoToggle(e.target.checked)} style={{ marginTop: 2 }} />
+                  <span>
+                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--green-dark)", fontWeight: 700 }}>
+                      Actualizar mi peso de perfil a {ultimaNormal.peso} kg
+                    </span>
+                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--green-dark)", marginTop: 2 }}>
+                      Ahora mismo tienes registrado {perfil?.peso} kg — esto recalcula tu BMR, proteína y grasa con tu peso real.
+                    </span>
+                  </span>
+                </label>
               )}
-              {(!evaluacion || evaluacion.sugerenciaKcal === 0) && (
-                <div style={{ marginTop: 12 }}>
-                  <ModalBtn variant="solid" onClick={() => onCerrarCiclo("mantenido")}>Empezar el siguiente ciclo</ModalBtn>
-                </div>
+
+              {hayCambios && (
+                <label style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "var(--mustard-soft)", border: "1px solid var(--mustard)", borderRadius: 9, padding: "11px 13px", marginTop: 10, cursor: "pointer" }}>
+                  <input type="checkbox" checked={aplicarKcalToggle} onChange={(e) => setAplicarKcalToggle(e.target.checked)} style={{ marginTop: 2 }} />
+                  <span>
+                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--mustard-dark)", fontWeight: 700 }}>
+                      Aplicar ajuste: {evaluacion.sugerenciaKcal > 0 ? "+" : ""}{evaluacion.sugerenciaKcal} kcal/día
+                    </span>
+                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", marginTop: 2 }}>
+                      No cambia tu etapa ({OBJETIVO_ETAPAS[perfil.objetivo]?.label}) — solo afina la intensidad dentro de ella.
+                    </span>
+                  </span>
+                </label>
               )}
+
+              <div style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                <ModalBtn
+                  variant="solid"
+                  onClick={() => onCerrarCiclo({ aplicarKcal: aplicarKcalToggle, actualizarPeso: actualizarPesoToggle })}
+                >
+                  Cerrar ciclo y empezar el siguiente
+                </ModalBtn>
+                <button
+                  onClick={() => exportarSeguimiento(entradas, tendencia, "Ciclo cerrado hoy")}
+                  style={{
+                    background: "none", border: "none", cursor: "pointer", padding: 0,
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+                  }}
+                >
+                  📄 Exportar este cierre en PDF
+                </button>
+              </div>
             </>
           ) : (
             <>
@@ -2414,7 +2613,7 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                 No hay pesadas suficientes (sin contar las atípicas) para calcular una tendencia fiable este
                 ciclo. Puedes empezar el siguiente cuando quieras.
               </p>
-              <ModalBtn variant="solid" onClick={() => onCerrarCiclo("mantenido")}>Empezar el siguiente ciclo</ModalBtn>
+              <ModalBtn variant="solid" onClick={() => onCerrarCiclo({ aplicarKcal: false, actualizarPeso: false })}>Empezar el siguiente ciclo</ModalBtn>
             </>
           )}
         </div>
@@ -2529,6 +2728,61 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
             </div>
           )}
         </div>
+      )}
+
+      <button
+        onClick={() => setShowProgresion((v) => !v)}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 10, marginBottom: 10,
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+        }}
+      >
+        {showProgresion ? "Ocultar progresión ▲" : "Ver progresión ▼"}
+      </button>
+
+      {showProgresion && (
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 16px 18px" }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+            {RANGOS_PROGRESION.map((r) => (
+              <button
+                key={r.key}
+                onClick={() => setRangoProgresion(r.key)}
+                style={{
+                  padding: "6px 12px", borderRadius: 20, border: "1px solid var(--line)",
+                  background: rangoProgresion === r.key ? "var(--green-dark)" : "#fff",
+                  color: rangoProgresion === r.key ? "#fff" : "var(--ink)",
+                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                }}
+              >
+                {r.label}
+              </button>
+            ))}
+          </div>
+          {historialFiltrado.length >= 2 ? (
+            <>
+              <PesoLineChart entradas={historialFiltrado} tendencia={null} />
+              <button
+                onClick={() => exportarSeguimiento(historialFiltrado, null, RANGOS_PROGRESION.find((r) => r.key === rangoProgresion)?.label)}
+                style={{
+                  marginTop: 10, background: "none", border: "none", cursor: "pointer", padding: 0,
+                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--green-dark)",
+                }}
+              >
+                📄 Exportar este rango en PDF
+              </button>
+            </>
+          ) : (
+            <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
+              {historial.length === 0
+                ? "Aún no tienes ningún ciclo cerrado — la progresión se rellena al terminar tu primer ciclo."
+                : "No hay suficientes pesadas en este rango. Prueba con un rango más amplio."}
+            </p>
+          )}
+        </div>
+      )}
+
+      {printPayload && (
+        <PrintSeguimiento entradas={printPayload.entradas} tendencia={printPayload.tendencia} titulo={printPayload.titulo} />
       )}
     </div>
   );
@@ -2743,10 +2997,11 @@ function BackLink({ label, onClick }) {
   );
 }
 
-function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos }) {
+function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
+  const [showListaCompra, setShowListaCompra] = useState(false);
   // Se busca la comida por id en cada render en vez de guardar una copia en el estado:
   // así, al cambiar las raciones, el modal refleja el valor nuevo inmediatamente.
   const selectedMeal = selectedMealId && menu ? menu.find((s) => s.id === selectedMealId) : null;
@@ -2833,6 +3088,16 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
               }}
             >
               <Download size={13} /> Exportar PDF
+            </button>
+            <button
+              onClick={() => setShowListaCompra(true)}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                color: "var(--coffee)", background: "var(--coffee-soft)", border: "none",
+                borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              🛒 Lista de la compra
             </button>
             <button
               onClick={() => setShowStats((s) => !s)}
@@ -2935,6 +3200,17 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
           objetivos={objetivos}
           perfil={data.perfil}
           onClose={() => setEditingObjetivos(false)}
+        />
+      )}
+
+      {showListaCompra && (
+        <ListaCompraModal
+          data={data}
+          menu={menu}
+          menuWeek={menuWeek}
+          listaCompra={data.listaCompra || { marcados: {}, generadoEn: null }}
+          onToggle={onToggleMarcadoCompra}
+          onClose={() => setShowListaCompra(false)}
         />
       )}
     </>
@@ -3062,6 +3338,105 @@ function PrintDonut({ totals }) {
         <span style={{ color: "#6b4423" }}>C{fmt(totals.carb)}</span>
       </div>
     </div>
+  );
+}
+
+const LISTA_COMPRA_ORDEN_CATS = [...MACRO_CATS, ...ESPECIALES_CATS];
+
+// Lista de la compra: agrega el menú (una semana o el ciclo completo) por alimento y lo agrupa por
+// categoría. Las marcas de "ya lo tengo" se guardan en data.listaCompra y sobreviven a cerrar la
+// app — solo se olvidan cuando generas un menú nuevo (ver handleGenerateMenu).
+function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose }) {
+  const [alcance, setAlcance] = useState(menuWeek || 1);
+  const items = calcularListaCompra(data, menu, alcance);
+  const marcados = listaCompra.marcados || {};
+
+  const grupos = {};
+  items.forEach((it) => {
+    if (!grupos[it.categoria]) grupos[it.categoria] = [];
+    grupos[it.categoria].push(it);
+  });
+  const categoriasOrdenadas = LISTA_COMPRA_ORDEN_CATS.filter((c) => grupos[c]);
+  const marcadosCount = items.filter((it) => marcados[it.key]).length;
+
+  return (
+    <ModalShell onClose={onClose} title="Lista de la compra">
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {[1, 2, "todo"].map((w) => (
+          <button
+            key={w}
+            onClick={() => setAlcance(w)}
+            style={{
+              flex: 1, padding: "7px 8px", borderRadius: 8, border: "1px solid var(--line)",
+              background: alcance === w ? "var(--green-dark)" : "#fff",
+              color: alcance === w ? "#fff" : "var(--ink)",
+              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+            }}
+          >
+            {w === "todo" ? "Ciclo completo" : `Semana ${w}`}
+          </button>
+        ))}
+      </div>
+
+      {items.length === 0 ? (
+        <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
+          No hay ningún menú generado todavía.
+        </p>
+      ) : (
+        <>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 10 }}>
+            {marcadosCount} de {items.length} marcados
+          </div>
+          <div style={{ maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
+            {categoriasOrdenadas.map((cat) => {
+              const meta = CATEGORY_META[cat];
+              const Icon = meta?.icon;
+              return (
+                <div key={cat}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                    {Icon && <Icon size={13} color={meta.color} />}
+                    <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: meta?.color || "var(--ink)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      {meta?.label || cat}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    {grupos[cat].map((it) => {
+                      const marcado = !!marcados[it.key];
+                      const kg = it.gramos / 1000;
+                      const cantidad = kg >= 1 ? `${Math.round(kg * 10) / 10} kg` : `${Math.round(it.gramos)} g`;
+                      return (
+                        <label
+                          key={it.key}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 9, padding: "6px 8px", borderRadius: 7,
+                            cursor: "pointer", background: marcado ? "var(--paper)" : "transparent",
+                          }}
+                        >
+                          <input type="checkbox" checked={marcado} onChange={() => onToggle(it.key)} />
+                          <span style={{
+                            flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13,
+                            color: marcado ? "var(--ink-soft)" : "var(--ink)", textDecoration: marcado ? "line-through" : "none",
+                          }}>
+                            {it.nombre}
+                          </span>
+                          <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>
+                            {cantidad}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+        <ModalBtn variant="solid" onClick={onClose}>Cerrar</ModalBtn>
+      </div>
+    </ModalShell>
   );
 }
 
