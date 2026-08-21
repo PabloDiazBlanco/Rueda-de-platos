@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler } from "lucide-react";
 
 // ---------- Datos iniciales (todo lo acordado hasta ahora) ----------
 
@@ -133,6 +133,7 @@ const initialData = () => {
         distribucion: "Ocupa la comida entera (sin carbo ni verdura). Se sortea cuál de los platos toca por probabilidad.",
       },
     ],
+    pesoTracking: defaultPesoTracking(),
   };
 };
 
@@ -223,6 +224,12 @@ function migrateData(rawData) {
 
   if (!Array.isArray(data.rules)) {
     data.rules = [];
+    changed = true;
+  }
+
+  // Seguimiento de peso: perfiles guardados antes de esta función no tienen este campo.
+  if (!data.pesoTracking) {
+    data.pesoTracking = defaultPesoTracking();
     changed = true;
   }
 
@@ -1014,18 +1021,89 @@ export default function RuedaDePlatos() {
 
   // Guarda el perfil (datos personales) y marca que la pantalla de bienvenida ya no debe repetirse,
   // tanto si se rellena como si se salta explícitamente. Al guardar el perfil, se recalculan
-  // los objetivos automáticamente a partir de él.
+  // los objetivos automáticamente a partir de él. Si la etapa (mantenimiento/volumen/definición)
+  // cambia respecto a la guardada, se resetea la calibración por peso — estaba pensada para la
+  // intensidad de la etapa anterior, no debe arrastrarse a una nueva sin querer.
   function savePerfil(perfil) {
-    const objetivosCalculados = calcularObjetivosPerfil(perfil);
-    setData((prev) => ({
-      ...prev,
-      perfil,
-      perfilOnboardingDone: true,
-      objetivos: objetivosCalculados || prev.objetivos,
-    }));
+    setData((prev) => {
+      const objetivoCambiado = (prev.perfil?.objetivo || "mantenimiento") !== (perfil.objetivo || "mantenimiento");
+      const perfilFinal = { ...perfil, calibracionKcal: objetivoCambiado ? 0 : (prev.perfil?.calibracionKcal || 0) };
+      const objetivosCalculados = calcularObjetivosPerfil(perfilFinal);
+      return {
+        ...prev,
+        perfil: perfilFinal,
+        perfilOnboardingDone: true,
+        objetivos: objetivosCalculados || prev.objetivos,
+      };
+    });
   }
   function skipPerfil() {
     setData((prev) => ({ ...prev, perfilOnboardingDone: true }));
+  }
+
+  // ---------- Seguimiento de peso ----------
+  // Añade (o corrige, si ya hay una pesada guardada hoy) la pesada del día. Si es la primera del
+  // ciclo, arranca el ciclo en la fecha de hoy.
+  function addPesoEntrada(peso, atipico, motivo) {
+    setData((prev) => {
+      const pt = prev.pesoTracking || defaultPesoTracking();
+      const hoyISO = fechaISO(new Date());
+      const idx = pt.entradas.findIndex((e) => e.fecha === hoyISO);
+      const entrada = { id: idx >= 0 ? pt.entradas[idx].id : uid(), fecha: hoyISO, peso, atipico: !!atipico, motivo: motivo || "" };
+      const entradas = idx >= 0 ? pt.entradas.map((e, i) => (i === idx ? entrada : e)) : [...pt.entradas, entrada];
+      return {
+        ...prev,
+        pesoTracking: { ...pt, entradas, cicloInicio: pt.cicloInicio || hoyISO },
+      };
+    });
+  }
+
+  function actualizarConfigPeso(patch) {
+    setData((prev) => ({
+      ...prev,
+      pesoTracking: { ...(prev.pesoTracking || defaultPesoTracking()), ...patch },
+    }));
+  }
+
+  function descartarRecordatorioHoy() {
+    setData((prev) => ({
+      ...prev,
+      pesoTracking: { ...(prev.pesoTracking || defaultPesoTracking()), recordatorioDescartadoFecha: fechaISO(new Date()) },
+    }));
+  }
+
+  // Cierra el ciclo actual: calcula la tendencia real, y si se decide aplicar el ajuste sugerido,
+  // lo suma a la calibración existente (nunca cambia de etapa, solo afina dentro de ella). El ciclo
+  // cerrado queda archivado en el historial y se vacían las pesadas para empezar el siguiente.
+  function cerrarCicloPeso(decision) {
+    setData((prev) => {
+      const pt = prev.pesoTracking || defaultPesoTracking();
+      const tendencia = calcularTendenciaPeso(pt.entradas);
+      const evaluacion = tendencia ? evaluarTendencia(tendencia.pctSemana, prev.perfil?.objetivo) : null;
+      const aplicar = decision === "aplicado" && evaluacion && evaluacion.sugerenciaKcal;
+      const perfilNuevo = aplicar
+        ? { ...prev.perfil, calibracionKcal: (prev.perfil?.calibracionKcal || 0) + evaluacion.sugerenciaKcal }
+        : prev.perfil;
+      const cicloArchivado = {
+        inicio: pt.cicloInicio,
+        fin: fechaISO(new Date()),
+        pctSemana: tendencia ? tendencia.pctSemana : null,
+        nivel: evaluacion ? evaluacion.nivel : null,
+        decision,
+        ajusteKcalAplicado: aplicar ? evaluacion.sugerenciaKcal : 0,
+      };
+      return {
+        ...prev,
+        perfil: perfilNuevo,
+        pesoTracking: {
+          ...pt,
+          entradas: [],
+          cicloInicio: null,
+          recordatorioDescartadoFecha: null,
+          historialCiclos: [cicloArchivado, ...(pt.historialCiclos || [])].slice(0, 12),
+        },
+      };
+    });
   }
 
   function upsertFood(food) {
@@ -1329,8 +1407,43 @@ export default function RuedaDePlatos() {
           </div>
         )}
 
-        {tab === "perfil" && (
-          <PerfilView perfil={data.perfil} onSave={savePerfil} />
+        {tab === "perfil-root" && (
+          <BigCardGrid
+            onSelect={setTab}
+            cards={[
+              { key: "perfil-datos", label: "Datos personales", desc: "perfil y objetivos", icon: User, color: "var(--green)" },
+              { key: "perfil-peso", label: "Seguimiento de peso", desc: "pesadas y tendencia", icon: Scale, color: "var(--coffee)" },
+              { key: "perfil-medidas", label: "Medidas corporales", desc: "próximamente", icon: Ruler, color: "var(--berry)" },
+            ]}
+          />
+        )}
+
+        {tab === "perfil-datos" && (
+          <>
+            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <PerfilView perfil={data.perfil} onSave={savePerfil} />
+          </>
+        )}
+
+        {tab === "perfil-peso" && (
+          <>
+            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <PesoView
+              perfil={data.perfil}
+              pesoTracking={data.pesoTracking || defaultPesoTracking()}
+              onAddPeso={addPesoEntrada}
+              onUpdateConfig={actualizarConfigPeso}
+              onDismissReminder={descartarRecordatorioHoy}
+              onCerrarCiclo={cerrarCicloPeso}
+            />
+          </>
+        )}
+
+        {tab === "perfil-medidas" && (
+          <>
+            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <MedidasPlaceholderView />
+          </>
         )}
       </main>
 
@@ -1530,7 +1643,18 @@ function calcularObjetivosPerfil(perfil) {
   const ajustePct = etapa.ajusteKcalPct < 0
     ? Math.max(etapa.ajusteKcalPct, -LIMITE_DEFICIT_PCT)
     : Math.min(etapa.ajusteKcalPct, LIMITE_SUPERAVIT_PCT);
-  const kcalTotal = kcalMantenimiento * (1 + ajustePct / 100);
+
+  // Calibración por seguimiento de peso (opcional): un ajuste fino en kcal, en pasos de 100-200 kcal
+  // (protocolo de Helms et al. 2014), que la persona aprueba explícitamente al cerrar un ciclo de
+  // pesadas — nunca cambia de etapa, solo afina la intensidad dentro de la misma. Se vuelve a pasar
+  // por el mismo techo de seguridad que el ajuste base, para que la suma de ambos tampoco lo traspase.
+  const calibracionKcal = perfil.calibracionKcal || 0;
+  const kcalConEtapa = kcalMantenimiento * (1 + ajustePct / 100);
+  const pctCombinado = ((kcalConEtapa + calibracionKcal) / kcalMantenimiento - 1) * 100;
+  const pctCombinadoClamped = pctCombinado < 0
+    ? Math.max(pctCombinado, -LIMITE_DEFICIT_PCT)
+    : Math.min(pctCombinado, LIMITE_SUPERAVIT_PCT);
+  const kcalTotal = kcalMantenimiento * (1 + pctCombinadoClamped / 100);
 
   const sesionesSemana = entrenamientos.reduce((sum, e) => sum + (Number(e.frecuenciaSemanal) || 0), 0);
   const sesionesIntensasSemana = entrenamientos.reduce((sum, e) => {
@@ -1576,11 +1700,157 @@ function calcularObjetivosPerfil(perfil) {
     kcalEntrenamiento: Math.round(kcalEntrenamiento),
     kcalMantenimiento: Math.round(kcalMantenimiento),
     objetivo: objetivoKey,
-    ajustePct,
+    ajustePct: Math.round(pctCombinadoClamped * 10) / 10,
+    calibracionKcal,
     fatFloor: Math.round(fatFloorG),
     carbMin: carbMinG !== null ? Math.round(carbMinG) : null,
     carbMinNotMet,
   };
+}
+
+// ---------- Seguimiento de peso ----------
+// Días de la semana sugeridos para pesarse, repartidos para no quedar pegados (evita pesarse varias
+// veces seguidas justo después del fin de semana). 0=domingo...6=sábado, como Date.getDay().
+const DIAS_SEMANA_CORTO = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const DIAS_SUGERIDOS_PESO = { 2: [1, 4], 3: [1, 3, 5] };
+const PESO_FRECUENCIAS = [2, 3];
+const PESO_DURACIONES = [2, 3, 4];
+
+// Si una pesada nueva se aleja más de esto (en %) de la última pesada normal, se pregunta el motivo
+// antes de guardarla, para no contaminar la tendencia del ciclo con un pico puntual sin explicación.
+const UMBRAL_CAMBIO_RADICAL_PCT = 1.5;
+
+const MOTIVOS_CAMBIO_PESO = [
+  "Enfermedad", "Viaje", "Regla / retención de líquidos", "Comida muy copiosa o salada", "Otro",
+];
+
+// Bandas de referencia (Helms et al. 2014 para déficit; literatura de "bulking" citada en Iraki et al.
+// 2019 para superávit): por debajo del mínimo, el ritmo no tiene estímulo suficiente; por encima del
+// máximo, es un ritmo agresivo con riesgo de perder músculo (déficit) o ganar sobre todo grasa (superávit).
+const BANDAS_TENDENCIA_DEFICIT = { ineficaz: 0.25, aviso: 1.0, accion: 1.5 }; // %/semana
+const BANDAS_TENDENCIA_SUPERAVIT = { ineficaz: 0.5, aviso: 1.5, accion: 2.0 }; // %/mes
+
+function defaultPesoTracking() {
+  return {
+    vecesSemana: 3,
+    duracionSemanas: 3,
+    cicloInicio: null,
+    entradas: [],
+    recordatorioDescartadoFecha: null,
+    historialCiclos: [],
+  };
+}
+
+function fechaISO(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+function formatFechaCorta(fechaStr) {
+  const [y, m, d] = fechaStr.split("-").map(Number);
+  return `${d} ${MESES_CORTOS[m - 1]}`;
+}
+
+function esDiaSugeridoPeso(vecesSemana, fecha = new Date()) {
+  const dias = DIAS_SUGERIDOS_PESO[vecesSemana] || DIAS_SUGERIDOS_PESO[3];
+  return dias.includes(fecha.getDay());
+}
+
+// Compara contra la última pesada "normal" (no atípica) que no sea de hoy — así, si ya te habías
+// pesado hoy y corriges el número, no se compara consigo misma.
+function esCambioRadical(pesoNuevo, entradas, hoyISO) {
+  const previas = entradas.filter((e) => !e.atipico && e.fecha !== hoyISO);
+  if (!previas.length) return false;
+  const referencia = previas[previas.length - 1].peso;
+  if (!referencia) return false;
+  return (Math.abs(pesoNuevo - referencia) / referencia) * 100 >= UMBRAL_CAMBIO_RADICAL_PCT;
+}
+
+// Regresión lineal simple (mínimos cuadrados). x = días desde el inicio del ciclo, y = peso.
+function regresionLinealSimple(puntos) {
+  const n = puntos.length;
+  const sumX = puntos.reduce((s, p) => s + p.x, 0);
+  const sumY = puntos.reduce((s, p) => s + p.y, 0);
+  const sumXY = puntos.reduce((s, p) => s + p.x * p.y, 0);
+  const sumXX = puntos.reduce((s, p) => s + p.x * p.x, 0);
+  const denom = n * sumXX - sumX * sumX;
+  if (denom === 0) return { pendiente: 0, intercepto: sumY / n };
+  const pendiente = (n * sumXY - sumX * sumY) / denom;
+  const intercepto = (sumY - pendiente * sumX) / n;
+  return { pendiente, intercepto };
+}
+
+// Calcula la tendencia real del ciclo a partir de las pesadas no atípicas, con al menos 2 puntos.
+// El día 0 es la fecha de la primera pesada del ciclo (aunque esa fuera atípica), para que el eje
+// de tiempo del gráfico y de la regresión sea siempre el mismo.
+function calcularTendenciaPeso(entradas) {
+  if (!entradas.length) return null;
+  const inicio = new Date(entradas[0].fecha + "T00:00:00");
+  const puntos = entradas
+    .filter((e) => !e.atipico)
+    .map((e) => ({
+      x: Math.round((new Date(e.fecha + "T00:00:00") - inicio) / 86400000),
+      y: e.peso,
+    }));
+  if (puntos.length < 2) return null;
+  const { pendiente, intercepto } = regresionLinealSimple(puntos);
+  const pesoMedio = puntos.reduce((s, p) => s + p.y, 0) / puntos.length;
+  const pctSemana = pesoMedio ? ((pendiente * 7) / pesoMedio) * 100 : 0;
+  return { pctSemana, pendiente, intercepto, pesoMedio, n: puntos.length };
+}
+
+// Traduce la tendencia real a un nivel (según las bandas de arriba) y a una sugerencia de ajuste en
+// kcal, en pasos de 100-200 kcal (protocolo de Helms et al. 2014). Solo aplica a volumen/definición:
+// en mantenimiento no hay una dirección "esperada" contra la que comparar.
+function evaluarTendencia(pctSemana, objetivo) {
+  if (objetivo !== "definicion" && objetivo !== "volumen") return null;
+  const magnitudSemana = Math.abs(pctSemana);
+  const magnitudMes = magnitudSemana * (30 / 7);
+
+  if (objetivo === "definicion") {
+    const b = BANDAS_TENDENCIA_DEFICIT;
+    if (pctSemana > 0) {
+      return { nivel: "direccion-contraria", sugerenciaKcal: -200,
+        mensaje: "El peso está subiendo en una etapa de definición. Puede deberse a algo puntual, pero conviene revisar el déficit." };
+    }
+    if (magnitudSemana < b.ineficaz) {
+      return { nivel: "ineficaz", sugerenciaKcal: -100,
+        mensaje: `Estás perdiendo muy poco (${magnitudSemana.toFixed(2)}%/semana) — por debajo del ${b.ineficaz}% que se considera un ritmo con estímulo suficiente.` };
+    }
+    if (magnitudSemana > b.accion) {
+      return { nivel: "accion", sugerenciaKcal: 200,
+        mensaje: `Estás perdiendo peso muy rápido (${magnitudSemana.toFixed(2)}%/semana) — por encima del ${b.accion}%, con riesgo de perder masa muscular.` };
+    }
+    if (magnitudSemana > b.aviso) {
+      return { nivel: "aviso", sugerenciaKcal: 100,
+        mensaje: `Tu ritmo de pérdida (${magnitudSemana.toFixed(2)}%/semana) está en la zona alta, entre el ${b.aviso}% y el ${b.accion}%.` };
+    }
+    return { nivel: "optimo", sugerenciaKcal: 0,
+      mensaje: `Tu ritmo de pérdida (${magnitudSemana.toFixed(2)}%/semana) está dentro del rango recomendado (${b.ineficaz}%-${b.accion}%).` };
+  }
+
+  const b = BANDAS_TENDENCIA_SUPERAVIT;
+  if (pctSemana < 0) {
+    return { nivel: "direccion-contraria", sugerenciaKcal: 200,
+      mensaje: "El peso está bajando en una etapa de volumen. Puede deberse a algo puntual, pero conviene revisar el superávit." };
+  }
+  if (magnitudMes < b.ineficaz) {
+    return { nivel: "ineficaz", sugerenciaKcal: 100,
+      mensaje: `Estás ganando muy poco (${magnitudMes.toFixed(2)}%/mes) — por debajo del ${b.ineficaz}% que se considera necesario para progresar.` };
+  }
+  if (magnitudMes > b.accion) {
+    return { nivel: "accion", sugerenciaKcal: -200,
+      mensaje: `Estás ganando peso muy rápido (${magnitudMes.toFixed(2)}%/mes) — por encima del ${b.accion}%, con riesgo de que sea sobre todo grasa.` };
+  }
+  if (magnitudMes > b.aviso) {
+    return { nivel: "aviso", sugerenciaKcal: -100,
+      mensaje: `Tu ritmo de ganancia (${magnitudMes.toFixed(2)}%/mes) está en la zona alta, entre el ${b.aviso}% y el ${b.accion}%.` };
+  }
+  return { nivel: "optimo", sugerenciaKcal: 0,
+    mensaje: `Tu ritmo de ganancia (${magnitudMes.toFixed(2)}%/mes) está dentro del rango recomendado (${b.ineficaz}%-${b.accion}%).` };
 }
 
 // Cómo se reparte el objetivo diario entre las 4 comidas. Un único origen de datos:
@@ -1915,6 +2185,355 @@ function PerfilView({ perfil, onSave }) {
   );
 }
 
+// ---------- Seguimiento de peso ----------
+
+function MedidasPlaceholderView() {
+  return (
+    <div
+      style={{
+        background: "var(--card)", border: "1px dashed var(--line)", borderRadius: 12,
+        padding: "34px 22px", textAlign: "center", maxWidth: 460,
+      }}
+    >
+      <Ruler size={26} color="var(--ink-soft)" style={{ marginBottom: 10 }} />
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
+        Próximamente
+      </div>
+      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
+        Aquí podrás añadir pliegues cutáneos y medidas corporales (cintura, cadera...) para completar el
+        seguimiento más allá del peso en la báscula. Por ahora no es necesario — el seguimiento de peso
+        de al lado ya cubre lo esencial.
+      </p>
+    </div>
+  );
+}
+
+function RecordatorioPesoModal({ onClose }) {
+  return (
+    <ModalShell onClose={onClose} title="Hoy toca pesarte">
+      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
+        Es uno de los días que elegiste para el seguimiento de peso. Puedes registrarlo ahora mismo, justo
+        debajo, o saltarte el aviso de hoy si no te viene bien.
+      </p>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <ModalBtn variant="ghost" onClick={onClose}>Saltar por hoy</ModalBtn>
+        <ModalBtn variant="solid" onClick={onClose}>Vale</ModalBtn>
+      </div>
+    </ModalShell>
+  );
+}
+
+function PesoAnomaliaModal({ peso, onCancel, onConfirm }) {
+  const [motivo, setMotivo] = useState("");
+  return (
+    <ModalShell onClose={onCancel} title="Cambio bastante grande">
+      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
+        {peso} kg se aleja bastante de tu última pesada. ¿Sabes a qué se puede deber? Si marcas un motivo,
+        este dato no contará para la tendencia del ciclo — pero se guarda igualmente.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+        {MOTIVOS_CAMBIO_PESO.map((op) => (
+          <button
+            key={op}
+            onClick={() => setMotivo(op)}
+            style={{
+              textAlign: "left", padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
+              background: motivo === op ? "var(--green-soft)" : "#fff",
+              color: motivo === op ? "var(--green-dark)" : "var(--ink)",
+              fontSize: 12.5, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer",
+            }}
+          >
+            {op}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+        <ModalBtn variant="ghost" onClick={() => onConfirm(false, "")}>No, es normal</ModalBtn>
+        <ModalBtn variant="solid" onClick={() => onConfirm(true, motivo || "Sin especificar")}>Guardar como atípico</ModalBtn>
+      </div>
+    </ModalShell>
+  );
+}
+
+// Gráfica de líneas hecha a mano en SVG (mismo criterio que el resto de la app: sin librerías).
+// Dibuja todas las pesadas (las atípicas en un color distinto) y la recta de tendencia calculada
+// sobre las pesadas normales.
+function PesoLineChart({ entradas, tendencia }) {
+  const W = 320, H = 150, PAD_X = 8, PAD_Y = 16;
+  const inicio = new Date(entradas[0].fecha + "T00:00:00");
+  const puntos = entradas.map((e) => ({
+    x: Math.round((new Date(e.fecha + "T00:00:00") - inicio) / 86400000),
+    y: e.peso,
+    atipico: e.atipico,
+  }));
+  const xs = puntos.map((p) => p.x);
+  const ys = puntos.map((p) => p.y);
+  const minX = 0, maxX = Math.max(1, ...xs);
+  const minY = Math.min(...ys) - 0.4, maxY = Math.max(...ys) + 0.4;
+  const sx = (x) => PAD_X + ((x - minX) / (maxX - minX || 1)) * (W - PAD_X * 2);
+  const sy = (y) => H - PAD_Y - ((y - minY) / (maxY - minY || 1)) * (H - PAD_Y * 2);
+
+  const pathPuntos = puntos.map((p) => `${sx(p.x)},${sy(p.y)}`).join(" ");
+  const trendY1 = tendencia.intercepto + tendencia.pendiente * minX;
+  const trendY2 = tendencia.intercepto + tendencia.pendiente * maxX;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} style={{ display: "block" }}>
+      <polyline points={pathPuntos} fill="none" stroke="var(--line)" strokeWidth="1.5" />
+      <line x1={sx(minX)} y1={sy(trendY1)} x2={sx(maxX)} y2={sy(trendY2)} stroke="var(--green)" strokeWidth="2" strokeDasharray="5 4" />
+      {puntos.map((p, i) => (
+        <circle key={i} cx={sx(p.x)} cy={sy(p.y)} r={p.atipico ? 3.5 : 3}
+          fill={p.atipico ? "var(--mustard)" : "var(--green-dark)"}
+          stroke="#fff" strokeWidth="1" />
+      ))}
+    </svg>
+  );
+}
+
+function NivelBadge({ nivel }) {
+  const meta = {
+    optimo: { label: "Dentro del rango esperado", color: "var(--green-dark)", bg: "var(--green-soft)" },
+    ineficaz: { label: "Ritmo demasiado lento", color: "var(--coffee)", bg: "var(--coffee-soft)" },
+    aviso: { label: "Zona alta del rango", color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
+    accion: { label: "Ritmo excesivo", color: "var(--rust)", bg: "var(--rust-soft)" },
+    "direccion-contraria": { label: "Va en dirección contraria al objetivo", color: "var(--rust)", bg: "var(--rust-soft)" },
+  }[nivel];
+  if (!meta) return null;
+  return <MacroPill label="" value={meta.label} color={meta.color} bg={meta.bg} />;
+}
+
+// Vista de "Seguimiento de peso": mientras el ciclo está abierto, solo se enseña el progreso (cuántas
+// pesadas van, cuánto falta) sin cifras ni gráfica — para no fomentar la obsesión con el número del día.
+// Al llegar a la duración configurada, se enseña la tendencia real y una sugerencia de ajuste opcional.
+function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissReminder, onCerrarCiclo }) {
+  const [pesoInput, setPesoInput] = useState("");
+  const [pendienteAnomalia, setPendienteAnomalia] = useState(null);
+  const [showConfig, setShowConfig] = useState(false);
+
+  const hoy = new Date();
+  const hoyISO = fechaISO(hoy);
+  const entradas = pesoTracking.entradas || [];
+  const yaRegistradoHoy = entradas.some((e) => e.fecha === hoyISO);
+  const diaSugerido = esDiaSugeridoPeso(pesoTracking.vecesSemana, hoy);
+  const [recordatorioAbierto, setRecordatorioAbierto] = useState(
+    diaSugerido && !yaRegistradoHoy && pesoTracking.recordatorioDescartadoFecha !== hoyISO
+  );
+
+  const cicloInicioDate = pesoTracking.cicloInicio ? new Date(pesoTracking.cicloInicio + "T00:00:00") : null;
+  const diasTranscurridos = cicloInicioDate ? Math.floor((hoy - cicloInicioDate) / 86400000) : 0;
+  const diasCiclo = pesoTracking.duracionSemanas * 7;
+  const cicloListoParaCierre = !!cicloInicioDate && diasTranscurridos >= diasCiclo && entradas.length >= 2;
+  const totalEsperado = pesoTracking.duracionSemanas * pesoTracking.vecesSemana;
+
+  function intentarGuardar() {
+    const peso = Number(pesoInput.replace(",", "."));
+    if (!peso || peso <= 0) return;
+    if (esCambioRadical(peso, entradas, hoyISO)) {
+      setPendienteAnomalia({ peso });
+      return;
+    }
+    onAddPeso(peso, false, "");
+    setPesoInput("");
+  }
+
+  const tendencia = cicloListoParaCierre ? calcularTendenciaPeso(entradas) : null;
+  const evaluacion = tendencia ? evaluarTendencia(tendencia.pctSemana, perfil?.objetivo) : null;
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <SectionIntro text="Pésate 2-3 veces por semana, repartidas a lo largo de la semana. Mientras el ciclo esté abierto no verás el número evolucionar — solo al cerrarlo, para no obsesionarte con las variaciones del día a día." />
+
+      {recordatorioAbierto && (
+        <RecordatorioPesoModal onClose={() => { setRecordatorioAbierto(false); onDismissReminder(); }} />
+      )}
+
+      {pendienteAnomalia && (
+        <PesoAnomaliaModal
+          peso={pendienteAnomalia.peso}
+          onCancel={() => setPendienteAnomalia(null)}
+          onConfirm={(atipico, motivo) => {
+            onAddPeso(pendienteAnomalia.peso, atipico, motivo);
+            setPendienteAnomalia(null);
+            setPesoInput("");
+          }}
+        />
+      )}
+
+      {cicloListoParaCierre ? (
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>
+            Ciclo terminado — {entradas.length} pesadas registradas
+          </div>
+          {tendencia ? (
+            <>
+              <PesoLineChart entradas={entradas} tendencia={tendencia} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 20, fontWeight: 700, color: "var(--green-dark)" }}>
+                  {tendencia.pctSemana > 0 ? "+" : ""}{tendencia.pctSemana.toFixed(2)}%/semana
+                </span>
+                {evaluacion && <NivelBadge nivel={evaluacion.nivel} />}
+              </div>
+              {evaluacion && (
+                <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 10 }}>
+                  {evaluacion.mensaje}
+                </p>
+              )}
+              {evaluacion && evaluacion.sugerenciaKcal !== 0 && perfil?.objetivo && perfil.objetivo !== "mantenimiento" && (
+                <div style={{ background: "var(--mustard-soft)", border: "1px solid var(--mustard)", borderRadius: 9, padding: "11px 13px", marginTop: 12 }}>
+                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--mustard-dark)", fontWeight: 700, marginBottom: 6 }}>
+                    Sugerencia: {evaluacion.sugerenciaKcal > 0 ? "+" : ""}{evaluacion.sugerenciaKcal} kcal/día
+                  </div>
+                  <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5, margin: "0 0 10px" }}>
+                    No cambia tu etapa ({OBJETIVO_ETAPAS[perfil.objetivo]?.label}) — solo afina la intensidad dentro de ella.
+                  </p>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => onCerrarCiclo("aplicado")}
+                      style={{ flex: 1, background: "var(--green)", color: "#fff", border: "none", borderRadius: 7, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer" }}
+                    >
+                      Aplicar ajuste
+                    </button>
+                    <button
+                      onClick={() => onCerrarCiclo("mantenido")}
+                      style={{ flex: 1, background: "#fff", color: "var(--ink)", border: "1px solid var(--line)", borderRadius: 7, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer" }}
+                    >
+                      Mantener como está
+                    </button>
+                  </div>
+                </div>
+              )}
+              {(!evaluacion || evaluacion.sugerenciaKcal === 0) && (
+                <div style={{ marginTop: 12 }}>
+                  <ModalBtn variant="solid" onClick={() => onCerrarCiclo("mantenido")}>Empezar el siguiente ciclo</ModalBtn>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55 }}>
+                No hay pesadas suficientes (sin contar las atípicas) para calcular una tendencia fiable este
+                ciclo. Puedes empezar el siguiente cuando quieras.
+              </p>
+              <ModalBtn variant="solid" onClick={() => onCerrarCiclo("mantenido")}>Empezar el siguiente ciclo</ModalBtn>
+            </>
+          )}
+        </div>
+      ) : (
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
+          <Field label={yaRegistradoHoy ? "Corregir el peso de hoy" : "Peso de hoy"}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="number" min={30} max={300} step="0.1" value={pesoInput}
+                onChange={(e) => setPesoInput(e.target.value)}
+                placeholder="kg" style={{ ...inputStyle, flex: 1 }}
+              />
+              <button
+                onClick={intentarGuardar}
+                style={{ background: "var(--green)", color: "#fff", border: "none", borderRadius: 7, padding: "0 16px", fontSize: 13, fontWeight: 700, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer" }}
+              >
+                Guardar
+              </button>
+            </div>
+          </Field>
+
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
+            {cicloInicioDate ? (
+              <>
+                Ciclo en curso — {entradas.length} de ~{totalEsperado} pesadas registradas, quedan{" "}
+                {Math.max(0, diasCiclo - diasTranscurridos)} días para la revisión.
+              </>
+            ) : (
+              <>Tu primera pesada abre el ciclo. Se revisará dentro de {pesoTracking.duracionSemanas} semanas.</>
+            )}
+          </div>
+
+          {entradas.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
+              {entradas.map((e) => (
+                <span
+                  key={e.id}
+                  title={e.atipico ? `Marcada como atípica${e.motivo ? `: ${e.motivo}` : ""}` : "Registrada"}
+                  style={{
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, fontWeight: 700,
+                    padding: "3px 8px", borderRadius: 20,
+                    color: e.atipico ? "var(--mustard-dark)" : "var(--green-dark)",
+                    background: e.atipico ? "var(--mustard-soft)" : "var(--green-soft)",
+                  }}
+                >
+                  {formatFechaCorta(e.fecha)} {e.atipico ? "⚠" : "✓"}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      <button
+        onClick={() => setShowConfig((v) => !v)}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 10,
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+        }}
+      >
+        {showConfig ? "Ocultar ajustes ▲" : "Ajustes del seguimiento ▼"}
+      </button>
+
+      {showConfig && (
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 16px 18px" }}>
+          <Field label="Veces por semana">
+            <div style={{ display: "flex", gap: 8 }}>
+              {PESO_FRECUENCIAS.map((v) => (
+                <button
+                  key={v}
+                  disabled={!!cicloInicioDate}
+                  onClick={() => onUpdateConfig({ vecesSemana: v })}
+                  style={{
+                    flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--line)",
+                    background: pesoTracking.vecesSemana === v ? "var(--green-dark)" : "#fff",
+                    color: pesoTracking.vecesSemana === v ? "#fff" : "var(--ink)",
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+                    cursor: cicloInicioDate ? "default" : "pointer", opacity: cicloInicioDate ? 0.6 : 1,
+                  }}
+                >
+                  {v}x
+                </button>
+              ))}
+            </div>
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 6 }}>
+              Días sugeridos: {(DIAS_SUGERIDOS_PESO[pesoTracking.vecesSemana] || []).map((d) => DIAS_SEMANA_CORTO[d]).join(", ")}
+            </div>
+          </Field>
+          <Field label="Duración del ciclo">
+            <div style={{ display: "flex", gap: 8 }}>
+              {PESO_DURACIONES.map((v) => (
+                <button
+                  key={v}
+                  disabled={!!cicloInicioDate}
+                  onClick={() => onUpdateConfig({ duracionSemanas: v })}
+                  style={{
+                    flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--line)",
+                    background: pesoTracking.duracionSemanas === v ? "var(--green-dark)" : "#fff",
+                    color: pesoTracking.duracionSemanas === v ? "#fff" : "var(--ink)",
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+                    cursor: cicloInicioDate ? "default" : "pointer", opacity: cicloInicioDate ? 0.6 : 1,
+                  }}
+                >
+                  {v} sem.
+                </button>
+              ))}
+            </div>
+          </Field>
+          {cicloInicioDate && (
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
+              No se puede cambiar con un ciclo ya abierto — se aplicará al siguiente.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Shell({ children }) {
   return (
     <div
@@ -2024,6 +2643,7 @@ const MACRO_CATS = ["proteina", "carbo", "verdura", "grasa"];
 const ESPECIALES_CATS = ["desayuno", "merienda", "cerrado", "especial"];
 const CONFIG_LEAF_TABS = [...MACRO_CATS, ...ESPECIALES_CATS, "combos", "alimentos"];
 const CONFIG_TABS = ["config-root", "macros-root", "especiales-root", ...CONFIG_LEAF_TABS];
+const PERFIL_TABS = ["perfil-root", "perfil-datos", "perfil-peso", "perfil-medidas"];
 
 function groupOfCat(cat) {
   if (MACRO_CATS.includes(cat)) return "macros-root";
@@ -2047,13 +2667,13 @@ function TabBar({ tab, setTab }) {
     >
       {tabs.map(({ key, meta }) => {
         const Icon = meta.icon;
-        // "Configuración" se marca activa mientras estemos en cualquier pantalla de dentro
-        // (nivel 2, nivel 3, o la categoría final), no solo en su tarjeta raíz.
-        const active = key === "config-root" ? CONFIG_TABS.includes(tab) : tab === key;
+        // "Configuración" y "Perfil" se marcan activas mientras estemos en cualquier pantalla de
+        // dentro (nivel 2, nivel 3...), no solo en su tarjeta raíz.
+        const active = key === "config-root" ? CONFIG_TABS.includes(tab) : key === "perfil" ? PERFIL_TABS.includes(tab) : tab === key;
         return (
           <button
             key={key}
-            onClick={() => setTab(key)}
+            onClick={() => setTab(key === "perfil" ? "perfil-root" : key)}
             style={{
               fontFamily: "'Helvetica Neue', Arial, sans-serif",
               border: "none",
