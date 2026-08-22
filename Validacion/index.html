@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Rueda de Platos — Validación</title>
+<meta name="robots" content="noindex, nofollow" />
+
+<!--
+  Página de mantenimiento, no de usuario. No se enlaza desde index.html ni se registra en el
+  service worker — solo existe para comprobar, tras un cambio en app.jsx, que las funciones de
+  cálculo (objetivos, seguimiento de peso, lista de la compra...) siguen dando los resultados
+  esperados. Carga app.jsx tal cual (mismo mecanismo que auth-bootstrap.jsx: fetch + Babel +
+  import dinámico), así que siempre prueba el código real, nunca una copia.
+-->
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.3.1",
+    "lucide-react": "https://esm.sh/lucide-react@0.383.0?deps=react@18.3.1"
+  }
+}
+</script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
+
+<style>
+  :root {
+    --paper: #f1ede0; --card: #fffdf7; --ink: #2b2b26; --ink-soft: #6b6a5e; --line: #ddd6bf;
+    --green: #2f6b4f; --green-dark: #1f4d38; --green-soft: #e6efe6;
+    --mustard: #d9a441; --mustard-dark: #a9721f; --mustard-soft: #f7ecd6;
+    --rust: #9c4a2b; --rust-soft: #f3e2d8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+  }
+  header {
+    background: var(--green-dark); color: #fff; padding: 22px 24px 26px;
+  }
+  header .kicker {
+    font-size: 11px; letter-spacing: 3px; text-transform: uppercase; opacity: 0.65; margin-bottom: 4px;
+  }
+  header h1 {
+    margin: 0; font-family: Georgia, 'Times New Roman', serif; font-size: 24px; font-weight: 400;
+  }
+  header p { margin: 8px 0 0; font-size: 12.5px; opacity: 0.85; max-width: 640px; line-height: 1.5; }
+  main { max-width: 760px; margin: 0 auto; padding: 22px 20px 60px; }
+
+  #resumen {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  #resumen .num { font-family: Georgia, serif; font-size: 26px; font-weight: 700; }
+  #resumen button {
+    margin-left: auto; background: var(--green); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 16px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+  }
+
+  .grupo { margin-bottom: 22px; }
+  .grupo h2 {
+    font-family: Georgia, 'Times New Roman', serif; font-size: 16px; color: var(--green-dark);
+    margin: 0 0 10px;
+  }
+  .caso {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 11px 14px; margin-bottom: 8px;
+  }
+  .caso.ok { border-left: 4px solid var(--green); }
+  .caso.fail { border-left: 4px solid var(--rust); background: var(--rust-soft); }
+  .caso .fila { display: flex; align-items: center; gap: 8px; }
+  .caso .badge {
+    font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; flex-shrink: 0;
+  }
+  .caso.ok .badge { background: var(--green-soft); color: var(--green-dark); }
+  .caso.fail .badge { background: var(--rust); color: #fff; }
+  .caso .nombre { font-size: 13px; }
+  .caso .detalle {
+    margin-top: 6px; font-size: 11.5px; color: var(--rust); font-family: monospace; line-height: 1.5;
+  }
+  .caso .error { margin-top: 6px; font-size: 11.5px; color: var(--rust); }
+  #estado-carga { font-size: 13px; color: var(--ink-soft); padding: 20px 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Rueda de Platos</div>
+  <h1>Validación de cálculos</h1>
+  <p>
+    Herramienta de mantenimiento, no de usuario. Ejecuta las funciones de cálculo reales de
+    <code>app.jsx</code> (objetivos, seguimiento de peso, lista de la compra) contra resultados ya
+    verificados a mano, para detectar si un cambio futuro rompe algo sin tener que revisarlo todo
+    a ojo.
+  </p>
+</header>
+
+<main>
+  <div id="estado-carga">Cargando app.jsx y ejecutando los casos…</div>
+  <div id="resumen" style="display:none"></div>
+  <div id="resultados"></div>
+</main>
+
+<script type="module">
+  import { crearGrupos } from "./tests.js";
+
+  async function cargarAppJsx() {
+    const code = await fetch("../app.jsx").then((r) => r.text());
+    const transformado = Babel.transform(code, { presets: ["react"], sourceType: "module" }).code;
+    const blob = new Blob([transformado], { type: "text/javascript" });
+    return import(URL.createObjectURL(blob));
+  }
+
+  function renderResultados(grupos) {
+    const cont = document.getElementById("resultados");
+    let total = 0, ok = 0;
+    cont.innerHTML = "";
+
+    grupos.forEach((g) => {
+      const div = document.createElement("div");
+      div.className = "grupo";
+      const h2 = document.createElement("h2");
+      h2.textContent = g.grupo;
+      div.appendChild(h2);
+
+      g.casos.forEach((c) => {
+        total++;
+        let resultado;
+        try {
+          resultado = c.ejecutar();
+        } catch (err) {
+          resultado = { ok: false, diffs: [], error: err.message };
+        }
+        if (resultado.ok) ok++;
+
+        const casoDiv = document.createElement("div");
+        casoDiv.className = "caso " + (resultado.ok ? "ok" : "fail");
+
+        const fila = document.createElement("div");
+        fila.className = "fila";
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = resultado.ok ? "OK" : "FALLO";
+        const nombre = document.createElement("span");
+        nombre.className = "nombre";
+        nombre.textContent = c.nombre;
+        fila.appendChild(badge);
+        fila.appendChild(nombre);
+        casoDiv.appendChild(fila);
+
+        if (!resultado.ok && resultado.error) {
+          const err = document.createElement("div");
+          err.className = "error";
+          err.textContent = "Error al ejecutar: " + resultado.error;
+          casoDiv.appendChild(err);
+        } else if (!resultado.ok && resultado.diffs && resultado.diffs.length) {
+          const det = document.createElement("div");
+          det.className = "detalle";
+          det.innerHTML = resultado.diffs.map((d) => d.replace(/</g, "&lt;")).join("<br/>");
+          casoDiv.appendChild(det);
+        }
+
+        div.appendChild(casoDiv);
+      });
+
+      cont.appendChild(div);
+    });
+
+    const resumen = document.getElementById("resumen");
+    resumen.style.display = "flex";
+    const color = ok === total ? "var(--green-dark)" : "var(--rust)";
+    resumen.innerHTML = `
+      <span class="num" style="color:${color}">${ok} / ${total}</span>
+      <span style="color:var(--ink-soft); font-size:13px;">casos superados</span>
+    `;
+    const btn = document.createElement("button");
+    btn.textContent = "Volver a ejecutar";
+    btn.onclick = () => location.reload();
+    resumen.appendChild(btn);
+  }
+
+  (async () => {
+    try {
+      const mod = await cargarAppJsx();
+      const grupos = crearGrupos(mod);
+      document.getElementById("estado-carga").style.display = "none";
+      renderResultados(grupos);
+    } catch (err) {
+      document.getElementById("estado-carga").textContent =
+        "No se pudo cargar app.jsx: " + err.message;
+    }
+  })();
+</script>
+
+</body>
+</html>
