@@ -419,7 +419,7 @@ function mealExportParts(data, meal) {
 // merienda, cerrados) se abren en sus alimentos reales, porque eso es lo que se compra; se agrupan
 // por la categoría del ingrediente al que pertenecen (así el pan/carne/queso de una hamburguesa
 // completa caen todos bajo "Platos cerrados", en vez de repartirse por categorías que no tienen).
-function calcularListaCompra(data, menu, weekFilter) {
+export function calcularListaCompra(data, menu, weekFilter) {
   if (!menu) return [];
   const slots = menu.filter((s) => weekFilter === "todo" || s.week === weekFilter);
   const totales = {};
@@ -1717,7 +1717,7 @@ function carbMinPerKgPorSesiones(sesionesIntensasSemana) {
 // carbohidrato —sin bajar nunca de su suelo de seguridad— si hay entrenamiento intenso y el
 // carbohidrato restante no llega a su mínimo de glucógeno. Devuelve null si el perfil está
 // incompleto, nunca calcula "a medias" con huecos.
-function calcularObjetivosPerfil(perfil) {
+export function calcularObjetivosPerfil(perfil) {
   if (!perfil || !perfil.anioNacimiento || !perfil.altura || !perfil.peso) return null;
 
   const legacy = !perfil.palBase && perfil.actividad ? NIVELES_ACTIVIDAD_LEGACY[perfil.actividad] : null;
@@ -1849,7 +1849,7 @@ const RANGOS_PROGRESION = [
   { key: "todo", label: "Histórico completo", dias: Infinity },
 ];
 
-function fechaISO(d) {
+export function fechaISO(d) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -1857,7 +1857,7 @@ function fechaISO(d) {
 }
 
 const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-function formatFechaCorta(fechaStr) {
+export function formatFechaCorta(fechaStr) {
   const [y, m, d] = fechaStr.split("-").map(Number);
   return `${d} ${MESES_CORTOS[m - 1]}`;
 }
@@ -1877,14 +1877,14 @@ function descargarDatosJSON(data) {
   URL.revokeObjectURL(url);
 }
 
-function esDiaSugeridoPeso(vecesSemana, fecha = new Date()) {
+export function esDiaSugeridoPeso(vecesSemana, fecha = new Date()) {
   const dias = DIAS_SUGERIDOS_PESO[vecesSemana] || DIAS_SUGERIDOS_PESO[3];
   return dias.includes(fecha.getDay());
 }
 
 // Compara contra la última pesada "normal" (no atípica) que no sea de hoy — así, si ya te habías
 // pesado hoy y corriges el número, no se compara consigo misma.
-function esCambioRadical(pesoNuevo, entradas, hoyISO) {
+export function esCambioRadical(pesoNuevo, entradas, hoyISO) {
   const previas = entradas.filter((e) => !e.atipico && e.fecha !== hoyISO);
   if (!previas.length) return false;
   const referencia = previas[previas.length - 1].peso;
@@ -1893,7 +1893,7 @@ function esCambioRadical(pesoNuevo, entradas, hoyISO) {
 }
 
 // Regresión lineal simple (mínimos cuadrados). x = días desde el inicio del ciclo, y = peso.
-function regresionLinealSimple(puntos) {
+export function regresionLinealSimple(puntos) {
   const n = puntos.length;
   const sumX = puntos.reduce((s, p) => s + p.x, 0);
   const sumY = puntos.reduce((s, p) => s + p.y, 0);
@@ -1909,7 +1909,7 @@ function regresionLinealSimple(puntos) {
 // Calcula la tendencia real del ciclo a partir de las pesadas no atípicas, con al menos 2 puntos.
 // El día 0 es la fecha de la primera pesada del ciclo (aunque esa fuera atípica), para que el eje
 // de tiempo del gráfico y de la regresión sea siempre el mismo.
-function calcularTendenciaPeso(entradas) {
+export function calcularTendenciaPeso(entradas) {
   if (!entradas.length) return null;
   const inicio = new Date(entradas[0].fecha + "T00:00:00");
   const puntos = entradas
@@ -1928,7 +1928,7 @@ function calcularTendenciaPeso(entradas) {
 // Traduce la tendencia real a un nivel (según las bandas de arriba) y a una sugerencia de ajuste en
 // kcal, en pasos de 100-200 kcal (protocolo de Helms et al. 2014). Solo aplica a volumen/definición:
 // en mantenimiento no hay una dirección "esperada" contra la que comparar.
-function evaluarTendencia(pctSemana, objetivo) {
+export function evaluarTendencia(pctSemana, objetivo) {
   if (objetivo !== "definicion" && objetivo !== "volumen") return null;
   const magnitudSemana = Math.abs(pctSemana);
   const magnitudMes = magnitudSemana * (30 / 7);
