@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown } from "lucide-react";
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from "macros";
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
@@ -589,6 +589,7 @@ export default function RuedaDePlatos() {
             objetivos={data.objetivos}
             onUpdateObjetivos={updateObjetivos}
             onToggleMarcadoCompra={toggleMarcadoCompra}
+            onUpsertRule={upsertRule}
           />
         )}
 
@@ -2095,7 +2096,7 @@ function BackLink({ label, onClick }) {
   );
 }
 
-function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra }) {
+function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
@@ -2290,7 +2291,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
       <PrintExport data={data} menu={menu} />
 
       {selectedMeal && (
-        <MealDetailModal meal={selectedMeal} data={data} onUpdateMeal={onUpdateMeal} onClose={() => setSelectedMealId(null)} />
+        <MealDetailModal meal={selectedMeal} data={data} onUpdateMeal={onUpdateMeal} onUpsertRule={onUpsertRule} onClose={() => setSelectedMealId(null)} />
       )}
 
       {editingObjetivos && (
@@ -2735,7 +2736,112 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
   );
 }
 
-function MealDetailModal({ meal, data, onUpdateMeal, onClose }) {
+// Ids de los alimentos que forman la combinación "de sabor" de una comida (proteína, carbo,
+// verdura y garbanzos si los lleva) — los mismos que ya evalúa el motor de reglas. La grasa de
+// ajuste fino se deja fuera a propósito: no es una elección, es un relleno calórico automático.
+function comboItemIds(data, meal) {
+  const byName = (name) => (name ? data.ingredients.find((i) => i.name === name) : null);
+  const proteinIng = byName(meal.protein);
+  const carboIng = byName(meal.carbo);
+  const verduraIng = byName(meal.verdura);
+  const garbanzosIng = meal.garbanzos ? data.ingredients.find((i) => i.category === "especial") : null;
+  const ids = [proteinIng, carboIng, verduraIng, garbanzosIng].filter(Boolean).map((i) => i.id);
+  return [...new Set(ids)];
+}
+
+// Busca, entre las reglas existentes, una que vincule exactamente este mismo conjunto de
+// alimentos (sin importar el orden) — para actualizarla en vez de crear una duplicada.
+function findMatchingRule(rules, itemIds) {
+  const set = new Set(itemIds);
+  return (rules || []).find((r) => r.itemIds.length === set.size && r.itemIds.every((id) => set.has(id))) || null;
+}
+
+const NIVELES_GUSTA = [
+  { level: "alta", label: "Bastante" },
+  { level: "maxima", label: "Siempre que se pueda" },
+];
+const NIVELES_NOGUSTA = [
+  { level: "baja", label: "Menos" },
+  { level: "nula", label: "Nunca" },
+];
+
+function ComboAfinidad({ meal, data, onUpsertRule }) {
+  const [abierto, setAbierto] = useState(null); // null | "gusta" | "nogusta"
+  const itemIds = comboItemIds(data, meal);
+  if (itemIds.length < 2) return null;
+
+  const existente = findMatchingRule(data.rules, itemIds);
+  const nombres = itemIds.map((id) => ruleItemLabel(data.ingredients, id)).join(" + ");
+
+  function elegir(level) {
+    if (existente) onUpsertRule({ ...existente, level });
+    else onUpsertRule({ id: uid(), itemIds, level });
+  }
+
+  const opciones = abierto === "gusta" ? NIVELES_GUSTA : abierto === "nogusta" ? NIVELES_NOGUSTA : null;
+
+  return (
+    <div style={{ marginTop: 12, fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+      <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 6 }}>
+        ¿Qué te parece esta combinación? <span style={{ color: "var(--ink)" }}>{nombres}</span>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          onClick={() => setAbierto(abierto === "gusta" ? null : "gusta")}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600,
+            padding: "7px 12px", borderRadius: 8, cursor: "pointer",
+            border: abierto === "gusta" ? "1px solid var(--green)" : "1px solid var(--line)",
+            background: abierto === "gusta" ? "var(--green-soft)" : "transparent",
+            color: "var(--green-dark)",
+          }}
+        >
+          <ThumbsUp size={14} /> Me gusta
+        </button>
+        <button
+          onClick={() => setAbierto(abierto === "nogusta" ? null : "nogusta")}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 600,
+            padding: "7px 12px", borderRadius: 8, cursor: "pointer",
+            border: abierto === "nogusta" ? "1px solid var(--rust)" : "1px solid var(--line)",
+            background: abierto === "nogusta" ? "var(--rust-soft)" : "transparent",
+            color: "var(--rust)",
+          }}
+        >
+          <ThumbsDown size={14} /> No me gusta
+        </button>
+      </div>
+
+      {opciones && (
+        <div style={{ display: "flex", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+          {opciones.map((o) => (
+            <button
+              key={o.level}
+              onClick={() => elegir(o.level)}
+              style={{
+                fontSize: 11.5, fontWeight: existente?.level === o.level ? 700 : 500,
+                padding: "6px 11px", borderRadius: 20, cursor: "pointer",
+                border: existente?.level === o.level ? "1px solid var(--green-dark)" : "1px solid var(--line)",
+                background: existente?.level === o.level ? "var(--green-dark)" : "var(--card)",
+                color: existente?.level === o.level ? "#fff" : "var(--ink)",
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {existente && (
+        <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginTop: 6 }}>
+          Guardado en Reglas de afinidad como "{(RULE_LEVELS[existente.level] || {}).label || existente.level}".
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose }) {
   const components = mealComponents(data, meal);
   const totals = mealTotals(data, meal);
 
@@ -2808,6 +2914,8 @@ function MealDetailModal({ meal, data, onUpdateMeal, onClose }) {
           </span>
         </div>
       </div>
+
+      <ComboAfinidad meal={meal} data={data} onUpsertRule={onUpsertRule} />
 
       {meal.rulesApplied && meal.rulesApplied.length > 0 && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3 }}>
@@ -3341,10 +3449,11 @@ function RuleEditModal({ state, ingredients, onClose, onSave }) {
   const [id1, setId1] = useState(existing?.itemIds?.[0] ?? "");
   const [id2, setId2] = useState(existing?.itemIds?.[1] ?? "");
   const [id3, setId3] = useState(existing?.itemIds?.[2] ?? "");
+  const [id4, setId4] = useState(existing?.itemIds?.[3] ?? "");
   const [level, setLevel] = useState(existing?.level ?? "alta");
 
-  const chosenIds = [id1, id2, id3].filter(Boolean);
-  const valid = id1 && id2 && id1 !== id2 && id2 !== id3 && id1 !== id3;
+  const chosenIds = [id1, id2, id3, id4].filter(Boolean);
+  const valid = id1 && id2 && new Set(chosenIds).size === chosenIds.length;
 
   function handleSave() {
     if (!valid) return;
@@ -3367,6 +3476,12 @@ function RuleEditModal({ state, ingredients, onClose, onSave }) {
       </Field>
       <Field label="Elemento 3 (opcional)">
         <select value={id3} onChange={(e) => setId3(e.target.value)} style={inputStyle}>
+          <option value="">— Ninguno —</option>
+          {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+        </select>
+      </Field>
+      <Field label="Elemento 4 (opcional)">
+        <select value={id4} onChange={(e) => setId4(e.target.value)} style={inputStyle}>
           <option value="">— Ninguno —</option>
           {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
