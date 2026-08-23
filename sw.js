@@ -1,5 +1,9 @@
-const CACHE_NAME = "rueda-de-platos-v4";
-const FILES_TO_CACHE = ["./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./manifest.json", "./icon.svg"];
+const CACHE_NAME = "rueda-de-platos-v5";
+const FILES_TO_CACHE = [
+  "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./manifest.json", "./icon.svg",
+  "./comun.js", "./macros.js", "./seleccion.js", "./comida-calculo.js", "./objetivos.js",
+  "./menu-generador.js", "./peso.js",
+];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
