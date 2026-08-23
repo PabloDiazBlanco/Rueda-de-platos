@@ -27,22 +27,29 @@ auth-bootstrap.jsx     → login/Firestore, luego carga app.jsx (fetch+Babel+blo
 app.jsx                → TODOS los componentes React + el componente principal.
                           Importa la capa de lógica de abajo con nombre corto.
 
-comun.js               → uid(), DAYS — utilidades mínimas compartidas
-macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
-seleccion.js            → sorteo ponderado + reglas de combinación (weightedPick, pickWithRules...)
-comida-calculo.js       → mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra
-objetivos.js            → PAL/TDEE/macros objetivo, calcularObjetivosPerfil, objetivosPorComida
-menu-generador.js       → generateMenu, lastPicksFromHistory (el motor de generación completo)
-peso.js                 → seguimiento de peso: tendencia, cambios atípicos, ciclos
+Logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
+Logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
+Logica/seleccion.js            → sorteo ponderado + reglas de combinación (weightedPick, pickWithRules...)
+Logica/comida-calculo.js       → mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra
+Logica/objetivos.js            → PAL/TDEE/macros objetivo, calcularObjetivosPerfil, objetivosPorComida
+Logica/menu-generador.js       → generateMenu, lastPicksFromHistory (el motor de generación completo)
+Logica/peso.js                 → seguimiento de peso: tendencia, cambios atípicos, ciclos
 ```
 
 Todos los módulos de lógica son **sin JSX, sin React**, y solo se importan entre sí (nunca desde
-`app.jsx` hacia dentro). `app.jsx` es quien los importa a todos.
+`app.jsx` hacia dentro). `app.jsx` es quien los importa a todos. Viven en `Logica/`, aparte de los
+archivos de arranque de la raíz (`index.html`, `auth-bootstrap.jsx`, `sw.js`, `manifest.json`,
+`icon.svg` — estos sí tienen que quedarse en la raíz: `sw.js` en concreto necesita estar ahí para
+que su "scope" cubra toda la app).
 
-**Al crear un módulo nuevo de lógica**, hay que registrar su nombre corto en **dos** sitios, o
-`Validacion/` dejará de cargar sin avisar con un error claro:
-- `index.html` → `"nombre": "./archivo.js"`
-- `Validacion/index.html` → `"nombre": "../archivo.js"` (un nivel arriba)
+**Al crear un módulo nuevo de lógica**, ponlo en `Logica/` y registra su nombre corto en **dos**
+sitios, o `Validacion/` dejará de cargar sin avisar con un error claro:
+- `index.html` → `"nombre": "./Logica/archivo.js"`
+- `Validacion/index.html` → `"nombre": "../Logica/archivo.js"` (un nivel arriba)
+
+Como todo se importa por nombre corto (nunca por ruta relativa) entre los propios módulos y desde
+`app.jsx`, mover un archivo de sitio no obliga a tocar nada dentro de él — solo estas dos entradas
+del `importmap` y la de `sw.js` de abajo.
 
 Y si alguna función del módulo debe seguir siendo accesible desde `Validacion/tests.js` (que la
 coge del objeto exportado por `app.jsx`, no del módulo directamente), añade también
