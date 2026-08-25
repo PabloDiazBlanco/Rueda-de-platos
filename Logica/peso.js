@@ -35,6 +35,10 @@ export function defaultPesoTracking() {
     historial: [],
     recordatorioDescartadoFecha: null,
     historialCiclos: [],
+    // Pausas del ciclo activo (viajes, enfermedad...): { inicio, fin, motivo }. Mientras una pausa
+    // está abierta (fin === null), esos días no cuentan para el cierre del ciclo ni disparan el
+    // recordatorio de pesaje — al reanudar, el ciclo sigue exactamente donde se dejó.
+    pausas: [],
   };
 }
 

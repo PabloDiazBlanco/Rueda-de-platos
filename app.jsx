@@ -243,10 +243,17 @@ function migrateData(rawData) {
   if (!data.pesoTracking) {
     data.pesoTracking = defaultPesoTracking();
     changed = true;
-  } else if (!Array.isArray(data.pesoTracking.historial)) {
-    // Perfiles que ya tenían seguimiento de peso antes de que el historial fuera permanente.
-    data.pesoTracking.historial = [];
-    changed = true;
+  } else {
+    if (!Array.isArray(data.pesoTracking.historial)) {
+      // Perfiles que ya tenían seguimiento de peso antes de que el historial fuera permanente.
+      data.pesoTracking.historial = [];
+      changed = true;
+    }
+    if (!Array.isArray(data.pesoTracking.pausas)) {
+      // Perfiles guardados antes de que existiera el modo pausa del ciclo.
+      data.pesoTracking.pausas = [];
+      changed = true;
+    }
   }
 
   // Lista de la compra: guarda qué se ha ido marcando, ligado al último menú generado.
@@ -461,6 +468,26 @@ export default function RuedaDePlatos() {
     });
   }
 
+  // Pausa el ciclo activo (viaje, enfermedad...) con un motivo opcional en texto libre. Mientras
+  // esté pausado, esos días no cuentan para el cierre del ciclo ni disparan el recordatorio.
+  function pausarCiclo(motivo) {
+    setData((prev) => {
+      const pt = prev.pesoTracking || defaultPesoTracking();
+      const hoyISO = fechaISO(new Date());
+      return { ...prev, pesoTracking: { ...pt, pausas: [...(pt.pausas || []), { inicio: hoyISO, fin: null, motivo: motivo || "" }] } };
+    });
+  }
+
+  // Cierra la pausa abierta: el ciclo retoma la cuenta exactamente donde se quedó.
+  function reanudarCiclo() {
+    setData((prev) => {
+      const pt = prev.pesoTracking || defaultPesoTracking();
+      const hoyISO = fechaISO(new Date());
+      const pausas = (pt.pausas || []).map((p, i, arr) => (i === arr.length - 1 && p.fin === null ? { ...p, fin: hoyISO } : p));
+      return { ...prev, pesoTracking: { ...pt, pausas } };
+    });
+  }
+
   function actualizarConfigPeso(patch) {
     setData((prev) => ({
       ...prev,
@@ -496,13 +523,19 @@ export default function RuedaDePlatos() {
         if (aplicaPeso) perfilNuevo.peso = ultimaNormal.peso;
       }
 
+      const hoyISO = fechaISO(new Date());
+      // Si quedaba una pausa abierta al cerrar el ciclo, se cierra también aquí para no dejar
+      // un hueco sin fecha de fin en el historial.
+      const pausasCerradas = (pt.pausas || []).map((p) => (p.fin === null ? { ...p, fin: hoyISO } : p));
+
       const cicloArchivado = {
         inicio: pt.cicloInicio,
-        fin: fechaISO(new Date()),
+        fin: hoyISO,
         pctSemana: tendencia ? tendencia.pctSemana : null,
         nivel: evaluacion ? evaluacion.nivel : null,
         ajusteKcalAplicado: aplicaKcal ? evaluacion.sugerenciaKcal : 0,
         pesoActualizado: !!aplicaPeso,
+        pausas: pausasCerradas,
       };
 
       // Si el perfil cambió (peso y/o calibración), los objetivos guardados se recalculan ya mismo,
@@ -521,6 +554,7 @@ export default function RuedaDePlatos() {
           cicloInicio: null,
           recordatorioDescartadoFecha: null,
           historialCiclos: [cicloArchivado, ...(pt.historialCiclos || [])].slice(0, 12),
+          pausas: [],
         },
       };
     });
@@ -870,6 +904,8 @@ export default function RuedaDePlatos() {
               onUpdateConfig={actualizarConfigPeso}
               onDismissReminder={descartarRecordatorioHoy}
               onCerrarCiclo={cerrarCicloPeso}
+              onPausarCiclo={pausarCiclo}
+              onReanudarCiclo={reanudarCiclo}
             />
           </>
         )}
@@ -1565,7 +1601,7 @@ function PrintSeguimiento({ entradas, tendencia, titulo }) {
 // Vista de "Seguimiento de peso": mientras el ciclo está abierto, solo se enseña el progreso (cuántas
 // pesadas van, cuánto falta) sin cifras ni gráfica — para no fomentar la obsesión con el número del día.
 // Al llegar a la duración configurada, se enseña la tendencia real y una sugerencia de ajuste opcional.
-function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissReminder, onCerrarCiclo }) {
+function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissReminder, onCerrarCiclo, onPausarCiclo, onReanudarCiclo }) {
   const [pesoInput, setPesoInput] = useState("");
   const [pendienteAnomalia, setPendienteAnomalia] = useState(null);
   const [showConfig, setShowConfig] = useState(false);
@@ -1574,6 +1610,8 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
   const [aplicarKcalToggle, setAplicarKcalToggle] = useState(false);
   const [actualizarPesoToggle, setActualizarPesoToggle] = useState(true);
   const [printPayload, setPrintPayload] = useState(null);
+  const [pausando, setPausando] = useState(false);
+  const [motivoPausa, setMotivoPausa] = useState("");
 
   // Deja el contenido a imprimir listo en el DOM y espera a que React lo pinte (doble
   // requestAnimationFrame) antes de abrir el diálogo de impresión del navegador.
@@ -1587,16 +1625,30 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
   const entradas = pesoTracking.entradas || [];
   const historial = pesoTracking.historial || [];
   const yaRegistradoHoy = entradas.some((e) => e.fecha === hoyISO);
-  const diaSugerido = esDiaSugeridoPeso(pesoTracking.vecesSemana, hoy);
+
+  // Mientras el ciclo esté pausado, esos días no cuentan para el cierre (se suman al plazo del
+  // ciclo, como si no hubieran pasado) y no se dispara el recordatorio de pesaje.
+  const pausas = pesoTracking.pausas || [];
+  const pausaActiva = pausas.find((p) => p.fin === null) || null;
+  const diasEntre = (isoInicio, isoFin) => Math.round((new Date(isoFin + "T00:00:00") - new Date(isoInicio + "T00:00:00")) / 86400000);
+  const totalDiasPausados = pausas.reduce((sum, p) => sum + diasEntre(p.inicio, p.fin || hoyISO), 0);
+
+  const diaSugerido = !pausaActiva && esDiaSugeridoPeso(pesoTracking.vecesSemana, hoy);
   const [recordatorioAbierto, setRecordatorioAbierto] = useState(
     diaSugerido && !yaRegistradoHoy && pesoTracking.recordatorioDescartadoFecha !== hoyISO
   );
 
   const cicloInicioDate = pesoTracking.cicloInicio ? new Date(pesoTracking.cicloInicio + "T00:00:00") : null;
   const diasTranscurridos = cicloInicioDate ? Math.floor((hoy - cicloInicioDate) / 86400000) : 0;
-  const diasCiclo = pesoTracking.duracionSemanas * 7;
+  const diasCiclo = pesoTracking.duracionSemanas * 7 + totalDiasPausados;
   const cicloListoParaCierre = !!cicloInicioDate && diasTranscurridos >= diasCiclo && entradas.length >= 2;
   const totalEsperado = pesoTracking.duracionSemanas * pesoTracking.vecesSemana;
+
+  function confirmarPausa() {
+    onPausarCiclo(motivoPausa.trim());
+    setPausando(false);
+    setMotivoPausa("");
+  }
 
   function intentarGuardar() {
     const peso = Number(pesoInput.replace(",", "."));
@@ -1645,6 +1697,18 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>
             Ciclo terminado — {entradas.length} pesadas registradas
           </div>
+
+          {pausas.length > 0 && (
+            <div style={{ background: "var(--mustard-soft)", borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
+              {pausas.map((p, i) => (
+                <div key={i} style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
+                  ⏸ Pausado del {formatFechaCorta(p.inicio)} al {formatFechaCorta(p.fin || hoyISO)}
+                  {p.motivo ? ` — "${p.motivo}"` : ""}
+                </div>
+              ))}
+            </div>
+          )}
+
           {tendencia ? (
             <>
               <PesoLineChart entradas={entradas} tendencia={tendencia} />
@@ -1744,6 +1808,49 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
               <>Tu primera pesada abre el ciclo. Se revisará dentro de {pesoTracking.duracionSemanas} semanas.</>
             )}
           </div>
+
+          {cicloInicioDate && (
+            pausaActiva ? (
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, background: "var(--mustard-soft)", borderRadius: 8, padding: "9px 11px", marginTop: 8 }}>
+                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
+                  ⏸ Ciclo pausado desde el {formatFechaCorta(pausaActiva.inicio)}
+                  {pausaActiva.motivo ? ` — "${pausaActiva.motivo}"` : ""}. No cuenta para el cierre ni te recordará pesarte.
+                </div>
+                <button
+                  onClick={onReanudarCiclo}
+                  style={{
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                    color: "var(--mustard-dark)", background: "#fff", border: "1px solid var(--mustard)",
+                    borderRadius: 7, padding: "5px 10px", flexShrink: 0, cursor: "pointer",
+                  }}
+                >
+                  ▶ Reanudar
+                </button>
+              </div>
+            ) : pausando ? (
+              <div style={{ marginTop: 8, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <input
+                  value={motivoPausa}
+                  onChange={(e) => setMotivoPausa(e.target.value)}
+                  placeholder="Motivo (opcional)"
+                  style={{ ...inputStyle, flex: "1 1 160px" }}
+                />
+                <ModalBtn variant="solid" onClick={confirmarPausa}>Pausar ciclo</ModalBtn>
+                <ModalBtn variant="ghost" onClick={() => { setPausando(false); setMotivoPausa(""); }}>Cancelar</ModalBtn>
+              </div>
+            ) : (
+              <button
+                onClick={() => setPausando(true)}
+                style={{
+                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                  color: "var(--ink-soft)", background: "none", border: "none", padding: 0,
+                  marginTop: 6, cursor: "pointer",
+                }}
+              >
+                ⏸ Pausar ciclo
+              </button>
+            )
+          )}
 
           {entradas.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 12 }}>
