@@ -3028,7 +3028,15 @@ function HistoryPanel({ history }) {
 
 function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto }) {
   const [query, setQuery] = useState("");
+  const [exportando, setExportando] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Mismo mecanismo que la exportación del menú y del seguimiento de peso: deja el contenido
+  // listo en el DOM (oculto en pantalla) y espera a que React lo pinte antes de abrir "Imprimir".
+  function exportarCatalogo() {
+    setExportando(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  }
 
   const usageCount = (foodId) => ingredients.filter((i) => i.foodId === foodId).length;
   const filtered = query.trim()
@@ -3087,6 +3095,17 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
           }}
         >
           <Plus size={14} /> Nuevo alimento
+        </button>
+        <button
+          onClick={exportarCatalogo}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontSize: 13, fontWeight: 700, color: "var(--ink-soft)", background: "transparent",
+            border: "1px solid var(--line)", borderRadius: 8, padding: "9px 14px",
+            display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
+          }}
+        >
+          <Download size={14} /> Exportar catálogo
         </button>
       </div>
 
@@ -3154,7 +3173,70 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
           </div>
         )}
       </div>
+
+      {exportando && <PrintFoods foods={foods} />}
     </>
+  );
+}
+
+// Ficha imprimible del catálogo de alimentos completo — mismo mecanismo que PrintExport y
+// PrintSeguimiento (oculto en pantalla, visible solo al imprimir vía window.print()).
+function PrintFoods({ foods }) {
+  const ordenados = [...foods].sort((a, b) => a.name.localeCompare(b.name, "es"));
+  return (
+    <div id="print-foods">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #print-foods, #print-foods * { visibility: visible; }
+          #print-foods { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+        @media screen {
+          #print-foods { display: none; }
+        }
+      `}</style>
+      <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
+        <div style={{ marginBottom: 4 }}>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
+            Rueda de Platos
+          </div>
+          <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>Catálogo de alimentos</h1>
+        </div>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "#6b6a5e", marginBottom: 16 }}>
+          {ordenados.length} alimentos · valores por 100 g · exportado el {formatFechaCorta(fechaISO(new Date()))}
+        </div>
+
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5 }}>
+          <thead>
+            <tr style={{ background: "#1f4d38", color: "#fff" }}>
+              {["Alimento", "kcal", "Prot.", "Grasa", "Carb.", "Sal", "Azúc.", "Fibra", "Sat.", "Origen"].map((h) => (
+                <th key={h} style={{ textAlign: "left", padding: "6px 7px", fontWeight: 700 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {ordenados.map((f, i) => (
+              <tr key={f.id} style={{ background: i % 2 === 1 ? "#f1ede0" : "transparent", pageBreakInside: "avoid" }}>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{f.name}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.kcal)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.prot)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.fat)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.carb)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.sal)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.azucares)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.fibra)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.grasaSaturada)}</td>
+                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf", fontSize: 9.5, color: "#6b6a5e" }}>{f.fuente}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 20 }}>
+          Rueda de Platos — catálogo de alimentos exportado
+        </div>
+      </div>
+    </div>
   );
 }
 
