@@ -14,6 +14,8 @@ import {
   esDiaSugeridoPeso, esCambioRadical, calcularTendenciaPeso, evaluarTendencia,
 } from "peso";
 export { fechaISO, esDiaSugeridoPeso, esCambioRadical, calcularTendenciaPeso, evaluarTendencia };
+import { resumenNutrientesSemana } from "salud-publica";
+export { resumenNutrientesSemana };
 
 // ---------- Datos iniciales (todo lo acordado hasta ahora) ----------
 
@@ -1525,6 +1527,9 @@ function NivelBadge({ nivel }) {
     aviso: { label: "Zona alta del rango", color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
     accion: { label: "Ritmo excesivo", color: "var(--rust)", bg: "var(--rust-soft)" },
     "direccion-contraria": { label: "Va en dirección contraria al objetivo", color: "var(--rust)", bg: "var(--rust-soft)" },
+    insuficiente: { label: "Por debajo de lo recomendado", color: "var(--coffee)", bg: "var(--coffee-soft)" },
+    aceptable: { label: "Aceptable, mejorable", color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
+    demasiado: { label: "Por encima de lo recomendado", color: "var(--rust)", bg: "var(--rust-soft)" },
   }[nivel];
   if (!meta) return null;
   return <MacroPill label="" value={meta.label} color={meta.color} bg={meta.bg} />;
@@ -2318,6 +2323,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
           </div>
 
           {showStats && <DayStatsPanel data={data} menu={menu} week={menuWeek} objetivos={objetivos} />}
+          {showStats && <ResumenSaludPublica data={data} menu={menu} week={menuWeek} objetivos={objetivos} />}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {DAYS.map((day) => {
@@ -2728,6 +2734,54 @@ function DayStatsPanel({ data, menu, week, objetivos }) {
       {!objetivos?.kcal && (
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 13, textAlign: "center" }}>
           Fija un objetivo diario (botón de arriba) para ver el % de cumplimiento de este día.
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Media diaria de sal, azúcares y fibra de la semana del menú actual, comparada contra los
+// umbrales de la OMS (ver Logica/salud-publica.js). El umbral de azúcar se ajusta a tu objetivo de
+// kcal si lo tienes calculado; si no, usa la dieta de referencia de 2000 kcal del propio estudio.
+function ResumenSaludPublica({ data, menu, week, objetivos }) {
+  const resumen = resumenNutrientesSemana(data, menu, week, objetivos?.kcal);
+  if (!resumen) return null;
+
+  const filas = [
+    { key: "sal", label: "Sal", unidad: "g", info: resumen.sal, detalle: `recomendado: menos de ${resumen.sal.umbral} g/día` },
+    { key: "azucares", label: "Azúcares libres", unidad: "g", info: resumen.azucares, detalle: `óptimo hasta ${fmt(resumen.azucares.umbralOptimo)} g/día · límite ${fmt(resumen.azucares.umbralMaximo)} g/día` },
+    { key: "fibra", label: "Fibra", unidad: "g", info: resumen.fibra, detalle: `recomendado: al menos ${resumen.fibra.umbral} g/día` },
+  ];
+
+  const avisos = ["sal", "azucares", "fibra"].filter((k) => resumen.faltanDatos[k].length > 0);
+
+  return (
+    <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>
+        Sal, azúcares y fibra — media diaria de esta semana
+      </div>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 12 }}>
+        Sobre {resumen.dias} día{resumen.dias === 1 ? "" : "s"} con comidas · umbrales de la OMS
+        {resumen.azucares.kcalPersonalizada ? " (azúcar ajustado a tu objetivo de kcal)" : ""}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {filas.map((f) => (
+          <div key={f.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink)" }}>
+                {f.label}: <strong>{fmt(f.info.media)} {f.unidad}/día</strong>
+              </div>
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)" }}>{f.detalle}</div>
+            </div>
+            <NivelBadge nivel={f.info.nivel} />
+          </div>
+        ))}
+      </div>
+
+      {avisos.length > 0 && (
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--mustard-dark)", marginTop: 12, lineHeight: 1.5 }}>
+          ⚠ Cálculo incompleto — falta el dato de {avisos.map((k) => (k === "sal" ? "sal" : k === "azucares" ? "azúcares" : "fibra")).join(", ")} en algún alimento usado esta semana. El total real podría ser mayor.
         </div>
       )}
     </div>

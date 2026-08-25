@@ -1,8 +1,8 @@
-const CACHE_NAME = "rueda-de-platos-v6";
+const CACHE_NAME = "rueda-de-platos-v7";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./manifest.json", "./icon.svg",
   "./Logica/comun.js", "./Logica/macros.js", "./Logica/seleccion.js", "./Logica/comida-calculo.js",
-  "./Logica/objetivos.js", "./Logica/menu-generador.js", "./Logica/peso.js",
+  "./Logica/objetivos.js", "./Logica/menu-generador.js", "./Logica/peso.js", "./Logica/salud-publica.js",
 ];
 
 self.addEventListener("install", (event) => {

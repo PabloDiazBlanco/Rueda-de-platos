@@ -3,6 +3,7 @@
 // mantenimiento para comprobar, tras cualquier cambio en app.jsx, que los cálculos siguen dando
 // los mismos resultados conocidos. Los valores "esperado" de aquí abajo se verificaron a mano
 // antes de guardarlos como referencia (agosto de 2026).
+import { DAYS } from "comun";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -35,7 +36,7 @@ function perfilBase(overrides = {}) {
 export function crearGrupos(mod) {
   const {
     calcularObjetivosPerfil, calcularTendenciaPeso, evaluarTendencia, esCambioRadical,
-    esDiaSugeridoPeso, calcularListaCompra, fechaISO,
+    esDiaSugeridoPeso, calcularListaCompra, fechaISO, resumenNutrientesSemana,
   } = mod;
 
   return [
@@ -244,6 +245,36 @@ export function crearGrupos(mod) {
         },
       ],
     },
+    {
+      grupo: "resumenNutrientesSemana",
+      casos: [
+        {
+          nombre: "Sal por encima del límite, fibra en rango, azúcar óptimo (referencia 2000 kcal)",
+          ejecutar: () => {
+            const { data, menu } = escenarioNutrientesSalud();
+            const r = resumenNutrientesSemana(data, menu, 1);
+            return comparar(
+              { sal: r.sal.media, nivelSal: r.sal.nivel, fibra: r.fibra.media, nivelFibra: r.fibra.nivel, azucares: r.azucares.media, nivelAzucar: r.azucares.nivel },
+              { sal: 6.1, nivelSal: "demasiado", fibra: 31, nivelFibra: "optimo", azucares: 3, nivelAzucar: "optimo" }
+            );
+          },
+        },
+        {
+          nombre: "Azúcar ajustado a un objetivo de kcal propio, y aviso de dato faltante",
+          ejecutar: () => {
+            const { data, menu } = escenarioNutrientesSalud({ azucaresAltoEnSal: 20, carboSinDatos: true });
+            const r = resumenNutrientesSemana(data, menu, 1, 1500);
+            return comparar(
+              {
+                nivelAzucar: r.azucares.nivel, nivelFibra: r.fibra.nivel,
+                faltaSal: r.faltanDatos.sal.length, faltaFibra: r.faltanDatos.fibra.length,
+              },
+              { nivelAzucar: "aceptable", nivelFibra: "insuficiente", faltaSal: 1, faltaFibra: 1 }
+            );
+          },
+        },
+      ],
+    },
   ];
 }
 
@@ -275,5 +306,31 @@ function escenarioListaCompra() {
     { id: "m2", week: 1, day: "Martes", mealType: "Cena", closedDish: "Hamburguesa completa con pan", raciones: {} },
     { id: "m3", week: 2, day: "Lunes", mealType: "Comida", protein: "Pollo (carne)", carbo: "Arroz", verdura: "Ensalada", raciones: { protein: 2 } },
   ];
+  return { data, menu };
+}
+
+// Alimento A: alto en sal (6 g/100g). Alimento B: rico en fibra (30 g/100g) y con todos los
+// campos rellenados. Alimento C (opcional, por defecto no se usa): sin sal/azúcares/fibra
+// registrados en el catálogo, para probar el aviso de dato incompleto. Todos los ingredientes
+// llevan 100 g de base, así que a 1 ración el factor de escalado es exactamente 1 — los valores
+// de cada comida son directamente los del alimento por 100 g, sin necesidad de calcular a mano.
+function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
+  const data = {
+    foods: [
+      { id: "f_altoensal", name: "Alto en sal", kcal: 100, prot: 5, fat: 2, carb: 10, sal: 6, azucares: azucaresAltoEnSal ?? 2, fibra: 1 },
+      { id: "f_ricoenfibra", name: "Rico en fibra", kcal: 200, prot: 10, fat: 5, carb: 20, sal: 0.1, azucares: 1, fibra: 30 },
+      { id: "f_sindatos", name: "Sin datos de sal, azúcares y fibra", kcal: 150, prot: 8, fat: 3, carb: 15 },
+    ],
+    ingredients: [
+      { id: "ing_altoensal", name: "Alto en sal", category: "proteina", foodId: "f_altoensal", gramos: 100 },
+      { id: "ing_ricoenfibra", name: "Rico en fibra", category: "carbo", foodId: "f_ricoenfibra", gramos: 100 },
+      { id: "ing_sindatos", name: "Sin datos", category: "carbo", foodId: "f_sindatos", gramos: 100 },
+    ],
+  };
+  const carbo = carboSinDatos ? "Sin datos" : "Rico en fibra";
+  const menu = DAYS.map((day) => ({
+    id: `m_${day}`, week: 1, day, mealType: "Comida",
+    protein: "Alto en sal", carbo, verdura: null, garbanzos: false, raciones: {},
+  }));
   return { data, menu };
 }
