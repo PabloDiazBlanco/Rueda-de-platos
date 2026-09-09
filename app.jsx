@@ -1359,6 +1359,7 @@ function PerfilView({ perfil, onSave }) {
   );
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
   const [saved, setSaved] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   const valid = anioNacimiento && altura && peso;
 
@@ -1417,7 +1418,102 @@ function PerfilView({ perfil, onSave }) {
           </div>
         )}
       </div>
+
+      <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
+          Eliminar cuenta
+        </div>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+          Borra tu cuenta y todos tus datos (alimentos, platos, menús, peso, objetivos) de forma permanente. No se puede deshacer.
+        </div>
+        <button
+          onClick={() => setShowDeleteAccount(true)}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700,
+            color: "var(--rust)", background: "var(--rust-soft)", border: "none", borderRadius: 7,
+            padding: "8px 12px", cursor: "pointer",
+          }}
+        >
+          Eliminar mi cuenta
+        </button>
+      </div>
+
+      {showDeleteAccount && <DeleteAccountModal onClose={() => setShowDeleteAccount(false)} />}
     </>
+  );
+}
+
+// Requiere reautenticación (contraseña, o pop-up de Google si la cuenta usa ese login) antes de
+// borrar nada — así window.deleteAccount (auth-bootstrap.jsx) nunca se encuentra a mitad de
+// camino con una sesión caducada. Escribir "ELIMINAR" es una segunda confirmación deliberadamente
+// más lenta que un simple clic, dado que la acción es irreversible.
+function DeleteAccountModal({ onClose }) {
+  const [password, setPassword] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const esGoogle = window.authProvider === "google";
+  const listo = confirmText.trim().toUpperCase() === "ELIMINAR" && (esGoogle || password);
+
+  function traducirError(code) {
+    const map = {
+      "needs-password": "Introduce tu contraseña para confirmar.",
+      "auth/wrong-password": "Contraseña incorrecta.",
+      "auth/invalid-credential": "Contraseña incorrecta.",
+      "auth/popup-closed-by-user": "Has cerrado la ventana de Google antes de confirmar.",
+    };
+    return map[code] || "No se ha podido eliminar la cuenta. Inténtalo de nuevo.";
+  }
+
+  async function handleDelete() {
+    if (!listo || loading) return;
+    setError("");
+    setLoading(true);
+    try {
+      await window.deleteAccount(password);
+      // Tras borrar la cuenta, el listener de sesión de auth-bootstrap.jsx detecta el cierre
+      // de sesión solo y vuelve a la pantalla de bienvenida — no hace falta hacer nada más aquí.
+    } catch (err) {
+      setLoading(false);
+      setError(traducirError(err.code));
+    }
+  }
+
+  return (
+    <ModalShell onClose={onClose} title="Eliminar cuenta">
+      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: "0 0 14px" }}>
+        Esto borra <strong>permanentemente</strong> tu cuenta y todos tus datos: alimentos, platos,
+        menús, historial de peso y objetivos. No se puede deshacer.
+      </p>
+
+      {!esGoogle && (
+        <input
+          type="password"
+          placeholder="Tu contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          style={{ ...inputStyle, marginBottom: 10 }}
+        />
+      )}
+
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
+        Escribe ELIMINAR para confirmar
+      </div>
+      <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle} />
+
+      {error && (
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", color: "var(--rust)", fontSize: 12, marginTop: 8 }}>
+          {error}
+        </div>
+      )}
+
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
+        <ModalBtn onClick={onClose} variant="ghost">Cancelar</ModalBtn>
+        <ModalBtn onClick={handleDelete} variant="danger" disabled={!listo || loading}>
+          {loading ? "Eliminando…" : "Eliminar cuenta"}
+        </ModalBtn>
+      </div>
+    </ModalShell>
   );
 }
 
@@ -4526,7 +4622,7 @@ const inputStyle = {
   color: "var(--ink)",
 };
 
-function ModalBtn({ children, onClick, variant }) {
+function ModalBtn({ children, onClick, variant, disabled }) {
   const styles = {
     ghost: { background: "transparent", color: "var(--ink-soft)", border: "1px solid var(--line)" },
     solid: { background: "var(--green)", color: "#fff", border: "none" },
@@ -4535,12 +4631,15 @@ function ModalBtn({ children, onClick, variant }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       style={{
         fontFamily: "'Helvetica Neue', Arial, sans-serif",
         fontSize: 13,
         fontWeight: 600,
         padding: "9px 16px",
         borderRadius: 8,
+        opacity: disabled ? 0.5 : 1,
+        cursor: disabled ? "default" : "pointer",
         ...styles[variant],
       }}
     >

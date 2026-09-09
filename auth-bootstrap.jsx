@@ -9,6 +9,10 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
+  deleteUser,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
 } from "firebase/auth";
 import {
   getFirestore,
@@ -136,6 +140,35 @@ function makeFirestoreStorage(uid) {
     },
   };
 }
+
+// ---------- Eliminar cuenta: borra todos los datos y la cuenta de Auth, sin dejar restos ----------
+// Firebase exige una sesión "reciente" para operaciones sensibles como borrar una cuenta, así que
+// primero se reautentica siempre (con Google vía popup, o con la contraseña que pase quien llama)
+// y solo después se borra nada. El orden de borrado importa: los documentos de Firestore se borran
+// ANTES que la cuenta de Auth, porque las reglas de seguridad exigen seguir autenticado como ese
+// uid para poder borrarlos — si se hiciera al revés, el usuario se quedaría sin cuenta pero con
+// datos huérfanos e imposibles de limpiar desde el cliente.
+window.deleteAccount = async function (password) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("No hay ninguna sesión activa.");
+
+  const esGoogle = user.providerData[0]?.providerId === "google.com";
+  if (esGoogle) {
+    await reauthenticateWithPopup(user, new GoogleAuthProvider());
+  } else {
+    if (!password) {
+      const err = new Error("Introduce tu contraseña para confirmar.");
+      err.code = "needs-password";
+      throw err;
+    }
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+  }
+
+  const snaps = await getDocs(collection(db, "users", user.uid, "keys"));
+  await Promise.all(snaps.docs.map((d) => deleteDoc(d.ref)));
+
+  await deleteUser(user);
+};
 
 // ---------- Migración: traer, una sola vez, los datos que ya hubiera en este navegador ----------
 async function migrateLocalDataIfNeeded(uid) {
@@ -462,6 +495,7 @@ function loadMainApp() {
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     window.storage = makeFirestoreStorage(user.uid);
+    window.authProvider = user.providerData[0]?.providerId === "google.com" ? "google" : "password";
     await migrateLocalDataIfNeeded(user.uid);
     renderLogoutButton();
     watchForFirstProfileCompletion(user.uid);
