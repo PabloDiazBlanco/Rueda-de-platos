@@ -421,6 +421,8 @@ function LoginScreen() {
 
         <div style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#a5a394" }}>
           <a href="privacidad.html" style={{ color: "#a5a394" }}>Política de privacidad</a>
+          {" · "}
+          <a href="terminos.html" style={{ color: "#a5a394" }}>Términos de uso</a>
         </div>
       </div>
     </div>
