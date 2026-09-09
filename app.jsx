@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator } from "lucide-react";
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from "macros";
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
@@ -1020,6 +1020,9 @@ function ProfileFields({
   nombre, setNombre, sexo, setSexo, anioNacimiento, setAnioNacimiento, altura, setAltura, peso, setPeso,
   palBase, setPalBase, entrenamientos, setEntrenamientos, objetivo, setObjetivo,
 }) {
+  const [mostrarDesglose, setMostrarDesglose] = useState(false);
+  const datosCompletos = anioNacimiento && altura && peso;
+
   function addEntrenamiento() {
     setEntrenamientos((rows) => [...rows, { id: uid(), tipo: TIPOS_ENTRENAMIENTO[0].key, horas: 1, frecuenciaSemanal: 1 }]);
   }
@@ -1165,7 +1168,99 @@ function ProfileFields({
         al 100% — el objetivo de esta app no es la precisión absoluta, sino ayudarte a tener una relación
         más sana con la comida, sin tener que pensarla desde cero.
       </div>
+
+      <button
+        onClick={() => setMostrarDesglose(true)}
+        disabled={!datosCompletos}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8,
+          width: "100%", border: "1px solid var(--line)", background: "#fff", borderRadius: 8,
+          padding: "9px 10px", fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)",
+          fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          cursor: datosCompletos ? "pointer" : "default", opacity: datosCompletos ? 1 : 0.5,
+        }}
+      >
+        <Calculator size={13} /> Ver cálculo desglosado
+      </button>
+
+      {mostrarDesglose && (
+        <DesgloseCaloriasModal
+          perfil={{
+            sexo,
+            anioNacimiento: Number(anioNacimiento),
+            altura: Number(altura),
+            peso: Number(peso),
+            palBase,
+            entrenamientos: entrenamientos
+              .filter((e) => e.horas && e.frecuenciaSemanal)
+              .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
+            objetivo,
+          }}
+          onClose={() => setMostrarDesglose(false)}
+        />
+      )}
     </>
+  );
+}
+
+// Ventana con el desglose paso a paso del cálculo de kcal (BMR → × PAL → + entrenamiento → etapa),
+// recalculada en vivo con los valores que haya en el formulario aunque no se hayan guardado
+// todavía. Nace de que el BMR puro no se muestra en ningún otro sitio de la app — solo el resultado
+// ya multiplicado por el PAL ("kcal día a día") — y eso puede llevar a pensar que hay un error de
+// cálculo cuando en realidad todo cuadra, solo que son dos magnitudes distintas.
+function DesgloseCaloriasModal({ perfil, onClose }) {
+  const r = calcularObjetivosPerfil(perfil);
+  const nivelPal = PAL_BASE_NIVELES.find((n) => n.key === perfil.palBase);
+  const etapa = OBJETIVO_ETAPAS[r?.objetivo];
+
+  return (
+    <ModalShell title="Cálculo desglosado" onClose={onClose}>
+      {!r ? (
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
+          Completa año de nacimiento, altura y peso para ver el desglose.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <DesgloseFila label="BMR (fórmula de Mifflin-St Jeor)" valor={`${r.bmr} kcal`} />
+          <DesgloseFila label={`× PAL ${nivelPal.pal} — ${nivelPal.label}`} valor={`${r.kcalBase} kcal día a día`} />
+          {r.kcalEntrenamiento > 0 && (
+            <DesgloseFila label="+ Entrenamientos habituales (vía METs)" valor={`${r.kcalEntrenamiento} kcal`} />
+          )}
+          <DesgloseFila label="= TDEE de mantenimiento" valor={`${r.kcalMantenimiento} kcal`} fuerte />
+          {etapa && r.objetivo !== "mantenimiento" && (
+            <DesgloseFila
+              label={`${etapa.label} (${r.ajustePct > 0 ? "+" : ""}${r.ajustePct}%)`}
+              valor={`${r.kcal} kcal`}
+              fuerte
+            />
+          )}
+        </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+        <ModalBtn onClick={onClose} variant="ghost">Cerrar</ModalBtn>
+      </div>
+    </ModalShell>
+  );
+}
+
+function DesgloseFila({ label, valor, fuerte }) {
+  return (
+    <div
+      style={{
+        display: "flex", justifyContent: "space-between", gap: 10, alignItems: "baseline",
+        paddingTop: fuerte ? 8 : 0, borderTop: fuerte ? "1px solid var(--line)" : "none",
+      }}
+    >
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)" }}>{label}</div>
+      <div
+        style={{
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, whiteSpace: "nowrap",
+          fontWeight: fuerte ? 700 : 600, color: fuerte ? "var(--green-dark)" : "var(--ink)",
+        }}
+      >
+        {valor}
+      </div>
+    </div>
   );
 }
 

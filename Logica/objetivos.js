@@ -175,6 +175,7 @@ export function calcularObjetivosPerfil(perfil) {
     prot: Math.round(protG),
     fat: Math.round(fatG),
     carb: Math.round(carbG),
+    bmr: Math.round(bmr),
     kcalBase: Math.round(kcalBase),
     kcalEntrenamiento: Math.round(kcalEntrenamiento),
     kcalMantenimiento: Math.round(kcalMantenimiento),

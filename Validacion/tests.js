@@ -47,7 +47,7 @@ export function crearGrupos(mod) {
           nombre: "Definición · 90kg · pesas 5x/semana · sin calibración",
           ejecutar: () => {
             const r = calcularObjetivosPerfil(perfilBase());
-            return comparar(r, { kcal: 2320, prot: 198, fat: 90, carb: 180, ajustePct: -15 });
+            return comparar(r, { kcal: 2320, prot: 198, fat: 90, carb: 180, ajustePct: -15, bmr: 1875 });
           },
         },
         {
