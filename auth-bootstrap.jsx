@@ -24,7 +24,7 @@ import {
   getDocs,
   onSnapshot,
 } from "firebase/firestore";
-import { getAI, getGenerativeModel, GoogleAIBackend } from "firebase/ai";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 // Identificador público de tu proyecto de Firebase (no es una clave secreta, es normal que
@@ -50,63 +50,27 @@ initializeAppCheck(firebaseApp, {
 
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
+const functions = getFunctions(firebaseApp);
 
-// ---------- Lectura de etiquetas nutricionales por foto (Firebase AI Logic / Gemini) ----------
-// Usa el proveedor "Gemini Developer API" (sin necesidad de plan de pago) y el modelo más barato
-// disponible. Si algún día Google retira este modelo en concreto, solo hay que cambiar el nombre aquí.
-const ai = getAI(firebaseApp, { backend: new GoogleAIBackend() });
-const visionModel = getGenerativeModel(ai, {
-  model: "gemini-3.1-flash-lite",
-  generationConfig: { responseMimeType: "application/json" },
-});
-
-const FOOD_PHOTO_PROMPT =
-  "Eres un asistente que lee etiquetas de información nutricional de productos alimenticios envasados.\n" +
-  "Analiza la foto adjunta y devuelve ÚNICAMENTE un JSON (sin texto adicional, sin bloques de código, sin explicaciones) con esta forma exacta:\n" +
-  '{"kcal": number|null, "prot": number|null, "fat": number|null, "carb": number|null, "sal": number|null, "azucares": number|null, "fibra": number|null, "grasaSaturada": number|null}\n' +
-  "Reglas:\n" +
-  "- Todos los valores son por cada 100 g (o 100 ml) de producto, tal como aparezca en la tabla nutricional de la foto.\n" +
-  "- \"prot\" = proteínas, \"fat\" = grasas totales, \"carb\" = hidratos de carbono totales, \"grasaSaturada\" = de las cuales saturadas, \"azucares\" = de los cuales azúcares.\n" +
-  "- Si la tabla da los valores por ración y no por 100 g, calcula tú el equivalente por 100 g si es posible.\n" +
-  "- Si algún dato no aparece con claridad en la foto, o no estás razonablemente seguro de haberlo leído bien, pon null en ese campo. No inventes ni redondees de forma creativa.";
-
-// Convierte un data URL (data:image/jpeg;base64,....) en las partes que necesita Gemini.
-function dataUrlToInlinePart(dataUrl) {
-  const match = /^data:([^;]+);base64,(.*)$/.exec(dataUrl);
-  if (!match) throw new Error("La imagen no tiene un formato reconocible.");
-  return { inlineData: { mimeType: match[1], data: match[2] } };
-}
-
-const NUMERIC_FIELDS = ["kcal", "prot", "fat", "carb", "sal", "azucares", "fibra", "grasaSaturada"];
+// ---------- Lectura de etiquetas nutricionales por foto ----------
+// La llamada a Gemini en sí ya no vive aquí: vive en functions/analyzeFoodPhoto.js, detrás de una
+// Cloud Function que comprueba que la cuenta es premium y aplica la cuota mensual de forma
+// atómica ANTES de gastar nada. Un límite comprobado solo en el navegador no protegería nada —
+// cualquiera podría saltárselo llamando a Gemini directo, como se hacía antes de tener varios
+// usuarios (ver la hoja de ruta de publicación, Fase 2). Aquí solo queda invocar la función y
+// traducir sus posibles errores; el resto de la app (app.jsx) sigue llamando a
+// window.analyzeFoodPhoto exactamente igual que siempre, sin enterarse del cambio.
+const analyzeFoodPhotoCallable = httpsCallable(functions, "analyzeFoodPhoto");
 
 window.analyzeFoodPhoto = async function (photoDataUrl) {
-  let result;
   try {
-    result = await visionModel.generateContent([dataUrlToInlinePart(photoDataUrl), FOOD_PHOTO_PROMPT]);
+    const respuesta = await analyzeFoodPhotoCallable({ photoDataUrl });
+    return respuesta.data;
   } catch (err) {
-    throw new Error("No se ha podido contactar con el lector de etiquetas. Comprueba tu conexión e inténtalo de nuevo.");
+    // Los mensajes de error que lanza la función ya vienen en español y listos para mostrar
+    // (ver HttpsError en analyzeFoodPhoto.js) — err.message los trae tal cual.
+    throw new Error(err.message || "No se ha podido analizar la foto. Inténtalo de nuevo.");
   }
-
-  let text;
-  try {
-    text = result.response.text();
-  } catch (err) {
-    throw new Error("La respuesta no se pudo leer. Prueba con otra foto.");
-  }
-
-  let parsed;
-  try {
-    parsed = JSON.parse(text);
-  } catch (err) {
-    throw new Error("La foto no se ha podido interpretar como una tabla nutricional. Prueba con otra imagen más nítida.");
-  }
-
-  const clean = {};
-  NUMERIC_FIELDS.forEach((key) => {
-    const v = parsed[key];
-    clean[key] = typeof v === "number" && Number.isFinite(v) ? v : null;
-  });
-  return clean;
 };
 
 // ---------- Almacenamiento respaldado por Firestore, ligado al usuario que ha iniciado sesión ----------

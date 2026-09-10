@@ -86,7 +86,10 @@ async function devolverHuecoDeCuota(uid) {
     .catch((err) => logger.error("No se ha podido devolver el hueco de cuota tras un fallo de Gemini", err));
 }
 
-exports.analyzeFoodPhoto = onCall({ secrets: [geminiApiKey] }, async (request) => {
+// enforceAppCheck: true añade una capa más — solo se acepta la llamada si viene de verdad de la
+// app (mismo mecanismo que ya protege Firestore y Authentication). A diferencia del webhook de
+// Stripe, esta función solo la llama nuestro propio cliente, así que sí tiene sentido exigirlo.
+exports.analyzeFoodPhoto = onCall({ secrets: [geminiApiKey], enforceAppCheck: true }, async (request) => {
   if (!request.auth) {
     throw new HttpsError("unauthenticated", "Hay que iniciar sesión para usar esta función.");
   }
