@@ -12,3 +12,4 @@ admin.initializeApp();
 setGlobalOptions({ maxInstances: 10 });
 
 exports.stripeWebhook = require("./stripeWebhook").stripeWebhook;
+exports.analyzeFoodPhoto = require("./analyzeFoodPhoto").analyzeFoodPhoto;
