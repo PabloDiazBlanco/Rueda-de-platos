@@ -31,11 +31,17 @@ function dataUrlAImagePart(dataUrl) {
   return { inlineData: { mimeType: match[1], data: match[2] } };
 }
 
-function construirPrompt(catalogo, especias) {
+function construirPrompt(catalogo, especias, otrosIngredientes) {
   const listaCatalogo = JSON.stringify(catalogo.map((f) => ({ id: f.id, name: f.name })));
   const lineaEspecias = especias && especias.trim()
     ? `Especias o condimentos que el usuario dice tener disponibles: "${especias.trim()}". Si alguna combina bien con los ingredientes elegidos, menciónala en los pasos — no hace falta usarlas todas.`
     : "El usuario no ha indicado qué especias tiene disponibles — sugiere condimentos habituales igualmente si aportan, pero acláralo en los pasos como una sugerencia genérica, no algo que sepas que tiene.";
+  const lineaOtros = otrosIngredientes && otrosIngredientes.trim()
+    ? `Además de lo que veas en la foto, el usuario dice tener también esto disponible, escrito a mano ` +
+      `(puede que no se vea bien en la imagen, o esté en otro sitio): "${otrosIngredientes.trim()}". Trata la ` +
+      `foto y este texto como un único conjunto de ingredientes disponibles — si algo aparece en los dos ` +
+      `sitios a la vez, cuéntalo solo una vez, no lo dupliques.`
+    : "";
 
   return (
     "Eres un asistente de cocina. Te paso una foto de ingredientes disponibles (nevera, despensa " +
@@ -43,13 +49,15 @@ function construirPrompt(catalogo, especias) {
     listaCatalogo +
     "\n\nTareas:\n" +
     "1. Identifica cuáles de ESOS alimentos concretos (y solo esos, por su id exacto de la lista) " +
-    "reconoces en la foto. Ignora cualquier cosa que veas en la foto que no esté en la lista.\n" +
+    "reconoces en la foto" + (lineaOtros ? " y en el texto adicional que te doy abajo" : "") + ". " +
+    "Ignora cualquier cosa que veas o se mencione y que no esté en la lista.\n" +
     "2. Si reconoces al menos un alimento, sugiere hasta 2 combinaciones de plato distintas, usando " +
     "solo alimentos identificados, con cantidades razonables en gramos.\n" +
-    "3. " + lineaEspecias + "\n\n" +
-    "Devuelve ÚNICAMENTE un JSON (sin texto adicional, sin bloques de código) con esta forma exacta:\n" +
+    "3. " + lineaEspecias + "\n" +
+    (lineaOtros ? "4. " + lineaOtros + "\n" : "") +
+    "\nDevuelve ÚNICAMENTE un JSON (sin texto adicional, sin bloques de código) con esta forma exacta:\n" +
     '[{"nombre": string, "composicion": [{"foodId": string, "gramos": number}], "pasos_breves": string}]\n' +
-    "Si no reconoces ningún alimento del catálogo en la foto, devuelve un array vacío []."
+    "Si no reconoces ningún alimento del catálogo en la foto ni en el texto, devuelve un array vacío []."
   );
 }
 
@@ -107,7 +115,7 @@ exports.suggestMeals = onCall({ secrets: [geminiApiKey], enforceAppCheck: true }
   try {
     const respuesta = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite",
-      contents: [imagePart, { text: construirPrompt(catalogo, datos.especias) }],
+      contents: [imagePart, { text: construirPrompt(catalogo, datos.especias, datos.otrosIngredientes) }],
       config: { responseMimeType: "application/json" },
     });
     texto = respuesta.text;

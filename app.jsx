@@ -1705,6 +1705,7 @@ function PremiumRequiredNotice({ titulo, texto, onGoPremium }) {
 // que cualquier otro plato de la app — nunca son un número que haya devuelto la IA directamente.
 function SuggestMealsView({ data, onGuardarComoCerrado }) {
   const [photo, setPhoto] = useState(null);
+  const [otrosIngredientes, setOtrosIngredientes] = useState("");
   const [especias, setEspecias] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -1727,7 +1728,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
     setSugerencias(null);
     try {
       const catalogo = (data.foods || []).map((f) => ({ id: f.id, name: f.name }));
-      const resultado = await window.suggestMeals({ photoDataUrl: photo, especias, catalogo });
+      const resultado = await window.suggestMeals({ photoDataUrl: photo, especias, otrosIngredientes, catalogo });
       setSugerencias(resultado);
     } catch (err) {
       setError(err.message);
@@ -1762,6 +1763,16 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
           capture="environment"
           onChange={handleFileChange}
           style={{ display: "none" }}
+        />
+
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
+          Otros ingredientes que no salgan bien en la foto (opcional)
+        </div>
+        <input
+          value={otrosIngredientes}
+          onChange={(e) => setOtrosIngredientes(e.target.value)}
+          placeholder="Ej: arroz en la despensa, huevos"
+          style={{ ...inputStyle, marginBottom: 12 }}
         />
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>

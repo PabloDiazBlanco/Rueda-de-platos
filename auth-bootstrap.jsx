@@ -107,9 +107,9 @@ window.createPortalSession = async function () {
 // app.jsx, no la Cloud Function).
 const suggestMealsCallable = httpsCallable(functions, "suggestMeals");
 
-window.suggestMeals = async function ({ photoDataUrl, especias, catalogo }) {
+window.suggestMeals = async function ({ photoDataUrl, especias, otrosIngredientes, catalogo }) {
   try {
-    const respuesta = await suggestMealsCallable({ photoDataUrl, especias, catalogo });
+    const respuesta = await suggestMealsCallable({ photoDataUrl, especias, otrosIngredientes, catalogo });
     return respuesta.data.sugerencias;
   } catch (err) {
     throw new Error(err.message || "No se han podido generar sugerencias. Inténtalo de nuevo.");
