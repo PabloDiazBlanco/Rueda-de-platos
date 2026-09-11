@@ -669,6 +669,7 @@ export default function RuedaDePlatos() {
             onUpdateObjetivos={updateObjetivos}
             onToggleMarcadoCompra={toggleMarcadoCompra}
             onUpsertRule={upsertRule}
+            onToggleComidaCompletada={toggleComidaCompletada}
           />
         )}
 
@@ -1632,7 +1633,8 @@ function DeleteAccountModal({ onClose }) {
 const VENTAJAS_PREMIUM = [
   { icon: Camera, texto: "Lector de etiquetas por foto (20 análisis al mes con IA)" },
   { icon: Scale, texto: "Seguimiento de peso completo: ciclos, tendencia y ajuste automático de objetivos" },
-  { icon: Sparkles, texto: "\"Qué puedo cocinar con lo que tengo\" a partir de una foto de tus ingredientes" },
+  { icon: Sparkles, texto: "\"Qué puedo cocinar con lo que tengo\" a partir de una foto y/o texto con tus ingredientes" },
+  { icon: CalendarDays, texto: "Resumen mensual extendido: objetivo actual, peso del mes y su gráfica de tendencia" },
   { icon: ThumbsUp, texto: "Sin anuncios" },
 ];
 
@@ -2893,7 +2895,7 @@ function BackLink({ label, onClick }) {
   );
 }
 
-function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule }) {
+function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
@@ -3096,7 +3098,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
           onUpsertRule={onUpsertRule}
           onClose={() => setSelectedMealId(null)}
           completadaHoy={!!(((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType])}
-          onToggleCompletada={() => toggleComidaCompletada(selectedMeal.mealType)}
+          onToggleCompletada={() => onToggleComidaCompletada(selectedMeal.mealType)}
         />
       )}
 
