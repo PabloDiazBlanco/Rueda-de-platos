@@ -292,7 +292,18 @@ export default function RuedaDePlatos() {
   const [menu, setMenu] = useState(null);
   const [menuWeek, setMenuWeek] = useState(1);
   const [history, setHistory] = useState([]);
+  const [premium, setPremium] = useState({ active: false });
   const saveTimer = useRef(null);
+
+  // El estado premium vive de verdad en Firestore (users/{uid}.premium, escrito solo por el
+  // webhook de Stripe) — aquí solo nos suscribimos a los cambios en vivo, vía el puente que
+  // expone auth-bootstrap.jsx. Así, si pagas mientras tienes la app abierta, se desbloquea sola
+  // en cuanto el webhook confirma el pago, sin recargar nada.
+  useEffect(() => {
+    if (typeof window.subscribePremiumStatus !== "function") return;
+    const unsub = window.subscribePremiumStatus(setPremium);
+    return unsub;
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -871,8 +882,9 @@ export default function RuedaDePlatos() {
               onSelect={setTab}
               cards={[
                 { key: "perfil-datos", label: "Datos personales", desc: "perfil y objetivos", icon: User, color: "var(--green)" },
-                { key: "perfil-peso", label: "Seguimiento de peso", desc: "pesadas y tendencia", icon: Scale, color: "var(--coffee)" },
+                { key: "perfil-peso", label: "Seguimiento de peso", desc: premium.active ? "pesadas y tendencia" : "función premium", icon: Scale, color: "var(--coffee)" },
                 { key: "perfil-medidas", label: "Medidas corporales", desc: "próximamente", icon: Ruler, color: "var(--berry)" },
+                { key: "perfil-premium", label: premium.active ? "Premium" : "Hazte premium", desc: premium.active ? "gestionar suscripción" : "desbloquea más", icon: Sparkles, color: "var(--mustard-dark)" },
                 { key: "perfil-documentos", label: "Documentos", desc: "por qué funciona así", icon: FileText, color: "var(--olive)" },
               ]}
             />
@@ -899,16 +911,31 @@ export default function RuedaDePlatos() {
         {tab === "perfil-peso" && (
           <>
             <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
-            <PesoView
-              perfil={data.perfil}
-              pesoTracking={data.pesoTracking || defaultPesoTracking()}
-              onAddPeso={addPesoEntrada}
-              onUpdateConfig={actualizarConfigPeso}
-              onDismissReminder={descartarRecordatorioHoy}
-              onCerrarCiclo={cerrarCicloPeso}
-              onPausarCiclo={pausarCiclo}
-              onReanudarCiclo={reanudarCiclo}
-            />
+            {premium.active ? (
+              <PesoView
+                perfil={data.perfil}
+                pesoTracking={data.pesoTracking || defaultPesoTracking()}
+                onAddPeso={addPesoEntrada}
+                onUpdateConfig={actualizarConfigPeso}
+                onDismissReminder={descartarRecordatorioHoy}
+                onCerrarCiclo={cerrarCicloPeso}
+                onPausarCiclo={pausarCiclo}
+                onReanudarCiclo={reanudarCiclo}
+              />
+            ) : (
+              <PremiumRequiredNotice
+                titulo="El seguimiento de peso es premium"
+                texto="Ciclos, tendencia y ajuste automático de tus objetivos según cómo evoluciona tu peso real — parte de la suscripción premium."
+                onGoPremium={() => setTab("perfil-premium")}
+              />
+            )}
+          </>
+        )}
+
+        {tab === "perfil-premium" && (
+          <>
+            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <PremiumView premium={premium} />
           </>
         )}
 
@@ -1514,6 +1541,133 @@ function DeleteAccountModal({ onClose }) {
         </ModalBtn>
       </div>
     </ModalShell>
+  );
+}
+
+// ---------- Premium ----------
+
+const VENTAJAS_PREMIUM = [
+  { icon: Camera, texto: "Lector de etiquetas por foto (20 análisis al mes con IA)" },
+  { icon: Scale, texto: "Seguimiento de peso completo: ciclos, tendencia y ajuste automático de objetivos" },
+  { icon: Sparkles, texto: "\"Qué puedo cocinar con lo que tengo\" a partir de una foto de tus ingredientes" },
+  { icon: ThumbsUp, texto: "Sin anuncios" },
+];
+
+// Pantalla única para hacerse premium o gestionar la suscripción ya activa — la diferencia entre
+// las dos la decide "premium.active", que llega desde Firestore en vivo (ver
+// window.subscribePremiumStatus en auth-bootstrap.jsx). El botón redirige entero a Stripe
+// (Checkout o el portal de facturación, según el caso) — no hay formulario de tarjeta propio en
+// ningún sitio de esta app.
+function PremiumView({ premium }) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function irA(crearSesion) {
+    setError("");
+    setLoading(true);
+    try {
+      const url = await crearSesion();
+      window.location.href = url;
+    } catch (err) {
+      setLoading(false);
+      setError(err.message);
+    }
+  }
+
+  return (
+    <div style={{ maxWidth: 480 }}>
+      <div style={{ textAlign: "center", marginBottom: 20 }}>
+        <Sparkles size={30} color="var(--mustard-dark)" style={{ marginBottom: 8 }} />
+        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 24, color: "var(--green-dark)", margin: "0 0 4px" }}>
+          {premium.active ? "Ya eres premium" : "Hazte premium"}
+        </h1>
+        {!premium.active && (
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
+            2,99€/mes — cancela cuando quieras
+          </div>
+        )}
+      </div>
+
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {VENTAJAS_PREMIUM.map(({ icon: Icon, texto }) => (
+            <div key={texto} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+              <Icon size={16} color="var(--mustard-dark)" style={{ flexShrink: 0, marginTop: 1 }} />
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)" }}>{texto}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {error && (
+        <div
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--rust)",
+            background: "var(--rust-soft)", borderRadius: 8, padding: "9px 12px", marginBottom: 12,
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {premium.active ? (
+        <button
+          onClick={() => irA(window.createPortalSession)}
+          disabled={loading}
+          style={{
+            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            color: "var(--green-dark)", background: "#fff", border: "1px solid var(--line)",
+            borderRadius: 9, padding: "12px", cursor: loading ? "default" : "pointer",
+          }}
+        >
+          {loading ? "Un momento…" : "Gestionar mi suscripción"}
+        </button>
+      ) : (
+        <button
+          onClick={() => irA(window.createCheckoutSession)}
+          disabled={loading}
+          style={{
+            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            color: "#fff", background: "var(--mustard-dark)", border: "none",
+            borderRadius: 9, padding: "12px", cursor: loading ? "default" : "pointer",
+          }}
+        >
+          {loading ? "Un momento…" : "Suscribirme"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Aviso reutilizable para cualquier sitio de la app que quiera bloquear contenido a quien no sea
+// premium — hoy solo lo usa el seguimiento de peso, pero está pensado para poder reutilizarlo
+// tal cual con la función de "qué puedo cocinar" en cuanto se construya.
+function PremiumRequiredNotice({ titulo, texto, onGoPremium }) {
+  return (
+    <div
+      style={{
+        background: "var(--mustard-soft)", border: "1px dashed var(--mustard-dark)", borderRadius: 12,
+        padding: "24px 20px", textAlign: "center", maxWidth: 460,
+      }}
+    >
+      <Sparkles size={26} color="var(--mustard-dark)" style={{ marginBottom: 10 }} />
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
+        {titulo}
+      </div>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 16, lineHeight: 1.5 }}>
+        {texto}
+      </div>
+      <button
+        onClick={onGoPremium}
+        style={{
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+          color: "#fff", background: "var(--mustard-dark)", border: "none", borderRadius: 8,
+          padding: "9px 16px", cursor: "pointer",
+        }}
+      >
+        Ver premium
+      </button>
+    </div>
   );
 }
 

@@ -73,6 +73,32 @@ window.analyzeFoodPhoto = async function (photoDataUrl) {
   }
 };
 
+// ---------- Suscripción premium: Checkout y portal de gestión de Stripe ----------
+// Ambas funciones devuelven { url } — la app solo tiene que redirigir a esa URL
+// (window.location.href = url), Stripe se encarga de todo lo demás (formulario de pago, o el
+// portal de cancelación/cambio de tarjeta). Ver createCheckoutSession.js y
+// createPortalSession.js para el porqué de cada dato que se manda.
+const createCheckoutSessionCallable = httpsCallable(functions, "createCheckoutSession");
+const createPortalSessionCallable = httpsCallable(functions, "createPortalSession");
+
+window.createCheckoutSession = async function () {
+  try {
+    const respuesta = await createCheckoutSessionCallable();
+    return respuesta.data.url;
+  } catch (err) {
+    throw new Error(err.message || "No se ha podido iniciar el pago. Inténtalo de nuevo.");
+  }
+};
+
+window.createPortalSession = async function () {
+  try {
+    const respuesta = await createPortalSessionCallable();
+    return respuesta.data.url;
+  } catch (err) {
+    throw new Error(err.message || "No se ha podido abrir la gestión de tu suscripción. Inténtalo de nuevo.");
+  }
+};
+
 // ---------- Almacenamiento respaldado por Firestore, ligado al usuario que ha iniciado sesión ----------
 // Misma forma que window.storage (get/set/delete/list), para que el resto de la app
 // (app.jsx) funcione exactamente igual sin tener que tocarlo.
@@ -132,6 +158,26 @@ window.deleteAccount = async function (password) {
   await Promise.all(snaps.docs.map((d) => deleteDoc(d.ref)));
 
   await deleteUser(user);
+};
+
+// ---------- Estado premium, en vivo ----------
+// El campo "premium" de users/{uid} solo lo escribe el webhook de Stripe (ver Fase 2 y las
+// reglas de Firestore) — el cliente aquí solo LEE, y lo hace con onSnapshot para que la app se
+// desbloquee sola en cuanto el webhook confirme el pago, sin que el usuario tenga que recargar
+// la página. app.jsx llama a esto una vez al montar y guarda el resultado en su propio estado de
+// React (mismo patrón que window.storage: el puente con Firebase vive aquí, app.jsx no sabe nada
+// de Firestore). Devuelve la función de "dejar de escuchar" de onSnapshot, para poder limpiarla
+// si el componente se desmonta.
+window.subscribePremiumStatus = function (callback) {
+  const user = auth.currentUser;
+  if (!user) {
+    callback({ active: false });
+    return () => {};
+  }
+  return onSnapshot(doc(db, "users", user.uid), (snap) => {
+    const datos = snap.data() || {};
+    callback(datos.premium || { active: false });
+  });
 };
 
 // ---------- Migración: traer, una sola vez, los datos que ya hubiera en este navegador ----------
