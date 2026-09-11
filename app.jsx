@@ -16,6 +16,8 @@ import {
 export { fechaISO, esDiaSugeridoPeso, esCambioRadical, calcularTendenciaPeso, evaluarTendencia };
 import { resumenNutrientesSemana } from "salud-publica";
 export { resumenNutrientesSemana };
+import { calcularResumenMensual, pesoEnMes } from "resumen-mensual";
+export { calcularResumenMensual, pesoEnMes };
 
 // ---------- Datos iniciales (todo lo acordado hasta ahora) ----------
 
@@ -264,6 +266,20 @@ function migrateData(rawData) {
     changed = true;
   }
 
+  // Comidas completadas (resumen mensual): registro por fecha real, aparte del menú en sí.
+  if (!data.comidasCompletadas) {
+    data.comidasCompletadas = {};
+    changed = true;
+  }
+
+  // Número de comidas al día: solo se usa para calcular la fracción del resumen mensual, no
+  // afecta a cómo se genera el menú (que sigue teniendo sus 4 tipos fijos). Por defecto 4, para
+  // que perfiles ya existentes no vean cambiar su fracción de golpe.
+  if (data.perfil && data.perfil.comidasPorDia === undefined) {
+    data.perfil.comidasPorDia = 4;
+    changed = true;
+  }
+
   return { data, changed };
 }
 
@@ -383,6 +399,22 @@ export default function RuedaDePlatos() {
         window.storage.set(MENU_STORAGE_KEY, JSON.stringify(next), false).catch(() => {});
       }, 400);
       return next;
+    });
+  }
+
+  // Marca (o desmarca) el tipo de comida indicado como completado HOY — no para el día abstracto
+  // "semana 1, lunes" del menú generado, que no tiene fecha real. La idea es que se marque en el
+  // momento en que de verdad comes, no que quede ligado a una casilla del menú que puede cambiar
+  // si regeneras. Vive en data.comidasCompletadas (persistente, como cualquier otro dato de la
+  // app), completamente aparte de "menu" — regenerar el menú nunca borra este historial.
+  function toggleComidaCompletada(mealType) {
+    const hoy = fechaISO(new Date());
+    setData((prev) => {
+      const actual = prev.comidasCompletadas || {};
+      const delDia = { ...(actual[hoy] || {}) };
+      if (delDia[mealType]) delete delDia[mealType];
+      else delDia[mealType] = true;
+      return { ...prev, comidasCompletadas: { ...actual, [hoy]: delDia } };
     });
   }
 
@@ -911,6 +943,7 @@ export default function RuedaDePlatos() {
               cards={[
                 { key: "perfil-datos", label: "Datos personales", desc: "perfil y objetivos", icon: User, color: "var(--green)" },
                 { key: "perfil-peso", label: "Seguimiento de peso", desc: premium.active ? "pesadas y tendencia" : "función premium", icon: Scale, color: "var(--coffee)" },
+                { key: "perfil-resumen", label: "Resumen mensual", desc: "comidas completadas", icon: CalendarDays, color: "var(--olive)" },
                 { key: "perfil-medidas", label: "Medidas corporales", desc: "próximamente", icon: Ruler, color: "var(--berry)" },
                 { key: "perfil-premium", label: premium.active ? "Premium" : "Hazte premium", desc: premium.active ? "gestionar suscripción" : "desbloquea más", icon: Sparkles, color: "var(--mustard-dark)" },
                 { key: "perfil-documentos", label: "Documentos", desc: "por qué funciona así", icon: FileText, color: "var(--olive)" },
@@ -964,6 +997,13 @@ export default function RuedaDePlatos() {
           <>
             <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
             <PremiumView premium={premium} />
+          </>
+        )}
+
+        {tab === "perfil-resumen" && (
+          <>
+            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} />
           </>
         )}
 
@@ -1413,6 +1453,9 @@ function PerfilView({ perfil, onSave }) {
     (perfil?.entrenamientos || []).map((e) => ({ id: uid(), ...e }))
   );
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
+  // Solo se usa para la fracción del resumen mensual (f3-11) — no afecta al generador de menú,
+  // que sigue teniendo siempre sus 4 tipos de comida fijos.
+  const [comidasPorDia, setComidasPorDia] = useState(perfil?.comidasPorDia ?? 4);
   const [saved, setSaved] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
@@ -1431,6 +1474,7 @@ function PerfilView({ perfil, onSave }) {
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
+      comidasPorDia: Number(comidasPorDia) || 4,
     });
     setSaved(true);
   }
@@ -1449,6 +1493,17 @@ function PerfilView({ perfil, onSave }) {
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
           objetivo={objetivo} setObjetivo={setObjetivo}
         />
+
+        <Field label="Comidas al día (para tu resumen mensual)">
+          <input
+            type="number" min={1} max={8} value={comidasPorDia}
+            onChange={(e) => setComidasPorDia(e.target.value)}
+            style={inputStyle}
+          />
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+            Cuántas comidas sueles hacer al día de verdad — solo se usa para calcular tu fracción de comidas completadas, no cambia cómo se genera el menú.
+          </div>
+        </Field>
 
         <button
           onClick={handleSave}
@@ -1580,6 +1635,109 @@ const VENTAJAS_PREMIUM = [
   { icon: Sparkles, texto: "\"Qué puedo cocinar con lo que tengo\" a partir de una foto de tus ingredientes" },
   { icon: ThumbsUp, texto: "Sin anuncios" },
 ];
+
+// ---------- Resumen mensual (f3-11) ----------
+// Disponible para todos: la fracción de comidas completadas ya se ve en el plan gratis. Lo que
+// cambia con premium es la profundidad — objetivo actual, peso del mes y su gráfica de
+// tendencia (el mismo PesoLineChart que ya usa Seguimiento de peso, solo que aquí recibe las
+// pesadas ya filtradas a este mes en concreto) — y la frase de cierre que junta todo.
+function ResumenMensualView({ data, premium, onGoPremium }) {
+  const hoy = new Date();
+  const mesISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
+  const nombreMes = hoy.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+
+  const resumen = calcularResumenMensual(data, mesISO, hoy);
+  const objetivosCalculados = calcularObjetivosPerfil(data.perfil);
+  const etapa = objetivosCalculados ? OBJETIVO_ETAPAS[objetivosCalculados.objetivo] : null;
+  const pesoDelMes = pesoEnMes(data.pesoTracking, mesISO);
+  const tendenciaDelMes = pesoDelMes ? calcularTendenciaPeso(pesoDelMes.entradas) : null;
+
+  return (
+    <>
+      <SectionIntro text={`Cuenta las comidas que has marcado como completadas desde el detalle de cada comida en el Menú — se guarda con fecha real, aunque regeneres el menú.`} />
+
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "20px", marginBottom: 16, maxWidth: 480, textAlign: premium.active ? "left" : "center" }}>
+        {!premium.active && (
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)", textTransform: "capitalize", marginBottom: 4 }}>
+            {nombreMes}
+          </div>
+        )}
+        <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 40, color: "var(--green-dark)", lineHeight: 1 }}>
+          {resumen.porcentaje}%
+        </div>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>
+          {resumen.completadas} de {resumen.esperadas} comidas completadas
+        </div>
+        {!premium.active && (
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 10, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
+            Basado en {resumen.comidasPorDia} comidas al día (configurado en tu perfil)
+          </div>
+        )}
+      </div>
+
+      {premium.active ? (
+        <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "20px", maxWidth: 480 }}>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)", textTransform: "capitalize", marginBottom: 12 }}>
+            {nombreMes}
+          </div>
+
+          {etapa && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "9px 0", borderTop: "1px solid var(--line)" }}>
+              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>Objetivo actual</span>
+              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", textAlign: "right" }}>
+                {etapa.label}<br />{objetivosCalculados.kcal} kcal/día
+              </span>
+            </div>
+          )}
+
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "9px 0", borderTop: "1px solid var(--line)" }}>
+            <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>Peso este mes</span>
+            <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
+              {pesoDelMes ? (
+                <>
+                  {fmt(pesoDelMes.inicio)} → {fmt(pesoDelMes.fin)} kg{" "}
+                  <span style={{ color: "var(--green)" }}>({pesoDelMes.delta > 0 ? "+" : ""}{fmt(pesoDelMes.delta)} kg)</span>
+                </>
+              ) : (
+                "sin pesadas este mes"
+              )}
+            </span>
+          </div>
+
+          {pesoDelMes && (
+            <div style={{ marginTop: 14 }}>
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 6 }}>
+                Tendencia de peso · {nombreMes}
+              </div>
+              <PesoLineChart entradas={pesoDelMes.entradas} tendencia={tendenciaDelMes} />
+            </div>
+          )}
+
+          <div
+            style={{
+              marginTop: 16, background: "var(--green-soft)", borderRadius: 8, padding: "12px 14px",
+              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)", lineHeight: 1.5,
+            }}
+          >
+            Has completado el <strong>{resumen.porcentaje}%</strong> de tus comidas
+            {pesoDelMes ? (
+              <> , y tu peso {pesoDelMes.delta < 0 ? "ha bajado" : pesoDelMes.delta > 0 ? "ha subido" : "se ha mantenido"}
+              {pesoDelMes.delta !== 0 ? ` ${fmt(Math.abs(pesoDelMes.delta))} kg` : ""} este mes.</>
+            ) : (
+              " este mes."
+            )}
+          </div>
+        </div>
+      ) : (
+        <PremiumRequiredNotice
+          titulo="El resumen completo es premium"
+          texto="Con premium, este resumen se combina con tu objetivo actual y tu tendencia de peso del mes, con gráfica incluida."
+          onGoPremium={onGoPremium}
+        />
+      )}
+    </>
+  );
+}
 
 // Pantalla única para hacerse premium o gestionar la suscripción ya activa — la diferencia entre
 // las dos la decide "premium.active", que llega desde Firestore en vivo (ver
@@ -1722,7 +1880,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
   }
 
   async function handleAnalizar() {
-    if (!photo) return;
+    if (!photo && !otrosIngredientes.trim()) return;
     setLoading(true);
     setError("");
     setSugerencias(null);
@@ -1739,7 +1897,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
 
   return (
     <>
-      <SectionIntro text="Manda una foto de lo que tengas (nevera, despensa...) y te sugerimos combinaciones hechas solo con alimentos de tu propio catálogo — las macros son reales, no una estimación de la IA." />
+      <SectionIntro text="Manda una foto de lo que tengas (nevera, despensa...), escribe qué ingredientes tienes, o ambas cosas — te sugerimos combinaciones hechas solo con alimentos de tu propio catálogo, con macros reales, no una estimación de la IA." />
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px", marginBottom: 16, maxWidth: 480 }}>
         {photo ? (
@@ -1754,7 +1912,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
             padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 10,
           }}
         >
-          <Camera size={14} /> {photo ? "Cambiar foto" : "Hacer/subir foto"}
+          <Camera size={14} /> {photo ? "Cambiar foto" : "Hacer/subir foto (opcional)"}
         </button>
         <input
           ref={fileInputRef}
@@ -1766,7 +1924,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
         />
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
-          Otros ingredientes que no salgan bien en la foto (opcional)
+          {photo ? "Otros ingredientes que no salgan bien en la foto (opcional)" : "Ingredientes que tienes — puedes escribirlos aquí sin necesidad de foto"}
         </div>
         <input
           value={otrosIngredientes}
@@ -1787,11 +1945,11 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
 
         <button
           onClick={handleAnalizar}
-          disabled={!photo || loading}
+          disabled={(!photo && !otrosIngredientes.trim()) || loading}
           style={{
             width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
-            color: "#fff", background: photo && !loading ? "var(--green)" : "var(--line)", border: "none",
-            borderRadius: 9, padding: "12px", cursor: photo && !loading ? "pointer" : "default",
+            color: "#fff", background: (photo || otrosIngredientes.trim()) && !loading ? "var(--green)" : "var(--line)", border: "none",
+            borderRadius: 9, padding: "12px", cursor: (photo || otrosIngredientes.trim()) && !loading ? "pointer" : "default",
           }}
         >
           {loading ? "Un momento…" : "¿Qué puedo cocinar?"}
@@ -2635,7 +2793,7 @@ const MACRO_CATS = ["proteina", "carbo", "verdura", "grasa"];
 const ESPECIALES_CATS = ["desayuno", "merienda", "cerrado", "especial"];
 const CONFIG_LEAF_TABS = [...MACRO_CATS, ...ESPECIALES_CATS, "combos", "alimentos", "cocinar"];
 const CONFIG_TABS = ["config-root", "macros-root", "especiales-root", ...CONFIG_LEAF_TABS];
-const PERFIL_TABS = ["perfil-root", "perfil-datos", "perfil-peso", "perfil-medidas", "perfil-documentos"];
+const PERFIL_TABS = ["perfil-root", "perfil-datos", "perfil-peso", "perfil-resumen", "perfil-medidas", "perfil-premium", "perfil-documentos"];
 
 function groupOfCat(cat) {
   if (MACRO_CATS.includes(cat)) return "macros-root";
@@ -2931,7 +3089,15 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
       <PrintExport data={data} menu={menu} />
 
       {selectedMeal && (
-        <MealDetailModal meal={selectedMeal} data={data} onUpdateMeal={onUpdateMeal} onUpsertRule={onUpsertRule} onClose={() => setSelectedMealId(null)} />
+        <MealDetailModal
+          meal={selectedMeal}
+          data={data}
+          onUpdateMeal={onUpdateMeal}
+          onUpsertRule={onUpsertRule}
+          onClose={() => setSelectedMealId(null)}
+          completadaHoy={!!(((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType])}
+          onToggleCompletada={() => toggleComidaCompletada(selectedMeal.mealType)}
+        />
       )}
 
       {editingObjetivos && (
@@ -3529,7 +3695,7 @@ function ComboAfinidad({ meal, data, onUpsertRule }) {
   );
 }
 
-function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose }) {
+function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, completadaHoy, onToggleCompletada }) {
   const components = mealComponents(data, meal);
   const totals = mealTotals(data, meal);
 
@@ -3644,6 +3810,19 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose }) {
           </button>
         )}
       </div>
+
+      <button
+        onClick={onToggleCompletada}
+        style={{
+          width: "100%", marginTop: 14, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+          color: completadaHoy ? "#fff" : "var(--green-dark)",
+          background: completadaHoy ? "var(--green)" : "var(--green-soft)",
+          border: "none", borderRadius: 9, padding: "11px",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer",
+        }}
+      >
+        <Check size={15} /> {completadaHoy ? "Completada hoy" : "Marcar como completada hoy"}
+      </button>
     </ModalShell>
   );
 }

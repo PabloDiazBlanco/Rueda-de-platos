@@ -25,39 +25,65 @@ const geminiApiKey = defineSecret("GEMINI_API_KEY");
 // función más pensada para "de vez en cuando, no sé qué cenar" que para uso diario.
 const LIMITE_COCINAR_MES = 10;
 
+// La foto es opcional — se puede usar solo con texto (ver más abajo, en el handler, la
+// comprobación de que al menos una de las dos cosas esté presente). Si no hay foto, esta función
+// simplemente no se llama y no se añade ninguna parte de imagen al mensaje para Gemini.
 function dataUrlAImagePart(dataUrl) {
   const match = /^data:([^;]+);base64,(.*)$/.exec(dataUrl || "");
   if (!match) throw new HttpsError("invalid-argument", "La imagen no tiene un formato reconocible.");
   return { inlineData: { mimeType: match[1], data: match[2] } };
 }
 
-function construirPrompt(catalogo, especias, otrosIngredientes) {
+function construirPrompt(catalogo, especias, otrosIngredientes, hayFoto) {
   const listaCatalogo = JSON.stringify(catalogo.map((f) => ({ id: f.id, name: f.name })));
-  const lineaEspecias = especias && especias.trim()
-    ? `Especias o condimentos que el usuario dice tener disponibles: "${especias.trim()}". Si alguna combina bien con los ingredientes elegidos, menciónala en los pasos — no hace falta usarlas todas.`
-    : "El usuario no ha indicado qué especias tiene disponibles — sugiere condimentos habituales igualmente si aportan, pero acláralo en los pasos como una sugerencia genérica, no algo que sepas que tiene.";
-  const lineaOtros = otrosIngredientes && otrosIngredientes.trim()
-    ? `Además de lo que veas en la foto, el usuario dice tener también esto disponible, escrito a mano ` +
-      `(puede que no se vea bien en la imagen, o esté en otro sitio): "${otrosIngredientes.trim()}". Trata la ` +
-      `foto y este texto como un único conjunto de ingredientes disponibles — si algo aparece en los dos ` +
-      `sitios a la vez, cuéntalo solo una vez, no lo dupliques.`
-    : "";
+  const hayOtros = !!(otrosIngredientes && otrosIngredientes.trim());
+
+  // Cómo se describe la fuente de ingredientes, según qué combinación de foto/texto haya —
+  // construido como lista de tareas numeradas dinámicamente, para no tener que llevar la cuenta
+  // de los números a mano según qué combinación de datos haya esta vez (con foto, sin foto, con
+  // o sin texto adicional...).
+  const fuente = hayFoto && hayOtros
+    ? "una foto de ingredientes disponibles (nevera, despensa o encimera) y una lista escrita a mano con más ingredientes"
+    : hayFoto
+    ? "una foto de ingredientes disponibles (nevera, despensa o encimera)"
+    : "una lista de ingredientes disponibles, escrita a mano (esta vez sin foto)";
+
+  const tareas = [];
+  tareas.push(
+    "Identifica cuáles de ESOS alimentos concretos (y solo esos, por su id exacto de la lista) " +
+    "reconoces" + (hayFoto && hayOtros ? " en la foto y en el texto" : hayFoto ? " en la foto" : " en el texto") +
+    ". Ignora cualquier cosa que veas o se mencione y que no esté en la lista."
+  );
+  if (hayFoto && hayOtros) {
+    tareas.push(
+      `El usuario dice tener también esto disponible, escrito a mano (puede que no se vea bien en la ` +
+      `foto, o esté en otro sitio): "${otrosIngredientes.trim()}". Trata la foto y este texto como un único ` +
+      `conjunto de ingredientes disponibles — si algo aparece en los dos sitios a la vez, cuéntalo solo una vez.`
+    );
+  } else if (!hayFoto) {
+    tareas.push(`Los ingredientes disponibles, tal como los ha escrito el usuario: "${otrosIngredientes.trim()}".`);
+  }
+  tareas.push(
+    "Si reconoces al menos un alimento, sugiere hasta 2 combinaciones de plato distintas, usando " +
+    "solo alimentos identificados, con cantidades razonables en gramos."
+  );
+  tareas.push(
+    especias && especias.trim()
+      ? `Especias o condimentos que el usuario dice tener disponibles: "${especias.trim()}". Si alguna ` +
+        `combina bien con los ingredientes elegidos, menciónala en los pasos — no hace falta usarlas todas.`
+      : "El usuario no ha indicado qué especias tiene disponibles — sugiere condimentos habituales " +
+        "igualmente si aportan, pero acláralo en los pasos como una sugerencia genérica, no algo que sepas que tiene."
+  );
 
   return (
-    "Eres un asistente de cocina. Te paso una foto de ingredientes disponibles (nevera, despensa " +
-    "o encimera) y el catálogo de alimentos que el usuario ya tiene fichado en su app, con su id:\n\n" +
+    `Eres un asistente de cocina. Te paso ${fuente}, y el catálogo de alimentos que el usuario ` +
+    "ya tiene fichado en su app, con su id:\n\n" +
     listaCatalogo +
     "\n\nTareas:\n" +
-    "1. Identifica cuáles de ESOS alimentos concretos (y solo esos, por su id exacto de la lista) " +
-    "reconoces en la foto" + (lineaOtros ? " y en el texto adicional que te doy abajo" : "") + ". " +
-    "Ignora cualquier cosa que veas o se mencione y que no esté en la lista.\n" +
-    "2. Si reconoces al menos un alimento, sugiere hasta 2 combinaciones de plato distintas, usando " +
-    "solo alimentos identificados, con cantidades razonables en gramos.\n" +
-    "3. " + lineaEspecias + "\n" +
-    (lineaOtros ? "4. " + lineaOtros + "\n" : "") +
-    "\nDevuelve ÚNICAMENTE un JSON (sin texto adicional, sin bloques de código) con esta forma exacta:\n" +
+    tareas.map((t, i) => `${i + 1}. ${t}`).join("\n") +
+    "\n\nDevuelve ÚNICAMENTE un JSON (sin texto adicional, sin bloques de código) con esta forma exacta:\n" +
     '[{"nombre": string, "composicion": [{"foodId": string, "gramos": number}], "pasos_breves": string}]\n' +
-    "Si no reconoces ningún alimento del catálogo en la foto ni en el texto, devuelve un array vacío []."
+    "Si no reconoces ningún alimento del catálogo, devuelve un array vacío []."
   );
 }
 
@@ -100,7 +126,12 @@ exports.suggestMeals = onCall({ secrets: [geminiApiKey], enforceAppCheck: true }
 
   const uid = request.auth.uid;
   const datos = request.data || {};
-  const imagePart = dataUrlAImagePart(datos.photoDataUrl);
+  const hayFoto = !!datos.photoDataUrl;
+  const hayOtros = !!(datos.otrosIngredientes && datos.otrosIngredientes.trim());
+  if (!hayFoto && !hayOtros) {
+    throw new HttpsError("invalid-argument", "Manda una foto, escribe qué ingredientes tienes, o ambas cosas.");
+  }
+  const imagePart = hayFoto ? dataUrlAImagePart(datos.photoDataUrl) : null;
   const catalogo = Array.isArray(datos.catalogo) ? datos.catalogo.filter((f) => f && f.id && f.name) : [];
   if (!catalogo.length) {
     throw new HttpsError("invalid-argument", "Tu catálogo de alimentos está vacío — añade alimentos antes de usar esta función.");
@@ -110,12 +141,14 @@ exports.suggestMeals = onCall({ secrets: [geminiApiKey], enforceAppCheck: true }
 
   const ai = new GoogleGenAI({ apiKey: geminiApiKey.value() });
   const idsValidos = new Set(catalogo.map((f) => f.id));
+  const promptTexto = { text: construirPrompt(catalogo, datos.especias, datos.otrosIngredientes, hayFoto) };
+  const contents = imagePart ? [imagePart, promptTexto] : [promptTexto];
 
   let texto;
   try {
     const respuesta = await ai.models.generateContent({
       model: "gemini-3.1-flash-lite",
-      contents: [imagePart, { text: construirPrompt(catalogo, datos.especias, datos.otrosIngredientes) }],
+      contents,
       config: { responseMimeType: "application/json" },
     });
     texto = respuesta.text;
@@ -131,7 +164,7 @@ exports.suggestMeals = onCall({ secrets: [geminiApiKey], enforceAppCheck: true }
     if (!Array.isArray(sugerencias)) throw new Error("no es un array");
   } catch (err) {
     await devolverHuecoDeCuota(uid);
-    throw new HttpsError("internal", "La foto no se ha podido interpretar. Prueba con otra imagen más nítida.");
+    throw new HttpsError("internal", "No se ha podido interpretar la respuesta. Inténtalo de nuevo.");
   }
 
   // No nos fiamos a ciegas de los foodId que devuelve Gemini — se filtra cualquiera que no
