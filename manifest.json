@@ -1,6 +1,6 @@
 {
-  "name": "Rueda de Platos",
-  "short_name": "Rueda de Platos",
+  "name": "FoodDraft",
+  "short_name": "FoodDraft",
   "description": "Genera tus menús semanales a partir de tus propias comidas.",
   "start_url": "./index.html",
   "scope": "./",

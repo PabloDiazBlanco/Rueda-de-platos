@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🍽️ Rueda de Platos
+# 🍽️ FoodDraft
 
 ### *Come variado, sin pensarlo cada día.*
 
@@ -16,7 +16,7 @@
 
 ## Qué es esto
 
-Rueda de Platos es una PWA de uso personal que genera menús semanales variados a partir de **tus
+FoodDraft es una PWA de uso personal que genera menús semanales variados a partir de **tus
 propios platos** — tú decides qué comidas son válidas y con qué frecuencia; la app solo organiza
 la variedad y las cantidades dentro de esa estructura. Calcula automáticamente tus objetivos
 nutricionales (BMR, TDEE, macros) a partir de tu perfil, y lleva un seguimiento de peso con ciclos

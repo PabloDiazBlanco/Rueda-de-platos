@@ -1,4 +1,4 @@
-const CACHE_NAME = "rueda-de-platos-v7";
+const CACHE_NAME = "fooddraft-v1";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./manifest.json", "./icon.svg",
   "./Logica/comun.js", "./Logica/macros.js", "./Logica/seleccion.js", "./Logica/comida-calculo.js",

@@ -70,7 +70,7 @@ export function descargarDatosJSON(data) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `rueda-de-platos-datos-${fechaISO(new Date())}.json`;
+  a.download = `fooddraft-datos-${fechaISO(new Date())}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

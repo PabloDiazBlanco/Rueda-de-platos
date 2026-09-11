@@ -233,7 +233,7 @@ function WelcomeScreen({ onLogin }) {
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1ede0", padding: 20, boxSizing: "border-box", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
       <div style={{ width: "100%", maxWidth: 340, textAlign: "center" }}>
         <div style={{ fontSize: 44, marginBottom: 10 }}>🍽️</div>
-        <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 26, color: "#1f4d38", marginBottom: 8 }}>Rueda de Platos</div>
+        <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 26, color: "#1f4d38", marginBottom: 8 }}>FoodDraft</div>
         <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", fontSize: 15, color: "#6b6a5e", maxWidth: 260, margin: "0 auto", lineHeight: 1.5 }}>
           Come variado, sin pensarlo cada día.
         </div>
@@ -425,7 +425,7 @@ function LoginScreen() {
       <div style={{ background: "#fffdf7", borderRadius: 14, padding: "28px 26px", width: "100%", maxWidth: 340, border: "1px solid #ddd6bf", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 30, marginBottom: 6 }}>🍽️</div>
-          <div style={{ fontSize: 20, color: "#1f4d38", fontFamily: "Georgia, 'Times New Roman', serif" }}>Rueda de Platos</div>
+          <div style={{ fontSize: 20, color: "#1f4d38", fontFamily: "Georgia, 'Times New Roman', serif" }}>FoodDraft</div>
           <div style={{ fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
             {mode === "login" ? "Inicia sesión para ver tus datos" : "Crea tu cuenta"}
           </div>

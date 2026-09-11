@@ -1901,7 +1901,7 @@ function PrintSeguimiento({ entradas, tendencia, titulo }) {
       <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
-            Rueda de Platos
+            FoodDraft
           </div>
           <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>Seguimiento de peso</h1>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
@@ -1941,7 +1941,7 @@ function PrintSeguimiento({ entradas, tendencia, titulo }) {
         </table>
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
-          Rueda de Platos — documento generado a partir de tu seguimiento de peso
+          FoodDraft — documento generado a partir de tu seguimiento de peso
         </div>
       </div>
     </div>
@@ -2412,7 +2412,7 @@ function Header({ saveState }) {
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", position: "relative" }}>
         <div>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65, marginBottom: 4 }}>
-            Rueda de Platos
+            FoodDraft
           </div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400, letterSpacing: 0.3 }}>Tu recetario</h1>
         </div>
@@ -2802,7 +2802,7 @@ function PrintExport({ data, menu }) {
       <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
-            Rueda de Platos
+            FoodDraft
           </div>
           <h1 style={{ fontSize: 28, color: "#1f4d38", margin: "2px 0 0 0" }}>Tu menú</h1>
         </div>
@@ -2848,7 +2848,7 @@ function PrintExport({ data, menu }) {
         })}
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
-          Rueda de Platos — exportado para cocinar con las cantidades a mano
+          FoodDraft — exportado para cocinar con las cantidades a mano
         </div>
       </div>
     </div>
@@ -3704,7 +3704,7 @@ function PrintFoods({ foods }) {
       <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
         <div style={{ marginBottom: 4 }}>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
-            Rueda de Platos
+            FoodDraft
           </div>
           <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>Catálogo de alimentos</h1>
         </div>
@@ -3739,7 +3739,7 @@ function PrintFoods({ foods }) {
         </table>
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 20 }}>
-          Rueda de Platos — catálogo de alimentos exportado
+          FoodDraft — catálogo de alimentos exportado
         </div>
       </div>
     </div>

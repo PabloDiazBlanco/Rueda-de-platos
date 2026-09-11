@@ -1,9 +1,18 @@
-# Rueda de Platos — convenciones del proyecto
+# FoodDraft — convenciones del proyecto
 
-PWA de uso personal (un solo usuario, un solo desarrollador). Genera menús semanales variados a
-partir de platos propios, con cálculo de objetivos nutricionales y seguimiento de peso. El contexto
-completo (por qué existe, la ciencia detrás) está en `PDFs explicativos/` — léelos antes de tocar
-cualquier fórmula nutricional.
+PWA que genera menús semanales variados a partir de platos propios, con cálculo de objetivos
+nutricionales y seguimiento de peso. Nació como app de uso personal (un solo usuario, un solo
+desarrollador); desde septiembre de 2026 está en proceso de abrirse a más usuarios y publicarse en
+Google Play, con una capa de suscripción premium (ver `functions/`, y la hoja de ruta de
+publicación si la tienes a mano). El contexto completo (por qué existe, la ciencia detrás) está en
+`PDFs explicativos/` — léelos antes de tocar cualquier fórmula nutricional.
+
+**Nota sobre el nombre**: la app se llama "FoodDraft" de cara al usuario (así aparece en la
+interfaz, el manifest, las páginas legales...). Por debajo, el proyecto de Firebase, el
+repositorio de GitHub y todas las claves de almacenamiento siguen llamándose `rueda-de-platos` —
+es el nombre con el que se creó la infraestructura, y renombrarlo ahí rompería la app ya
+desplegada o, en el caso de las claves de Firestore, causaría que los datos ya guardados
+parecieran haber desaparecido. No lo cambies en esos sitios aunque parezca inconsistente.
 
 ## Regla más importante: no hay build
 
