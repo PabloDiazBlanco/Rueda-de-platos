@@ -99,6 +99,23 @@ window.createPortalSession = async function () {
   }
 };
 
+// ---------- "Qué puedo cocinar con lo que tengo" ----------
+// Igual que analyzeFoodPhoto: la lógica de verdad (premium, cuota, prompt a Gemini) vive en
+// functions/suggestMeals.js. Aquí solo se invoca y se traducen los errores — el catálogo de
+// alimentos hay que mandarlo desde app.jsx en cada llamada, porque la función no tiene forma de
+// leer el JSON de datos de la app (vive bajo una clave opaca en Firestore que solo entiende
+// app.jsx, no la Cloud Function).
+const suggestMealsCallable = httpsCallable(functions, "suggestMeals");
+
+window.suggestMeals = async function ({ photoDataUrl, especias, catalogo }) {
+  try {
+    const respuesta = await suggestMealsCallable({ photoDataUrl, especias, catalogo });
+    return respuesta.data.sugerencias;
+  } catch (err) {
+    throw new Error(err.message || "No se han podido generar sugerencias. Inténtalo de nuevo.");
+  }
+};
+
 // ---------- Almacenamiento respaldado por Firestore, ligado al usuario que ha iniciado sesión ----------
 // Misma forma que window.storage (get/set/delete/list), para que el resto de la app
 // (app.jsx) funcione exactamente igual sin tener que tocarlo.
