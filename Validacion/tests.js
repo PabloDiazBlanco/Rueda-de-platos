@@ -4,6 +4,7 @@
 // los mismos resultados conocidos. Los valores "esperado" de aquí abajo se verificaron a mano
 // antes de guardarlos como referencia (agosto de 2026).
 import { DAYS } from "comun";
+import { objetivosPorComida } from "objetivos";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -36,7 +37,7 @@ function perfilBase(overrides = {}) {
 export function crearGrupos(mod) {
   const {
     calcularObjetivosPerfil, calcularTendenciaPeso, evaluarTendencia, esCambioRadical,
-    esDiaSugeridoPeso, calcularListaCompra, fechaISO, resumenNutrientesSemana,
+    esDiaSugeridoPeso, calcularListaCompra, fechaISO, resumenNutrientesSemana, calcularResumenMensual,
   } = mod;
 
   return [
@@ -271,6 +272,81 @@ export function crearGrupos(mod) {
               },
               { nivelAzucar: "aceptable", nivelFibra: "insuficiente", faltaSal: 1, faltaFibra: 1 }
             );
+          },
+        },
+      ],
+    },
+    {
+      // Fase 4 (reparto de comidas configurable): objetivosPorComida ya no lee la constante
+      // global REPARTO_COMIDAS, sino el reparto que le pase cada perfil — estos casos prueban
+      // repartos distintos al clásico de 4 comidas (2 comidas a partes iguales, 3 comidas con
+      // pesos desiguales), no solo el de siempre.
+      grupo: "objetivosPorComida (repartos personalizados)",
+      casos: [
+        {
+          nombre: "2 comidas (Comida/Cena) al 50/50 reparte el objetivo diario a partes iguales",
+          ejecutar: () => {
+            const objetivosDiarios = { kcal: 2000, prot: 150, fat: 70, carb: 200 };
+            const reparto = { Comida: 0.5, Cena: 0.5 };
+            const comida = objetivosPorComida(objetivosDiarios, "Comida", reparto);
+            const cena = objetivosPorComida(objetivosDiarios, "Cena", reparto);
+            return comparar(
+              { comidaKcal: comida.kcal, comidaProt: comida.prot, cenaKcal: cena.kcal, cenaCarb: cena.carb },
+              { comidaKcal: 1000, comidaProt: 75, cenaKcal: 1000, cenaCarb: 100 }
+            );
+          },
+        },
+        {
+          nombre: "3 comidas con pesos desiguales (60/10/30) reparte proporcionalmente",
+          ejecutar: () => {
+            const objetivosDiarios = { kcal: 2000, prot: 150, fat: 70, carb: 200 };
+            const reparto = { Comida: 0.6, Merienda: 0.1, Cena: 0.3 };
+            const comida = objetivosPorComida(objetivosDiarios, "Comida", reparto);
+            const merienda = objetivosPorComida(objetivosDiarios, "Merienda", reparto);
+            const cena = objetivosPorComida(objetivosDiarios, "Cena", reparto);
+            return comparar(
+              { comidaKcal: comida.kcal, meriendaKcal: merienda.kcal, meriendaProt: merienda.prot, cenaKcal: cena.kcal },
+              { comidaKcal: 1200, meriendaKcal: 200, meriendaProt: 15, cenaKcal: 600 }
+            );
+          },
+        },
+        {
+          nombre: "Una comida que no está en el reparto elegido devuelve null",
+          ejecutar: () => {
+            const objetivosDiarios = { kcal: 2000, prot: 150, fat: 70, carb: 200 };
+            const r = objetivosPorComida(objetivosDiarios, "Desayuno", { Comida: 0.5, Cena: 0.5 });
+            return comparar({ esNull: r === null }, { esNull: true });
+          },
+        },
+      ],
+    },
+    {
+      // El número de "comidas al día" del resumen mensual (f3-11) dejó de pedirse aparte en Perfil
+      // (frep-7): ahora se cuenta solo a partir de perfil.repartoComidas. Estos casos comprueban
+      // que un reparto de 2 comidas cambia de verdad cuántas "tocaban" ese mes, y que un perfil sin
+      // repartoComidas todavía cae al valor de siempre (4) en vez de romperse.
+      grupo: "calcularResumenMensual (reparto de comidas configurable)",
+      casos: [
+        {
+          nombre: "Reparto de 2 comidas: comidasPorDia se deriva del perfil, no de un número aparte",
+          ejecutar: () => {
+            const data = {
+              perfil: { repartoComidas: { Comida: 0.5, Cena: 0.5 } },
+              comidasCompletadas: {
+                "2026-09-01": { Comida: true },
+                "2026-09-02": { Comida: true, Cena: true },
+              },
+            };
+            const r = calcularResumenMensual(data, "2026-09", new Date(2026, 8, 10));
+            return comparar(r, { comidasPorDia: 2, completadas: 3, esperadas: 20, porcentaje: 15 });
+          },
+        },
+        {
+          nombre: "Sin repartoComidas en el perfil, cae al valor por defecto de siempre (4)",
+          ejecutar: () => {
+            const data = { perfil: {}, comidasCompletadas: {} };
+            const r = calcularResumenMensual(data, "2026-09", new Date(2026, 8, 10));
+            return comparar(r, { comidasPorDia: 4, esperadas: 40 });
           },
         },
       ],
