@@ -18,7 +18,7 @@ export function generateMenu(data, avoid = {}) {
   const slots = [];
   for (let week = 1; week <= 2; week++) {
     for (let d = 0; d < 7; d++) {
-      for (const mealType of ["Desayuno", "Comida", "Merienda", "Cena"]) {
+      for (const mealType of Object.keys(data.perfil.repartoComidas)) {
         slots.push({ id: uid(), week, day: DAYS[d], mealType, protein: null, closedDish: null, carbo: null, verdura: null, garbanzos: false, item: null });
       }
     }
