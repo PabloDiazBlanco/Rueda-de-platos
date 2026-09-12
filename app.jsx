@@ -156,15 +156,15 @@ const initialData = () => {
 };
 
 const CATEGORY_META = {
-  proteina: { label: "Proteínas", icon: Utensils, color: "var(--green)", bg: "var(--green-soft)" },
-  carbo: { label: "Carbohidratos", icon: Wheat, color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
-  verdura: { label: "Verduras", icon: Salad, color: "var(--green)", bg: "var(--green-soft)" },
-  grasa: { label: "Grasas", icon: Droplet, color: "var(--olive)", bg: "var(--olive-soft)" },
-  desayuno: { label: "Desayuno", icon: Coffee, color: "var(--coffee)", bg: "var(--coffee-soft)" },
-  media_manana: { label: "Media mañana", icon: Apple, color: "var(--citrus)", bg: "var(--citrus-soft)" },
-  merienda: { label: "Merienda", icon: Cookie, color: "var(--berry)", bg: "var(--berry-soft)" },
-  cerrado: { label: "Platos cerrados", icon: Package, color: "var(--rust)", bg: "var(--rust-soft)" },
-  especial: { label: "Especiales", icon: Sparkles, color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
+  proteina: { labelKey: "categoria.proteina", icon: Utensils, color: "var(--green)", bg: "var(--green-soft)" },
+  carbo: { labelKey: "categoria.carbo", icon: Wheat, color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
+  verdura: { labelKey: "categoria.verdura", icon: Salad, color: "var(--green)", bg: "var(--green-soft)" },
+  grasa: { labelKey: "categoria.grasa", icon: Droplet, color: "var(--olive)", bg: "var(--olive-soft)" },
+  desayuno: { labelKey: "mealType.Desayuno", icon: Coffee, color: "var(--coffee)", bg: "var(--coffee-soft)" },
+  media_manana: { labelKey: "mealType.Media mañana", icon: Apple, color: "var(--citrus)", bg: "var(--citrus-soft)" },
+  merienda: { labelKey: "mealType.Merienda", icon: Cookie, color: "var(--berry)", bg: "var(--berry-soft)" },
+  cerrado: { labelKey: "categoria.cerrado", icon: Package, color: "var(--rust)", bg: "var(--rust-soft)" },
+  especial: { labelKey: "categoria.especial", icon: Sparkles, color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
 };
 
 const STORAGE_KEY = "rueda-de-platos:data-v1";
@@ -699,40 +699,40 @@ export default function RuedaDePlatos() {
           <BigCardGrid
             onSelect={setTab}
             cards={[
-              { key: "macros-root", label: "Macros", desc: "proteína, carbo, verdura, grasa", icon: Utensils, color: "var(--green)" },
-              { key: "especiales-root", label: "Comidas especiales", desc: "desayuno, merienda, cerrados", icon: Package, color: "var(--rust)" },
-              { key: "combos", label: "Combinaciones", desc: "reglas entre alimentos", icon: Layers, color: "var(--olive)" },
-              { key: "alimentos", label: "Alimentos", desc: "catálogo con macros", icon: Database, color: "var(--coffee)" },
-              { key: "cocinar", label: "¿Qué cocino?", desc: premium.active ? "con lo que tengas" : "función premium", icon: Camera, color: "var(--rust)" },
+              { key: "macros-root", label: t(idioma, "nav.macros"), desc: t(idioma, "nav.macros.desc"), icon: Utensils, color: "var(--green)" },
+              { key: "especiales-root", label: t(idioma, "nav.comidasEspeciales"), desc: t(idioma, "nav.comidasEspeciales.desc"), icon: Package, color: "var(--rust)" },
+              { key: "combos", label: t(idioma, "nav.combinaciones"), desc: t(idioma, "nav.combinaciones.desc"), icon: Layers, color: "var(--olive)" },
+              { key: "alimentos", label: t(idioma, "nav.alimentos"), desc: t(idioma, "nav.alimentos.desc"), icon: Database, color: "var(--coffee)" },
+              { key: "cocinar", label: t(idioma, "nav.queCocino"), desc: premium.active ? t(idioma, "nav.queCocino.descTuyo") : t(idioma, "perfilRoot.funcionPremium"), icon: Camera, color: "var(--rust)" },
             ]}
           />
         )}
 
         {tab === "macros-root" && (
           <>
-            <BackLink label="Configuración" onClick={() => setTab("config-root")} />
+            <BackLink label={t(idioma, "tab.configuracion")} onClick={() => setTab("config-root")} />
             <BigCardGrid
               onSelect={setTab}
-              cards={MACRO_CATS.map((key) => ({ key, label: CATEGORY_META[key].label, icon: CATEGORY_META[key].icon, color: CATEGORY_META[key].color }))}
+              cards={MACRO_CATS.map((key) => ({ key, label: t(idioma, CATEGORY_META[key].labelKey), icon: CATEGORY_META[key].icon, color: CATEGORY_META[key].color }))}
             />
           </>
         )}
 
         {tab === "especiales-root" && (
           <>
-            <BackLink label="Configuración" onClick={() => setTab("config-root")} />
+            <BackLink label={t(idioma, "tab.configuracion")} onClick={() => setTab("config-root")} />
             <BigCardGrid
               onSelect={setTab}
-              cards={ESPECIALES_CATS.map((key) => ({ key, label: CATEGORY_META[key].label, icon: CATEGORY_META[key].icon, color: CATEGORY_META[key].color }))}
+              cards={ESPECIALES_CATS.map((key) => ({ key, label: t(idioma, CATEGORY_META[key].labelKey), icon: CATEGORY_META[key].icon, color: CATEGORY_META[key].color }))}
             />
           </>
         )}
 
         {tab === "proteina" && (
           <>
-            <BackLink label="Macros" onClick={() => setTab("macros-root")} />
+            <BackLink label={t(idioma, "nav.macros")} onClick={() => setTab("macros-root")} />
             <SectionIntro
-              text="Cada proteína especial ocupa un número fijo de comidas por semana o por ciclo de 2 semanas. El pollo no tiene regla propia: rellena todo lo que sobra, así que es la base natural del menú."
+              text={t(idioma, "catalogo.proteina.intro")}
             />
             <CardGrid>
               {itemsInCategory("proteina").map((ing) => (
@@ -742,6 +742,7 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "proteina", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
+                  idioma={idioma}
                 />
               ))}
               {blocksInCategory("proteina").map((block) => (
@@ -755,18 +756,19 @@ export default function RuedaDePlatos() {
                   onDeleteMember={(m) => setConfirmDelete(m)}
                   onAddMember={() => setEditing({ mode: "new", category: "proteina", blockId: block.id })}
                   onEditFrequency={(b) => setEditingFrequency(b)}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir proteína" onClick={() => setEditing({ mode: "new", category: "proteina" })} />
+              <AddCard label={t(idioma, "catalogo.anadirProteina")} onClick={() => setEditing({ mode: "new", category: "proteina" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "carbo" && (
           <>
-            <BackLink label="Macros" onClick={() => setTab("macros-root")} />
-            <SectionIntro text="Se sortean por probabilidad en cada comida que no sea un plato cerrado. Los porcentajes deberían sumar 100%." />
-            <ProbabilitySumBadge total={carboTotal} />
+            <BackLink label={t(idioma, "nav.macros")} onClick={() => setTab("macros-root")} />
+            <SectionIntro text={t(idioma, "catalogo.carbo.intro")} />
+            <ProbabilitySumBadge total={carboTotal} idioma={idioma} />
             <CardGrid>
               {itemsInCategory("carbo").map((ing) => (
                 <IngredientCard
@@ -775,18 +777,19 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "carbo", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir carbohidrato" onClick={() => setEditing({ mode: "new", category: "carbo" })} />
+              <AddCard label={t(idioma, "catalogo.anadirCarbohidrato")} onClick={() => setEditing({ mode: "new", category: "carbo" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "verdura" && (
           <>
-            <BackLink label="Macros" onClick={() => setTab("macros-root")} />
-            <SectionIntro text="Se sortean por probabilidad, igual que los carbohidratos. Los porcentajes deberían sumar 100%." />
-            <ProbabilitySumBadge total={verduraTotal} />
+            <BackLink label={t(idioma, "nav.macros")} onClick={() => setTab("macros-root")} />
+            <SectionIntro text={t(idioma, "catalogo.verdura.intro")} />
+            <ProbabilitySumBadge total={verduraTotal} idioma={idioma} />
             <CardGrid>
               {itemsInCategory("verdura").map((ing) => (
                 <IngredientCard
@@ -795,18 +798,19 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "verdura", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir verdura / acompañamiento" onClick={() => setEditing({ mode: "new", category: "verdura" })} />
+              <AddCard label={t(idioma, "catalogo.anadirVerdura")} onClick={() => setEditing({ mode: "new", category: "verdura" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "grasa" && (
           <>
-            <BackLink label="Macros" onClick={() => setTab("macros-root")} />
-            <SectionIntro text="Opciones de grasa (aceite, aguacate, frutos secos, queso...). Cuando el motor de objetivos necesite completar grasa en una comida, sorteará entre estas por probabilidad — si no añades ninguna, seguirá usando aceite de oliva por defecto." />
-            <ProbabilitySumBadge total={grasaTotal} />
+            <BackLink label={t(idioma, "nav.macros")} onClick={() => setTab("macros-root")} />
+            <SectionIntro text={t(idioma, "catalogo.grasa.intro")} />
+            <ProbabilitySumBadge total={grasaTotal} idioma={idioma} />
             <CardGrid>
               {itemsInCategory("grasa").map((ing) => (
                 <IngredientCard
@@ -815,18 +819,19 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "grasa", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir grasa" onClick={() => setEditing({ mode: "new", category: "grasa" })} />
+              <AddCard label={t(idioma, "catalogo.anadirGrasa")} onClick={() => setEditing({ mode: "new", category: "grasa" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "desayuno" && (
           <>
-            <BackLink label="Comidas especiales" onClick={() => setTab("especiales-root")} />
-            <SectionIntro text="Opciones completas de desayuno, sin combinar con nada más. Cada 2 semanas (14 desayunos) se reparte exactamente según estos porcentajes, mezclando el orden al azar. Los porcentajes deberían sumar 100%." />
-            <ProbabilitySumBadge total={desayunoTotal} />
+            <BackLink label={t(idioma, "nav.comidasEspeciales")} onClick={() => setTab("especiales-root")} />
+            <SectionIntro text={t(idioma, "catalogo.desayuno.intro")} />
+            <ProbabilitySumBadge total={desayunoTotal} idioma={idioma} />
             <CardGrid>
               {itemsInCategory("desayuno").map((ing) => (
                 <IngredientCard
@@ -835,18 +840,19 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "desayuno", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir desayuno" onClick={() => setEditing({ mode: "new", category: "desayuno" })} />
+              <AddCard label={t(idioma, "catalogo.anadirDesayuno")} onClick={() => setEditing({ mode: "new", category: "desayuno" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "media_manana" && (
           <>
-            <BackLink label="Comidas especiales" onClick={() => setTab("especiales-root")} />
-            <SectionIntro text="Opciones completas de media mañana, sin combinar con nada más. Cada 2 semanas (14 comidas) se reparte exactamente según estos porcentajes, mezclando el orden al azar. Los porcentajes deberían sumar 100%." />
-            <ProbabilitySumBadge total={mediaMananaTotal} />
+            <BackLink label={t(idioma, "nav.comidasEspeciales")} onClick={() => setTab("especiales-root")} />
+            <SectionIntro text={t(idioma, "catalogo.mediaManana.intro")} />
+            <ProbabilitySumBadge total={mediaMananaTotal} idioma={idioma} />
             <CardGrid>
               {itemsInCategory("media_manana").map((ing) => (
                 <IngredientCard
@@ -855,18 +861,19 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "media_manana", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir media mañana" onClick={() => setEditing({ mode: "new", category: "media_manana" })} />
+              <AddCard label={t(idioma, "catalogo.anadirMediaManana")} onClick={() => setEditing({ mode: "new", category: "media_manana" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "merienda" && (
           <>
-            <BackLink label="Comidas especiales" onClick={() => setTab("especiales-root")} />
-            <SectionIntro text="Opciones completas de merienda, sin combinar con nada más. Cada 2 semanas (14 meriendas) se reparte exactamente según estos porcentajes, mezclando el orden al azar. Los porcentajes deberían sumar 100%." />
-            <ProbabilitySumBadge total={meriendaTotal} />
+            <BackLink label={t(idioma, "nav.comidasEspeciales")} onClick={() => setTab("especiales-root")} />
+            <SectionIntro text={t(idioma, "catalogo.merienda.intro")} />
+            <ProbabilitySumBadge total={meriendaTotal} idioma={idioma} />
             <CardGrid>
               {itemsInCategory("merienda").map((ing) => (
                 <IngredientCard
@@ -875,17 +882,18 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "merienda", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir merienda" onClick={() => setEditing({ mode: "new", category: "merienda" })} />
+              <AddCard label={t(idioma, "catalogo.anadirMerienda")} onClick={() => setEditing({ mode: "new", category: "merienda" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "cerrado" && (
           <>
-            <BackLink label="Comidas especiales" onClick={() => setTab("especiales-root")} />
-            <SectionIntro text="Van enteros, sin combinar con carbo ni verdura. El grupo entero aparece con la frecuencia del bloque; dentro, se sortea cuál plato toca." />
+            <BackLink label={t(idioma, "nav.comidasEspeciales")} onClick={() => setTab("especiales-root")} />
+            <SectionIntro text={t(idioma, "catalogo.cerrado.intro")} />
             <CardGrid>
               {blocksInCategory("cerrado").map((block) => (
                 <BlockCard
@@ -899,6 +907,7 @@ export default function RuedaDePlatos() {
                   onAddMember={() => setEditing({ mode: "new", category: "cerrado", blockId: block.id })}
                   onEditFrequency={(b) => setEditingFrequency(b)}
                   showProbabilities
+                  idioma={idioma}
                 />
               ))}
             </CardGrid>
@@ -907,8 +916,8 @@ export default function RuedaDePlatos() {
 
         {tab === "especial" && (
           <>
-            <BackLink label="Comidas especiales" onClick={() => setTab("especiales-root")} />
-            <SectionIntro text="No compiten por un hueco de proteína: se superponen sobre la comida que toque ese día." />
+            <BackLink label={t(idioma, "nav.comidasEspeciales")} onClick={() => setTab("especiales-root")} />
+            <SectionIntro text={t(idioma, "catalogo.especial.intro")} />
             <CardGrid>
               {itemsInCategory("especial").map((ing) => (
                 <IngredientCard
@@ -917,17 +926,18 @@ export default function RuedaDePlatos() {
                   data={data}
                   onEdit={() => setEditing({ mode: "edit", category: "especial", ingredient: ing })}
                   onDelete={() => setConfirmDelete(ing)}
-                  extraNote="Modificador: mezcla 50/50 con el carbo del día"
+                  extraNote={t(idioma, "catalogo.especial.extraNote")}
+                  idioma={idioma}
                 />
               ))}
-              <AddCard label="Añadir especial" onClick={() => setEditing({ mode: "new", category: "especial" })} />
+              <AddCard label={t(idioma, "catalogo.anadirEspecial")} onClick={() => setEditing({ mode: "new", category: "especial" })} />
             </CardGrid>
           </>
         )}
 
         {tab === "alimentos" && (
           <div>
-            <BackLink label="Configuración" onClick={() => setTab("config-root")} />
+            <BackLink label={t(idioma, "tab.configuracion")} onClick={() => setTab("config-root")} />
           <FoodsView
             foods={data.foods || []}
             ingredients={data.ingredients}
@@ -935,13 +945,14 @@ export default function RuedaDePlatos() {
             onNew={() => setEditingFood({ mode: "new" })}
             onNewFromPhoto={(photoDataUrl) => setEditingFood({ mode: "new", photo: photoDataUrl })}
             onDelete={(food) => setConfirmDeleteFood(food)}
+            idioma={idioma}
           />
           </div>
         )}
 
         {tab === "cocinar" && (
           <div>
-            <BackLink label="Configuración" onClick={() => setTab("config-root")} />
+            <BackLink label={t(idioma, "tab.configuracion")} onClick={() => setTab("config-root")} />
             {premium.active ? (
               <SuggestMealsView
                 data={data}
@@ -970,13 +981,14 @@ export default function RuedaDePlatos() {
 
         {tab === "combos" && (
           <div>
-            <BackLink label="Configuración" onClick={() => setTab("config-root")} />
+            <BackLink label={t(idioma, "tab.configuracion")} onClick={() => setTab("config-root")} />
           <RulesView
             rules={data.rules || []}
             ingredients={data.ingredients}
             onEdit={(rule) => setEditingRule({ mode: "edit", rule })}
             onNew={() => setEditingRule({ mode: "new" })}
             onDelete={(rule) => setConfirmDeleteRule(rule)}
+            idioma={idioma}
           />
           </div>
         )}
@@ -1009,14 +1021,14 @@ export default function RuedaDePlatos() {
 
         {tab === "perfil-datos" && (
           <>
-            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
             <PerfilView perfil={data.perfil} onSave={savePerfil} />
           </>
         )}
 
         {tab === "perfil-peso" && (
           <>
-            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
             {premium.active ? (
               <PesoView
                 perfil={data.perfil}
@@ -1042,28 +1054,28 @@ export default function RuedaDePlatos() {
 
         {tab === "perfil-premium" && (
           <>
-            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
             <PremiumView premium={premium} idioma={idioma} />
           </>
         )}
 
         {tab === "perfil-resumen" && (
           <>
-            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
             <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
           </>
         )}
 
         {tab === "perfil-medidas" && (
           <>
-            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
             <MedidasPlaceholderView idioma={idioma} />
           </>
         )}
 
         {tab === "perfil-documentos" && (
           <>
-            <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
+            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
             <DocumentosView idioma={idioma} />
           </>
         )}
@@ -1078,6 +1090,7 @@ export default function RuedaDePlatos() {
             upsertIngredient(ing);
             setEditing(null);
           }}
+          idioma={idioma}
         />
       )}
 
@@ -1086,6 +1099,7 @@ export default function RuedaDePlatos() {
           ingredient={confirmDelete}
           onCancel={() => setConfirmDelete(null)}
           onConfirm={() => deleteIngredient(confirmDelete.id)}
+          idioma={idioma}
         />
       )}
 
@@ -1093,6 +1107,7 @@ export default function RuedaDePlatos() {
         <FrequencyModal
           block={editingFrequency}
           onClose={() => setEditingFrequency(null)}
+          idioma={idioma}
           onSave={(n) => {
             updateBlock(editingFrequency.id, { cicloFrecuencia: n });
             setEditingFrequency(null);
@@ -1108,6 +1123,7 @@ export default function RuedaDePlatos() {
             upsertFood(food);
             setEditingFood(null);
           }}
+          idioma={idioma}
         />
       )}
 
@@ -1117,6 +1133,7 @@ export default function RuedaDePlatos() {
           usedBy={data.ingredients.filter((i) => i.foodId === confirmDeleteFood.id)}
           onCancel={() => setConfirmDeleteFood(null)}
           onConfirm={() => deleteFood(confirmDeleteFood.id)}
+          idioma={idioma}
         />
       )}
 
@@ -1129,6 +1146,7 @@ export default function RuedaDePlatos() {
             upsertRule(rule);
             setEditingRule(null);
           }}
+          idioma={idioma}
         />
       )}
 
@@ -1138,6 +1156,7 @@ export default function RuedaDePlatos() {
           ingredients={data.ingredients}
           onCancel={() => setConfirmDeleteRule(null)}
           onConfirm={() => deleteRule(confirmDeleteRule.id)}
+          idioma={idioma}
         />
       )}
     </Shell>
@@ -3810,7 +3829,7 @@ function ComboAfinidad({ meal, data, onUpsertRule, idioma }) {
   if (itemIds.length < 2) return null;
 
   const existente = findMatchingRule(data.rules, itemIds);
-  const nombres = itemIds.map((id) => ruleItemLabel(data.ingredients, id)).join(" + ");
+  const nombres = itemIds.map((id) => ruleItemLabel(data.ingredients, id, idioma)).join(" + ");
 
   function elegir(level) {
     if (existente) onUpsertRule({ ...existente, level });
@@ -3873,7 +3892,7 @@ function ComboAfinidad({ meal, data, onUpsertRule, idioma }) {
 
       {existente && (
         <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginTop: 6 }}>
-          {t(idioma, "comboAfinidad.guardado", { nivel: (RULE_LEVELS[existente.level] || {}).label || existente.level })}
+          {t(idioma, "comboAfinidad.guardado", { nivel: RULE_LEVELS[existente.level] ? t(idioma, "ruleLevel." + existente.level) : existente.level })}
         </div>
       )}
     </div>
@@ -3959,7 +3978,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
       {meal.rulesApplied && meal.rulesApplied.length > 0 && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3 }}>
           {meal.rulesApplied.map((r) => {
-            const names = r.itemIds.map((id) => ruleItemLabel(data.ingredients, id)).join(" + ");
+            const names = r.itemIds.map((id) => ruleItemLabel(data.ingredients, id, idioma)).join(" + ");
             const isNulaForced = r.level === "nula";
             return (
               <div
@@ -3971,7 +3990,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
               >
                 {isNulaForced
                   ? t(idioma, "mealDetail.reglaEvitada", { nombres: names })
-                  : t(idioma, "mealDetail.reglaAplicada", { nombres: names, nivel: (RULE_LEVELS[r.level] || {}).label || r.level })}
+                  : t(idioma, "mealDetail.reglaAplicada", { nombres: names, nivel: RULE_LEVELS[r.level] ? t(idioma, "ruleLevel." + r.level) : r.level })}
               </div>
             );
           })}
@@ -4078,7 +4097,7 @@ function HistoryPanel({ history, idioma }) {
   );
 }
 
-function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto }) {
+function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto, idioma }) {
   const [query, setQuery] = useState("");
   const [exportando, setExportando] = useState(false);
   const fileInputRef = useRef(null);
@@ -4106,7 +4125,7 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
 
   return (
     <>
-      <SectionIntro text="Catálogo central de alimentos con sus valores por 100 g. Los ingredientes del menú se enlazan aquí, así que al corregir un valor se actualiza en todos los sitios donde se use." />
+      <SectionIntro text={t(idioma, "foodsView.intro")} />
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: "1 1 220px" }}>
@@ -4114,7 +4133,7 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar alimento…"
+            placeholder={t(idioma, "foodsView.buscar")}
             style={{ ...inputStyle, paddingLeft: 32 }}
           />
         </div>
@@ -4127,7 +4146,7 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
             display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
           }}
         >
-          <Camera size={14} /> Añadir con foto
+          <Camera size={14} /> {t(idioma, "foodsView.anadirConFoto")}
         </button>
         <input
           ref={fileInputRef}
@@ -4146,7 +4165,7 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
             display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
           }}
         >
-          <Plus size={14} /> Nuevo alimento
+          <Plus size={14} /> {t(idioma, "foodsView.nuevoAlimento")}
         </button>
         <button
           onClick={exportarCatalogo}
@@ -4157,12 +4176,12 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
             display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
           }}
         >
-          <Download size={14} /> Exportar catálogo
+          <Download size={14} /> {t(idioma, "foodsView.exportarCatalogo")}
         </button>
       </div>
 
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 8 }}>
-        {filtered.length} de {foods.length} alimentos
+        {t(idioma, "foodsView.deTotal", { n: filtered.length, total: foods.length })}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -4183,7 +4202,7 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
                     {f.fuente}
                     {uses > 0 && (
                       <span style={{ color: "var(--green)", fontWeight: 700 }}>
-                        {" · "}<Link2 size={9} style={{ verticalAlign: "middle" }} /> usado en {uses}
+                        {" · "}<Link2 size={9} style={{ verticalAlign: "middle" }} /> {t(idioma, "foodsView.usadoEn", { n: uses })}
                       </span>
                     )}
                   </div>
@@ -4199,16 +4218,16 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
                 <MacroPill label="G" value={`${f.fat} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
                 <MacroPill label="C" value={`${f.carb} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
                 <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
-                  por 100 g
+                  {t(idioma, "foodsView.por100g")}
                 </span>
               </div>
               {(f.grasaSaturada !== undefined || f.azucares !== undefined || f.fibra !== undefined || f.sal !== undefined) && (
                 <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginTop: 6 }}>
                   {[
-                    f.grasaSaturada !== undefined && `saturada ${f.grasaSaturada}g`,
-                    f.azucares !== undefined && `azúcares ${f.azucares}g`,
-                    f.fibra !== undefined && `fibra ${f.fibra}g`,
-                    f.sal !== undefined && `sal ${f.sal}g`,
+                    f.grasaSaturada !== undefined && t(idioma, "foodsView.saturada", { n: f.grasaSaturada }),
+                    f.azucares !== undefined && t(idioma, "foodsView.azucares", { n: f.azucares }),
+                    f.fibra !== undefined && t(idioma, "foodsView.fibra", { n: f.fibra }),
+                    f.sal !== undefined && t(idioma, "foodsView.sal", { n: f.sal }),
                   ].filter(Boolean).join(" · ")}
                 </div>
               )}
@@ -4221,19 +4240,19 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
             textAlign: "center", color: "var(--ink-soft)",
             fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13,
           }}>
-            No hay ningún alimento que coincida con “{query}”.
+            {t(idioma, "foodsView.sinCoincidencias", { query })}
           </div>
         )}
       </div>
 
-      {exportando && <PrintFoods foods={foods} />}
+      {exportando && <PrintFoods foods={foods} idioma={idioma} />}
     </>
   );
 }
 
 // Ficha imprimible del catálogo de alimentos completo — mismo mecanismo que PrintExport y
 // PrintSeguimiento (oculto en pantalla, visible solo al imprimir vía window.print()).
-function PrintFoods({ foods }) {
+function PrintFoods({ foods, idioma }) {
   const ordenados = [...foods].sort((a, b) => a.name.localeCompare(b.name, "es"));
   return (
     <div id="print-foods">
@@ -4252,16 +4271,20 @@ function PrintFoods({ foods }) {
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
             FoodDraft
           </div>
-          <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>Catálogo de alimentos</h1>
+          <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>{t(idioma, "printFoods.titulo")}</h1>
         </div>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "#6b6a5e", marginBottom: 16 }}>
-          {ordenados.length} alimentos · valores por 100 g · exportado el {formatFechaCorta(fechaISO(new Date()))}
+          {t(idioma, "printFoods.resumen", { n: ordenados.length, fecha: formatFechaCorta(fechaISO(new Date()), idioma) })}
         </div>
 
         <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5 }}>
           <thead>
             <tr style={{ background: "#1f4d38", color: "#fff" }}>
-              {["Alimento", "kcal", "Prot.", "Grasa", "Carb.", "Sal", "Azúc.", "Fibra", "Sat.", "Origen"].map((h) => (
+              {[
+                t(idioma, "printFoods.alimento"), "kcal", t(idioma, "printFoods.prot"), t(idioma, "printFoods.grasa"),
+                t(idioma, "printFoods.carb"), t(idioma, "printFoods.sal"), t(idioma, "printFoods.azuc"),
+                t(idioma, "printFoods.fibra"), t(idioma, "printFoods.sat"), t(idioma, "printFoods.origen"),
+              ].map((h) => (
                 <th key={h} style={{ textAlign: "left", padding: "6px 7px", fontWeight: 700 }}>{h}</th>
               ))}
             </tr>
@@ -4285,7 +4308,7 @@ function PrintFoods({ foods }) {
         </table>
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 20 }}>
-          FoodDraft — catálogo de alimentos exportado
+          {t(idioma, "printFoods.pie")}
         </div>
       </div>
     </div>
@@ -4306,7 +4329,7 @@ function MacroPill({ label, value, color, bg }) {
   );
 }
 
-function FoodEditModal({ state, onClose, onSave }) {
+function FoodEditModal({ state, onClose, onSave, idioma }) {
   const existing = state.food;
   const [name, setName] = useState(existing ? existing.name : "");
   const [kcal, setKcal] = useState(existing ? existing.kcal : "");
@@ -4344,7 +4367,7 @@ function FoodEditModal({ state, onClose, onSave }) {
     } catch (err) {
       setAnalyzeError(
         (err && err.message) ||
-        "No se ha podido leer la foto. Prueba con otra imagen más nítida, o rellena los datos a mano."
+        t(idioma, "foodEditModal.errorLectura")
       );
     } finally {
       setAnalyzing(false);
@@ -4373,7 +4396,7 @@ function FoodEditModal({ state, onClose, onSave }) {
   }
 
   return (
-    <ModalShell onClose={onClose} title={state.mode === "new" ? "Nuevo alimento" : "Editar alimento"}>
+    <ModalShell onClose={onClose} title={state.mode === "new" ? t(idioma, "foodEditModal.nuevoAlimento") : t(idioma, "foodEditModal.editarAlimento")}>
       {state.photo && (
         <div style={{ marginBottom: 14 }}>
           <img
@@ -4395,7 +4418,7 @@ function FoodEditModal({ state, onClose, onSave }) {
                   opacity: analyzing ? 0.7 : 1,
                 }}
               >
-                {analyzing ? "Leyendo la etiqueta…" : analyzed ? "Volver a leer la foto" : "🔍 Leer valores de la foto"}
+                {analyzing ? t(idioma, "foodEditModal.leyendoEtiqueta") : analyzed ? t(idioma, "foodEditModal.volverALeer") : t(idioma, "foodEditModal.leerDeFoto")}
               </button>
               {analyzeError && (
                 <div style={{
@@ -4410,7 +4433,7 @@ function FoodEditModal({ state, onClose, onSave }) {
                   fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--green-dark)",
                   background: "var(--green-soft)", borderRadius: 6, padding: "7px 10px", marginTop: 8,
                 }}>
-                  Datos rellenados desde la foto — revísalos antes de guardar, la lectura puede fallar.
+                  {t(idioma, "foodEditModal.datosRellenados")}
                 </div>
               )}
             </>
@@ -4423,70 +4446,70 @@ function FoodEditModal({ state, onClose, onSave }) {
               }}
             >
               <AlertCircle size={12} style={{ flexShrink: 0 }} />
-              La lectura automática de la etiqueta no está disponible aquí — de momento, rellena los datos a mano mirando la foto.
+              {t(idioma, "foodEditModal.lecturaNoDisponible")}
             </div>
           )}
         </div>
       )}
 
-      <Field label="Nombre">
-        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder="Ej: Pechuga de pollo (cruda)" />
+      <Field label={t(idioma, "foodEditModal.nombre")}>
+        <input autoFocus value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder={t(idioma, "foodEditModal.nombrePlaceholder")} />
       </Field>
 
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginBottom: 8 }}>
-        Valores por cada 100 g de producto (tal como aparecen en la etiqueta).
+        {t(idioma, "foodEditModal.valoresPor100g")}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <Field label="Calorías (kcal)">
+        <Field label={t(idioma, "foodEditModal.calorias")}>
           <input type="number" value={kcal} onChange={(e) => setKcal(e.target.value)} style={inputStyle} />
         </Field>
-        <Field label="Proteína (g)">
+        <Field label={t(idioma, "foodEditModal.proteina")}>
           <input type="number" step="0.1" value={prot} onChange={(e) => setProt(e.target.value)} style={inputStyle} />
         </Field>
-        <Field label="Grasa (g)">
+        <Field label={t(idioma, "foodEditModal.grasa")}>
           <input type="number" step="0.1" value={fat} onChange={(e) => setFat(e.target.value)} style={inputStyle} />
         </Field>
-        <Field label="Carbohidratos (g)">
+        <Field label={t(idioma, "foodEditModal.carbohidratos")}>
           <input type="number" step="0.1" value={carb} onChange={(e) => setCarb(e.target.value)} style={inputStyle} />
         </Field>
       </div>
 
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, margin: "14px 0 8px" }}>
-        Detalle adicional (opcional)
+        {t(idioma, "foodEditModal.detalleAdicional")}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        <Field label="De las cuales saturadas (g)">
+        <Field label={t(idioma, "foodEditModal.saturadas")}>
           <input type="number" step="0.1" value={grasaSaturada} onChange={(e) => setGrasaSaturada(e.target.value)} style={inputStyle} placeholder="—" />
         </Field>
-        <Field label="De los cuales azúcares (g)">
+        <Field label={t(idioma, "foodEditModal.azucares")}>
           <input type="number" step="0.1" value={azucares} onChange={(e) => setAzucares(e.target.value)} style={inputStyle} placeholder="—" />
         </Field>
-        <Field label="Fibra (g)">
+        <Field label={t(idioma, "foodEditModal.fibra")}>
           <input type="number" step="0.1" value={fibra} onChange={(e) => setFibra(e.target.value)} style={inputStyle} placeholder="—" />
         </Field>
-        <Field label="Sal (g)">
+        <Field label={t(idioma, "foodEditModal.sal")}>
           <input type="number" step="0.01" value={sal} onChange={(e) => setSal(e.target.value)} style={inputStyle} placeholder="—" />
         </Field>
       </div>
 
-      <Field label="Fuente (opcional)">
-        <input value={fuente} onChange={(e) => setFuente(e.target.value)} style={inputStyle} placeholder="Ej: Etiqueta Hacendado" />
+      <Field label={t(idioma, "foodEditModal.fuente")}>
+        <input value={fuente} onChange={(e) => setFuente(e.target.value)} style={inputStyle} placeholder={t(idioma, "foodEditModal.fuentePlaceholder")} />
       </Field>
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
-        <ModalBtn onClick={onClose} variant="ghost">Cancelar</ModalBtn>
-        <ModalBtn onClick={handleSave} variant="solid">Guardar</ModalBtn>
+        <ModalBtn onClick={onClose} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={handleSave} variant="solid">{t(idioma, "common.guardar")}</ModalBtn>
       </div>
     </ModalShell>
   );
 }
 
-function ConfirmFoodDeleteModal({ food, usedBy, onCancel, onConfirm }) {
+function ConfirmFoodDeleteModal({ food, usedBy, onCancel, onConfirm, idioma }) {
   return (
-    <ModalShell onClose={onCancel} title="Eliminar alimento">
+    <ModalShell onClose={onCancel} title={t(idioma, "confirmFoodDelete.titulo")}>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
-        ¿Seguro que quieres eliminar <strong>{food.name}</strong> del catálogo?
+        {t(idioma, "confirmFoodDelete.textoPre")}<strong>{food.name}</strong>{t(idioma, "confirmFoodDelete.textoPost")}
       </p>
       {usedBy.length > 0 && (
         <div
@@ -4496,13 +4519,12 @@ function ConfirmFoodDeleteModal({ food, usedBy, onCancel, onConfirm }) {
             fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--rust)",
           }}
         >
-          Está enlazado a {usedBy.length} ingrediente{usedBy.length > 1 ? "s" : ""} ({usedBy.map((i) => i.name).join(", ")}).
-          Si lo borras, esos ingredientes se quedarán sin macros hasta que los enlaces a otro alimento.
+          {t(idioma, "confirmFoodDelete.enlazado", { n: usedBy.length, plural: usedBy.length > 1 ? "s" : "", lista: usedBy.map((i) => i.name).join(", ") })}
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
-        <ModalBtn onClick={onCancel} variant="ghost">Cancelar</ModalBtn>
-        <ModalBtn onClick={onConfirm} variant="danger">Eliminar</ModalBtn>
+        <ModalBtn onClick={onCancel} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={onConfirm} variant="danger">{t(idioma, "confirmFoodDelete.titulo")}</ModalBtn>
       </div>
     </ModalShell>
   );
@@ -4515,15 +4537,15 @@ function ruleSelectableItems(ingredients) {
   return ingredients.filter((i) => ["proteina", "carbo", "verdura", "grasa", "especial"].includes(i.category));
 }
 
-function ruleItemLabel(ingredients, id) {
+function ruleItemLabel(ingredients, id, idioma) {
   const ing = ingredients.find((i) => i.id === id);
-  return ing ? ing.name : "(alimento eliminado)";
+  return ing ? ing.name : t(idioma, "rulesView.alimentoEliminado");
 }
 
-function RulesView({ rules, ingredients, onEdit, onNew, onDelete }) {
+function RulesView({ rules, ingredients, onEdit, onNew, onDelete, idioma }) {
   return (
     <>
-      <SectionIntro text="Reglas de afinidad entre alimentos concretos: haz menos o más probable (o directamente imposible u obligatoria) una combinación de proteína, carbo, verdura o garbanzos dentro de una misma comida." />
+      <SectionIntro text={t(idioma, "rulesView.intro")} />
 
       <button
         onClick={onNew}
@@ -4533,7 +4555,7 @@ function RulesView({ rules, ingredients, onEdit, onNew, onDelete }) {
           padding: "10px 16px", display: "flex", alignItems: "center", gap: 8, marginBottom: 16,
         }}
       >
-        <Plus size={15} /> Nueva regla
+        <Plus size={15} /> {t(idioma, "rulesView.nuevaRegla")}
       </button>
 
       {rules.length === 0 ? (
@@ -4542,13 +4564,12 @@ function RulesView({ rules, ingredients, onEdit, onNew, onDelete }) {
           textAlign: "center", color: "var(--ink-soft)",
           fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13,
         }}>
-          Todavía no has creado ninguna regla. Las combinaciones se sortean con total libertad hasta que añadas la primera.
+          {t(idioma, "rulesView.sinReglas")}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {rules.map((rule) => {
-            const meta = RULE_LEVELS[rule.level] || {};
-            const names = rule.itemIds.map((id) => ruleItemLabel(ingredients, id));
+            const names = rule.itemIds.map((id) => ruleItemLabel(ingredients, id, idioma));
             return (
               <div key={rule.id} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "11px 13px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
@@ -4566,7 +4587,7 @@ function RulesView({ rules, ingredients, onEdit, onNew, onDelete }) {
                     color: rule.level === "maxima" ? "#fff" : rule.level === "nula" ? "var(--rust)" : rule.level === "alta" ? "var(--green-dark)" : "var(--mustard-dark)",
                   }}
                 >
-                  {meta.label || rule.level}
+                  {t(idioma, "ruleLevel." + rule.level)}
                 </div>
               </div>
             );
@@ -4577,7 +4598,7 @@ function RulesView({ rules, ingredients, onEdit, onNew, onDelete }) {
   );
 }
 
-function RuleEditModal({ state, ingredients, onClose, onSave }) {
+function RuleEditModal({ state, ingredients, onClose, onSave, idioma }) {
   const existing = state.rule;
   const items = ruleSelectableItems(ingredients);
   const [id1, setId1] = useState(existing?.itemIds?.[0] ?? "");
@@ -4595,71 +4616,71 @@ function RuleEditModal({ state, ingredients, onClose, onSave }) {
   }
 
   return (
-    <ModalShell onClose={onClose} title={state.mode === "new" ? "Nueva regla de combinación" : "Editar regla"}>
-      <Field label="Elemento 1">
+    <ModalShell onClose={onClose} title={state.mode === "new" ? t(idioma, "ruleEditModal.nuevaTitulo") : t(idioma, "ruleEditModal.editarTitulo")}>
+      <Field label={t(idioma, "ruleEditModal.elemento1")}>
         <select value={id1} onChange={(e) => setId1(e.target.value)} style={inputStyle}>
-          <option value="">— Elige —</option>
+          <option value="">{t(idioma, "ruleEditModal.elige")}</option>
           {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
       </Field>
-      <Field label="Elemento 2">
+      <Field label={t(idioma, "ruleEditModal.elemento2")}>
         <select value={id2} onChange={(e) => setId2(e.target.value)} style={inputStyle}>
-          <option value="">— Elige —</option>
+          <option value="">{t(idioma, "ruleEditModal.elige")}</option>
           {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
       </Field>
-      <Field label="Elemento 3 (opcional)">
+      <Field label={t(idioma, "ruleEditModal.elemento3")}>
         <select value={id3} onChange={(e) => setId3(e.target.value)} style={inputStyle}>
-          <option value="">— Ninguno —</option>
+          <option value="">{t(idioma, "ruleEditModal.ninguno")}</option>
           {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
       </Field>
-      <Field label="Elemento 4 (opcional)">
+      <Field label={t(idioma, "ruleEditModal.elemento4")}>
         <select value={id4} onChange={(e) => setId4(e.target.value)} style={inputStyle}>
-          <option value="">— Ninguno —</option>
+          <option value="">{t(idioma, "ruleEditModal.ninguno")}</option>
           {items.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
         </select>
       </Field>
 
-      <Field label="Nivel de afinidad">
+      <Field label={t(idioma, "ruleEditModal.nivelAfinidad")}>
         <select value={level} onChange={(e) => setLevel(e.target.value)} style={inputStyle}>
-          {Object.entries(RULE_LEVELS).map(([key, meta]) => (
-            <option key={key} value={key}>{meta.label}</option>
+          {Object.keys(RULE_LEVELS).map((key) => (
+            <option key={key} value={key}>{t(idioma, "ruleLevel." + key)}</option>
           ))}
         </select>
       </Field>
 
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: -4 }}>
-        {level === "nula" && "Esta combinación no podrá salir nunca, salvo que algún día no quede ninguna otra opción posible."}
-        {level === "baja" && "Esta combinación seguirá pudiendo salir, pero con mucha menos frecuencia de lo normal."}
-        {level === "alta" && "Esta combinación tendrá muchas más probabilidades de salir de lo normal."}
-        {level === "maxima" && "Si es posible, el motor intentará que esta combinación se dé siempre que se den sus elementos."}
+        {level === "nula" && t(idioma, "ruleEditModal.explicacionNula")}
+        {level === "baja" && t(idioma, "ruleEditModal.explicacionBaja")}
+        {level === "alta" && t(idioma, "ruleEditModal.explicacionAlta")}
+        {level === "maxima" && t(idioma, "ruleEditModal.explicacionMaxima")}
       </p>
 
       {!valid && (id1 || id2) && (
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
-          Elige al menos 2 elementos distintos entre sí.
+          {t(idioma, "ruleEditModal.eligeAlMenos2")}
         </div>
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
-        <ModalBtn onClick={onClose} variant="ghost">Cancelar</ModalBtn>
-        <ModalBtn onClick={handleSave} variant="solid">Guardar</ModalBtn>
+        <ModalBtn onClick={onClose} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={handleSave} variant="solid">{t(idioma, "common.guardar")}</ModalBtn>
       </div>
     </ModalShell>
   );
 }
 
-function ConfirmRuleDeleteModal({ rule, ingredients, onCancel, onConfirm }) {
-  const names = rule.itemIds.map((id) => ruleItemLabel(ingredients, id));
+function ConfirmRuleDeleteModal({ rule, ingredients, onCancel, onConfirm, idioma }) {
+  const names = rule.itemIds.map((id) => ruleItemLabel(ingredients, id, idioma));
   return (
-    <ModalShell onClose={onCancel} title="Eliminar regla">
+    <ModalShell onClose={onCancel} title={t(idioma, "confirmRuleDelete.titulo")}>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
-        ¿Seguro que quieres eliminar la regla <strong>{names.join(" + ")}</strong>?
+        {t(idioma, "confirmRuleDelete.textoPre")}<strong>{names.join(" + ")}</strong>{t(idioma, "confirmRuleDelete.textoPost")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
-        <ModalBtn onClick={onCancel} variant="ghost">Cancelar</ModalBtn>
-        <ModalBtn onClick={onConfirm} variant="danger">Eliminar</ModalBtn>
+        <ModalBtn onClick={onCancel} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={onConfirm} variant="danger">{t(idioma, "confirmRuleDelete.titulo")}</ModalBtn>
       </div>
     </ModalShell>
   );
@@ -4682,7 +4703,7 @@ function SectionIntro({ text }) {
   );
 }
 
-function ProbabilitySumBadge({ total }) {
+function ProbabilitySumBadge({ total, idioma }) {
   const ok = total === 100;
   return (
     <div
@@ -4701,7 +4722,7 @@ function ProbabilitySumBadge({ total }) {
       }}
     >
       {!ok && <AlertCircle size={13} />}
-      Suma actual: {total}% {ok ? "· correcto" : "· debería ser 100%"}
+      {t(idioma, "catalogo.sumaActual", { n: total, estado: ok ? t(idioma, "catalogo.correcto") : t(idioma, "catalogo.deberiaSer100") })}
     </div>
   );
 }
@@ -4720,17 +4741,17 @@ function CardGrid({ children }) {
   );
 }
 
-function ruleSummary(ing) {
-  if (ing.ruleType === "base") return "Base del menú";
+function ruleSummary(ing, idioma) {
+  if (ing.ruleType === "base") return t(idioma, "catalogo.baseDelMenu");
   if (ing.ruleType === "frecuencia") {
-    const periodo = ing.freqPeriodo === "ciclo" ? "cada 2 semanas" : "por semana";
-    return `${ing.freqCantidad}× ${periodo}`;
+    const periodo = ing.freqPeriodo === "ciclo" ? t(idioma, "catalogo.cada2Semanas") : t(idioma, "catalogo.porSemana");
+    return t(idioma, "catalogo.vecesXPeriodo", { n: ing.freqCantidad, periodo });
   }
-  if (ing.ruleType === "probabilidad") return `${ing.probabilidad}% de probabilidad`;
+  if (ing.ruleType === "probabilidad") return t(idioma, "catalogo.probabilidadPct", { n: ing.probabilidad });
   return "";
 }
 
-function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote }) {
+function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote, idioma }) {
   const meta = CATEGORY_META[ingredient.category];
   const m = data ? composedMacros(data, ingredient, 1) : null;
   return (
@@ -4771,13 +4792,13 @@ function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote }) {
           marginTop: 10,
         }}
       >
-        {ruleSummary(ingredient)}
+        {ruleSummary(ingredient, idioma)}
       </div>
 
       {m ? (
         <div style={{ marginTop: 9 }}>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginBottom: 4 }}>
-            1 ración = {m.gramos} g
+            {t(idioma, "catalogo.unaRacion", { g: m.gramos })}
           </div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             <MacroPill label="kcal" value={fmt(m.kcal)} color="var(--rust)" bg="var(--rust-soft)" />
@@ -4791,7 +4812,7 @@ function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote }) {
           fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5,
           color: "var(--ink-soft)", marginTop: 9, display: "flex", alignItems: "center", gap: 4,
         }}>
-          <AlertCircle size={11} /> Sin enlazar a la base de datos
+          <AlertCircle size={11} /> {t(idioma, "catalogo.sinEnlazar")}
         </div>
       )}
 
@@ -4804,7 +4825,7 @@ function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote }) {
   );
 }
 
-function BlockCard({ block, data, members, onUpdateBlock, onEditMember, onDeleteMember, onAddMember, onEditFrequency, showProbabilities }) {
+function BlockCard({ block, data, members, onUpdateBlock, onEditMember, onDeleteMember, onAddMember, onEditFrequency, showProbabilities, idioma }) {
   return (
     <div
       style={{
@@ -4829,7 +4850,7 @@ function BlockCard({ block, data, members, onUpdateBlock, onEditMember, onDelete
               borderRadius: 20,
             }}
           >
-            Grupo · {block.cicloFrecuencia}× cada 2 semanas
+            {t(idioma, "catalogo.grupoFrecuencia", { n: block.cicloFrecuencia })}
           </div>
           {!block.weeklyPattern && onEditFrequency && (
             <IconBtn onClick={() => onEditFrequency(block)}><Pencil size={11} /></IconBtn>
@@ -4887,7 +4908,7 @@ function BlockCard({ block, data, members, onUpdateBlock, onEditMember, onDelete
             fontFamily: "'Helvetica Neue', Arial, sans-serif",
           }}
         >
-          <Plus size={12} /> Añadir al grupo
+          <Plus size={12} /> {t(idioma, "catalogo.anadirAlGrupo")}
         </button>
       </div>
     </div>
@@ -4942,7 +4963,7 @@ function IconBtn({ children, onClick }) {
   );
 }
 
-function EditModal({ state, foods = [], onClose, onSave }) {
+function EditModal({ state, foods = [], onClose, onSave, idioma }) {
   const { mode, category, blockId } = state;
   const existing = state.ingredient;
   const [name, setName] = useState(existing ? existing.name : "");
@@ -5016,14 +5037,14 @@ function EditModal({ state, foods = [], onClose, onSave }) {
   }
 
   return (
-    <ModalShell onClose={onClose} title={mode === "new" ? "Añadir" : "Editar"}>
-      <Field label="Nombre">
+    <ModalShell onClose={onClose} title={mode === "new" ? t(idioma, "editModal.tituloNuevo") : t(idioma, "editModal.tituloEditar")}>
+      <Field label={t(idioma, "editModal.nombre")}>
         <input
           autoFocus
           value={name}
           onChange={(e) => setName(e.target.value)}
           style={inputStyle}
-          placeholder="Ej: Salmón"
+          placeholder={t(idioma, "editModal.nombrePlaceholder")}
         />
       </Field>
 
@@ -5039,7 +5060,7 @@ function EditModal({ state, foods = [], onClose, onSave }) {
             color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: 0.5,
             marginBottom: 9, display: "flex", alignItems: "center", gap: 5,
           }}>
-            <Link2 size={12} /> Ingredientes de este plato
+            <Link2 size={12} /> {t(idioma, "editModal.ingredientesDelPlato")}
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
@@ -5054,7 +5075,7 @@ function EditModal({ state, foods = [], onClose, onSave }) {
                       onChange={(e) => updateComposRow(row.id, { foodId: e.target.value })}
                       style={{ ...inputStyle, flex: 1, minWidth: 0 }}
                     >
-                      <option value="">— Elige un alimento —</option>
+                      <option value="">{t(idioma, "editModal.elegirAlimento")}</option>
                       {foods.map((ff) => (
                         <option key={ff.id} value={ff.id}>{ff.name}</option>
                       ))}
@@ -5087,13 +5108,13 @@ function EditModal({ state, foods = [], onClose, onSave }) {
               color: "var(--ink-soft)", fontFamily: "'Helvetica Neue', Arial, sans-serif", marginBottom: 10,
             }}
           >
-            <Plus size={12} /> Añadir ingrediente
+            <Plus size={12} /> {t(idioma, "editModal.anadirIngrediente")}
           </button>
 
           {composicion.length > 0 ? (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", borderTop: "1px solid var(--line)", paddingTop: 9 }}>
               <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", alignSelf: "center", marginRight: 2 }}>
-                Total del plato:
+                {t(idioma, "editModal.totalDelPlato")}
               </span>
               <MacroPill label="kcal" value={fmt(composTotal.kcal)} color="var(--rust)" bg="var(--rust-soft)" />
               <MacroPill label="P" value={`${fmt(composTotal.prot)} g`} color="var(--green-dark)" bg="var(--green-soft)" />
@@ -5102,7 +5123,7 @@ function EditModal({ state, foods = [], onClose, onSave }) {
             </div>
           ) : (
             <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
-              Añade al menos un ingrediente para calcular los macros de este plato.
+              {t(idioma, "editModal.anadeIngrediente")}
             </div>
           )}
         </div>
@@ -5118,26 +5139,26 @@ function EditModal({ state, foods = [], onClose, onSave }) {
             color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: 0.5,
             marginBottom: 8, display: "flex", alignItems: "center", gap: 5,
           }}>
-            <Link2 size={12} /> Datos nutricionales
+            <Link2 size={12} /> {t(idioma, "editModal.datosNutricionales")}
           </div>
 
-          <Field label="Alimento de la base de datos">
+          <Field label={t(idioma, "editModal.alimentoBaseDatos")}>
             <select value={foodId} onChange={(e) => setFoodId(e.target.value)} style={inputStyle}>
-              <option value="">— Sin enlazar —</option>
+              <option value="">{t(idioma, "editModal.sinEnlazar")}</option>
               {foods.map((f) => (
                 <option key={f.id} value={f.id}>{f.name}</option>
               ))}
             </select>
           </Field>
 
-          <Field label="Gramos por ración (1.0)">
+          <Field label={t(idioma, "editModal.gramosPorRacion")}>
             <input
               type="number"
               min={0}
               value={gramos}
               onChange={(e) => setGramos(e.target.value)}
               style={inputStyle}
-              placeholder="Ej: 150"
+              placeholder={t(idioma, "editModal.gramosPlaceholder")}
             />
           </Field>
 
@@ -5150,32 +5171,32 @@ function EditModal({ state, foods = [], onClose, onSave }) {
             </div>
           ) : (
             <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
-              Enlaza un alimento y pon los gramos para ver los macros de una ración.
+              {t(idioma, "editModal.enlazaAlimento")}
             </div>
           )}
         </div>
       )}
 
-      <Field label="Nota de cantidad (opcional)">
+      <Field label={t(idioma, "editModal.notaCantidad")}>
         <input
           value={cantidad}
           onChange={(e) => setCantidad(e.target.value)}
           style={inputStyle}
-          placeholder='Ej: 2 filetes, 1 taza…'
+          placeholder={t(idioma, "editModal.notaCantidadPlaceholder")}
         />
       </Field>
 
       {!isBlockMember && category === "proteina" && (
-        <Field label="Tipo de regla">
+        <Field label={t(idioma, "editModal.tipoDeRegla")}>
           <select value={ruleType} onChange={(e) => setRuleType(e.target.value)} style={inputStyle}>
-            <option value="frecuencia">Frecuencia fija</option>
-            <option value="base">Base del menú (sin frecuencia, relleno)</option>
+            <option value="frecuencia">{t(idioma, "editModal.frecuenciaFija")}</option>
+            <option value="base">{t(idioma, "editModal.baseDelMenuOpcion")}</option>
           </select>
         </Field>
       )}
 
       {!isBlockMember && ruleType === "frecuencia" && (
-        <Field label="Frecuencia">
+        <Field label={t(idioma, "editModal.frecuencia")}>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               type="number"
@@ -5185,15 +5206,15 @@ function EditModal({ state, foods = [], onClose, onSave }) {
               style={{ ...inputStyle, width: 70 }}
             />
             <select value={freqPeriodo} onChange={(e) => setFreqPeriodo(e.target.value)} style={{ ...inputStyle, flex: 1 }}>
-              <option value="semana">por semana</option>
-              <option value="ciclo">cada 2 semanas</option>
+              <option value="semana">{t(idioma, "catalogo.porSemana")}</option>
+              <option value="ciclo">{t(idioma, "catalogo.cada2Semanas")}</option>
             </select>
           </div>
         </Field>
       )}
 
       {!isBlockMember && ruleType === "probabilidad" && (
-        <Field label="Probabilidad (%)">
+        <Field label={t(idioma, "editModal.probabilidadPct")}>
           <input
             type="number"
             min={0}
@@ -5206,7 +5227,7 @@ function EditModal({ state, foods = [], onClose, onSave }) {
       )}
 
       {isBlockMember && category === "cerrado" && (
-        <Field label="Probabilidad dentro del grupo (%)">
+        <Field label={t(idioma, "editModal.probabilidadDentroGrupo")}>
           <input
             type="number"
             min={0}
@@ -5219,32 +5240,32 @@ function EditModal({ state, foods = [], onClose, onSave }) {
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
-        <ModalBtn onClick={onClose} variant="ghost">Cancelar</ModalBtn>
-        <ModalBtn onClick={handleSave} variant="solid">Guardar</ModalBtn>
+        <ModalBtn onClick={onClose} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={handleSave} variant="solid">{t(idioma, "common.guardar")}</ModalBtn>
       </div>
     </ModalShell>
   );
 }
 
-function ConfirmModal({ ingredient, onCancel, onConfirm }) {
+function ConfirmModal({ ingredient, onCancel, onConfirm, idioma }) {
   return (
-    <ModalShell onClose={onCancel} title="Eliminar">
+    <ModalShell onClose={onCancel} title={t(idioma, "confirmModal.titulo")}>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)" }}>
-        ¿Seguro que quieres eliminar <strong>{ingredient.name}</strong>? Dejará de aparecer en los menús generados.
+        {t(idioma, "confirmModal.textoPre")}<strong>{ingredient.name}</strong>{t(idioma, "confirmModal.textoPost")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
-        <ModalBtn onClick={onCancel} variant="ghost">Cancelar</ModalBtn>
-        <ModalBtn onClick={onConfirm} variant="danger">Eliminar</ModalBtn>
+        <ModalBtn onClick={onCancel} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={onConfirm} variant="danger">{t(idioma, "confirmModal.titulo")}</ModalBtn>
       </div>
     </ModalShell>
   );
 }
 
-function FrequencyModal({ block, onClose, onSave }) {
+function FrequencyModal({ block, onClose, onSave, idioma }) {
   const [value, setValue] = useState(block.cicloFrecuencia);
   return (
-    <ModalShell onClose={onClose} title={`Frecuencia de "${block.name}"`}>
-      <Field label="Veces cada 2 semanas (ciclo)">
+    <ModalShell onClose={onClose} title={t(idioma, "frequencyModal.titulo", { nombre: block.name })}>
+      <Field label={t(idioma, "frequencyModal.vecesCada2Semanas")}>
         <input
           type="number"
           min={1}
@@ -5255,11 +5276,11 @@ function FrequencyModal({ block, onClose, onSave }) {
         />
       </Field>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginTop: -4 }}>
-        Ej: para que aparezca 1 vez por semana, pon 2 (2 veces cada 2 semanas). Con un número par, se garantiza mitad en cada semana, nunca las dos juntas.
+        {t(idioma, "frequencyModal.ejemplo")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
-        <ModalBtn onClick={onClose} variant="ghost">Cancelar</ModalBtn>
-        <ModalBtn onClick={() => onSave(Number(value) || 1)} variant="solid">Guardar</ModalBtn>
+        <ModalBtn onClick={onClose} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={() => onSave(Number(value) || 1)} variant="solid">{t(idioma, "common.guardar")}</ModalBtn>
       </div>
     </ModalShell>
   );
