@@ -1027,6 +1027,7 @@ export default function RuedaDePlatos() {
                 onCerrarCiclo={cerrarCicloPeso}
                 onPausarCiclo={pausarCiclo}
                 onReanudarCiclo={reanudarCiclo}
+                idioma={idioma}
               />
             ) : (
               <PremiumRequiredNotice
@@ -2266,28 +2267,33 @@ function DocumentosView({ idioma }) {
   );
 }
 
-function RecordatorioPesoModal({ onClose }) {
+// DIAS_SEMANA_CORTO (Logica/peso.js) ya viene abreviado en español ("Dom","Lun"...) — para
+// traducirlo reusamos las claves "dia.X" (nombre completo) ya existentes: primero se pasa a
+// nombre completo con este mapa, se traduce, y se vuelve a recortar a 3 letras.
+const DIA_CORTO_A_COMPLETO = {
+  Dom: "Domingo", Lun: "Lunes", Mar: "Martes", Mié: "Miércoles", Jue: "Jueves", Vie: "Viernes", Sáb: "Sábado",
+};
+
+function RecordatorioPesoModal({ onClose, idioma }) {
   return (
-    <ModalShell onClose={onClose} title="Hoy toca pesarte">
+    <ModalShell onClose={onClose} title={t(idioma, "recordatorioPeso.titulo")}>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
-        Es uno de los días que elegiste para el seguimiento de peso. Puedes registrarlo ahora mismo, justo
-        debajo, o saltarte el aviso de hoy si no te viene bien.
+        {t(idioma, "recordatorioPeso.texto")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <ModalBtn variant="ghost" onClick={onClose}>Saltar por hoy</ModalBtn>
-        <ModalBtn variant="solid" onClick={onClose}>Vale</ModalBtn>
+        <ModalBtn variant="ghost" onClick={onClose}>{t(idioma, "recordatorioPeso.saltar")}</ModalBtn>
+        <ModalBtn variant="solid" onClick={onClose}>{t(idioma, "recordatorioPeso.vale")}</ModalBtn>
       </div>
     </ModalShell>
   );
 }
 
-function PesoAnomaliaModal({ peso, onCancel, onConfirm }) {
+function PesoAnomaliaModal({ peso, onCancel, onConfirm, idioma }) {
   const [motivo, setMotivo] = useState("");
   return (
-    <ModalShell onClose={onCancel} title="Cambio bastante grande">
+    <ModalShell onClose={onCancel} title={t(idioma, "anomaliaPeso.titulo")}>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
-        {peso} kg se aleja bastante de tu última pesada. ¿Sabes a qué se puede deber? Si marcas un motivo,
-        este dato no contará para la tendencia del ciclo — pero se guarda igualmente.
+        {t(idioma, "anomaliaPeso.texto", { peso })}
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
         {MOTIVOS_CAMBIO_PESO.map((op) => (
@@ -2301,13 +2307,13 @@ function PesoAnomaliaModal({ peso, onCancel, onConfirm }) {
               fontSize: 12.5, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer",
             }}
           >
-            {op}
+            {t(idioma, "motivo." + op)}
           </button>
         ))}
       </div>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-        <ModalBtn variant="ghost" onClick={() => onConfirm(false, "")}>No, es normal</ModalBtn>
-        <ModalBtn variant="solid" onClick={() => onConfirm(true, motivo || "Sin especificar")}>Guardar como atípico</ModalBtn>
+        <ModalBtn variant="ghost" onClick={() => onConfirm(false, "")}>{t(idioma, "anomaliaPeso.esNormal")}</ModalBtn>
+        <ModalBtn variant="solid" onClick={() => onConfirm(true, motivo || "Sin especificar")}>{t(idioma, "anomaliaPeso.guardarAtipico")}</ModalBtn>
       </div>
     </ModalShell>
   );
@@ -2316,7 +2322,7 @@ function PesoAnomaliaModal({ peso, onCancel, onConfirm }) {
 // Gráfica de líneas hecha a mano en SVG (mismo criterio que el resto de la app: sin librerías).
 // Dibuja todas las pesadas (las atípicas en un color distinto) y la recta de tendencia calculada
 // sobre las pesadas normales.
-function PesoLineChart({ entradas, tendencia }) {
+function PesoLineChart({ entradas, tendencia, idioma }) {
   const W = 320, H = 170, PAD_L = 32, PAD_R = 6, PAD_TOP = 10, PAD_BOTTOM = 20;
   const ordenadas = [...entradas].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
   const inicio = new Date(ordenadas[0].fecha + "T00:00:00");
@@ -2371,7 +2377,7 @@ function PesoLineChart({ entradas, tendencia }) {
           textAnchor={i === 0 ? "start" : i === xTicks.length - 1 ? "end" : "middle"}
           fontSize="8" fill="var(--ink-soft)" fontFamily="'Helvetica Neue', Arial, sans-serif"
         >
-          {formatFechaCorta(fechaEnX(x))}
+          {formatFechaCorta(fechaEnX(x), idioma)}
         </text>
       ))}
     </svg>
@@ -2396,7 +2402,7 @@ function NivelBadge({ nivel, idioma }) {
 // Vista de impresión del seguimiento de peso — mismo patrón que PrintExport para el menú: un bloque
 // oculto en pantalla (@media screen) que solo se muestra al imprimir (@media print), para que
 // "Guardar como PDF" del propio navegador lo capture sin necesidad de ninguna librería.
-function PrintSeguimiento({ entradas, tendencia, titulo }) {
+function PrintSeguimiento({ entradas, tendencia, titulo, idioma }) {
   if (!entradas || entradas.length === 0) return null;
   const ordenadas = [...entradas].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
   return (
@@ -2416,37 +2422,37 @@ function PrintSeguimiento({ entradas, tendencia, titulo }) {
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
             FoodDraft
           </div>
-          <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>Seguimiento de peso</h1>
+          <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>{t(idioma, "printSeguimiento.titulo")}</h1>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
-            {titulo} · exportado el {formatFechaCorta(fechaISO(new Date()))}
+            {t(idioma, "printSeguimiento.exportadoEl", { titulo, fecha: formatFechaCorta(fechaISO(new Date()), idioma) })}
           </div>
         </div>
 
         <div style={{ marginTop: 18, maxWidth: 420 }}>
-          <PesoLineChart entradas={ordenadas} tendencia={tendencia || null} />
+          <PesoLineChart entradas={ordenadas} tendencia={tendencia || null} idioma={idioma} />
         </div>
 
         {tendencia && (
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "#1f4d38", fontWeight: 700, marginTop: 8 }}>
-            Tendencia: {tendencia.pctSemana > 0 ? "+" : ""}{tendencia.pctSemana.toFixed(2)}%/semana
+            {t(idioma, "printSeguimiento.tendencia", { signo: tendencia.pctSemana > 0 ? "+" : "", pct: tendencia.pctSemana.toFixed(2) })}
           </div>
         )}
 
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11 }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>Fecha</th>
-              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>Peso (kg)</th>
-              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>Nota</th>
+              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>{t(idioma, "printSeguimiento.fecha")}</th>
+              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>{t(idioma, "printSeguimiento.pesoKg")}</th>
+              <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>{t(idioma, "printSeguimiento.nota")}</th>
             </tr>
           </thead>
           <tbody>
             {ordenadas.map((e) => (
               <tr key={e.id || e.fecha}>
-                <td style={{ padding: "3px 6px", borderBottom: "1px solid #ddd6bf" }}>{formatFechaCorta(e.fecha)}</td>
+                <td style={{ padding: "3px 6px", borderBottom: "1px solid #ddd6bf" }}>{formatFechaCorta(e.fecha, idioma)}</td>
                 <td style={{ padding: "3px 6px", borderBottom: "1px solid #ddd6bf" }}>{e.peso}</td>
                 <td style={{ padding: "3px 6px", borderBottom: "1px solid #ddd6bf", color: "#a9721f" }}>
-                  {e.atipico ? `Atípica${e.motivo ? `: ${e.motivo}` : ""}` : ""}
+                  {e.atipico ? t(idioma, "printSeguimiento.atipica", { detalle: e.motivo ? `: ${t(idioma, "motivo." + e.motivo)}` : "" }) : ""}
                 </td>
               </tr>
             ))}
@@ -2454,7 +2460,7 @@ function PrintSeguimiento({ entradas, tendencia, titulo }) {
         </table>
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
-          FoodDraft — documento generado a partir de tu seguimiento de peso
+          {t(idioma, "printSeguimiento.pie")}
         </div>
       </div>
     </div>
@@ -2464,7 +2470,7 @@ function PrintSeguimiento({ entradas, tendencia, titulo }) {
 // Vista de "Seguimiento de peso": mientras el ciclo está abierto, solo se enseña el progreso (cuántas
 // pesadas van, cuánto falta) sin cifras ni gráfica — para no fomentar la obsesión con el número del día.
 // Al llegar a la duración configurada, se enseña la tendencia real y una sugerencia de ajuste opcional.
-function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissReminder, onCerrarCiclo, onPausarCiclo, onReanudarCiclo }) {
+function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissReminder, onCerrarCiclo, onPausarCiclo, onReanudarCiclo, idioma }) {
   const [pesoInput, setPesoInput] = useState("");
   const [pendienteAnomalia, setPendienteAnomalia] = useState(null);
   const [showConfig, setShowConfig] = useState(false);
@@ -2525,7 +2531,7 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
   }
 
   const tendencia = cicloListoParaCierre ? calcularTendenciaPeso(entradas) : null;
-  const evaluacion = tendencia ? evaluarTendencia(tendencia.pctSemana, perfil?.objetivo) : null;
+  const evaluacion = tendencia ? evaluarTendencia(tendencia.pctSemana, perfil?.objetivo, idioma) : null;
   const ultimaNormal = [...entradas].reverse().find((e) => !e.atipico);
   const hayCambios = evaluacion && evaluacion.sugerenciaKcal !== 0 && perfil?.objetivo && perfil.objetivo !== "mantenimiento";
 
@@ -2537,10 +2543,10 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
 
   return (
     <div style={{ maxWidth: 480 }}>
-      <SectionIntro text="Pésate 2-3 veces por semana, repartidas a lo largo de la semana. Mientras el ciclo esté abierto no verás el número evolucionar — solo al cerrarlo, para no obsesionarte con las variaciones del día a día." />
+      <SectionIntro text={t(idioma, "pesoView.intro")} />
 
       {recordatorioAbierto && (
-        <RecordatorioPesoModal onClose={() => { setRecordatorioAbierto(false); onDismissReminder(); }} />
+        <RecordatorioPesoModal onClose={() => { setRecordatorioAbierto(false); onDismissReminder(); }} idioma={idioma} />
       )}
 
       {pendienteAnomalia && (
@@ -2552,21 +2558,25 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
             setPendienteAnomalia(null);
             setPesoInput("");
           }}
+          idioma={idioma}
         />
       )}
 
       {cicloListoParaCierre ? (
         <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>
-            Ciclo terminado — {entradas.length} pesadas registradas
+            {t(idioma, "pesoView.cicloTerminado", { n: entradas.length })}
           </div>
 
           {pausas.length > 0 && (
             <div style={{ background: "var(--mustard-soft)", borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
               {pausas.map((p, i) => (
                 <div key={i} style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
-                  ⏸ Pausado del {formatFechaCorta(p.inicio)} al {formatFechaCorta(p.fin || hoyISO)}
-                  {p.motivo ? ` — "${p.motivo}"` : ""}
+                  {t(idioma, "pesoView.pausadoDelAl", {
+                    inicio: formatFechaCorta(p.inicio, idioma),
+                    fin: formatFechaCorta(p.fin || hoyISO, idioma),
+                    detalle: p.motivo ? ` — "${p.motivo}"` : "",
+                  })}
                 </div>
               ))}
             </div>
@@ -2574,12 +2584,12 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
 
           {tendencia ? (
             <>
-              <PesoLineChart entradas={entradas} tendencia={tendencia} />
+              <PesoLineChart entradas={entradas} tendencia={tendencia} idioma={idioma} />
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
                 <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 20, fontWeight: 700, color: "var(--green-dark)" }}>
-                  {tendencia.pctSemana > 0 ? "+" : ""}{tendencia.pctSemana.toFixed(2)}%/semana
+                  {t(idioma, "pesoView.pctSemana", { signo: tendencia.pctSemana > 0 ? "+" : "", pct: tendencia.pctSemana.toFixed(2) })}
                 </span>
-                {evaluacion && <NivelBadge nivel={evaluacion.nivel} />}
+                {evaluacion && <NivelBadge nivel={evaluacion.nivel} idioma={idioma} />}
               </div>
               {evaluacion && (
                 <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 10 }}>
@@ -2592,10 +2602,10 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                   <input type="checkbox" checked={actualizarPesoToggle} onChange={(e) => setActualizarPesoToggle(e.target.checked)} style={{ marginTop: 2 }} />
                   <span>
                     <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--green-dark)", fontWeight: 700 }}>
-                      Actualizar mi peso de perfil a {ultimaNormal.peso} kg
+                      {t(idioma, "pesoView.actualizarPesoPerfil", { kg: ultimaNormal.peso })}
                     </span>
                     <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--green-dark)", marginTop: 2 }}>
-                      Ahora mismo tienes registrado {perfil?.peso} kg — esto recalcula tu BMR, proteína y grasa con tu peso real.
+                      {t(idioma, "pesoView.actualizarPesoExplicacion", { kg: perfil?.peso })}
                     </span>
                   </span>
                 </label>
@@ -2606,10 +2616,10 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                   <input type="checkbox" checked={aplicarKcalToggle} onChange={(e) => setAplicarKcalToggle(e.target.checked)} style={{ marginTop: 2 }} />
                   <span>
                     <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--mustard-dark)", fontWeight: 700 }}>
-                      Aplicar ajuste: {evaluacion.sugerenciaKcal > 0 ? "+" : ""}{evaluacion.sugerenciaKcal} kcal/día
+                      {t(idioma, "pesoView.aplicarAjuste", { signo: evaluacion.sugerenciaKcal > 0 ? "+" : "", kcal: evaluacion.sugerenciaKcal })}
                     </span>
                     <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", marginTop: 2 }}>
-                      No cambia tu etapa ({OBJETIVO_ETAPAS[perfil.objetivo]?.label}) — solo afina la intensidad dentro de ella.
+                      {t(idioma, "pesoView.noCambiaEtapa", { etapa: t(idioma, "objetivoEtapa." + perfil.objetivo) })}
                     </span>
                   </span>
                 </label>
@@ -2620,32 +2630,31 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                   variant="solid"
                   onClick={() => onCerrarCiclo({ aplicarKcal: aplicarKcalToggle, actualizarPeso: actualizarPesoToggle })}
                 >
-                  Cerrar ciclo y empezar el siguiente
+                  {t(idioma, "pesoView.cerrarCiclo")}
                 </ModalBtn>
                 <button
-                  onClick={() => exportarSeguimiento(entradas, tendencia, "Ciclo cerrado hoy")}
+                  onClick={() => exportarSeguimiento(entradas, tendencia, t(idioma, "pesoView.cicloCerradoHoyTitulo"))}
                   style={{
                     background: "none", border: "none", cursor: "pointer", padding: 0,
                     fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
                   }}
                 >
-                  📄 Exportar este cierre en PDF
+                  {t(idioma, "pesoView.exportarCierre")}
                 </button>
               </div>
             </>
           ) : (
             <>
               <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55 }}>
-                No hay pesadas suficientes (sin contar las atípicas) para calcular una tendencia fiable este
-                ciclo. Puedes empezar el siguiente cuando quieras.
+                {t(idioma, "pesoView.sinPesadasSuficientes")}
               </p>
-              <ModalBtn variant="solid" onClick={() => onCerrarCiclo({ aplicarKcal: false, actualizarPeso: false })}>Empezar el siguiente ciclo</ModalBtn>
+              <ModalBtn variant="solid" onClick={() => onCerrarCiclo({ aplicarKcal: false, actualizarPeso: false })}>{t(idioma, "pesoView.empezarSiguienteCiclo")}</ModalBtn>
             </>
           )}
         </div>
       ) : (
         <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
-          <Field label={yaRegistradoHoy ? "Corregir el peso de hoy" : "Peso de hoy"}>
+          <Field label={yaRegistradoHoy ? t(idioma, "pesoView.corregirPesoHoy") : t(idioma, "pesoView.pesoDeHoy")}>
             <div style={{ display: "flex", gap: 8 }}>
               <input
                 type="number" min={30} max={300} step="0.1" value={pesoInput}
@@ -2656,19 +2665,16 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                 onClick={intentarGuardar}
                 style={{ background: "var(--green)", color: "#fff", border: "none", borderRadius: 7, padding: "0 16px", fontSize: 13, fontWeight: 700, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer" }}
               >
-                Guardar
+                {t(idioma, "pesoView.guardar")}
               </button>
             </div>
           </Field>
 
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
             {cicloInicioDate ? (
-              <>
-                Ciclo en curso — {entradas.length} de ~{totalEsperado} pesadas registradas, quedan{" "}
-                {Math.max(0, diasCiclo - diasTranscurridos)} días para la revisión.
-              </>
+              t(idioma, "pesoView.cicloEnCurso", { n: entradas.length, total: totalEsperado, dias: Math.max(0, diasCiclo - diasTranscurridos) })
             ) : (
-              <>Tu primera pesada abre el ciclo. Se revisará dentro de {pesoTracking.duracionSemanas} semanas.</>
+              t(idioma, "pesoView.primeraPesada", { n: pesoTracking.duracionSemanas })
             )}
           </div>
 
@@ -2676,8 +2682,10 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
             pausaActiva ? (
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, background: "var(--mustard-soft)", borderRadius: 8, padding: "9px 11px", marginTop: 8 }}>
                 <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
-                  ⏸ Ciclo pausado desde el {formatFechaCorta(pausaActiva.inicio)}
-                  {pausaActiva.motivo ? ` — "${pausaActiva.motivo}"` : ""}. No cuenta para el cierre ni te recordará pesarte.
+                  {t(idioma, "pesoView.cicloPausadoDesde", {
+                    fecha: formatFechaCorta(pausaActiva.inicio, idioma),
+                    detalle: pausaActiva.motivo ? ` — "${pausaActiva.motivo}"` : "",
+                  })}
                 </div>
                 <button
                   onClick={onReanudarCiclo}
@@ -2687,7 +2695,7 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                     borderRadius: 7, padding: "5px 10px", flexShrink: 0, cursor: "pointer",
                   }}
                 >
-                  ▶ Reanudar
+                  {t(idioma, "pesoView.reanudar")}
                 </button>
               </div>
             ) : pausando ? (
@@ -2695,11 +2703,11 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                 <input
                   value={motivoPausa}
                   onChange={(e) => setMotivoPausa(e.target.value)}
-                  placeholder="Motivo (opcional)"
+                  placeholder={t(idioma, "pesoView.motivoPlaceholder")}
                   style={{ ...inputStyle, flex: "1 1 160px" }}
                 />
-                <ModalBtn variant="solid" onClick={confirmarPausa}>Pausar ciclo</ModalBtn>
-                <ModalBtn variant="ghost" onClick={() => { setPausando(false); setMotivoPausa(""); }}>Cancelar</ModalBtn>
+                <ModalBtn variant="solid" onClick={confirmarPausa}>{t(idioma, "pesoView.pausarCiclo")}</ModalBtn>
+                <ModalBtn variant="ghost" onClick={() => { setPausando(false); setMotivoPausa(""); }}>{t(idioma, "pesoView.cancelar")}</ModalBtn>
               </div>
             ) : (
               <button
@@ -2710,7 +2718,7 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                   marginTop: 6, cursor: "pointer",
                 }}
               >
-                ⏸ Pausar ciclo
+                {t(idioma, "pesoView.pausarCicloToggle")}
               </button>
             )
           )}
@@ -2720,7 +2728,7 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
               {entradas.map((e) => (
                 <span
                   key={e.id}
-                  title={e.atipico ? `Marcada como atípica${e.motivo ? `: ${e.motivo}` : ""}` : "Registrada"}
+                  title={e.atipico ? t(idioma, "pesoView.marcadaAtipica", { detalle: e.motivo ? `: ${t(idioma, "motivo." + e.motivo)}` : "" }) : t(idioma, "pesoView.registrada")}
                   style={{
                     fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, fontWeight: 700,
                     padding: "3px 8px", borderRadius: 20,
@@ -2728,7 +2736,7 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                     background: e.atipico ? "var(--mustard-soft)" : "var(--green-soft)",
                   }}
                 >
-                  {formatFechaCorta(e.fecha)} {e.atipico ? "⚠" : "✓"}
+                  {formatFechaCorta(e.fecha, idioma)} {e.atipico ? "⚠" : "✓"}
                 </span>
               ))}
             </div>
@@ -2743,12 +2751,12 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
           fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
         }}
       >
-        {showConfig ? "Ocultar ajustes ▲" : "Ajustes del seguimiento ▼"}
+        {showConfig ? t(idioma, "pesoView.ocultarAjustes") : t(idioma, "pesoView.verAjustes")}
       </button>
 
       {showConfig && (
         <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 16px 18px" }}>
-          <Field label="Veces por semana">
+          <Field label={t(idioma, "pesoView.vecesPorSemana")}>
             <div style={{ display: "flex", gap: 8 }}>
               {PESO_FRECUENCIAS.map((v) => (
                 <button
@@ -2768,10 +2776,14 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
               ))}
             </div>
             <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 6 }}>
-              Días sugeridos: {(DIAS_SUGERIDOS_PESO[pesoTracking.vecesSemana] || []).map((d) => DIAS_SEMANA_CORTO[d]).join(", ")}
+              {t(idioma, "pesoView.diasSugeridos", {
+                lista: (DIAS_SUGERIDOS_PESO[pesoTracking.vecesSemana] || [])
+                  .map((d) => t(idioma, "dia." + DIA_CORTO_A_COMPLETO[DIAS_SEMANA_CORTO[d]]).slice(0, 3))
+                  .join(", "),
+              })}
             </div>
           </Field>
-          <Field label="Duración del ciclo">
+          <Field label={t(idioma, "pesoView.duracionCiclo")}>
             <div style={{ display: "flex", gap: 8 }}>
               {PESO_DURACIONES.map((v) => (
                 <button
@@ -2786,14 +2798,14 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                     cursor: cicloInicioDate ? "default" : "pointer", opacity: cicloInicioDate ? 0.6 : 1,
                   }}
                 >
-                  {v} sem.
+                  {t(idioma, "pesoView.semanaAbrev", { n: v })}
                 </button>
               ))}
             </div>
           </Field>
           {cicloInicioDate && (
             <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
-              No se puede cambiar con un ciclo ya abierto — se aplicará al siguiente.
+              {t(idioma, "pesoView.noCambiarConCicloAbierto")}
             </div>
           )}
         </div>
@@ -2806,7 +2818,7 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
           fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
         }}
       >
-        {showProgresion ? "Ocultar progresión ▲" : "Ver progresión ▼"}
+        {showProgresion ? t(idioma, "pesoView.ocultarProgresion") : t(idioma, "pesoView.verProgresion")}
       </button>
 
       {showProgresion && (
@@ -2823,35 +2835,35 @@ function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDismissRe
                   fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
                 }}
               >
-                {r.label}
+                {t(idioma, "rango." + r.key)}
               </button>
             ))}
           </div>
           {historialFiltrado.length >= 2 ? (
             <>
-              <PesoLineChart entradas={historialFiltrado} tendencia={null} />
+              <PesoLineChart entradas={historialFiltrado} tendencia={null} idioma={idioma} />
               <button
-                onClick={() => exportarSeguimiento(historialFiltrado, null, RANGOS_PROGRESION.find((r) => r.key === rangoProgresion)?.label)}
+                onClick={() => exportarSeguimiento(historialFiltrado, null, t(idioma, "rango." + rangoProgresion))}
                 style={{
                   marginTop: 10, background: "none", border: "none", cursor: "pointer", padding: 0,
                   fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--green-dark)",
                 }}
               >
-                📄 Exportar este rango en PDF
+                {t(idioma, "pesoView.exportarRango")}
               </button>
             </>
           ) : (
             <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
               {historial.length === 0
-                ? "Aún no tienes ningún ciclo cerrado — la progresión se rellena al terminar tu primer ciclo."
-                : "No hay suficientes pesadas en este rango. Prueba con un rango más amplio."}
+                ? t(idioma, "pesoView.sinCiclosCerrados")
+                : t(idioma, "pesoView.sinPesadasEnRango")}
             </p>
           )}
         </div>
       )}
 
       {printPayload && (
-        <PrintSeguimiento entradas={printPayload.entradas} tendencia={printPayload.tendencia} titulo={printPayload.titulo} />
+        <PrintSeguimiento entradas={printPayload.entradas} tendencia={printPayload.tendencia} titulo={printPayload.titulo} idioma={idioma} />
       )}
     </div>
   );

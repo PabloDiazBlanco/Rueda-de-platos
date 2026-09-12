@@ -1,7 +1,9 @@
 // ---------- Seguimiento de peso ----------
 // Módulo de lógica pura (sin JSX): ciclos de pesadas, detección de cambios atípicos,
 // regresión lineal sobre la tendencia y evaluación contra las bandas de referencia.
-// No depende de ninguna otra parte de la app.
+// Depende solo de i18n.js (otro módulo de lógica pura) para traducir el mensaje de evaluarTendencia
+// y los meses de formatFechaCorta — nunca de app.jsx ni de nada con JSX/React.
+import { t } from "i18n";
 
 // Días de la semana sugeridos para pesarse, repartidos para no quedar pegados (evita pesarse varias
 // veces seguidas justo después del fin de semana). 0=domingo...6=sábado, como Date.getDay().
@@ -56,10 +58,14 @@ export function fechaISO(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-const MESES_CORTOS = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
-export function formatFechaCorta(fechaStr) {
+const MESES_CORTOS = {
+  es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+};
+export function formatFechaCorta(fechaStr, idioma = "es") {
   const [y, m, d] = fechaStr.split("-").map(Number);
-  return `${d} ${MESES_CORTOS[m - 1]}`;
+  const meses = MESES_CORTOS[idioma] || MESES_CORTOS.es;
+  return `${d} ${meses[m - 1]}`;
 }
 
 // Descarga una copia de todos los datos guardados (perfil, ingredientes, seguimiento de peso...)
@@ -128,7 +134,7 @@ export function calcularTendenciaPeso(entradas) {
 // Traduce la tendencia real a un nivel (según las bandas de arriba) y a una sugerencia de ajuste en
 // kcal, en pasos de 100-200 kcal (protocolo de Helms et al. 2014). Solo aplica a volumen/definición:
 // en mantenimiento no hay una dirección "esperada" contra la que comparar.
-export function evaluarTendencia(pctSemana, objetivo) {
+export function evaluarTendencia(pctSemana, objetivo, idioma = "es") {
   if (objetivo !== "definicion" && objetivo !== "volumen") return null;
   const magnitudSemana = Math.abs(pctSemana);
   const magnitudMes = magnitudSemana * (30 / 7);
@@ -137,41 +143,41 @@ export function evaluarTendencia(pctSemana, objetivo) {
     const b = BANDAS_TENDENCIA_DEFICIT;
     if (pctSemana > 0) {
       return { nivel: "direccion-contraria", sugerenciaKcal: -200,
-        mensaje: "El peso está subiendo en una etapa de definición. Puede deberse a algo puntual, pero conviene revisar el déficit." };
+        mensaje: t(idioma, "evaluacion.definicion.direccionContraria") };
     }
     if (magnitudSemana < b.ineficaz) {
       return { nivel: "ineficaz", sugerenciaKcal: -100,
-        mensaje: `Estás perdiendo muy poco (${magnitudSemana.toFixed(2)}%/semana) — por debajo del ${b.ineficaz}% que se considera un ritmo con estímulo suficiente.` };
+        mensaje: t(idioma, "evaluacion.definicion.ineficaz", { magnitud: magnitudSemana.toFixed(2), umbral: b.ineficaz }) };
     }
     if (magnitudSemana > b.accion) {
       return { nivel: "accion", sugerenciaKcal: 200,
-        mensaje: `Estás perdiendo peso muy rápido (${magnitudSemana.toFixed(2)}%/semana) — por encima del ${b.accion}%, con riesgo de perder masa muscular.` };
+        mensaje: t(idioma, "evaluacion.definicion.accion", { magnitud: magnitudSemana.toFixed(2), umbral: b.accion }) };
     }
     if (magnitudSemana > b.aviso) {
       return { nivel: "aviso", sugerenciaKcal: 100,
-        mensaje: `Tu ritmo de pérdida (${magnitudSemana.toFixed(2)}%/semana) está en la zona alta, entre el ${b.aviso}% y el ${b.accion}%.` };
+        mensaje: t(idioma, "evaluacion.definicion.aviso", { magnitud: magnitudSemana.toFixed(2), umbralAviso: b.aviso, umbralAccion: b.accion }) };
     }
     return { nivel: "optimo", sugerenciaKcal: 0,
-      mensaje: `Tu ritmo de pérdida (${magnitudSemana.toFixed(2)}%/semana) está dentro del rango recomendado (${b.ineficaz}%-${b.accion}%).` };
+      mensaje: t(idioma, "evaluacion.definicion.optimo", { magnitud: magnitudSemana.toFixed(2), umbralIneficaz: b.ineficaz, umbralAccion: b.accion }) };
   }
 
   const b = BANDAS_TENDENCIA_SUPERAVIT;
   if (pctSemana < 0) {
     return { nivel: "direccion-contraria", sugerenciaKcal: 200,
-      mensaje: "El peso está bajando en una etapa de volumen. Puede deberse a algo puntual, pero conviene revisar el superávit." };
+      mensaje: t(idioma, "evaluacion.volumen.direccionContraria") };
   }
   if (magnitudMes < b.ineficaz) {
     return { nivel: "ineficaz", sugerenciaKcal: 100,
-      mensaje: `Estás ganando muy poco (${magnitudMes.toFixed(2)}%/mes) — por debajo del ${b.ineficaz}% que se considera necesario para progresar.` };
+      mensaje: t(idioma, "evaluacion.volumen.ineficaz", { magnitud: magnitudMes.toFixed(2), umbral: b.ineficaz }) };
   }
   if (magnitudMes > b.accion) {
     return { nivel: "accion", sugerenciaKcal: -200,
-      mensaje: `Estás ganando peso muy rápido (${magnitudMes.toFixed(2)}%/mes) — por encima del ${b.accion}%, con riesgo de que sea sobre todo grasa.` };
+      mensaje: t(idioma, "evaluacion.volumen.accion", { magnitud: magnitudMes.toFixed(2), umbral: b.accion }) };
   }
   if (magnitudMes > b.aviso) {
     return { nivel: "aviso", sugerenciaKcal: -100,
-      mensaje: `Tu ritmo de ganancia (${magnitudMes.toFixed(2)}%/mes) está en la zona alta, entre el ${b.aviso}% y el ${b.accion}%.` };
+      mensaje: t(idioma, "evaluacion.volumen.aviso", { magnitud: magnitudMes.toFixed(2), umbralAviso: b.aviso, umbralAccion: b.accion }) };
   }
   return { nivel: "optimo", sugerenciaKcal: 0,
-    mensaje: `Tu ritmo de ganancia (${magnitudMes.toFixed(2)}%/mes) está dentro del rango recomendado (${b.ineficaz}%-${b.accion}%).` };
+    mensaje: t(idioma, "evaluacion.volumen.optimo", { magnitud: magnitudMes.toFixed(2), umbralIneficaz: b.ineficaz, umbralAccion: b.accion }) };
 }
