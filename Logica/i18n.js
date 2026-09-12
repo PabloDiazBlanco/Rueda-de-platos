@@ -91,6 +91,32 @@ const TEXTOS = {
 
     "perfil.idioma.label": "Idioma",
     "perfil.idioma.ayuda": "El idioma de la interfaz. Por ahora, el resto de los textos de la app puede seguir viéndose en español mientras se traduce por partes.",
+
+    // Nombres de días y tipos de comida: viven en español en el modelo de datos (DAYS, mealType
+    // del menú generado, claves de perfil.repartoComidas) — cambiarlos ahí tocaría el motor de
+    // generación de menús y las reglas de combinación, que comparan por igualdad de texto exacta.
+    // Aquí solo se traduce cómo se MUESTRAN, sin tocar el dato real por debajo.
+    "dia.Lunes": "Lunes", "dia.Martes": "Martes", "dia.Miércoles": "Miércoles",
+    "dia.Jueves": "Jueves", "dia.Viernes": "Viernes", "dia.Sábado": "Sábado", "dia.Domingo": "Domingo",
+    "mealType.Desayuno": "Desayuno", "mealType.Media mañana": "Media mañana", "mealType.Comida": "Comida",
+    "mealType.Merienda": "Merienda", "mealType.Cena": "Cena",
+
+    "menu.intro": "Genera un ciclo de 2 semanas respetando todas las frecuencias, bloques y probabilidades definidos. Cada vez que pulses el botón, se sortea un menú nuevo.",
+    "menu.verObjetivos": "🎯 Ver objetivos",
+    "menu.generarOtro": "Generar otro menú",
+    "menu.generarPrimero": "Generar menú (2 semanas)",
+    "menu.sinMenuTodavia": "Todavía no has generado ningún menú. Pulsa el botón de arriba para crear el primero.",
+    "menu.semana": "Semana {n}",
+    "menu.exportarPdf": "Exportar PDF",
+    "menu.listaCompra": "🛒 Lista de la compra",
+    "menu.ocultarEstadisticas": "Ocultar estadísticas ▲",
+    "menu.verEstadisticas": "Ver estadísticas ▼",
+    "menu.garbanzos5050": "+garbanzos 50/50",
+    "menu.ajustada": "ajustada",
+    "menu.kcal": "{n} kcal",
+    "menu.historial.titulo": "Ciclos anteriores",
+    "menu.historial.explicacion": "La app usa el último ciclo para evitar repetir de inmediato el mismo plato cerrado o la misma elección en los grupos de un solo hueco.",
+    "menu.historial.platoCerrado": "Plato cerrado: {nombre}",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -131,6 +157,28 @@ const TEXTOS = {
 
     "perfil.idioma.label": "Language",
     "perfil.idioma.ayuda": "The interface language. For now, the rest of the app's text may still appear in Spanish while it's translated in stages.",
+
+    "dia.Lunes": "Monday", "dia.Martes": "Tuesday", "dia.Miércoles": "Wednesday",
+    "dia.Jueves": "Thursday", "dia.Viernes": "Friday", "dia.Sábado": "Saturday", "dia.Domingo": "Sunday",
+    "mealType.Desayuno": "Breakfast", "mealType.Media mañana": "Mid-morning snack", "mealType.Comida": "Lunch",
+    "mealType.Merienda": "Afternoon snack", "mealType.Cena": "Dinner",
+
+    "menu.intro": "Generates a 2-week cycle honoring every frequency, block and probability you've set. Each time you press the button, a new menu is drawn.",
+    "menu.verObjetivos": "🎯 View goals",
+    "menu.generarOtro": "Generate another menu",
+    "menu.generarPrimero": "Generate menu (2 weeks)",
+    "menu.sinMenuTodavia": "You haven't generated a menu yet. Press the button above to create the first one.",
+    "menu.semana": "Week {n}",
+    "menu.exportarPdf": "Export PDF",
+    "menu.listaCompra": "🛒 Shopping list",
+    "menu.ocultarEstadisticas": "Hide stats ▲",
+    "menu.verEstadisticas": "View stats ▼",
+    "menu.garbanzos5050": "+chickpeas 50/50",
+    "menu.ajustada": "adjusted",
+    "menu.kcal": "{n} kcal",
+    "menu.historial.titulo": "Previous cycles",
+    "menu.historial.explicacion": "The app uses the last cycle to avoid immediately repeating the same closed dish or the same pick in single-slot groups.",
+    "menu.historial.platoCerrado": "Closed dish: {nombre}",
   },
 };
 

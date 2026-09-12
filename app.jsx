@@ -691,6 +691,7 @@ export default function RuedaDePlatos() {
             onToggleMarcadoCompra={toggleMarcadoCompra}
             onUpsertRule={upsertRule}
             onToggleComidaCompletada={toggleComidaCompletada}
+            idioma={idioma}
           />
         )}
 
@@ -3064,7 +3065,7 @@ function BackLink({ label, onClick }) {
   );
 }
 
-function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada }) {
+function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada, idioma }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
@@ -3075,7 +3076,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 6 }}>
-        <SectionIntro text="Genera un ciclo de 2 semanas respetando todas las frecuencias, bloques y probabilidades definidos. Cada vez que pulses el botón, se sortea un menú nuevo." />
+        <SectionIntro text={t(idioma, "menu.intro")} />
         <button
           onClick={() => setEditingObjetivos(true)}
           style={{
@@ -3085,7 +3086,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
             flexShrink: 0, whiteSpace: "nowrap",
           }}
         >
-          🎯 Ver objetivos
+          {t(idioma, "menu.verObjetivos")}
         </button>
       </div>
       <button
@@ -3106,7 +3107,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
         }}
       >
         <Shuffle size={15} />
-        {menu ? "Generar otro menú" : "Generar menú (2 semanas)"}
+        {menu ? t(idioma, "menu.generarOtro") : t(idioma, "menu.generarPrimero")}
       </button>
 
       {!menu && (
@@ -3121,7 +3122,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
             fontSize: 13,
           }}
         >
-          Todavía no has generado ningún menú. Pulsa el botón de arriba para crear el primero.
+          {t(idioma, "menu.sinMenuTodavia")}
         </div>
       )}
 
@@ -3143,7 +3144,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
                   color: menuWeek === w ? "#fff" : "var(--ink)",
                 }}
               >
-                Semana {w}
+                {t(idioma, "menu.semana", { n: w })}
               </button>
             ))}
             <button
@@ -3154,7 +3155,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
                 borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
               }}
             >
-              <Download size={13} /> Exportar PDF
+              <Download size={13} /> {t(idioma, "menu.exportarPdf")}
             </button>
             <button
               onClick={() => setShowListaCompra(true)}
@@ -3164,7 +3165,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
                 borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
               }}
             >
-              🛒 Lista de la compra
+              {t(idioma, "menu.listaCompra")}
             </button>
             <button
               onClick={() => setShowStats((s) => !s)}
@@ -3174,7 +3175,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
                 padding: "7px 4px", marginLeft: "auto",
               }}
             >
-              {showStats ? "Ocultar estadísticas ▲" : "Ver estadísticas ▼"}
+              {showStats ? t(idioma, "menu.ocultarEstadisticas") : t(idioma, "menu.verEstadisticas")}
             </button>
           </div>
 
@@ -3186,10 +3187,10 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
               const dayMeals = menu.filter((s) => s.week === menuWeek && s.day === day);
               return (
                 <div key={day} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 15, marginBottom: 8 }}>{day}</div>
+                  <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {dayMeals.map((m) => {
-                      const t = mealTotals(data, m);
+                      const totales = mealTotals(data, m);
                       const ajustada = m.raciones && Object.values(m.raciones).some((v) => Number(v) !== 1);
                       return (
                       <div
@@ -3207,7 +3208,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
                           borderRadius: 7,
                         }}
                       >
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>{m.mealType}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>{t(idioma, "mealType." + m.mealType)}</span>
                         {m.closedDish ? (
                           <span style={{ fontSize: 13, color: "var(--rust)", fontWeight: 600 }}>{m.closedDish}</span>
                         ) : m.item ? (
@@ -3227,7 +3228,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
                                   borderRadius: 20,
                                 }}
                               >
-                                +garbanzos 50/50
+                                {t(idioma, "menu.garbanzos5050")}
                               </span>
                             )}
                           </span>
@@ -3235,12 +3236,12 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
                         <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
                           {ajustada && (
                             <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-soft)", padding: "2px 6px", borderRadius: 20 }}>
-                              ajustada
+                              {t(idioma, "menu.ajustada")}
                             </span>
                           )}
-                          {t.kcal > 0 && (
+                          {totales.kcal > 0 && (
                             <span style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 700 }}>
-                              {Math.round(t.kcal)} kcal
+                              {t(idioma, "menu.kcal", { n: Math.round(totales.kcal) })}
                             </span>
                           )}
                         </span>
@@ -3255,7 +3256,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
         </>
       )}
 
-      <HistoryPanel history={history} />
+      <HistoryPanel history={history} idioma={idioma} />
 
       <PrintExport data={data} menu={menu} />
 
@@ -4025,19 +4026,19 @@ function RacionesStepper({ value, onChange }) {
   );
 }
 
-function HistoryPanel({ history }) {
+function HistoryPanel({ history, idioma }) {
   if (!history || history.length === 0) return null;
   return (
     <div style={{ marginTop: 30 }}>
-      <div style={{ fontSize: 15, marginBottom: 8 }}>Ciclos anteriores</div>
+      <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "menu.historial.titulo")}</div>
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 10 }}>
-        La app usa el último ciclo para evitar repetir de inmediato el mismo plato cerrado o la misma elección en los grupos de un solo hueco.
+        {t(idioma, "menu.historial.explicacion")}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {history.map((h) => {
           const closed = h.slots.find((s) => s.closedDish);
           const date = new Date(h.generatedAt);
-          const dateLabel = date.toLocaleDateString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+          const dateLabel = date.toLocaleDateString(idioma === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
           return (
             <div
               key={h.id}
@@ -4055,7 +4056,7 @@ function HistoryPanel({ history }) {
               }}
             >
               <span style={{ fontWeight: 700, color: "var(--ink)" }}>{dateLabel}</span>
-              {closed && <span>Plato cerrado: {closed.closedDish}</span>}
+              {closed && <span>{t(idioma, "menu.historial.platoCerrado", { nombre: closed.closedDish })}</span>}
             </div>
           );
         })}
