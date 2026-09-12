@@ -335,6 +335,30 @@ export function generateMenu(data, avoid = {}) {
 
         completarGrasa(s, objetivoComida);
       });
+
+    // Desayuno, Merienda (y cualquier futura comida con reparto exacto por probabilidad, como
+    // "Media mañana"): se escalan igual que un plato cerrado, por kcal total, sin tocar
+    // proteína/carbo por separado — mismo motivo que arriba, son alimentos "de una pieza".
+    // Antes de la Fase 4 (reparto de comidas configurable) esto no hacía falta: estas comidas
+    // siempre representaban un porcentaje pequeño del día (15-20% en el reparto clásico), así que
+    // quedarse en la ración base del catálogo apenas alejaba el día del objetivo. Con presets que
+    // les dan más peso (por ejemplo, 33% en "3 comidas sin desayuno/merienda"), no ajustar la
+    // ración aleja sistemáticamente el día entero del objetivo. No se completa con grasa extra
+    // (a diferencia de los platos cerrados): mealComponents no muestra ese ajuste para huecos
+    // "item", así que añadirlo aquí quedaría invisible en el detalle de la comida.
+    slots
+      .filter((s) => s.item)
+      .forEach((s) => {
+        const objetivoComida = objetivosPorComida(data.objetivos, s.mealType, data.perfil.repartoComidas);
+        if (!objetivoComida) return;
+        const itemIng = data.ingredients.find((i) => i.name === s.item);
+        if (!itemIng) return;
+        const base = composedMacros(data, itemIng, 1);
+        if (!base || !base.kcal) return;
+
+        const racion = clamp(Math.round((objetivoComida.kcal / base.kcal) * 10) / 10, 0.3, 4);
+        s.raciones = { ...(s.raciones || {}), item: racion };
+      });
   }
 
   return slots;
