@@ -456,7 +456,7 @@ export default function RuedaDePlatos() {
   if (loading || !data) {
     return (
       <Shell>
-        <div style={{ padding: 60, textAlign: "center", color: "var(--ink-soft)" }}>Cargando tu recetario…</div>
+        <div style={{ padding: 60, textAlign: "center", color: "var(--ink-soft)" }}>{t(idiomaFallback, "loading.cargando")}</div>
       </Shell>
     );
   }
@@ -464,7 +464,7 @@ export default function RuedaDePlatos() {
   if (!data.perfilOnboardingDone) {
     return (
       <Shell>
-        <ProfileOnboarding onComplete={savePerfil} onSkip={skipPerfil} />
+        <ProfileOnboarding onComplete={savePerfil} onSkip={skipPerfil} idioma={idiomaFallback} />
       </Shell>
     );
   }
@@ -1156,7 +1156,7 @@ export default function RuedaDePlatos() {
 // para no mantener dos formularios duplicados con el riesgo de que se desincronicen.
 function ProfileFields({
   nombre, setNombre, sexo, setSexo, anioNacimiento, setAnioNacimiento, altura, setAltura, peso, setPeso,
-  palBase, setPalBase, entrenamientos, setEntrenamientos, objetivo, setObjetivo,
+  palBase, setPalBase, entrenamientos, setEntrenamientos, objetivo, setObjetivo, idioma,
 }) {
   const [mostrarDesglose, setMostrarDesglose] = useState(false);
   const datosCompletos = anioNacimiento && altura && peso;
@@ -1173,13 +1173,13 @@ function ProfileFields({
 
   return (
     <>
-      <Field label="Nombre (opcional)">
-        <input value={nombre} onChange={(e) => setNombre(e.target.value)} style={inputStyle} placeholder="¿Cómo te llamas?" />
+      <Field label={t(idioma, "campo.nombre")}>
+        <input value={nombre} onChange={(e) => setNombre(e.target.value)} style={inputStyle} placeholder={t(idioma, "campo.nombre.placeholder")} />
       </Field>
 
-      <Field label="Sexo">
+      <Field label={t(idioma, "campo.sexo")}>
         <div style={{ display: "flex", gap: 8 }}>
-          {[["mujer", "Mujer"], ["hombre", "Hombre"]].map(([key, label]) => (
+          {[["mujer", t(idioma, "campo.sexo.mujer")], ["hombre", t(idioma, "campo.sexo.hombre")]].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setSexo(key)}
@@ -1197,18 +1197,18 @@ function ProfileFields({
       </Field>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-        <Field label="Año de nacimiento">
-          <input type="number" min={1926} max={2012} value={anioNacimiento} onChange={(e) => setAnioNacimiento(e.target.value)} style={inputStyle} placeholder="Ej: 1995" />
+        <Field label={t(idioma, "campo.anioNacimiento")}>
+          <input type="number" min={1926} max={2012} value={anioNacimiento} onChange={(e) => setAnioNacimiento(e.target.value)} style={inputStyle} placeholder={t(idioma, "campo.anioNacimiento.placeholder")} />
         </Field>
-        <Field label="Altura">
+        <Field label={t(idioma, "campo.altura")}>
           <input type="number" min={100} max={230} value={altura} onChange={(e) => setAltura(e.target.value)} style={inputStyle} placeholder="cm" />
         </Field>
-        <Field label="Peso">
+        <Field label={t(idioma, "campo.peso")}>
           <input type="number" min={30} max={250} step="0.1" value={peso} onChange={(e) => setPeso(e.target.value)} style={inputStyle} placeholder="kg" />
         </Field>
       </div>
 
-      <Field label="Tipo de día a día (sin contar el entrenamiento)">
+      <Field label={t(idioma, "campo.tipoDiaADia")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {PAL_BASE_NIVELES.map((n) => (
             <button
@@ -1221,14 +1221,14 @@ function ProfileFields({
                 cursor: "pointer",
               }}
             >
-              <div style={{ fontSize: 13, fontWeight: 700, color: palBase === n.key ? "var(--green-dark)" : "var(--ink)" }}>{n.label}</div>
-              <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>{n.desc}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: palBase === n.key ? "var(--green-dark)" : "var(--ink)" }}>{t(idioma, "pal." + n.key)}</div>
+              <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>{t(idioma, "pal." + n.key + ".desc")}</div>
             </button>
           ))}
         </div>
       </Field>
 
-      <Field label="Entrenamientos habituales (opcional)">
+      <Field label={t(idioma, "campo.entrenamientos")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
           {entrenamientos.map((row) => (
             <div key={row.id} style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 7, padding: "8px 9px" }}>
@@ -1238,8 +1238,8 @@ function ProfileFields({
                   onChange={(e) => updateEntrenamiento(row.id, { tipo: e.target.value })}
                   style={{ ...inputStyle, flex: 1, minWidth: 0 }}
                 >
-                  {TIPOS_ENTRENAMIENTO.map((t) => (
-                    <option key={t.key} value={t.key}>{t.label}</option>
+                  {TIPOS_ENTRENAMIENTO.map((tipo) => (
+                    <option key={tipo.key} value={tipo.key}>{t(idioma, "entrenamiento." + tipo.key)}</option>
                   ))}
                 </select>
                 <IconBtn onClick={() => removeEntrenamiento(row.id)}><Trash2 size={12} /></IconBtn>
@@ -1248,12 +1248,12 @@ function ProfileFields({
                 <input
                   type="number" min={0} step="0.25" value={row.horas}
                   onChange={(e) => updateEntrenamiento(row.id, { horas: e.target.value })}
-                  placeholder="Horas/sesión" style={{ ...inputStyle, flex: 1 }}
+                  placeholder={t(idioma, "campo.horasPorSesion")} style={{ ...inputStyle, flex: 1 }}
                 />
                 <input
                   type="number" min={0} max={7} value={row.frecuenciaSemanal}
                   onChange={(e) => updateEntrenamiento(row.id, { frecuenciaSemanal: e.target.value })}
-                  placeholder="Veces/semana" style={{ ...inputStyle, flex: 1 }}
+                  placeholder={t(idioma, "campo.vecesPorSemana")} style={{ ...inputStyle, flex: 1 }}
                 />
               </div>
             </div>
@@ -1267,11 +1267,11 @@ function ProfileFields({
             color: "var(--ink-soft)", fontFamily: "'Helvetica Neue', Arial, sans-serif",
           }}
         >
-          <Plus size={12} /> Añadir entrenamiento
+          <Plus size={12} /> {t(idioma, "campo.anadirEntrenamiento")}
         </button>
       </Field>
 
-      <Field label="Objetivo actual">
+      <Field label={t(idioma, "campo.objetivoActual")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {Object.keys(OBJETIVO_ETAPAS).map((key) => {
             const etapa = OBJETIVO_ETAPAS[key];
@@ -1286,8 +1286,8 @@ function ProfileFields({
                   cursor: "pointer",
                 }}
               >
-                <div style={{ fontSize: 13, fontWeight: 700, color: objetivo === key ? "var(--green-dark)" : "var(--ink)" }}>{etapa.label}</div>
-                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>{etapa.desc}</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: objetivo === key ? "var(--green-dark)" : "var(--ink)" }}>{t(idioma, "objetivoEtapa." + key)}</div>
+                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>{t(idioma, "objetivoEtapa." + key + ".desc")}</div>
               </button>
             );
           })}
@@ -1300,11 +1300,7 @@ function ProfileFields({
           background: "var(--paper)", borderRadius: 8, padding: "10px 12px", marginTop: 4, lineHeight: 1.5,
         }}
       >
-        El cálculo usa la <strong>fórmula de Mifflin-St Jeor</strong> para tu día a día, y suma aparte
-        las kcal de tus entrenamientos habituales (vía METs), para no sobreestimar tu gasto si tu día a día
-        es sedentario aunque entrenes varios días por semana. Ningún cálculo sin laboratorio es exacto
-        al 100% — el objetivo de esta app no es la precisión absoluta, sino ayudarte a tener una relación
-        más sana con la comida, sin tener que pensarla desde cero.
+        {t(idioma, "profileFields.formula")}
       </div>
 
       <button
@@ -1318,7 +1314,7 @@ function ProfileFields({
           cursor: datosCompletos ? "pointer" : "default", opacity: datosCompletos ? 1 : 0.5,
         }}
       >
-        <Calculator size={13} /> Ver cálculo desglosado
+        <Calculator size={13} /> {t(idioma, "profileFields.verDesglose")}
       </button>
 
       {mostrarDesglose && (
@@ -1335,6 +1331,7 @@ function ProfileFields({
             objetivo,
           }}
           onClose={() => setMostrarDesglose(false)}
+          idioma={idioma}
         />
       )}
     </>
@@ -1346,28 +1343,28 @@ function ProfileFields({
 // todavía. Nace de que el BMR puro no se muestra en ningún otro sitio de la app — solo el resultado
 // ya multiplicado por el PAL ("kcal día a día") — y eso puede llevar a pensar que hay un error de
 // cálculo cuando en realidad todo cuadra, solo que son dos magnitudes distintas.
-function DesgloseCaloriasModal({ perfil, onClose }) {
+function DesgloseCaloriasModal({ perfil, onClose, idioma }) {
   const r = calcularObjetivosPerfil(perfil);
   const nivelPal = PAL_BASE_NIVELES.find((n) => n.key === perfil.palBase);
   const etapa = OBJETIVO_ETAPAS[r?.objetivo];
 
   return (
-    <ModalShell title="Cálculo desglosado" onClose={onClose}>
+    <ModalShell title={t(idioma, "desglose.titulo")} onClose={onClose}>
       {!r ? (
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
-          Completa año de nacimiento, altura y peso para ver el desglose.
+          {t(idioma, "desglose.faltaDatos")}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <DesgloseFila label="BMR (fórmula de Mifflin-St Jeor)" valor={`${r.bmr} kcal`} />
-          <DesgloseFila label={`× PAL ${nivelPal.pal} — ${nivelPal.label}`} valor={`${r.kcalBase} kcal día a día`} />
+          <DesgloseFila label={t(idioma, "desglose.bmr")} valor={`${r.bmr} kcal`} />
+          <DesgloseFila label={t(idioma, "desglose.palLinea", { pal: nivelPal.pal, nivel: t(idioma, "pal." + nivelPal.key) })} valor={t(idioma, "desglose.kcalDiaADia", { n: r.kcalBase })} />
           {r.kcalEntrenamiento > 0 && (
-            <DesgloseFila label="+ Entrenamientos habituales (vía METs)" valor={`${r.kcalEntrenamiento} kcal`} />
+            <DesgloseFila label={t(idioma, "desglose.entrenamientos")} valor={`${r.kcalEntrenamiento} kcal`} />
           )}
-          <DesgloseFila label="= TDEE de mantenimiento" valor={`${r.kcalMantenimiento} kcal`} fuerte />
+          <DesgloseFila label={t(idioma, "desglose.tdeeMantenimiento")} valor={`${r.kcalMantenimiento} kcal`} fuerte />
           {etapa && r.objetivo !== "mantenimiento" && (
             <DesgloseFila
-              label={`${etapa.label} (${r.ajustePct > 0 ? "+" : ""}${r.ajustePct}%)`}
+              label={t(idioma, "desglose.etapaLinea", { etapa: t(idioma, "objetivoEtapa." + r.objetivo), signo: r.ajustePct > 0 ? "+" : "", pct: r.ajustePct })}
               valor={`${r.kcal} kcal`}
               fuerte
             />
@@ -1375,7 +1372,7 @@ function DesgloseCaloriasModal({ perfil, onClose }) {
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-        <ModalBtn onClick={onClose} variant="ghost">Cerrar</ModalBtn>
+        <ModalBtn onClick={onClose} variant="ghost">{t(idioma, "common.cerrar")}</ModalBtn>
       </div>
     </ModalShell>
   );
@@ -1402,7 +1399,7 @@ function DesgloseFila({ label, valor, fuerte }) {
   );
 }
 
-function ProfileOnboarding({ onComplete, onSkip }) {
+function ProfileOnboarding({ onComplete, onSkip, idioma }) {
   const [nombre, setNombre] = useState("");
   const [sexo, setSexo] = useState("mujer");
   const [anioNacimiento, setAnioNacimiento] = useState("");
@@ -1438,10 +1435,10 @@ function ProfileOnboarding({ onComplete, onSkip }) {
       <div style={{ textAlign: "center", marginBottom: 22 }}>
         <div style={{ fontSize: 34, marginBottom: 8 }}>🍽️</div>
         <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 24, color: "var(--green-dark)", margin: "0 0 6px 0" }}>
-          Antes de empezar
+          {t(idioma, "onboarding.titulo")}
         </h1>
         <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", margin: 0 }}>
-          Con estos datos, la app puede calcular tus objetivos diarios de calorías y macros. Es completamente opcional.
+          {t(idioma, "onboarding.subtitulo")}
         </p>
       </div>
 
@@ -1455,6 +1452,7 @@ function ProfileOnboarding({ onComplete, onSkip }) {
           palBase={palBase} setPalBase={setPalBase}
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
           objetivo={objetivo} setObjetivo={setObjetivo}
+          idioma={idioma}
         />
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
@@ -1467,7 +1465,7 @@ function ProfileOnboarding({ onComplete, onSkip }) {
               borderRadius: 9, padding: "12px", cursor: valid ? "pointer" : "default",
             }}
           >
-            Guardar y continuar
+            {t(idioma, "onboarding.guardarContinuar")}
           </button>
           <button
             onClick={onSkip}
@@ -1476,7 +1474,7 @@ function ProfileOnboarding({ onComplete, onSkip }) {
               background: "transparent", border: "none", padding: "6px",
             }}
           >
-            Saltar por ahora (no tendré objetivos calculados)
+            {t(idioma, "onboarding.saltar")}
           </button>
         </div>
       </div>
@@ -1557,7 +1555,7 @@ function PerfilView({ perfil, onSave }) {
 
   return (
     <>
-      <SectionIntro text="Estos datos se usan para calcular tus objetivos diarios de calorías y macros. Cámbialos cuando quieras — se recalculan solos al guardar." />
+      <SectionIntro text={t(idioma, "perfilView.intro")} />
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
         <ProfileFields
           nombre={nombre} setNombre={setNombre}
@@ -1568,6 +1566,7 @@ function PerfilView({ perfil, onSave }) {
           palBase={palBase} setPalBase={setPalBase}
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
           objetivo={objetivo} setObjetivo={setObjetivo}
+          idioma={idioma}
         />
 
         <Field label={t(idioma, "perfil.idioma.label")}>
@@ -1595,10 +1594,10 @@ function PerfilView({ perfil, onSave }) {
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginTop: 24, maxWidth: 480 }}>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
-          Reparto de comidas
+          {t(idioma, "perfilView.repartoComidas.titulo")}
         </div>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 14, lineHeight: 1.5 }}>
-          Elige cuántas comidas haces al día y qué peso tiene cada una sobre tu objetivo diario — se usa tanto para generar el menú como para tu fracción de comidas completadas del resumen mensual. Comida y Cena están siempre presentes.
+          {t(idioma, "perfilView.repartoComidas.intro")}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
@@ -1617,7 +1616,7 @@ function PerfilView({ perfil, onSave }) {
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: elegido ? "var(--green-dark)" : "var(--ink)" }}>
-                    {preset.label}
+                    {t(idioma, "preset." + preset.id + ".label")}
                   </span>
                   {preset.recomendado && (
                     <span
@@ -1626,25 +1625,25 @@ function PerfilView({ perfil, onSave }) {
                         borderRadius: 20, padding: "2px 8px", textTransform: "uppercase", letterSpacing: 0.3,
                       }}
                     >
-                      Recomendado
+                      {t(idioma, "perfilView.recomendado")}
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 3, lineHeight: 1.45 }}>{preset.texto}</div>
+                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 3, lineHeight: 1.45 }}>{t(idioma, "preset." + preset.id + ".texto")}</div>
               </button>
             );
           })}
         </div>
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-          Peso de cada comida
+          {t(idioma, "perfilView.pesoDeCadaComida")}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {presetActual.meals.map((mealType) => (
             <React.Fragment key={mealType}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)" }}>
-                  {mealType}
+                  {t(idioma, "mealType." + mealType)}
                 </span>
                 <input
                   type="number" min={0} max={100} step={1}
@@ -1656,7 +1655,7 @@ function PerfilView({ perfil, onSave }) {
               </div>
               {mealType === "Cena" && (
                 <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: -2 }}>
-                  {AVISO_CENA_REPARTO}
+                  {t(idioma, "avisoCena")}
                 </div>
               )}
             </React.Fragment>
@@ -1669,7 +1668,7 @@ function PerfilView({ perfil, onSave }) {
             color: repartoValido ? "var(--green-dark)" : "var(--rust)",
           }}
         >
-          Suma: {sumaPesos}%{!repartoValido && " — debe sumar exactamente 100%"}
+          {t(idioma, "perfilView.suma", { n: sumaPesos })}{!repartoValido && t(idioma, "perfilView.sumaAviso")}
         </div>
       </div>
 
@@ -1683,7 +1682,7 @@ function PerfilView({ perfil, onSave }) {
             borderRadius: 9, padding: "12px", cursor: valid ? "pointer" : "default",
           }}
         >
-          Guardar cambios
+          {t(idioma, "perfilView.guardarCambios")}
         </button>
 
         {saved && (
@@ -1693,17 +1692,17 @@ function PerfilView({ perfil, onSave }) {
               background: "var(--green-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10,
             }}
           >
-            Perfil actualizado — tus objetivos se han recalculado. Puedes verlos en el botón "Objetivos" de la pestaña Menú.
+            {t(idioma, "perfilView.guardadoOk")}
           </div>
         )}
       </div>
 
       <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
-          Eliminar cuenta
+          {t(idioma, "perfilView.eliminarCuenta.titulo")}
         </div>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
-          Borra tu cuenta y todos tus datos (alimentos, platos, menús, peso, objetivos) de forma permanente. No se puede deshacer.
+          {t(idioma, "perfilView.eliminarCuenta.desc")}
         </div>
         <button
           onClick={() => setShowDeleteAccount(true)}
@@ -1713,11 +1712,11 @@ function PerfilView({ perfil, onSave }) {
             padding: "8px 12px", cursor: "pointer",
           }}
         >
-          Eliminar mi cuenta
+          {t(idioma, "perfilView.eliminarCuenta.boton")}
         </button>
       </div>
 
-      {showDeleteAccount && <DeleteAccountModal onClose={() => setShowDeleteAccount(false)} />}
+      {showDeleteAccount && <DeleteAccountModal onClose={() => setShowDeleteAccount(false)} idioma={idioma} />}
     </>
   );
 }
@@ -1726,22 +1725,26 @@ function PerfilView({ perfil, onSave }) {
 // borrar nada — así window.deleteAccount (auth-bootstrap.jsx) nunca se encuentra a mitad de
 // camino con una sesión caducada. Escribir "ELIMINAR" es una segunda confirmación deliberadamente
 // más lenta que un simple clic, dado que la acción es irreversible.
-function DeleteAccountModal({ onClose }) {
+function DeleteAccountModal({ onClose, idioma }) {
   const [password, setPassword] = useState("");
   const [confirmText, setConfirmText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const esGoogle = window.authProvider === "google";
-  const listo = confirmText.trim().toUpperCase() === "ELIMINAR" && (esGoogle || password);
+  // La palabra de confirmación también se traduce (ELIMINAR/DELETE) — si el aviso le pide a un
+  // usuario en inglés que escriba "DELETE", la comprobación tiene que aceptar esa palabra, no la
+  // española a la fuerza.
+  const palabraConfirmacion = t(idioma, "deleteAccount.palabraConfirmacion");
+  const listo = confirmText.trim().toUpperCase() === palabraConfirmacion.toUpperCase() && (esGoogle || password);
 
   function traducirError(code) {
     const map = {
-      "needs-password": "Introduce tu contraseña para confirmar.",
-      "auth/wrong-password": "Contraseña incorrecta.",
-      "auth/invalid-credential": "Contraseña incorrecta.",
-      "auth/popup-closed-by-user": "Has cerrado la ventana de Google antes de confirmar.",
+      "needs-password": "deleteAccount.needsPassword",
+      "auth/wrong-password": "deleteAccount.wrongPassword",
+      "auth/invalid-credential": "deleteAccount.wrongPassword",
+      "auth/popup-closed-by-user": "deleteAccount.popupCerrado",
     };
-    return map[code] || "No se ha podido eliminar la cuenta. Inténtalo de nuevo.";
+    return map[code] ? t(idioma, map[code]) : t(idioma, "deleteAccount.errorGenerico");
   }
 
   async function handleDelete() {
@@ -1759,16 +1762,15 @@ function DeleteAccountModal({ onClose }) {
   }
 
   return (
-    <ModalShell onClose={onClose} title="Eliminar cuenta">
+    <ModalShell onClose={onClose} title={t(idioma, "perfilView.eliminarCuenta.titulo")}>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: "0 0 14px" }}>
-        Esto borra <strong>permanentemente</strong> tu cuenta y todos tus datos: alimentos, platos,
-        menús, historial de peso y objetivos. No se puede deshacer.
+        {t(idioma, "deleteAccount.desc")}
       </p>
 
       {!esGoogle && (
         <input
           type="password"
-          placeholder="Tu contraseña"
+          placeholder={t(idioma, "deleteAccount.tuContrasena")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           style={{ ...inputStyle, marginBottom: 10 }}
@@ -1776,7 +1778,7 @@ function DeleteAccountModal({ onClose }) {
       )}
 
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
-        Escribe ELIMINAR para confirmar
+        {t(idioma, "deleteAccount.escribePara", { palabra: palabraConfirmacion })}
       </div>
       <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle} />
 
@@ -1787,9 +1789,9 @@ function DeleteAccountModal({ onClose }) {
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
-        <ModalBtn onClick={onClose} variant="ghost">Cancelar</ModalBtn>
+        <ModalBtn onClick={onClose} variant="ghost">{t(idioma, "deleteAccount.cancelar")}</ModalBtn>
         <ModalBtn onClick={handleDelete} variant="danger" disabled={!listo || loading}>
-          {loading ? "Eliminando…" : "Eliminar cuenta"}
+          {loading ? t(idioma, "deleteAccount.eliminando") : t(idioma, "perfilView.eliminarCuenta.titulo")}
         </ModalBtn>
       </div>
     </ModalShell>
