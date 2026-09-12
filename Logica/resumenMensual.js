@@ -27,7 +27,9 @@ export function comidasEsperadasEnMes(mesISO, comidasPorDia, hoy = new Date()) {
 
 // Resumen básico (el que se ve en el plan gratis, y la base del premium).
 export function calcularResumenMensual(data, mesISO, hoy = new Date()) {
-  const comidasPorDia = (data.perfil && data.perfil.comidasPorDia) || 4;
+  // Antes era un número suelto (perfil.comidasPorDia) que el usuario ponía a mano; desde que el
+  // reparto de comidas es real (Fase 4), se cuenta solo a partir de él, sin pedirlo aparte.
+  const comidasPorDia = Object.keys((data.perfil && data.perfil.repartoComidas) || {}).length || 4;
   const completadas = contarComidasCompletadas(data.comidasCompletadas, mesISO);
   const esperadas = comidasEsperadasEnMes(mesISO, comidasPorDia, hoy);
   const porcentaje = esperadas > 0 ? Math.round((completadas / esperadas) * 100) : 0;

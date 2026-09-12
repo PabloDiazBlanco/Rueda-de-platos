@@ -272,14 +272,6 @@ function migrateData(rawData) {
     changed = true;
   }
 
-  // Número de comidas al día: solo se usa para calcular la fracción del resumen mensual, no
-  // afecta a cómo se genera el menú (que sigue teniendo sus 4 tipos fijos). Por defecto 4, para
-  // que perfiles ya existentes no vean cambiar su fracción de golpe.
-  if (data.perfil && data.perfil.comidasPorDia === undefined) {
-    data.perfil.comidasPorDia = 4;
-    changed = true;
-  }
-
   // Reparto de comidas (Fase 4, reparto de comidas configurable): antes era la constante global
   // REPARTO_COMIDAS; ahora vive en el perfil, para poder tener otros presets (3, 2 o 5 comidas)
   // además del clásico de 4. Perfiles ya existentes migran al reparto de siempre, sin cambiar
@@ -1464,9 +1456,6 @@ function PerfilView({ perfil, onSave }) {
     (perfil?.entrenamientos || []).map((e) => ({ id: uid(), ...e }))
   );
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
-  // Solo se usa para la fracción del resumen mensual (f3-11) — no afecta al generador de menú,
-  // que construye sus huecos a partir del reparto de comidas de abajo.
-  const [comidasPorDia, setComidasPorDia] = useState(perfil?.comidasPorDia ?? 4);
   const [saved, setSaved] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
@@ -1510,7 +1499,6 @@ function PerfilView({ perfil, onSave }) {
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
-      comidasPorDia: Number(comidasPorDia) || 4,
       presetComidas: presetId,
       repartoComidas,
     });
@@ -1531,17 +1519,6 @@ function PerfilView({ perfil, onSave }) {
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
           objetivo={objetivo} setObjetivo={setObjetivo}
         />
-
-        <Field label="Comidas al día (para tu resumen mensual)">
-          <input
-            type="number" min={1} max={8} value={comidasPorDia}
-            onChange={(e) => setComidasPorDia(e.target.value)}
-            style={inputStyle}
-          />
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
-            Cuántas comidas sueles hacer al día de verdad — solo se usa para calcular tu fracción de comidas completadas, no cambia cómo se genera el menú.
-          </div>
-        </Field>
       </div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginTop: 24, maxWidth: 480 }}>
@@ -1549,7 +1526,7 @@ function PerfilView({ perfil, onSave }) {
           Reparto de comidas
         </div>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 14, lineHeight: 1.5 }}>
-          Elige cuántas comidas haces al día y qué peso tiene cada una sobre tu objetivo diario. Comida y Cena están siempre presentes en los menús que se generan.
+          Elige cuántas comidas haces al día y qué peso tiene cada una sobre tu objetivo diario — se usa tanto para generar el menú como para tu fracción de comidas completadas del resumen mensual. Comida y Cena están siempre presentes.
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
