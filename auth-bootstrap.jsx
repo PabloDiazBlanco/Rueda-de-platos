@@ -26,6 +26,7 @@ import {
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
 
 // Identificador público de tu proyecto de Firebase (no es una clave secreta, es normal que
 // se vea en el código fuente de cualquier web que use Firebase).
@@ -243,16 +244,43 @@ function removeLogoutButton() {
   if (btn) btn.remove();
 }
 
+// ---------- Selector de idioma (bienvenida/login) ----------
+// Solo cambia el idioma de estas pantallas de antes de iniciar sesión (y se recuerda en
+// localStorage vía guardarIdiomaLocal, ver Logica/i18n.js) — una vez dentro de la app con sesión
+// iniciada, manda perfil.idioma, elegible también desde Perfil.
+function IdiomaSwitch({ idioma, onChange }) {
+  return (
+    <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 4 }}>
+      {IDIOMAS_DISPONIBLES.map((i) => (
+        <button
+          key={i.key}
+          onClick={() => onChange(i.key)}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700,
+            padding: "4px 9px", borderRadius: 20, border: "1px solid #ddd6bf",
+            background: idioma === i.key ? "#1f4d38" : "#fffdf7",
+            color: idioma === i.key ? "#fff" : "#6b6a5e",
+            cursor: "pointer",
+          }}
+        >
+          {i.key.toUpperCase()}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ---------- Pantalla de login ----------
 // ---------- Pantalla de bienvenida (antes del login) ----------
-function WelcomeScreen({ onLogin }) {
+function WelcomeScreen({ onLogin, idioma, onChangeIdioma }) {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1ede0", padding: 20, boxSizing: "border-box", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+    <div style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1ede0", padding: 20, boxSizing: "border-box", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+      <IdiomaSwitch idioma={idioma} onChange={onChangeIdioma} />
       <div style={{ width: "100%", maxWidth: 340, textAlign: "center" }}>
         <div style={{ fontSize: 44, marginBottom: 10 }}>🍽️</div>
         <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 26, color: "#1f4d38", marginBottom: 8 }}>FoodDraft</div>
         <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontStyle: "italic", fontSize: 15, color: "#6b6a5e", maxWidth: 260, margin: "0 auto", lineHeight: 1.5 }}>
-          Come variado, sin pensarlo cada día.
+          {t(idioma, "app.eslogan")}
         </div>
         <div style={{ width: 120, height: 120, margin: "1.5rem auto", borderRadius: "50%", border: "6px solid #d9a441", borderTopColor: "#2f6b4f", borderRightColor: "#6b4423" }} />
         <div style={{ marginTop: "2.5rem" }}>
@@ -260,7 +288,7 @@ function WelcomeScreen({ onLogin }) {
             onClick={onLogin}
             style={{ background: "none", border: "none", color: "#1f4d38", fontSize: 13, fontWeight: 700, textDecoration: "underline", cursor: "pointer", fontFamily: "inherit" }}
           >
-            Iniciar sesión
+            {t(idioma, "welcome.iniciarSesion")}
           </button>
         </div>
       </div>
@@ -269,9 +297,21 @@ function WelcomeScreen({ onLogin }) {
 }
 
 // Envuelve el login: primero la bienvenida, y solo al pulsar "Iniciar sesión" aparece el formulario real.
+// El idioma elegido aquí (o el recordado de la última vez) se comparte entre ambas pantallas y se
+// guarda en localStorage, para que sobreviva a un cierre de sesión y sirva de punto de partida al
+// crear una cuenta nueva (ver migrateData/ProfileOnboarding en app.jsx).
 function LoggedOutFlow() {
   const [showLogin, setShowLogin] = useState(false);
-  return showLogin ? <LoginScreen /> : <WelcomeScreen onLogin={() => setShowLogin(true)} />;
+  const [idioma, setIdioma] = useState(() => leerIdiomaGuardado());
+
+  function cambiarIdioma(nuevo) {
+    setIdioma(nuevo);
+    guardarIdiomaLocal(nuevo);
+  }
+
+  return showLogin
+    ? <LoginScreen idioma={idioma} onChangeIdioma={cambiarIdioma} />
+    : <WelcomeScreen onLogin={() => setShowLogin(true)} idioma={idioma} onChangeIdioma={cambiarIdioma} />;
 }
 
 // ---------- Pantalla de "por qué existe esta app" (se muestra una sola vez, justo tras completar
@@ -383,7 +423,7 @@ function watchForFirstProfileCompletion(uid) {
     });
 }
 
-function LoginScreen() {
+function LoginScreen({ idioma, onChangeIdioma }) {
   const [mode, setMode] = useState("login"); // login | signup
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -392,15 +432,15 @@ function LoginScreen() {
 
   function traducirError(code) {
     const map = {
-      "auth/invalid-email": "El email no es válido.",
-      "auth/user-not-found": "No existe ninguna cuenta con ese email.",
-      "auth/wrong-password": "Contraseña incorrecta.",
-      "auth/invalid-credential": "Email o contraseña incorrectos.",
-      "auth/email-already-in-use": "Ya existe una cuenta con ese email. Prueba a iniciar sesión.",
-      "auth/weak-password": "La contraseña debe tener al menos 6 caracteres.",
-      "auth/popup-closed-by-user": "Has cerrado la ventana de Google antes de terminar.",
+      "auth/invalid-email": "error.emailInvalido",
+      "auth/user-not-found": "error.usuarioNoExiste",
+      "auth/wrong-password": "error.passwordIncorrecta",
+      "auth/invalid-credential": "error.credencialInvalida",
+      "auth/email-already-in-use": "error.emailEnUso",
+      "auth/weak-password": "error.passwordDebil",
+      "auth/popup-closed-by-user": "error.popupCerrado",
     };
-    return map[code] || `Ha ocurrido un error (${code}). Inténtalo de nuevo.`;
+    return map[code] ? t(idioma, map[code]) : t(idioma, "error.generico", { code });
   }
 
   async function handleSubmit(e) {
@@ -438,61 +478,65 @@ function LoginScreen() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1ede0", padding: 20, boxSizing: "border-box" }}>
+    <div style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1ede0", padding: 20, boxSizing: "border-box" }}>
+      <IdiomaSwitch idioma={idioma} onChange={onChangeIdioma} />
       <div style={{ background: "#fffdf7", borderRadius: 14, padding: "28px 26px", width: "100%", maxWidth: 340, border: "1px solid #ddd6bf", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <div style={{ fontSize: 30, marginBottom: 6 }}>🍽️</div>
           <div style={{ fontSize: 20, color: "#1f4d38", fontFamily: "Georgia, 'Times New Roman', serif" }}>FoodDraft</div>
           <div style={{ fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
-            {mode === "login" ? "Inicia sesión para ver tus datos" : "Crea tu cuenta"}
+            {mode === "login" ? t(idioma, "login.subtituloLogin") : t(idioma, "login.subtituloSignup")}
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
-          <input type="email" required placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
-          <input type="password" required placeholder="Contraseña" value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
+          <input type="email" required placeholder={t(idioma, "login.email")} value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
+          <input type="password" required placeholder={t(idioma, "login.password")} value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
           {error && <div style={{ color: "#9c4a2b", fontSize: 12, marginTop: 8 }}>{error}</div>}
           <button type="submit" disabled={loading} style={{ width: "100%", marginTop: 14, padding: "10px 12px", borderRadius: 8, border: "none", background: "#2f6b4f", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-            {loading ? "Un momento…" : mode === "login" ? "Iniciar sesión" : "Crear cuenta"}
+            {loading ? t(idioma, "login.entrando") : mode === "login" ? t(idioma, "login.iniciarSesion") : t(idioma, "login.crearCuenta")}
           </button>
         </form>
 
         <button onClick={handleGoogle} disabled={loading} style={{ width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd6bf", background: "#fff", color: "#2b2b26", fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>
-          Continuar con Google
+          {t(idioma, "login.continuarGoogle")}
         </button>
 
         <div style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: "#6b6a5e" }}>
           {mode === "login" ? (
             <span>
-              ¿No tienes cuenta?{" "}
+              {t(idioma, "login.noTienesCuenta")}{" "}
               <a href="#" onClick={(e) => { e.preventDefault(); setMode("signup"); setError(""); }} style={{ color: "#2f6b4f", fontWeight: 700 }}>
-                Créala aquí
+                {t(idioma, "login.creaAqui")}
               </a>
             </span>
           ) : (
             <span>
-              ¿Ya tienes cuenta?{" "}
+              {t(idioma, "login.yaTienesCuenta")}{" "}
               <a href="#" onClick={(e) => { e.preventDefault(); setMode("login"); setError(""); }} style={{ color: "#2f6b4f", fontWeight: 700 }}>
-                Inicia sesión
+                {t(idioma, "login.iniciaSesionLink")}
               </a>
             </span>
           )}
         </div>
 
         <div style={{ textAlign: "center", marginTop: 14, fontSize: 11, color: "#a5a394" }}>
-          <a href="privacidad.html" style={{ color: "#a5a394" }}>Política de privacidad</a>
+          <a href="privacidad.html" style={{ color: "#a5a394" }}>{t(idioma, "login.privacidad")}</a>
           {" · "}
-          <a href="terminos.html" style={{ color: "#a5a394" }}>Términos de uso</a>
+          <a href="terminos.html" style={{ color: "#a5a394" }}>{t(idioma, "login.terminos")}</a>
         </div>
       </div>
     </div>
   );
 }
 
+// El documento legal en sí (privacidad.html/terminos.html) sigue solo en español por ahora
+// (fi18n-6, pendiente) — aquí solo se traduce el texto del enlace.
 function LoadingScreen() {
+  const idioma = leerIdiomaGuardado();
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1ede0", fontFamily: "'Helvetica Neue', Arial, sans-serif", color: "#6b6a5e" }}>
-      Cargando…
+      {t(idioma, "loading.cargando")}
     </div>
   );
 }

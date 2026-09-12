@@ -1,9 +1,9 @@
-const CACHE_NAME = "fooddraft-v2";
+const CACHE_NAME = "fooddraft-v3";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./manifest.json", "./icon.svg",
   "./Logica/comun.js", "./Logica/macros.js", "./Logica/seleccion.js", "./Logica/comida-calculo.js",
   "./Logica/objetivos.js", "./Logica/menu-generador.js", "./Logica/peso.js", "./Logica/salud-publica.js",
-  "./Logica/resumenMensual.js",
+  "./Logica/resumenMensual.js", "./Logica/i18n.js",
 ];
 
 self.addEventListener("install", (event) => {

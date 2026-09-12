@@ -18,6 +18,7 @@ import { resumenNutrientesSemana } from "salud-publica";
 export { resumenNutrientesSemana };
 import { calcularResumenMensual, pesoEnMes } from "resumen-mensual";
 export { calcularResumenMensual, pesoEnMes };
+import { t, IDIOMAS_DISPONIBLES, DEFAULT_IDIOMA, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
 
 // ---------- Datos iniciales (todo lo acordado hasta ahora) ----------
 
@@ -283,6 +284,15 @@ function migrateData(rawData) {
     changed = true;
   }
 
+  // Idioma de la interfaz (Fase 5, internacionalización): perfiles ya existentes se quedan en
+  // español siempre — nunca les cambiamos el idioma solos por detectar el navegador, sería un
+  // cambio de comportamiento sorpresa. Los perfiles nuevos ya llegan con su idioma puesto desde
+  // el onboarding (ver ProfileOnboarding más abajo), así que este bloque no les toca nada.
+  if (data.perfil && data.perfil.idioma === undefined) {
+    data.perfil.idioma = DEFAULT_IDIOMA;
+    changed = true;
+  }
+
   return { data, changed };
 }
 
@@ -313,6 +323,13 @@ export default function RuedaDePlatos() {
   const [history, setHistory] = useState([]);
   const [premium, setPremium] = useState({ active: false });
   const saveTimer = useRef(null);
+
+  // Idioma de la interfaz: mientras no haya perfil cargado (o si nunca se completó el onboarding),
+  // se usa el que se eligió/detectó en la pantalla de bienvenida (ver Logica/i18n.js); en cuanto
+  // hay un perfil real con idioma propio, ese manda. `idiomaFallback` se calcula una sola vez al
+  // montar, no en cada render, para no releer localStorage sin necesidad.
+  const [idiomaFallback] = useState(() => leerIdiomaGuardado());
+  const idioma = (data && data.perfil && data.perfil.idioma) || idiomaFallback;
 
   // El estado premium vive de verdad en Firestore (users/{uid}.premium, escrito solo por el
   // webhook de Stripe) — aquí solo nos suscribimos a los cambios en vivo, vía el puente que
@@ -656,8 +673,8 @@ export default function RuedaDePlatos() {
 
   return (
     <Shell>
-      <Header saveState={saveState} />
-      <TabBar tab={tab} setTab={setTab} />
+      <Header saveState={saveState} idioma={idioma} />
+      <TabBar tab={tab} setTab={setTab} idioma={idioma} />
 
       <main style={{ padding: "20px 22px 60px" }}>
         {tab === "menu" && (
@@ -1409,6 +1426,9 @@ function ProfileOnboarding({ onComplete, onSkip }) {
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
+      // El idioma elegido (o detectado) antes de iniciar sesión, en la pantalla de bienvenida —
+      // así un perfil nuevo no empieza en español por defecto si ya se había puesto en inglés ahí.
+      idioma: leerIdiomaGuardado(),
     });
   }
 
@@ -1478,6 +1498,11 @@ function PerfilView({ perfil, onSave }) {
     (perfil?.entrenamientos || []).map((e) => ({ id: uid(), ...e }))
   );
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
+  // Idioma de la interfaz (Fase 5): si el perfil ya tiene uno propio, manda; si no (perfil recién
+  // migrado, todavía en español por defecto), se parte del que se recuerde de la pantalla de
+  // bienvenida. Al guardar, se refleja también en localStorage para que la próxima vez que cierres
+  // sesión, la bienvenida/login ya te salga en ese idioma.
+  const [idioma, setIdioma] = useState(perfil?.idioma ?? leerIdiomaGuardado());
   const [saved, setSaved] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
@@ -1510,6 +1535,7 @@ function PerfilView({ perfil, onSave }) {
     if (!valid) return;
     const repartoComidas = {};
     presetActual.meals.forEach((m) => { repartoComidas[m] = (Number(pesos[m]) || 0) / 100; });
+    guardarIdiomaLocal(idioma);
     onSave({
       nombre: nombre.trim(),
       sexo,
@@ -1521,6 +1547,7 @@ function PerfilView({ perfil, onSave }) {
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
+      idioma,
       presetComidas: presetId,
       repartoComidas,
     });
@@ -1541,6 +1568,28 @@ function PerfilView({ perfil, onSave }) {
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
           objetivo={objetivo} setObjetivo={setObjetivo}
         />
+
+        <Field label={t(idioma, "perfil.idioma.label")}>
+          <div style={{ display: "flex", gap: 8 }}>
+            {IDIOMAS_DISPONIBLES.map((op) => (
+              <button
+                key={op.key}
+                onClick={() => setIdioma(op.key)}
+                style={{
+                  flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+                  padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
+                  background: idioma === op.key ? "var(--green-dark)" : "#fff",
+                  color: idioma === op.key ? "#fff" : "var(--ink)",
+                }}
+              >
+                {op.label}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+            {t(idioma, "perfil.idioma.ayuda")}
+          </div>
+        </Field>
       </div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginTop: 24, maxWidth: 480 }}>
@@ -2849,7 +2898,7 @@ function Shell({ children }) {
   );
 }
 
-function Header({ saveState }) {
+function Header({ saveState, idioma }) {
   return (
     <header
       style={{
@@ -2876,16 +2925,16 @@ function Header({ saveState }) {
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65, marginBottom: 4 }}>
             FoodDraft
           </div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400, letterSpacing: 0.3 }}>Tu recetario</h1>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400, letterSpacing: 0.3 }}>{t(idioma, "header.tuRecetario")}</h1>
         </div>
-        <SaveIndicator state={saveState} />
+        <SaveIndicator state={saveState} idioma={idioma} />
       </div>
     </header>
   );
 }
 
-function SaveIndicator({ state }) {
-  const label = state === "saving" ? "Guardando…" : state === "saved" ? "Guardado" : "";
+function SaveIndicator({ state, idioma }) {
+  const label = state === "saving" ? t(idioma, "header.guardando") : state === "saved" ? t(idioma, "header.guardado") : "";
   if (!label) return <div style={{ width: 1 }} />;
   return (
     <div
@@ -2904,9 +2953,9 @@ function SaveIndicator({ state }) {
   );
 }
 
-const MENU_TAB_META = { label: "Menú", icon: CalendarDays };
-const CONFIG_TAB_META = { label: "Configuración", icon: Layers };
-const PROFILE_TAB_META = { label: "Perfil", icon: User };
+const MENU_TAB_META = { labelKey: "tab.menu", icon: CalendarDays };
+const CONFIG_TAB_META = { labelKey: "tab.configuracion", icon: Layers };
+const PROFILE_TAB_META = { labelKey: "tab.perfil", icon: User };
 
 // Qué categorías "hoja" pertenecen a cada grupo de la pantalla de Configuración.
 // Un único origen de datos: sirve tanto para saber a qué grupo pertenece una categoría
@@ -2923,7 +2972,7 @@ function groupOfCat(cat) {
   return "config-root";
 }
 
-function TabBar({ tab, setTab }) {
+function TabBar({ tab, setTab, idioma }) {
   const tabs = [
     { key: "menu", meta: MENU_TAB_META },
     { key: "config-root", meta: CONFIG_TAB_META },
@@ -2966,7 +3015,7 @@ function TabBar({ tab, setTab }) {
             }}
           >
             <Icon size={14} />
-            {meta.label}
+            {t(idioma, meta.labelKey)}
           </button>
         );
       })}
