@@ -4,7 +4,7 @@ import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from 
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
 export { calcularListaCompra };
-import { PAL_BASE_NIVELES, TIPOS_ENTRENAMIENTO, NIVELES_ACTIVIDAD_LEGACY, OBJETIVO_ETAPAS, REPARTO_COMIDAS, calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
+import { PAL_BASE_NIVELES, TIPOS_ENTRENAMIENTO, NIVELES_ACTIVIDAD_LEGACY, OBJETIVO_ETAPAS, REPARTO_COMIDAS, PRESETS_COMIDAS, AVISO_CENA_REPARTO, repartoUniforme, calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
 export { calcularObjetivosPerfil };
 import { uid, DAYS } from "comun";
 import { generateMenu, lastPicksFromHistory } from "menu-generador";
@@ -1465,15 +1465,40 @@ function PerfilView({ perfil, onSave }) {
   );
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
   // Solo se usa para la fracción del resumen mensual (f3-11) — no afecta al generador de menú,
-  // que sigue teniendo siempre sus 4 tipos de comida fijos.
+  // que construye sus huecos a partir del reparto de comidas de abajo.
   const [comidasPorDia, setComidasPorDia] = useState(perfil?.comidasPorDia ?? 4);
   const [saved, setSaved] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
-  const valid = anioNacimiento && altura && peso;
+  // Reparto de comidas (Fase 4): qué preset está elegido, y el peso (%) de cada comida dentro de
+  // él. Los pesos se editan como enteros 0-100 en la interfaz y se convierten a fracción (0-1) al
+  // guardar, que es como los espera el resto de la app (objetivosPorComida, generateMenu).
+  const [presetId, setPresetId] = useState(perfil?.presetComidas ?? "clasico-4");
+  const presetActual = PRESETS_COMIDAS.find((p) => p.id === presetId) || PRESETS_COMIDAS[0];
+  const [pesos, setPesos] = useState(() => {
+    if (perfil?.repartoComidas) {
+      const pct = {};
+      Object.keys(perfil.repartoComidas).forEach((m) => { pct[m] = Math.round(perfil.repartoComidas[m] * 100); });
+      return pct;
+    }
+    return presetActual.pesosPorDefecto ? { ...presetActual.pesosPorDefecto } : repartoUniforme(presetActual.meals);
+  });
+
+  function selectPreset(preset) {
+    if (preset.id === presetId) return;
+    setPresetId(preset.id);
+    setPesos(preset.pesosPorDefecto ? { ...preset.pesosPorDefecto } : repartoUniforme(preset.meals));
+  }
+
+  const sumaPesos = presetActual.meals.reduce((s, m) => s + (Number(pesos[m]) || 0), 0);
+  const repartoValido = sumaPesos === 100;
+
+  const valid = anioNacimiento && altura && peso && repartoValido;
 
   function handleSave() {
     if (!valid) return;
+    const repartoComidas = {};
+    presetActual.meals.forEach((m) => { repartoComidas[m] = (Number(pesos[m]) || 0) / 100; });
     onSave({
       nombre: nombre.trim(),
       sexo,
@@ -1486,6 +1511,8 @@ function PerfilView({ perfil, onSave }) {
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
       comidasPorDia: Number(comidasPorDia) || 4,
+      presetComidas: presetId,
+      repartoComidas,
     });
     setSaved(true);
   }
@@ -1515,7 +1542,89 @@ function PerfilView({ perfil, onSave }) {
             Cuántas comidas sueles hacer al día de verdad — solo se usa para calcular tu fracción de comidas completadas, no cambia cómo se genera el menú.
           </div>
         </Field>
+      </div>
 
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginTop: 24, maxWidth: 480 }}>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
+          Reparto de comidas
+        </div>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 14, lineHeight: 1.5 }}>
+          Elige cuántas comidas haces al día y qué peso tiene cada una sobre tu objetivo diario. Comida y Cena están siempre presentes en los menús que se generan.
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+          {PRESETS_COMIDAS.map((preset) => {
+            const elegido = preset.id === presetId;
+            return (
+              <button
+                key={preset.id}
+                onClick={() => selectPreset(preset)}
+                style={{
+                  textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                  padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
+                  background: elegido ? "var(--green-soft)" : "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: elegido ? "var(--green-dark)" : "var(--ink)" }}>
+                    {preset.label}
+                  </span>
+                  {preset.recomendado && (
+                    <span
+                      style={{
+                        fontSize: 10, fontWeight: 700, color: "var(--mustard-dark)", background: "var(--mustard-soft)",
+                        borderRadius: 20, padding: "2px 8px", textTransform: "uppercase", letterSpacing: 0.3,
+                      }}
+                    >
+                      Recomendado
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 3, lineHeight: 1.45 }}>{preset.texto}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+          Peso de cada comida
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {presetActual.meals.map((mealType) => (
+            <React.Fragment key={mealType}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)" }}>
+                  {mealType}
+                </span>
+                <input
+                  type="number" min={0} max={100} step={1}
+                  value={pesos[mealType] ?? 0}
+                  onChange={(e) => setPesos((p) => ({ ...p, [mealType]: e.target.value }))}
+                  style={{ ...inputStyle, width: 64, textAlign: "right" }}
+                />
+                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)" }}>%</span>
+              </div>
+              {mealType === "Cena" && (
+                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: -2 }}>
+                  {AVISO_CENA_REPARTO}
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+
+        <div
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, marginTop: 12,
+            color: repartoValido ? "var(--green-dark)" : "var(--rust)",
+          }}
+        >
+          Suma: {sumaPesos}%{!repartoValido && " — debe sumar exactamente 100%"}
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 480 }}>
         <button
           onClick={handleSave}
           disabled={!valid}

@@ -194,6 +194,59 @@ export function calcularObjetivosPerfil(perfil) {
 // usa para calcular nada — solo como valor de partida al migrar o al crear un perfil nuevo.
 export const REPARTO_COMIDAS = { Desayuno: 0.20, Comida: 0.35, Merienda: 0.15, Cena: 0.30 };
 
+// Presets fijos de reparto de comidas (Fase 4, reparto de comidas configurable), para elegir en
+// Perfil. Comida y Cena están presentes en todos — nunca se pueden quitar. Cada preset define solo
+// de qué comidas se compone; los pesos (%) dentro de él los pone el usuario libremente, siempre que
+// sumen 100% (salvo el clásico, que mantiene el reparto de siempre como punto de partida — el resto
+// no tiene un peso "recomendado", por diseño). Los textos son educativos, con la evidencia que los
+// respalda resumida en la memoria del proyecto (estudios en
+// "Estudios de apoyo de la aplicación/Split de comidas/"). Queda fuera, a propósito y de momento,
+// el preset de 5 comidas con "Media mañana": esa categoría de alimentos todavía no existe, y sin
+// ella esos huecos del menú se quedarían sin nada asignado.
+export const PRESETS_COMIDAS = [
+  {
+    id: "clasico-4",
+    label: "Clásico · 4 comidas",
+    recomendado: true,
+    meals: ["Desayuno", "Comida", "Merienda", "Cena"],
+    pesosPorDefecto: { Desayuno: 20, Comida: 35, Merienda: 15, Cena: 30 },
+    texto: "El reparto con más respaldo en la ciencia de la crononutrición: concentra la energía en la primera mitad del día.",
+  },
+  {
+    id: "sin-merienda-3",
+    label: "3 comidas · sin merienda",
+    meals: ["Desayuno", "Comida", "Cena"],
+    texto: "Desayuno, comida y cena, sin nada entre horas — el patrón de toda la vida, con una comida menos que el clásico pero manteniendo una estructura clara a lo largo del día.",
+  },
+  {
+    id: "sin-desayuno-3",
+    label: "3 comidas · sin desayuno",
+    meals: ["Comida", "Merienda", "Cena"],
+    texto: "Saltarse el desayuno de forma habitual se ha relacionado en algunos estudios con más grasa acumulada en el hígado — no es motivo de alarma, pero conviene saberlo si lo haces todos los días.",
+  },
+  {
+    id: "intermitente-2",
+    label: "2 comidas · comida y cena",
+    meals: ["Comida", "Cena"],
+    texto: "Ayuno intermitente: menos comidas, pero más grandes. Cuantas menos comidas haces, más fácil es acabar picoteando entre horas si no te sacian bien — vigila bien las raciones. Además, la evidencia respalda más la versión con la comida desplazada temprano en el día que tarde.",
+  },
+];
+
+// Aviso fijo (no bloqueante) bajo el peso de la Cena en la pantalla de reparto de comidas, igual
+// en los cuatro presets — ver Pimenta 2015, Kim/Kim/Lee/Park 2025 y Ren et al. 2025 en la carpeta
+// de estudios de apoyo mencionada arriba.
+export const AVISO_CENA_REPARTO = "Cenas copiosas o muy tardías se asocian a peor control de azúcar, peor descanso y más riesgo de grasa en el hígado. Si puedes, que la cena no sea ni la más pesada ni la más tardía del día.";
+
+// Reparto uniforme (sin recomendación implícita) entre las comidas de un preset, como punto de
+// partida al elegirlo por primera vez — el usuario lo ajusta después a su gusto.
+export function repartoUniforme(meals) {
+  const base = Math.floor(100 / meals.length);
+  const resto = 100 - base * meals.length;
+  const pesos = {};
+  meals.forEach((m, i) => { pesos[m] = base + (i < resto ? 1 : 0); });
+  return pesos;
+}
+
 // Trocea un objetivo diario completo (kcal/prot/fat/carb) en el sub-objetivo de una comida
 // concreta, aplicando su porcentaje dentro del reparto de comidas de ese perfil (2 a 5 comidas,
 // pesos libres siempre que sumen 100%). Devuelve null si no hay objetivo diario del que partir,
