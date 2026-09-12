@@ -117,6 +117,15 @@ const TEXTOS = {
     "menu.historial.titulo": "Ciclos anteriores",
     "menu.historial.explicacion": "La app usa el último ciclo para evitar repetir de inmediato el mismo plato cerrado o la misma elección en los grupos de un solo hueco.",
     "menu.historial.platoCerrado": "Plato cerrado: {nombre}",
+
+    "mealDetail.sinDatos": "sin datos nutricionales",
+    "mealDetail.total": "Total de la comida",
+    "mealDetail.reglaEvitada": "⚠ No se pudo evitar la combinación \"{nombres}\" (regla: nunca) por falta de alternativas ese día.",
+    "mealDetail.reglaAplicada": "⚙ Regla aplicada: {nombres} ({nivel})",
+    "mealDetail.racionBase": "1 ración = la cantidad base del ingrediente",
+    "mealDetail.restablecer": "Restablecer",
+    "mealDetail.completadaHoy": "Completada hoy",
+    "mealDetail.marcarCompletada": "Marcar como completada hoy",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -179,6 +188,15 @@ const TEXTOS = {
     "menu.historial.titulo": "Previous cycles",
     "menu.historial.explicacion": "The app uses the last cycle to avoid immediately repeating the same closed dish or the same pick in single-slot groups.",
     "menu.historial.platoCerrado": "Closed dish: {nombre}",
+
+    "mealDetail.sinDatos": "no nutritional data",
+    "mealDetail.total": "Meal total",
+    "mealDetail.reglaEvitada": "⚠ Couldn't avoid the \"{nombres}\" combination (rule: never) for lack of alternatives that day.",
+    "mealDetail.reglaAplicada": "⚙ Rule applied: {nombres} ({nivel})",
+    "mealDetail.racionBase": "1 serving = the ingredient's base amount",
+    "mealDetail.restablecer": "Reset",
+    "mealDetail.completadaHoy": "Completed today",
+    "mealDetail.marcarCompletada": "Mark as completed today",
   },
 };
 

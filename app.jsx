@@ -3269,6 +3269,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
           onClose={() => setSelectedMealId(null)}
           completadaHoy={!!(((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType])}
           onToggleCompletada={() => onToggleComidaCompletada(selectedMeal.mealType)}
+          idioma={idioma}
         />
       )}
 
@@ -3867,7 +3868,7 @@ function ComboAfinidad({ meal, data, onUpsertRule }) {
   );
 }
 
-function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, completadaHoy, onToggleCompletada }) {
+function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, completadaHoy, onToggleCompletada, idioma }) {
   const components = mealComponents(data, meal);
   const totals = mealTotals(data, meal);
 
@@ -3879,7 +3880,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
   const anyChanged = components.some((c) => c.raciones !== 1);
 
   return (
-    <ModalShell onClose={onClose} title={`${meal.day} · ${meal.mealType}`}>
+    <ModalShell onClose={onClose} title={`${t(idioma, "dia." + meal.day)} · ${t(idioma, "mealType." + meal.mealType)}`}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {components.map((c) => (
           <div
@@ -3900,7 +3901,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
                 </div>
                 {!c.sinCalculo && (
                   <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}>
-                    {c.macros ? `${fmt(c.macros.gramos)} g` : "sin datos nutricionales"}
+                    {c.macros ? `${fmt(c.macros.gramos)} g` : t(idioma, "mealDetail.sinDatos")}
                   </div>
                 )}
               </div>
@@ -3930,7 +3931,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
         }}
       >
         <div style={{ fontSize: 10.5, letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.7, marginBottom: 6 }}>
-          Total de la comida
+          {t(idioma, "mealDetail.total")}
         </div>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 24, fontWeight: 700 }}>{fmt(totals.kcal)}</span>
@@ -3957,8 +3958,8 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
                 }}
               >
                 {isNulaForced
-                  ? `⚠ No se pudo evitar la combinación "${names}" (regla: nunca) por falta de alternativas ese día.`
-                  : `⚙ Regla aplicada: ${names} (${(RULE_LEVELS[r.level] || {}).label || r.level})`}
+                  ? t(idioma, "mealDetail.reglaEvitada", { nombres: names })
+                  : t(idioma, "mealDetail.reglaAplicada", { nombres: names, nivel: (RULE_LEVELS[r.level] || {}).label || r.level })}
               </div>
             );
           })}
@@ -3967,7 +3968,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 12 }}>
         <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)" }}>
-          1 ración = la cantidad base del ingrediente
+          {t(idioma, "mealDetail.racionBase")}
         </span>
         {anyChanged && (
           <button
@@ -3978,7 +3979,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
               borderRadius: 7, padding: "5px 10px", color: "var(--ink-soft)",
             }}
           >
-            Restablecer
+            {t(idioma, "mealDetail.restablecer")}
           </button>
         )}
       </div>
@@ -3993,7 +3994,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer",
         }}
       >
-        <Check size={15} /> {completadaHoy ? "Completada hoy" : "Marcar como completada hoy"}
+        <Check size={15} /> {completadaHoy ? t(idioma, "mealDetail.completadaHoy") : t(idioma, "mealDetail.marcarCompletada")}
       </button>
     </ModalShell>
   );
