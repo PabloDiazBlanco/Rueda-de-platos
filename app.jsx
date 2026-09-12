@@ -955,12 +955,14 @@ export default function RuedaDePlatos() {
                     ingredient: { name: sugerencia.nombre, composicion: sugerencia.composicion },
                   });
                 }}
+                idioma={idioma}
               />
             ) : (
               <PremiumRequiredNotice
-                titulo='"¿Qué cocino?" es premium'
-                texto="Manda una foto de lo que tengas y recibe ideas hechas solo con alimentos de tu propio catálogo, con macros reales — parte de la suscripción premium."
+                titulo={t(idioma, "premiumNotice.cocinar.titulo")}
+                texto={t(idioma, "premiumNotice.cocinar.texto")}
                 onGoPremium={() => setTab("perfil-premium")}
+                idioma={idioma}
               />
             )}
           </div>
@@ -984,12 +986,12 @@ export default function RuedaDePlatos() {
             <BigCardGrid
               onSelect={setTab}
               cards={[
-                { key: "perfil-datos", label: "Datos personales", desc: "perfil y objetivos", icon: User, color: "var(--green)" },
-                { key: "perfil-peso", label: "Seguimiento de peso", desc: premium.active ? "pesadas y tendencia" : "función premium", icon: Scale, color: "var(--coffee)" },
-                { key: "perfil-resumen", label: "Resumen mensual", desc: "comidas completadas", icon: CalendarDays, color: "var(--olive)" },
-                { key: "perfil-medidas", label: "Medidas corporales", desc: "próximamente", icon: Ruler, color: "var(--berry)" },
-                { key: "perfil-premium", label: premium.active ? "Premium" : "Hazte premium", desc: premium.active ? "gestionar suscripción" : "desbloquea más", icon: Sparkles, color: "var(--mustard-dark)" },
-                { key: "perfil-documentos", label: "Documentos", desc: "por qué funciona así", icon: FileText, color: "var(--olive)" },
+                { key: "perfil-datos", label: t(idioma, "perfilRoot.datosPersonales"), desc: t(idioma, "perfilRoot.datosPersonales.desc"), icon: User, color: "var(--green)" },
+                { key: "perfil-peso", label: t(idioma, "perfilRoot.seguimientoPeso"), desc: premium.active ? t(idioma, "perfilRoot.seguimientoPeso.desc") : t(idioma, "perfilRoot.funcionPremium"), icon: Scale, color: "var(--coffee)" },
+                { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), desc: t(idioma, "perfilRoot.resumenMensual.desc"), icon: CalendarDays, color: "var(--olive)" },
+                { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), desc: t(idioma, "perfilRoot.proximamente"), icon: Ruler, color: "var(--berry)" },
+                { key: "perfil-premium", label: premium.active ? t(idioma, "perfilRoot.premium") : t(idioma, "perfilRoot.hazteremium"), desc: premium.active ? t(idioma, "perfilRoot.gestionarSuscripcion") : t(idioma, "perfilRoot.desbloqueaMas"), icon: Sparkles, color: "var(--mustard-dark)" },
+                { key: "perfil-documentos", label: t(idioma, "perfilRoot.documentos"), desc: t(idioma, "perfilRoot.documentos.desc"), icon: FileText, color: "var(--olive)" },
               ]}
             />
             <button
@@ -1000,7 +1002,7 @@ export default function RuedaDePlatos() {
                 fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
               }}
             >
-              <Download size={13} /> Descargar una copia de mis datos
+              <Download size={13} /> {t(idioma, "perfilRoot.descargarDatos")}
             </button>
           </>
         )}
@@ -1028,9 +1030,10 @@ export default function RuedaDePlatos() {
               />
             ) : (
               <PremiumRequiredNotice
-                titulo="El seguimiento de peso es premium"
-                texto="Ciclos, tendencia y ajuste automático de tus objetivos según cómo evoluciona tu peso real — parte de la suscripción premium."
+                titulo={t(idioma, "premiumNotice.peso.titulo")}
+                texto={t(idioma, "premiumNotice.peso.texto")}
                 onGoPremium={() => setTab("perfil-premium")}
+                idioma={idioma}
               />
             )}
           </>
@@ -1039,28 +1042,28 @@ export default function RuedaDePlatos() {
         {tab === "perfil-premium" && (
           <>
             <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
-            <PremiumView premium={premium} />
+            <PremiumView premium={premium} idioma={idioma} />
           </>
         )}
 
         {tab === "perfil-resumen" && (
           <>
             <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
-            <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} />
+            <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
           </>
         )}
 
         {tab === "perfil-medidas" && (
           <>
             <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
-            <MedidasPlaceholderView />
+            <MedidasPlaceholderView idioma={idioma} />
           </>
         )}
 
         {tab === "perfil-documentos" && (
           <>
             <BackLink label="Perfil" onClick={() => setTab("perfil-root")} />
-            <DocumentosView />
+            <DocumentosView idioma={idioma} />
           </>
         )}
       </main>
@@ -1801,11 +1804,11 @@ function DeleteAccountModal({ onClose, idioma }) {
 // ---------- Premium ----------
 
 const VENTAJAS_PREMIUM = [
-  { icon: Camera, texto: "Lector de etiquetas por foto (20 análisis al mes con IA)" },
-  { icon: Scale, texto: "Seguimiento de peso completo: ciclos, tendencia y ajuste automático de objetivos" },
-  { icon: Sparkles, texto: "\"Qué puedo cocinar con lo que tengo\" a partir de una foto y/o texto con tus ingredientes" },
-  { icon: CalendarDays, texto: "Resumen mensual extendido: objetivo actual, peso del mes y su gráfica de tendencia" },
-  { icon: ThumbsUp, texto: "Sin anuncios" },
+  { icon: Camera, textoKey: "premiumView.ventaja1" },
+  { icon: Scale, textoKey: "premiumView.ventaja2" },
+  { icon: Sparkles, textoKey: "premiumView.ventaja3" },
+  { icon: CalendarDays, textoKey: "premiumView.ventaja4" },
+  { icon: ThumbsUp, textoKey: "premiumView.ventaja5" },
 ];
 
 // ---------- Resumen mensual (f3-11) ----------
@@ -1813,10 +1816,10 @@ const VENTAJAS_PREMIUM = [
 // cambia con premium es la profundidad — objetivo actual, peso del mes y su gráfica de
 // tendencia (el mismo PesoLineChart que ya usa Seguimiento de peso, solo que aquí recibe las
 // pesadas ya filtradas a este mes en concreto) — y la frase de cierre que junta todo.
-function ResumenMensualView({ data, premium, onGoPremium }) {
+function ResumenMensualView({ data, premium, onGoPremium, idioma }) {
   const hoy = new Date();
   const mesISO = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
-  const nombreMes = hoy.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+  const nombreMes = hoy.toLocaleDateString(idioma === "en" ? "en-US" : "es-ES", { month: "long", year: "numeric" });
 
   const resumen = calcularResumenMensual(data, mesISO, hoy);
   const objetivosCalculados = calcularObjetivosPerfil(data.perfil);
@@ -1826,7 +1829,7 @@ function ResumenMensualView({ data, premium, onGoPremium }) {
 
   return (
     <>
-      <SectionIntro text={`Cuenta las comidas que has marcado como completadas desde el detalle de cada comida en el Menú — se guarda con fecha real, aunque regeneres el menú.`} />
+      <SectionIntro text={t(idioma, "resumenMensual.intro")} />
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "20px", marginBottom: 16, maxWidth: 480, textAlign: premium.active ? "left" : "center" }}>
         {!premium.active && (
@@ -1838,11 +1841,11 @@ function ResumenMensualView({ data, premium, onGoPremium }) {
           {resumen.porcentaje}%
         </div>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", marginTop: 4 }}>
-          {resumen.completadas} de {resumen.esperadas} comidas completadas
+          {t(idioma, "resumenMensual.completadas", { completadas: resumen.completadas, esperadas: resumen.esperadas })}
         </div>
         {!premium.active && (
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 10, borderTop: "1px solid var(--line)", paddingTop: 10 }}>
-            Basado en {resumen.comidasPorDia} comidas al día (configurado en tu perfil)
+            {t(idioma, "resumenMensual.basadoEn", { n: resumen.comidasPorDia })}
           </div>
         )}
       </div>
@@ -1855,15 +1858,15 @@ function ResumenMensualView({ data, premium, onGoPremium }) {
 
           {etapa && (
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "9px 0", borderTop: "1px solid var(--line)" }}>
-              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>Objetivo actual</span>
+              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>{t(idioma, "resumenMensual.objetivoActual")}</span>
               <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", textAlign: "right" }}>
-                {etapa.label}<br />{objetivosCalculados.kcal} kcal/día
+                {t(idioma, "objetivoEtapa." + objetivosCalculados.objetivo)}<br />{t(idioma, "resumenMensual.kcalDia", { n: objetivosCalculados.kcal })}
               </span>
             </div>
           )}
 
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 10, padding: "9px 0", borderTop: "1px solid var(--line)" }}>
-            <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>Peso este mes</span>
+            <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>{t(idioma, "resumenMensual.pesoEsteMes")}</span>
             <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
               {pesoDelMes ? (
                 <>
@@ -1871,7 +1874,7 @@ function ResumenMensualView({ data, premium, onGoPremium }) {
                   <span style={{ color: "var(--green)" }}>({pesoDelMes.delta > 0 ? "+" : ""}{fmt(pesoDelMes.delta)} kg)</span>
                 </>
               ) : (
-                "sin pesadas este mes"
+                t(idioma, "resumenMensual.sinPesadas")
               )}
             </span>
           </div>
@@ -1879,7 +1882,7 @@ function ResumenMensualView({ data, premium, onGoPremium }) {
           {pesoDelMes && (
             <div style={{ marginTop: 14 }}>
               <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 6 }}>
-                Tendencia de peso · {nombreMes}
+                {t(idioma, "resumenMensual.tendenciaDe", { mes: nombreMes })}
               </div>
               <PesoLineChart entradas={pesoDelMes.entradas} tendencia={tendenciaDelMes} />
             </div>
@@ -1891,20 +1894,21 @@ function ResumenMensualView({ data, premium, onGoPremium }) {
               fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)", lineHeight: 1.5,
             }}
           >
-            Has completado el <strong>{resumen.porcentaje}%</strong> de tus comidas
+            {t(idioma, "resumenMensual.hasCompletado", { pct: resumen.porcentaje })}
             {pesoDelMes ? (
-              <> , y tu peso {pesoDelMes.delta < 0 ? "ha bajado" : pesoDelMes.delta > 0 ? "ha subido" : "se ha mantenido"}
-              {pesoDelMes.delta !== 0 ? ` ${fmt(Math.abs(pesoDelMes.delta))} kg` : ""} este mes.</>
+              <>{t(idioma, "resumenMensual.yTuPeso")} {pesoDelMes.delta < 0 ? t(idioma, "resumenMensual.pesoBajado") : pesoDelMes.delta > 0 ? t(idioma, "resumenMensual.pesoSubido") : t(idioma, "resumenMensual.pesoMantenido")}
+              {pesoDelMes.delta !== 0 ? t(idioma, "resumenMensual.esteMesKg", { kg: fmt(Math.abs(pesoDelMes.delta)) }) : t(idioma, "resumenMensual.esteMes")}</>
             ) : (
-              " este mes."
+              t(idioma, "resumenMensual.esteMes")
             )}
           </div>
         </div>
       ) : (
         <PremiumRequiredNotice
-          titulo="El resumen completo es premium"
-          texto="Con premium, este resumen se combina con tu objetivo actual y tu tendencia de peso del mes, con gráfica incluida."
+          titulo={t(idioma, "premiumNotice.resumen.titulo")}
+          texto={t(idioma, "premiumNotice.resumen.texto")}
           onGoPremium={onGoPremium}
+          idioma={idioma}
         />
       )}
     </>
@@ -1916,7 +1920,7 @@ function ResumenMensualView({ data, premium, onGoPremium }) {
 // window.subscribePremiumStatus en auth-bootstrap.jsx). El botón redirige entero a Stripe
 // (Checkout o el portal de facturación, según el caso) — no hay formulario de tarjeta propio en
 // ningún sitio de esta app.
-function PremiumView({ premium }) {
+function PremiumView({ premium, idioma }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -1937,21 +1941,21 @@ function PremiumView({ premium }) {
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <Sparkles size={30} color="var(--mustard-dark)" style={{ marginBottom: 8 }} />
         <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 24, color: "var(--green-dark)", margin: "0 0 4px" }}>
-          {premium.active ? "Ya eres premium" : "Hazte premium"}
+          {premium.active ? t(idioma, "premiumView.yaEres") : t(idioma, "premiumView.hazte")}
         </h1>
         {!premium.active && (
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
-            2,99€/mes — cancela cuando quieras
+            {t(idioma, "premiumView.precio")}
           </div>
         )}
       </div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {VENTAJAS_PREMIUM.map(({ icon: Icon, texto }) => (
-            <div key={texto} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+          {VENTAJAS_PREMIUM.map(({ icon: Icon, textoKey }) => (
+            <div key={textoKey} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
               <Icon size={16} color="var(--mustard-dark)" style={{ flexShrink: 0, marginTop: 1 }} />
-              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)" }}>{texto}</div>
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)" }}>{t(idioma, textoKey)}</div>
             </div>
           ))}
         </div>
@@ -1978,7 +1982,7 @@ function PremiumView({ premium }) {
             borderRadius: 9, padding: "12px", cursor: loading ? "default" : "pointer",
           }}
         >
-          {loading ? "Un momento…" : "Gestionar mi suscripción"}
+          {loading ? t(idioma, "premiumView.unMomento") : t(idioma, "premiumView.gestionarSuscripcion")}
         </button>
       ) : (
         <button
@@ -1990,7 +1994,7 @@ function PremiumView({ premium }) {
             borderRadius: 9, padding: "12px", cursor: loading ? "default" : "pointer",
           }}
         >
-          {loading ? "Un momento…" : "Suscribirme"}
+          {loading ? t(idioma, "premiumView.unMomento") : t(idioma, "premiumView.suscribirme")}
         </button>
       )}
     </div>
@@ -2000,7 +2004,7 @@ function PremiumView({ premium }) {
 // Aviso reutilizable para cualquier sitio de la app que quiera bloquear contenido a quien no sea
 // premium — hoy solo lo usa el seguimiento de peso, pero está pensado para poder reutilizarlo
 // tal cual con la función de "qué puedo cocinar" en cuanto se construya.
-function PremiumRequiredNotice({ titulo, texto, onGoPremium }) {
+function PremiumRequiredNotice({ titulo, texto, onGoPremium, idioma }) {
   return (
     <div
       style={{
@@ -2023,7 +2027,7 @@ function PremiumRequiredNotice({ titulo, texto, onGoPremium }) {
           padding: "9px 16px", cursor: "pointer",
         }}
       >
-        Ver premium
+        {t(idioma, "premiumNotice.verPremium")}
       </button>
     </div>
   );
@@ -2033,7 +2037,7 @@ function PremiumRequiredNotice({ titulo, texto, onGoPremium }) {
 // tengas) a la Cloud Function, que identifica alimentos de tu propio catálogo en la imagen y
 // sugiere combinaciones. Las macros de cada sugerencia se calculan aquí con composedMacros, igual
 // que cualquier otro plato de la app — nunca son un número que haya devuelto la IA directamente.
-function SuggestMealsView({ data, onGuardarComoCerrado }) {
+function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
   const [photo, setPhoto] = useState(null);
   const [otrosIngredientes, setOtrosIngredientes] = useState("");
   const [especias, setEspecias] = useState("");
@@ -2069,7 +2073,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
 
   return (
     <>
-      <SectionIntro text="Manda una foto de lo que tengas (nevera, despensa...), escribe qué ingredientes tienes, o ambas cosas — te sugerimos combinaciones hechas solo con alimentos de tu propio catálogo, con macros reales, no una estimación de la IA." />
+      <SectionIntro text={t(idioma, "suggestMeals.intro")} />
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px", marginBottom: 16, maxWidth: 480 }}>
         {photo ? (
@@ -2084,7 +2088,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
             padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 10,
           }}
         >
-          <Camera size={14} /> {photo ? "Cambiar foto" : "Hacer/subir foto (opcional)"}
+          <Camera size={14} /> {photo ? t(idioma, "suggestMeals.cambiarFoto") : t(idioma, "suggestMeals.hacerFoto")}
         </button>
         <input
           ref={fileInputRef}
@@ -2096,22 +2100,22 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
         />
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
-          {photo ? "Otros ingredientes que no salgan bien en la foto (opcional)" : "Ingredientes que tienes — puedes escribirlos aquí sin necesidad de foto"}
+          {photo ? t(idioma, "suggestMeals.otrosIngredientesConFoto") : t(idioma, "suggestMeals.otrosIngredientesSinFoto")}
         </div>
         <input
           value={otrosIngredientes}
           onChange={(e) => setOtrosIngredientes(e.target.value)}
-          placeholder="Ej: arroz en la despensa, huevos"
+          placeholder={t(idioma, "suggestMeals.placeholderIngredientes")}
           style={{ ...inputStyle, marginBottom: 12 }}
         />
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
-          Especias o condimentos disponibles (opcional)
+          {t(idioma, "suggestMeals.especias")}
         </div>
         <input
           value={especias}
           onChange={(e) => setEspecias(e.target.value)}
-          placeholder="Ej: comino, pimentón, orégano, ajo en polvo"
+          placeholder={t(idioma, "suggestMeals.placeholderEspecias")}
           style={{ ...inputStyle, marginBottom: 12 }}
         />
 
@@ -2124,7 +2128,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
             borderRadius: 9, padding: "12px", cursor: (photo || otrosIngredientes.trim()) && !loading ? "pointer" : "default",
           }}
         >
-          {loading ? "Un momento…" : "¿Qué puedo cocinar?"}
+          {loading ? t(idioma, "premiumView.unMomento") : t(idioma, "suggestMeals.queCocino")}
         </button>
 
         {error && (
@@ -2141,7 +2145,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
 
       {sugerencias && sugerencias.length === 0 && (
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
-          No hemos reconocido ningún alimento de tu catálogo en la foto. Prueba con otra imagen, o añade primero esos alimentos al catálogo.
+          {t(idioma, "suggestMeals.sinResultados")}
         </div>
       )}
 
@@ -2172,7 +2176,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
                     padding: "8px 12px", cursor: "pointer",
                   }}
                 >
-                  Guardar como plato cerrado
+                  {t(idioma, "suggestMeals.guardarComoCerrado")}
                 </button>
               </div>
             );
@@ -2185,7 +2189,7 @@ function SuggestMealsView({ data, onGuardarComoCerrado }) {
 
 // ---------- Seguimiento de peso ----------
 
-function MedidasPlaceholderView() {
+function MedidasPlaceholderView({ idioma }) {
   return (
     <div
       style={{
@@ -2195,12 +2199,10 @@ function MedidasPlaceholderView() {
     >
       <Ruler size={26} color="var(--ink-soft)" style={{ marginBottom: 10 }} />
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
-        Próximamente
+        {t(idioma, "medidas.proximamente")}
       </div>
       <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
-        Aquí podrás añadir pliegues cutáneos y medidas corporales (cintura, cadera...) para completar el
-        seguimiento más allá del peso en la báscula. Por ahora no es necesario — el seguimiento de peso
-        de al lado ya cubre lo esencial.
+        {t(idioma, "medidas.texto")}
       </p>
     </div>
   );
@@ -2212,10 +2214,10 @@ function MedidasPlaceholderView() {
 // solo necesita { titulo, descripcion, archivo } con la ruta relativa al PDF.
 const DOCUMENTOS_ADJUNTOS = [];
 
-function DocumentosView() {
+function DocumentosView({ idioma }) {
   return (
     <div style={{ maxWidth: 480 }}>
-      <SectionIntro text="Aquí se podrán consultar documentos que, sin ser necesarios para que la app funcione, explican cómo funciona por dentro — y buscan dejar claro que decisiones como las fórmulas, los porcentajes o los umbrales no están puestas al azar." />
+      <SectionIntro text={t(idioma, "documentos.intro")} />
 
       {DOCUMENTOS_ADJUNTOS.length === 0 ? (
         <div
@@ -2226,11 +2228,10 @@ function DocumentosView() {
         >
           <FileText size={26} color="var(--ink-soft)" style={{ marginBottom: 10 }} />
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
-            Todavía no hay documentos añadidos
+            {t(idioma, "documentos.sinDocumentos")}
           </div>
           <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
-            En cuanto estén listos, aquí aparecerán los documentos que explican y justifican el
-            funcionamiento interno de la app.
+            {t(idioma, "documentos.sinDocumentos.desc")}
           </p>
         </div>
       ) : (
