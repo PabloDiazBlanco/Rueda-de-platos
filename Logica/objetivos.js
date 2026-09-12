@@ -200,9 +200,7 @@ export const REPARTO_COMIDAS = { Desayuno: 0.20, Comida: 0.35, Merienda: 0.15, C
 // sumen 100% (salvo el clásico, que mantiene el reparto de siempre como punto de partida — el resto
 // no tiene un peso "recomendado", por diseño). Los textos son educativos, con la evidencia que los
 // respalda resumida en la memoria del proyecto (estudios en
-// "Estudios de apoyo de la aplicación/Split de comidas/"). Queda fuera, a propósito y de momento,
-// el preset de 5 comidas con "Media mañana": esa categoría de alimentos todavía no existe, y sin
-// ella esos huecos del menú se quedarían sin nada asignado.
+// "Estudios de apoyo de la aplicación/Split de comidas/").
 export const PRESETS_COMIDAS = [
   {
     id: "clasico-4",
@@ -229,6 +227,12 @@ export const PRESETS_COMIDAS = [
     label: "2 comidas · comida y cena",
     meals: ["Comida", "Cena"],
     texto: "Ayuno intermitente: menos comidas, pero más grandes. Cuantas menos comidas haces, más fácil es acabar picoteando entre horas si no te sacian bien — vigila bien las raciones. Además, la evidencia respalda más la versión con la comida desplazada temprano en el día que tarde.",
+  },
+  {
+    id: "cinco-5",
+    label: "5 comidas · con media mañana",
+    meals: ["Desayuno", "Media mañana", "Comida", "Merienda", "Cena"],
+    texto: "Comidas más pequeñas y repartidas, para quien prefiere no pasar muchas horas seguidas sin comer. No es de los patrones con más evidencia detrás, pero es una forma habitual y válida de organizar el día.",
   },
 ];
 

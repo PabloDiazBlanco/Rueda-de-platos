@@ -209,8 +209,10 @@ export function generateMenu(data, avoid = {}) {
   }
 
   const desayunos = data.ingredients.filter((i) => i.category === "desayuno" && i.active !== false);
+  const mediasMananas = data.ingredients.filter((i) => i.category === "media_manana" && i.active !== false);
   const meriendas = data.ingredients.filter((i) => i.category === "merienda" && i.active !== false);
   assignByExactProportion(desayunos, "Desayuno");
+  assignByExactProportion(mediasMananas, "Media mañana");
   assignByExactProportion(meriendas, "Merienda");
 
   // 8. Ajuste de raciones a los objetivos nutricionales (solo si hay un perfil con objetivos calculados).

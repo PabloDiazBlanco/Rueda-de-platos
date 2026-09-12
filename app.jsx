@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator } from "lucide-react";
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from "macros";
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
@@ -160,6 +160,7 @@ const CATEGORY_META = {
   verdura: { label: "Verduras", icon: Salad, color: "var(--green)", bg: "var(--green-soft)" },
   grasa: { label: "Grasas", icon: Droplet, color: "var(--olive)", bg: "var(--olive-soft)" },
   desayuno: { label: "Desayuno", icon: Coffee, color: "var(--coffee)", bg: "var(--coffee-soft)" },
+  media_manana: { label: "Media mañana", icon: Apple, color: "var(--citrus)", bg: "var(--citrus-soft)" },
   merienda: { label: "Merienda", icon: Cookie, color: "var(--berry)", bg: "var(--berry-soft)" },
   cerrado: { label: "Platos cerrados", icon: Package, color: "var(--rust)", bg: "var(--rust-soft)" },
   especial: { label: "Especiales", icon: Sparkles, color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
@@ -650,6 +651,7 @@ export default function RuedaDePlatos() {
   const verduraTotal = itemsInCategory("verdura").reduce((s, i) => s + (i.probabilidad || 0), 0);
   const grasaTotal = itemsInCategory("grasa").reduce((s, i) => s + (i.probabilidad || 0), 0);
   const desayunoTotal = itemsInCategory("desayuno").reduce((s, i) => s + (i.probabilidad || 0), 0);
+  const mediaMananaTotal = itemsInCategory("media_manana").reduce((s, i) => s + (i.probabilidad || 0), 0);
   const meriendaTotal = itemsInCategory("merienda").reduce((s, i) => s + (i.probabilidad || 0), 0);
 
   return (
@@ -818,6 +820,26 @@ export default function RuedaDePlatos() {
                 />
               ))}
               <AddCard label="Añadir desayuno" onClick={() => setEditing({ mode: "new", category: "desayuno" })} />
+            </CardGrid>
+          </>
+        )}
+
+        {tab === "media_manana" && (
+          <>
+            <BackLink label="Comidas especiales" onClick={() => setTab("especiales-root")} />
+            <SectionIntro text="Opciones completas de media mañana, sin combinar con nada más. Cada 2 semanas (14 comidas) se reparte exactamente según estos porcentajes, mezclando el orden al azar. Los porcentajes deberían sumar 100%." />
+            <ProbabilitySumBadge total={mediaMananaTotal} />
+            <CardGrid>
+              {itemsInCategory("media_manana").map((ing) => (
+                <IngredientCard
+                  key={ing.id}
+                  ingredient={ing}
+                  data={data}
+                  onEdit={() => setEditing({ mode: "edit", category: "media_manana", ingredient: ing })}
+                  onDelete={() => setConfirmDelete(ing)}
+                />
+              ))}
+              <AddCard label="Añadir media mañana" onClick={() => setEditing({ mode: "new", category: "media_manana" })} />
             </CardGrid>
           </>
         )}
@@ -2805,6 +2827,8 @@ function Shell({ children }) {
         "--berry-soft": "#f3e0ea",
         "--olive": "#7a7a1f",
         "--olive-soft": "#f0eed6",
+        "--citrus": "#c2662d",
+        "--citrus-soft": "#f5e2d3",
         background: "var(--paper)",
         minHeight: "100%",
         fontFamily: "Georgia, 'Times New Roman', serif",
@@ -2888,7 +2912,7 @@ const PROFILE_TAB_META = { label: "Perfil", icon: User };
 // Un único origen de datos: sirve tanto para saber a qué grupo pertenece una categoría
 // (para el botón "volver") como para pintar las tarjetas de cada grupo.
 const MACRO_CATS = ["proteina", "carbo", "verdura", "grasa"];
-const ESPECIALES_CATS = ["desayuno", "merienda", "cerrado", "especial"];
+const ESPECIALES_CATS = ["desayuno", "media_manana", "merienda", "cerrado", "especial"];
 const CONFIG_LEAF_TABS = [...MACRO_CATS, ...ESPECIALES_CATS, "combos", "alimentos", "cocinar"];
 const CONFIG_TABS = ["config-root", "macros-root", "especiales-root", ...CONFIG_LEAF_TABS];
 const PERFIL_TABS = ["perfil-root", "perfil-datos", "perfil-peso", "perfil-resumen", "perfil-medidas", "perfil-premium", "perfil-documentos"];
@@ -4859,7 +4883,7 @@ function EditModal({ state, foods = [], onClose, onSave }) {
   const { mode, category, blockId } = state;
   const existing = state.ingredient;
   const [name, setName] = useState(existing ? existing.name : "");
-  const [ruleType, setRuleType] = useState(existing ? existing.ruleType : (blockId ? "bloque_miembro" : ["carbo", "verdura", "grasa", "desayuno", "merienda"].includes(category) ? "probabilidad" : "frecuencia"));
+  const [ruleType, setRuleType] = useState(existing ? existing.ruleType : (blockId ? "bloque_miembro" : ["carbo", "verdura", "grasa", "desayuno", "media_manana", "merienda"].includes(category) ? "probabilidad" : "frecuencia"));
   const [freqCantidad, setFreqCantidad] = useState(existing?.freqCantidad ?? 1);
   const [freqPeriodo, setFreqPeriodo] = useState(existing?.freqPeriodo ?? "semana");
   const [probabilidad, setProbabilidad] = useState(existing?.probabilidad ?? 25);
@@ -4871,9 +4895,9 @@ function EditModal({ state, foods = [], onClose, onSave }) {
   );
 
   const isBlockMember = category === "cerrado" || !!blockId;
-  // Desayuno, merienda y platos cerrados son "platos completos": se componen sumando
-  // varios alimentos de la base de datos, en vez de enlazar uno solo directamente.
-  const usesComposition = category === "desayuno" || category === "merienda" || (isBlockMember && category === "cerrado");
+  // Desayuno, media mañana, merienda y platos cerrados son "platos completos": se componen
+  // sumando varios alimentos de la base de datos, en vez de enlazar uno solo directamente.
+  const usesComposition = category === "desayuno" || category === "media_manana" || category === "merienda" || (isBlockMember && category === "cerrado");
   const selectedFood = foods.find((f) => f.id === foodId) || null;
 
   function addComposRow() {
