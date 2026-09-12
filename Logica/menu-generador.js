@@ -275,7 +275,7 @@ export function generateMenu(data, avoid = {}) {
     slots
       .filter((s) => !s.closedDish && !s.item && (s.mealType === "Comida" || s.mealType === "Cena") && s.protein && s.carbo)
       .forEach((s) => {
-        const objetivoComida = objetivosPorComida(data.objetivos, s.mealType);
+        const objetivoComida = objetivosPorComida(data.objetivos, s.mealType, data.perfil.repartoComidas);
         if (!objetivoComida) return;
 
         const proteinIng = data.ingredients.find((i) => i.name === s.protein);
@@ -323,7 +323,7 @@ export function generateMenu(data, avoid = {}) {
     slots
       .filter((s) => s.closedDish && (s.mealType === "Comida" || s.mealType === "Cena"))
       .forEach((s) => {
-        const objetivoComida = objetivosPorComida(data.objetivos, s.mealType);
+        const objetivoComida = objetivosPorComida(data.objetivos, s.mealType, data.perfil.repartoComidas);
         if (!objetivoComida) return;
         const platoIng = data.ingredients.find((i) => i.name === s.closedDish);
         if (!platoIng) return;

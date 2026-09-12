@@ -188,15 +188,19 @@ export function calcularObjetivosPerfil(perfil) {
   };
 }
 
-// Cómo se reparte el objetivo diario entre las 4 comidas. Un único origen de datos:
-// si el día tiene otro tipo de comida en el futuro, solo hay que tocar aquí.
+// Reparto de comidas por defecto (clásico de 4): el que ha usado siempre la app, y al que
+// migran los perfiles guardados que todavía no tienen un reparto propio (ver migrateData en
+// app.jsx). Desde que el reparto pasó a vivir en perfil.repartoComidas, esta constante ya no se
+// usa para calcular nada — solo como valor de partida al migrar o al crear un perfil nuevo.
 export const REPARTO_COMIDAS = { Desayuno: 0.20, Comida: 0.35, Merienda: 0.15, Cena: 0.30 };
 
 // Trocea un objetivo diario completo (kcal/prot/fat/carb) en el sub-objetivo de una comida
-// concreta, aplicando su porcentaje. Devuelve null si no hay objetivo diario del que partir.
-export function objetivosPorComida(objetivosDiarios, mealType) {
+// concreta, aplicando su porcentaje dentro del reparto de comidas de ese perfil (2 a 5 comidas,
+// pesos libres siempre que sumen 100%). Devuelve null si no hay objetivo diario del que partir,
+// o si esa comida no existe en el reparto.
+export function objetivosPorComida(objetivosDiarios, mealType, repartoComidas) {
   if (!objetivosDiarios) return null;
-  const pct = REPARTO_COMIDAS[mealType];
+  const pct = repartoComidas[mealType];
   if (pct === undefined) return null;
   return {
     kcal: Math.round(objetivosDiarios.kcal * pct),

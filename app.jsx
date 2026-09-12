@@ -280,6 +280,16 @@ function migrateData(rawData) {
     changed = true;
   }
 
+  // Reparto de comidas (Fase 4, reparto de comidas configurable): antes era la constante global
+  // REPARTO_COMIDAS; ahora vive en el perfil, para poder tener otros presets (3, 2 o 5 comidas)
+  // además del clásico de 4. Perfiles ya existentes migran al reparto de siempre, sin cambiar
+  // nada de lo que ya tenían calculado.
+  if (data.perfil && data.perfil.repartoComidas === undefined) {
+    data.perfil.repartoComidas = { ...REPARTO_COMIDAS };
+    data.perfil.presetComidas = "clasico-4";
+    changed = true;
+  }
+
   return { data, changed };
 }
 
@@ -3552,8 +3562,8 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
             Reparto por comida
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 16 }}>
-            {Object.keys(REPARTO_COMIDAS).map((mealType) => {
-              const sub = objetivosPorComida(objetivosCalculados, mealType);
+            {Object.keys(perfil.repartoComidas).map((mealType) => {
+              const sub = objetivosPorComida(objetivosCalculados, mealType, perfil.repartoComidas);
               return (
                 <div
                   key={mealType}
@@ -3563,7 +3573,7 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
                     background: "var(--card)", border: "1px solid var(--line)", borderRadius: 7, padding: "7px 11px",
                   }}
                 >
-                  <span>{mealType} <span style={{ color: "var(--ink-soft)", fontSize: 10.5 }}>({Math.round(REPARTO_COMIDAS[mealType] * 100)}%)</span></span>
+                  <span>{mealType} <span style={{ color: "var(--ink-soft)", fontSize: 10.5 }}>({Math.round(perfil.repartoComidas[mealType] * 100)}%)</span></span>
                   <span style={{ color: "var(--ink-soft)" }}>
                     {sub.kcal} kcal · P{sub.prot} · G{sub.fat} · C{sub.carb}
                   </span>
