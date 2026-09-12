@@ -2375,19 +2375,19 @@ function PesoLineChart({ entradas, tendencia }) {
   );
 }
 
-function NivelBadge({ nivel }) {
+function NivelBadge({ nivel, idioma }) {
   const meta = {
-    optimo: { label: "Dentro del rango esperado", color: "var(--green-dark)", bg: "var(--green-soft)" },
-    ineficaz: { label: "Ritmo demasiado lento", color: "var(--coffee)", bg: "var(--coffee-soft)" },
-    aviso: { label: "Zona alta del rango", color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
-    accion: { label: "Ritmo excesivo", color: "var(--rust)", bg: "var(--rust-soft)" },
-    "direccion-contraria": { label: "Va en dirección contraria al objetivo", color: "var(--rust)", bg: "var(--rust-soft)" },
-    insuficiente: { label: "Por debajo de lo recomendado", color: "var(--coffee)", bg: "var(--coffee-soft)" },
-    aceptable: { label: "Aceptable, mejorable", color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
-    demasiado: { label: "Por encima de lo recomendado", color: "var(--rust)", bg: "var(--rust-soft)" },
+    optimo: { labelKey: "nivel.optimo", color: "var(--green-dark)", bg: "var(--green-soft)" },
+    ineficaz: { labelKey: "nivel.ineficaz", color: "var(--coffee)", bg: "var(--coffee-soft)" },
+    aviso: { labelKey: "nivel.aviso", color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
+    accion: { labelKey: "nivel.accion", color: "var(--rust)", bg: "var(--rust-soft)" },
+    "direccion-contraria": { labelKey: "nivel.direccionContraria", color: "var(--rust)", bg: "var(--rust-soft)" },
+    insuficiente: { labelKey: "nivel.insuficiente", color: "var(--coffee)", bg: "var(--coffee-soft)" },
+    aceptable: { labelKey: "nivel.aceptable", color: "var(--mustard-dark)", bg: "var(--mustard-soft)" },
+    demasiado: { labelKey: "nivel.demasiado", color: "var(--rust)", bg: "var(--rust-soft)" },
   }[nivel];
   if (!meta) return null;
-  return <MacroPill label="" value={meta.label} color={meta.color} bg={meta.bg} />;
+  return <MacroPill label="" value={t(idioma, meta.labelKey)} color={meta.color} bg={meta.bg} />;
 }
 
 // Vista de impresión del seguimiento de peso — mismo patrón que PrintExport para el menú: un bloque
@@ -3179,8 +3179,8 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
             </button>
           </div>
 
-          {showStats && <DayStatsPanel data={data} menu={menu} week={menuWeek} objetivos={objetivos} />}
-          {showStats && <ResumenSaludPublica data={data} menu={menu} week={menuWeek} objetivos={objetivos} />}
+          {showStats && <DayStatsPanel data={data} menu={menu} week={menuWeek} objetivos={objetivos} idioma={idioma} />}
+          {showStats && <ResumenSaludPublica data={data} menu={menu} week={menuWeek} objetivos={objetivos} idioma={idioma} />}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {DAYS.map((day) => {
@@ -3258,7 +3258,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
 
       <HistoryPanel history={history} idioma={idioma} />
 
-      <PrintExport data={data} menu={menu} />
+      <PrintExport data={data} menu={menu} idioma={idioma} />
 
       {selectedMeal && (
         <MealDetailModal
@@ -3278,6 +3278,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
           objetivos={objetivos}
           perfil={data.perfil}
           onClose={() => setEditingObjetivos(false)}
+          idioma={idioma}
         />
       )}
 
@@ -3289,6 +3290,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
           listaCompra={data.listaCompra || { marcados: {}, generadoEn: null }}
           onToggle={onToggleMarcadoCompra}
           onClose={() => setShowListaCompra(false)}
+          idioma={idioma}
         />
       )}
     </>
@@ -3306,7 +3308,7 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
 // y una hoja de estilos "@media print" oculta el resto de la app y muestra solo esto
 // cuando el usuario pulsa "Exportar PDF" (que solo llama a window.print()).
 // Así funciona igual de bien en Claude y en la versión web, sin nada que se pueda romper.
-function PrintExport({ data, menu }) {
+function PrintExport({ data, menu, idioma }) {
   if (!menu) return null;
   return (
     <div id="print-export">
@@ -3325,7 +3327,7 @@ function PrintExport({ data, menu }) {
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
             FoodDraft
           </div>
-          <h1 style={{ fontSize: 28, color: "#1f4d38", margin: "2px 0 0 0" }}>Tu menú</h1>
+          <h1 style={{ fontSize: 28, color: "#1f4d38", margin: "2px 0 0 0" }}>{t(idioma, "print.tuMenu")}</h1>
         </div>
 
         {[1, 2].map((week) => {
@@ -3334,7 +3336,7 @@ function PrintExport({ data, menu }) {
           return (
             <div key={week} style={{ pageBreakBefore: week === 2 ? "always" : "auto" }}>
               <h2 style={{ fontSize: 18, color: "#1f4d38", borderBottom: "2px solid #d9a441", paddingBottom: 5, marginTop: 22 }}>
-                Semana {week}
+                {t(idioma, "menu.semana", { n: week })}
               </h2>
               {DAYS.map((day) => {
                 const dayMeals = menu.filter((s) => s.week === week && s.day === day);
@@ -3350,11 +3352,11 @@ function PrintExport({ data, menu }) {
                     }}
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 15, marginBottom: 6 }}>{day}</div>
+                      <div style={{ fontSize: 15, marginBottom: 6 }}>{t(idioma, "dia." + day)}</div>
                       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", display: "flex", flexDirection: "column", gap: 3 }}>
                         {dayMeals.map((m) => (
                           <div key={m.id} style={{ fontSize: 11, lineHeight: 1.45 }}>
-                            <span style={{ fontWeight: 700, color: "#a9721f" }}>{m.mealType}: </span>
+                            <span style={{ fontWeight: 700, color: "#a9721f" }}>{t(idioma, "mealType." + m.mealType)}: </span>
                             <span>{mealExportParts(data, m).join(", ") || "—"}</span>
                           </div>
                         ))}
@@ -3369,7 +3371,7 @@ function PrintExport({ data, menu }) {
         })}
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
-          FoodDraft — exportado para cocinar con las cantidades a mano
+          {t(idioma, "print.pie")}
         </div>
       </div>
     </div>
@@ -3424,7 +3426,7 @@ const LISTA_COMPRA_ORDEN_CATS = [...MACRO_CATS, ...ESPECIALES_CATS];
 // Lista de la compra: agrega el menú (una semana o el ciclo completo) por alimento y lo agrupa por
 // categoría. Las marcas de "ya lo tengo" se guardan en data.listaCompra y sobreviven a cerrar la
 // app — solo se olvidan cuando generas un menú nuevo (ver handleGenerateMenu).
-function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose }) {
+function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose, idioma }) {
   const [alcance, setAlcance] = useState(menuWeek || 1);
   const items = calcularListaCompra(data, menu, alcance);
   const marcados = listaCompra.marcados || {};
@@ -3438,7 +3440,7 @@ function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose
   const marcadosCount = items.filter((it) => marcados[it.key]).length;
 
   return (
-    <ModalShell onClose={onClose} title="Lista de la compra">
+    <ModalShell onClose={onClose} title={t(idioma, "listaCompra.titulo")}>
       <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
         {[1, 2, "todo"].map((w) => (
           <button
@@ -3451,19 +3453,19 @@ function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose
               fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
             }}
           >
-            {w === "todo" ? "Ciclo completo" : `Semana ${w}`}
+            {w === "todo" ? t(idioma, "listaCompra.cicloCompleto") : t(idioma, "menu.semana", { n: w })}
           </button>
         ))}
       </div>
 
       {items.length === 0 ? (
         <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
-          No hay ningún menú generado todavía.
+          {t(idioma, "listaCompra.sinMenu")}
         </p>
       ) : (
         <>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 10 }}>
-            {marcadosCount} de {items.length} marcados
+            {t(idioma, "listaCompra.marcados", { marcados: marcadosCount, total: items.length })}
           </div>
           <div style={{ maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
             {categoriasOrdenadas.map((cat) => {
@@ -3512,13 +3514,13 @@ function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose
       )}
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-        <ModalBtn variant="solid" onClick={onClose}>Cerrar</ModalBtn>
+        <ModalBtn variant="solid" onClick={onClose}>{t(idioma, "common.cerrar")}</ModalBtn>
       </div>
     </ModalShell>
   );
 }
 
-function DayStatsPanel({ data, menu, week, objetivos }) {
+function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
   const [day, setDay] = useState(DAYS[0]);
   const totals = dayTotals(data, menu, week, day);
 
@@ -3553,7 +3555,7 @@ function DayStatsPanel({ data, menu, week, objetivos }) {
               color: d === day ? "#fff" : "var(--ink)",
             }}
           >
-            {d.slice(0, 3)}
+            {t(idioma, "dia." + d).slice(0, 3)}
           </button>
         ))}
       </div>
@@ -3586,7 +3588,7 @@ function DayStatsPanel({ data, menu, week, objetivos }) {
             fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
             padding: "4px 11px", borderRadius: 20, background: pctStyle.bg, color: pctStyle.fg,
           }}>
-            {pct}% del objetivo ({objetivos.kcal} kcal)
+            {t(idioma, "dayStats.pctObjetivo", { pct, kcal: objetivos.kcal })}
           </span>
         </div>
       )}
@@ -3599,7 +3601,7 @@ function DayStatsPanel({ data, menu, week, objetivos }) {
 
       {!objetivos?.kcal && (
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 13, textAlign: "center" }}>
-          Fija un objetivo diario (botón de arriba) para ver el % de cumplimiento de este día.
+          {t(idioma, "dayStats.fijaObjetivo")}
         </div>
       )}
     </div>
@@ -3609,14 +3611,14 @@ function DayStatsPanel({ data, menu, week, objetivos }) {
 // Media diaria de sal, azúcares y fibra de la semana del menú actual, comparada contra los
 // umbrales de la OMS (ver Logica/salud-publica.js). El umbral de azúcar se ajusta a tu objetivo de
 // kcal si lo tienes calculado; si no, usa la dieta de referencia de 2000 kcal del propio estudio.
-function ResumenSaludPublica({ data, menu, week, objetivos }) {
+function ResumenSaludPublica({ data, menu, week, objetivos, idioma }) {
   const resumen = resumenNutrientesSemana(data, menu, week, objetivos?.kcal);
   if (!resumen) return null;
 
   const filas = [
-    { key: "sal", label: "Sal", unidad: "g", info: resumen.sal, detalle: `recomendado: menos de ${resumen.sal.umbral} g/día` },
-    { key: "azucares", label: "Azúcares libres", unidad: "g", info: resumen.azucares, detalle: `óptimo hasta ${fmt(resumen.azucares.umbralOptimo)} g/día · límite ${fmt(resumen.azucares.umbralMaximo)} g/día` },
-    { key: "fibra", label: "Fibra", unidad: "g", info: resumen.fibra, detalle: `recomendado: al menos ${resumen.fibra.umbral} g/día` },
+    { key: "sal", label: t(idioma, "saludPublica.sal"), unidad: "g", info: resumen.sal, detalle: t(idioma, "saludPublica.detalleSal", { n: resumen.sal.umbral }) },
+    { key: "azucares", label: t(idioma, "saludPublica.azucares"), unidad: "g", info: resumen.azucares, detalle: t(idioma, "saludPublica.detalleAzucares", { optimo: fmt(resumen.azucares.umbralOptimo), maximo: fmt(resumen.azucares.umbralMaximo) }) },
+    { key: "fibra", label: t(idioma, "saludPublica.fibra"), unidad: "g", info: resumen.fibra, detalle: t(idioma, "saludPublica.detalleFibra", { n: resumen.fibra.umbral }) },
   ];
 
   const avisos = ["sal", "azucares", "fibra"].filter((k) => resumen.faltanDatos[k].length > 0);
@@ -3624,11 +3626,11 @@ function ResumenSaludPublica({ data, menu, week, objetivos }) {
   return (
     <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>
-        Sal, azúcares y fibra — media diaria de esta semana
+        {t(idioma, "saludPublica.titulo")}
       </div>
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 12 }}>
-        Sobre {resumen.dias} día{resumen.dias === 1 ? "" : "s"} con comidas · umbrales de la OMS
-        {resumen.azucares.kcalPersonalizada ? " (azúcar ajustado a tu objetivo de kcal)" : ""}
+        {t(idioma, "saludPublica.sobreDias", { dias: resumen.dias, plural: resumen.dias === 1 ? "" : "s" })}
+        {resumen.azucares.kcalPersonalizada ? t(idioma, "saludPublica.azucarAjustado") : ""}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -3640,25 +3642,25 @@ function ResumenSaludPublica({ data, menu, week, objetivos }) {
               </div>
               <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)" }}>{f.detalle}</div>
             </div>
-            <NivelBadge nivel={f.info.nivel} />
+            <NivelBadge nivel={f.info.nivel} idioma={idioma} />
           </div>
         ))}
       </div>
 
       {avisos.length > 0 && (
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--mustard-dark)", marginTop: 12, lineHeight: 1.5 }}>
-          ⚠ Cálculo incompleto — falta el dato de {avisos.map((k) => (k === "sal" ? "sal" : k === "azucares" ? "azúcares" : "fibra")).join(", ")} en algún alimento usado esta semana. El total real podría ser mayor.
+          {t(idioma, "saludPublica.calculoIncompleto", { lista: avisos.map((k) => t(idioma, "saludPublica." + k + ".nombre")).join(", ") })}
         </div>
       )}
     </div>
   );
 }
 
-function ObjetivosModal({ objetivos, perfil, onClose }) {
+function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
   const objetivosCalculados = calcularObjetivosPerfil(perfil);
 
   return (
-    <ModalShell onClose={onClose} title="Tus objetivos diarios">
+    <ModalShell onClose={onClose} title={t(idioma, "objetivosModal.titulo")}>
       {!objetivosCalculados ? (
         <>
           <div
@@ -3669,37 +3671,37 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
             }}
           >
             <AlertCircle size={15} style={{ flexShrink: 0, marginTop: 1 }} />
-            <span>
-              Todavía no tienes un perfil completo, así que no se puede calcular ningún objetivo.
-              Ve a la pestaña <strong>"Perfil"</strong> y rellena tus datos (año de nacimiento, altura, peso
-              y tipo de día a día) para que se calculen solos.
-            </span>
+            <span>{t(idioma, "objetivosModal.perfilIncompleto")}</span>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <ModalBtn onClick={onClose} variant="ghost">Cerrar</ModalBtn>
+            <ModalBtn onClick={onClose} variant="ghost">{t(idioma, "common.cerrar")}</ModalBtn>
           </div>
         </>
       ) : (
         <>
           <div style={{ textAlign: "center", marginBottom: 16 }}>
             <div style={{ fontSize: 32, fontWeight: 700, color: "var(--green-dark)" }}>{objetivosCalculados.kcal}</div>
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)" }}>kcal / día</div>
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)" }}>{t(idioma, "objetivosModal.kcalDia")}</div>
             {objetivosCalculados.kcalEntrenamiento > 0 && (
               <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
-                {objetivosCalculados.kcalBase} kcal día a día + {objetivosCalculados.kcalEntrenamiento} kcal entrenamiento (media diaria)
+                {t(idioma, "objetivosModal.desglose", { base: objetivosCalculados.kcalBase, entrenamiento: objetivosCalculados.kcalEntrenamiento })}
               </div>
             )}
             {objetivosCalculados.objetivo !== "mantenimiento" && (
               <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}>
-                TDEE mantenimiento {objetivosCalculados.kcalMantenimiento} kcal → {OBJETIVO_ETAPAS[objetivosCalculados.objetivo].label}
-                {" "}({objetivosCalculados.ajustePct > 0 ? "+" : ""}{objetivosCalculados.ajustePct}%)
+                {t(idioma, "objetivosModal.tdee", {
+                  kcal: objetivosCalculados.kcalMantenimiento,
+                  etapa: OBJETIVO_ETAPAS[objetivosCalculados.objetivo].label,
+                  signo: objetivosCalculados.ajustePct > 0 ? "+" : "",
+                  pct: objetivosCalculados.ajustePct,
+                })}
               </div>
             )}
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 16 }}>
-            <MacroPill label="Proteína" value={`${objetivosCalculados.prot}g`} color="var(--green-dark)" bg="var(--green-soft)" />
-            <MacroPill label="Grasa" value={`${objetivosCalculados.fat}g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-            <MacroPill label="Carbos" value={`${objetivosCalculados.carb}g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+            <MacroPill label={t(idioma, "objetivosModal.proteina")} value={`${objetivosCalculados.prot}g`} color="var(--green-dark)" bg="var(--green-soft)" />
+            <MacroPill label={t(idioma, "objetivosModal.grasa")} value={`${objetivosCalculados.fat}g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
+            <MacroPill label={t(idioma, "objetivosModal.carbos")} value={`${objetivosCalculados.carb}g`} color="var(--coffee)" bg="var(--coffee-soft)" />
           </div>
 
           {objetivosCalculados.carbMinNotMet && (
@@ -3712,15 +3714,13 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
             >
               <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
               <span>
-                Con tus entrenamientos intensos habituales, lo ideal sería un mínimo de {objetivosCalculados.carbMin}g
-                de carbohidrato, pero con estas kcal y la grasa ya en su suelo de seguridad ({objetivosCalculados.fatFloor}g)
-                no se puede llegar sin más margen calórico.
+                {t(idioma, "objetivosModal.carbMinAviso", { carbMin: objetivosCalculados.carbMin, fatFloor: objetivosCalculados.fatFloor })}
               </span>
             </div>
           )}
 
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-            Reparto por comida
+            {t(idioma, "objetivosModal.repartoPorComida")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 16 }}>
             {Object.keys(perfil.repartoComidas).map((mealType) => {
@@ -3734,7 +3734,7 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
                     background: "var(--card)", border: "1px solid var(--line)", borderRadius: 7, padding: "7px 11px",
                   }}
                 >
-                  <span>{mealType} <span style={{ color: "var(--ink-soft)", fontSize: 10.5 }}>({Math.round(perfil.repartoComidas[mealType] * 100)}%)</span></span>
+                  <span>{t(idioma, "mealType." + mealType)} <span style={{ color: "var(--ink-soft)", fontSize: 10.5 }}>({Math.round(perfil.repartoComidas[mealType] * 100)}%)</span></span>
                   <span style={{ color: "var(--ink-soft)" }}>
                     {sub.kcal} kcal · P{sub.prot} · G{sub.fat} · C{sub.carb}
                   </span>
@@ -3749,13 +3749,10 @@ function ObjetivosModal({ objetivos, perfil, onClose }) {
               background: "var(--paper)", borderRadius: 8, padding: "10px 12px", lineHeight: 1.5,
             }}
           >
-            Calculado con la fórmula de <strong>Mifflin-St Jeor</strong> para tu día a día, más las kcal de tus
-            entrenamientos habituales sumadas aparte, con un margen de error razonable (ningún cálculo sin
-            laboratorio es exacto al 100%). Si algo cambia (peso, entrenamientos...), actualízalo en la pestaña
-            <strong> "Perfil"</strong> y se recalculará solo.
+            {t(idioma, "objetivosModal.formula")}
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
-            <ModalBtn onClick={onClose} variant="solid">Cerrar</ModalBtn>
+            <ModalBtn onClick={onClose} variant="solid">{t(idioma, "common.cerrar")}</ModalBtn>
           </div>
         </>
       )}
@@ -3784,15 +3781,15 @@ function findMatchingRule(rules, itemIds) {
 }
 
 const NIVELES_GUSTA = [
-  { level: "alta", label: "Bastante" },
-  { level: "maxima", label: "Siempre que se pueda" },
+  { level: "alta", labelKey: "comboAfinidad.bastante" },
+  { level: "maxima", labelKey: "comboAfinidad.siempreQueSePueda" },
 ];
 const NIVELES_NOGUSTA = [
-  { level: "baja", label: "Menos" },
-  { level: "nula", label: "Nunca" },
+  { level: "baja", labelKey: "comboAfinidad.menos" },
+  { level: "nula", labelKey: "comboAfinidad.nunca" },
 ];
 
-function ComboAfinidad({ meal, data, onUpsertRule }) {
+function ComboAfinidad({ meal, data, onUpsertRule, idioma }) {
   const [abierto, setAbierto] = useState(null); // null | "gusta" | "nogusta"
   const itemIds = comboItemIds(data, meal);
   if (itemIds.length < 2) return null;
@@ -3810,7 +3807,7 @@ function ComboAfinidad({ meal, data, onUpsertRule }) {
   return (
     <div style={{ marginTop: 12, fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
       <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 6 }}>
-        ¿Qué te parece esta combinación? <span style={{ color: "var(--ink)" }}>{nombres}</span>
+        {t(idioma, "comboAfinidad.pregunta")} <span style={{ color: "var(--ink)" }}>{nombres}</span>
       </div>
       <div style={{ display: "flex", gap: 8 }}>
         <button
@@ -3823,7 +3820,7 @@ function ComboAfinidad({ meal, data, onUpsertRule }) {
             color: "var(--green-dark)",
           }}
         >
-          <ThumbsUp size={14} /> Me gusta
+          <ThumbsUp size={14} /> {t(idioma, "comboAfinidad.meGusta")}
         </button>
         <button
           onClick={() => setAbierto(abierto === "nogusta" ? null : "nogusta")}
@@ -3835,7 +3832,7 @@ function ComboAfinidad({ meal, data, onUpsertRule }) {
             color: "var(--rust)",
           }}
         >
-          <ThumbsDown size={14} /> No me gusta
+          <ThumbsDown size={14} /> {t(idioma, "comboAfinidad.noMeGusta")}
         </button>
       </div>
 
@@ -3853,7 +3850,7 @@ function ComboAfinidad({ meal, data, onUpsertRule }) {
                 color: existente?.level === o.level ? "#fff" : "var(--ink)",
               }}
             >
-              {o.label}
+              {t(idioma, o.labelKey)}
             </button>
           ))}
         </div>
@@ -3861,7 +3858,7 @@ function ComboAfinidad({ meal, data, onUpsertRule }) {
 
       {existente && (
         <div style={{ fontSize: 10.5, color: "var(--ink-soft)", marginTop: 6 }}>
-          Guardado en Reglas de afinidad como "{(RULE_LEVELS[existente.level] || {}).label || existente.level}".
+          {t(idioma, "comboAfinidad.guardado", { nivel: (RULE_LEVELS[existente.level] || {}).label || existente.level })}
         </div>
       )}
     </div>
@@ -3942,7 +3939,7 @@ function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, comp
         </div>
       </div>
 
-      <ComboAfinidad meal={meal} data={data} onUpsertRule={onUpsertRule} />
+      <ComboAfinidad meal={meal} data={data} onUpsertRule={onUpsertRule} idioma={idioma} />
 
       {meal.rulesApplied && meal.rulesApplied.length > 0 && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3 }}>
