@@ -530,8 +530,10 @@ function LoginScreen({ idioma, onChangeIdioma }) {
   );
 }
 
-// El documento legal en sí (privacidad.html/terminos.html) sigue solo en español por ahora
-// (fi18n-6, pendiente) — aquí solo se traduce el texto del enlace.
+// privacidad.html/terminos.html ya tienen su propio selector ES/EN y leen/guardan el idioma con el
+// mismo Logica/i18n.js (ver su <script type="module">) — no heredan el idioma de esta pantalla vía
+// props porque son páginas HTML sueltas, no parte de esta SPA, así que abren siempre con el idioma
+// que ya estuviera guardado en localStorage.
 function LoadingScreen() {
   const idioma = leerIdiomaGuardado();
   return (

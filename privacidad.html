@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Política de privacidad · FoodDraft</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍽️</text></svg>" />
+<script type="importmap">
+{
+  "imports": {
+    "i18n": "./Logica/i18n.js"
+  }
+}
+</script>
 <style>
   :root {
     --paper: #f1ede0; --card: #fffdf7; --ink: #2b2b26; --ink-soft: #6b6a5e; --line: #ddd6bf;
@@ -16,7 +23,7 @@
     margin: 0; background: var(--paper); color: var(--ink);
     font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6;
   }
-  .wrap { max-width: 640px; margin: 0 auto; padding: 40px 20px 80px; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 40px 20px 80px; position: relative; }
   header { text-align: center; margin-bottom: 32px; }
   header .emoji { font-size: 34px; margin-bottom: 6px; }
   header h1 {
@@ -24,6 +31,13 @@
     margin: 0 0 4px;
   }
   header .updated { font-size: 12.5px; color: var(--ink-soft); }
+  .idioma-switch { position: absolute; top: 20px; right: 20px; display: flex; gap: 4px; }
+  .idioma-switch button {
+    font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; font-weight: 700;
+    padding: 4px 9px; border-radius: 20px; border: 1px solid var(--line);
+    background: var(--card); color: var(--ink-soft); cursor: pointer;
+  }
+  .idioma-switch button.activo { background: var(--green-dark); color: #fff; border-color: var(--green-dark); }
   .card {
     background: var(--card); border: 1px solid var(--line); border-radius: 12px;
     padding: 24px 24px 8px; margin-bottom: 20px;
@@ -36,10 +50,6 @@
   ul { margin: 0 0 16px; padding-left: 20px; font-size: 13.5px; }
   li { margin-bottom: 6px; }
   strong { color: var(--ink); }
-  .placeholder {
-    background: var(--mustard-dark); color: #fff; padding: 1px 6px; border-radius: 4px;
-    font-size: 0.92em; font-weight: 700;
-  }
   a { color: var(--green-dark); }
   .back {
     display: inline-block; margin-top: 8px; font-size: 13px; color: var(--green-dark);
@@ -51,73 +61,89 @@
 <body>
 <div class="wrap">
 
+  <div class="idioma-switch" id="idioma-switch"></div>
+
   <header>
     <div class="emoji">🍽️</div>
-    <h1>Política de privacidad — FoodDraft</h1>
-    <div class="updated">Última actualización: 9 de septiembre de 2026</div>
+    <h1 data-i18n="privacidad.titulo">Política de privacidad — FoodDraft</h1>
+    <div class="updated" data-i18n="privacidad.actualizado">Última actualización: 9 de septiembre de 2026</div>
   </header>
 
   <div class="card">
-    <h2>Responsable del tratamiento</h2>
-    <p>
-      Pablo Díaz Blanco, España.<br />
-      Contacto: <a href="mailto:draftedfood@gmail.com">draftedfood@gmail.com</a>
-    </p>
+    <h2 data-i18n="privacidad.responsableHeader">Responsable del tratamiento</h2>
+    <p data-i18n-html="privacidad.responsableTexto"></p>
 
-    <h2>Qué datos se recogen</h2>
+    <h2 data-i18n="privacidad.datosHeader">Qué datos se recogen</h2>
     <ul>
-      <li><strong>Cuenta</strong>: email y, si inicias sesión con Google, tu foto de perfil.</li>
-      <li><strong>Datos de perfil</strong>: edad, altura, peso, sexo, nivel de actividad y entrenamientos habituales, objetivo nutricional.</li>
-      <li><strong>Seguimiento</strong>: historial de pesadas, menús generados, catálogo de alimentos y platos que crees.</li>
-      <li><strong>Fotos de etiquetas nutricionales</strong>: si usas el lector por foto, la imagen se envía a Gemini (Google) para leer los datos nutricionales y <strong>no se almacena</strong> en ningún servidor — se descarta tras procesarla.</li>
+      <li data-i18n-html="privacidad.datosCuenta"></li>
+      <li data-i18n-html="privacidad.datosPerfil"></li>
+      <li data-i18n-html="privacidad.datosSeguimiento"></li>
+      <li data-i18n-html="privacidad.datosFotos"></li>
     </ul>
 
-    <h2>Para qué se usan</h2>
-    <p>
-      Únicamente para prestar el servicio: generar tus menús, calcular tus objetivos nutricionales
-      y llevar tu seguimiento de peso. No se usan con fines publicitarios ni se venden a terceros.
-    </p>
+    <h2 data-i18n="privacidad.paraQueHeader">Para qué se usan</h2>
+    <p data-i18n="privacidad.paraQueTexto"></p>
 
-    <h2>Base legal</h2>
-    <p>
-      La ejecución del servicio que solicitas al crear una cuenta (art. 6.1.b RGPD) y, en el caso
-      de las fotos, tu consentimiento explícito al usar esa función de forma voluntaria.
-    </p>
+    <h2 data-i18n="privacidad.baseLegalHeader">Base legal</h2>
+    <p data-i18n="privacidad.baseLegalTexto"></p>
 
-    <h2>Con quién se comparten</h2>
+    <h2 data-i18n="privacidad.conQuienHeader">Con quién se comparten</h2>
     <ul>
-      <li><strong>Google Firebase</strong> (autenticación, base de datos, protección anti-abuso y lectura de fotos vía Gemini), como encargado del tratamiento, con sus propias garantías de seguridad y transferencia internacional de datos.</li>
-      <li><strong>Stripe</strong>, únicamente si contratas una suscripción de pago, para gestionar el cobro (no se le comparten datos de salud, solo lo necesario para procesar el pago).</li>
-      <li>No se comparte nada con nadie más.</li>
+      <li data-i18n-html="privacidad.conQuienFirebase"></li>
+      <li data-i18n-html="privacidad.conQuienStripe"></li>
+      <li data-i18n="privacidad.conQuienNadie"></li>
     </ul>
 
-    <h2>Cuánto tiempo se conservan</h2>
-    <p>
-      Mientras tu cuenta exista. Puedes eliminarla por completo, junto con todos tus datos, desde
-      la app en cualquier momento (Perfil → Eliminar cuenta).
-    </p>
+    <h2 data-i18n="privacidad.cuantoTiempoHeader">Cuánto tiempo se conservan</h2>
+    <p data-i18n="privacidad.cuantoTiempoTexto"></p>
 
-    <h2>Tus derechos</h2>
-    <p>
-      Acceso, rectificación, supresión, oposición, portabilidad y limitación del tratamiento.
-      Puedes ejercerlos eliminando tu cuenta directamente desde la app, o escribiendo a
-      <a href="mailto:draftedfood@gmail.com">draftedfood@gmail.com</a>.
-    </p>
+    <h2 data-i18n="privacidad.derechosHeader">Tus derechos</h2>
+    <p data-i18n-html="privacidad.derechosTexto"></p>
 
-    <h2>Seguridad</h2>
-    <p>
-      Los datos viajan cifrados y están protegidos por reglas de acceso que garantizan que cada
-      persona solo puede ver y modificar los suyos.
-    </p>
+    <h2 data-i18n="privacidad.seguridadHeader">Seguridad</h2>
+    <p data-i18n="privacidad.seguridadTexto"></p>
 
-    <h2>Cambios en esta política</h2>
-    <p>Si esta política cambia de forma relevante, se avisará dentro de la propia app.</p>
+    <h2 data-i18n="privacidad.cambiosHeader">Cambios en esta política</h2>
+    <p data-i18n="privacidad.cambiosTexto"></p>
   </div>
 
   <footer>
-    <a class="back" href="./index.html">&larr; Volver a FoodDraft</a>
+    <a class="back" href="./index.html" data-i18n="privacidad.volver">&larr; Volver a FoodDraft</a>
   </footer>
 
 </div>
+
+<script type="module">
+  import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
+
+  function aplicarIdioma(idioma) {
+    document.documentElement.lang = idioma;
+    document.title = t(idioma, "privacidad.titulo") + " · FoodDraft";
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      el.textContent = t(idioma, el.getAttribute("data-i18n"));
+    });
+    document.querySelectorAll("[data-i18n-html]").forEach((el) => {
+      el.innerHTML = t(idioma, el.getAttribute("data-i18n-html"));
+    });
+    document.querySelectorAll(".idioma-switch button").forEach((btn) => {
+      btn.classList.toggle("activo", btn.dataset.idioma === idioma);
+    });
+  }
+
+  const switchEl = document.getElementById("idioma-switch");
+  IDIOMAS_DISPONIBLES.forEach((i) => {
+    const btn = document.createElement("button");
+    btn.textContent = i.key.toUpperCase();
+    btn.dataset.idioma = i.key;
+    btn.onclick = () => {
+      guardarIdiomaLocal(i.key);
+      aplicarIdioma(i.key);
+    };
+    switchEl.appendChild(btn);
+  });
+
+  aplicarIdioma(leerIdiomaGuardado());
+</script>
+
 </body>
 </html>
