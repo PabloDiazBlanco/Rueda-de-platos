@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator, Menu, Share2, Mail, Settings, TrendingUp, ChevronDown, Lightbulb, Globe, Lock } from "lucide-react";
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from "macros";
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
@@ -316,6 +316,7 @@ function migrateData(rawData) {
 export default function RuedaDePlatos() {
   const [data, setData] = useState(null);
   const [tab, setTab] = useState("menu");
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState("idle"); // idle | saving | saved
   const [editing, setEditing] = useState(null); // { mode: 'new'|'edit', category, ingredient }
@@ -680,8 +681,8 @@ export default function RuedaDePlatos() {
 
   return (
     <Shell>
-      <Header saveState={saveState} idioma={idioma} />
-      <TabBar tab={tab} setTab={setTab} idioma={idioma} />
+      <Header saveState={saveState} idioma={idioma} onOpenMenu={() => setDrawerOpen(true)} />
+      <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} setTab={setTab} idioma={idioma} premium={premium} />
 
       <main style={{ padding: "20px 22px 60px" }}>
         {tab === "menu" && (
@@ -1000,92 +1001,54 @@ export default function RuedaDePlatos() {
           </div>
         )}
 
-        {tab === "perfil-root" && (
-          <>
-            <BigCardGrid
-              onSelect={setTab}
-              cards={[
-                { key: "perfil-datos", label: t(idioma, "perfilRoot.datosPersonales"), desc: t(idioma, "perfilRoot.datosPersonales.desc"), icon: User, color: "var(--green)" },
-                { key: "perfil-peso", label: t(idioma, "perfilRoot.seguimientoPeso"), desc: premium.active ? t(idioma, "perfilRoot.seguimientoPeso.desc") : t(idioma, "perfilRoot.funcionPremium"), icon: Scale, color: "var(--coffee)" },
-                { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), desc: t(idioma, "perfilRoot.resumenMensual.desc"), icon: CalendarDays, color: "var(--olive)" },
-                { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), desc: t(idioma, "perfilRoot.proximamente"), icon: Ruler, color: "var(--berry)" },
-                { key: "perfil-premium", label: premium.active ? t(idioma, "perfilRoot.premium") : t(idioma, "perfilRoot.hazteremium"), desc: premium.active ? t(idioma, "perfilRoot.gestionarSuscripcion") : t(idioma, "perfilRoot.desbloqueaMas"), icon: Sparkles, color: "var(--mustard-dark)" },
-                { key: "perfil-documentos", label: t(idioma, "perfilRoot.documentos"), desc: t(idioma, "perfilRoot.documentos.desc"), icon: FileText, color: "var(--olive)" },
-              ]}
-            />
-            <button
-              onClick={() => descargarDatosJSON(data)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
-                cursor: "pointer", padding: 0, marginTop: 18,
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
-              }}
-            >
-              <Download size={13} /> {t(idioma, "perfilRoot.descargarDatos")}
-            </button>
-          </>
-        )}
+        {/* Los destinos de aquí abajo (perfil-datos, perfil-peso, perfil-resumen, perfil-medidas,
+            perfil-documentos, perfil-premium) antes colgaban de una tarjeta intermedia
+            "perfil-root" a la que se volvía con un BackLink — esa tarjeta ha desaparecido: ahora
+            se llega a cada uno directo desde el menú lateral (DrawerMenu), y el propio ☰ del
+            Header, siempre visible, hace de "volver" en su lugar. Reagrupar su contenido (fusionar
+            reparto de comidas, anidar peso/medidas/resumen bajo un mismo destino...) es trabajo de
+            la siguiente tanda — de momento cada uno sigue siendo exactamente lo que ya era. */}
 
-        {tab === "perfil-datos" && (
-          <>
-            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
-            <PerfilView perfil={data.perfil} onSave={savePerfil} />
-          </>
-        )}
+        {tab === "perfil-datos" && <PerfilView perfil={data.perfil} onSave={savePerfil} idioma={idioma} />}
 
         {tab === "perfil-peso" && (
-          <>
-            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
-            {premium.active ? (
-              <PesoView
-                perfil={data.perfil}
-                pesoTracking={data.pesoTracking || defaultPesoTracking()}
-                onAddPeso={addPesoEntrada}
-                onUpdateConfig={actualizarConfigPeso}
-                onDismissReminder={descartarRecordatorioHoy}
-                onCerrarCiclo={cerrarCicloPeso}
-                onPausarCiclo={pausarCiclo}
-                onReanudarCiclo={reanudarCiclo}
-                idioma={idioma}
-              />
-            ) : (
-              <PremiumRequiredNotice
-                titulo={t(idioma, "premiumNotice.peso.titulo")}
-                texto={t(idioma, "premiumNotice.peso.texto")}
-                onGoPremium={() => setTab("perfil-premium")}
-                idioma={idioma}
-              />
-            )}
-          </>
+          premium.active ? (
+            <PesoView
+              perfil={data.perfil}
+              pesoTracking={data.pesoTracking || defaultPesoTracking()}
+              onAddPeso={addPesoEntrada}
+              onUpdateConfig={actualizarConfigPeso}
+              onDismissReminder={descartarRecordatorioHoy}
+              onCerrarCiclo={cerrarCicloPeso}
+              onPausarCiclo={pausarCiclo}
+              onReanudarCiclo={reanudarCiclo}
+              idioma={idioma}
+            />
+          ) : (
+            <PremiumRequiredNotice
+              titulo={t(idioma, "premiumNotice.peso.titulo")}
+              texto={t(idioma, "premiumNotice.peso.texto")}
+              onGoPremium={() => setTab("perfil-premium")}
+              idioma={idioma}
+            />
+          )
         )}
 
-        {tab === "perfil-premium" && (
-          <>
-            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
-            <PremiumView premium={premium} idioma={idioma} />
-          </>
-        )}
+        {tab === "perfil-premium" && <PremiumView premium={premium} idioma={idioma} />}
 
         {tab === "perfil-resumen" && (
-          <>
-            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
-            <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
-          </>
+          <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
         )}
 
-        {tab === "perfil-medidas" && (
-          <>
-            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
-            <MedidasPlaceholderView idioma={idioma} />
-          </>
-        )}
+        {tab === "perfil-medidas" && <MedidasPlaceholderView idioma={idioma} />}
 
-        {tab === "perfil-documentos" && (
-          <>
-            <BackLink label={t(idioma, "tab.perfil")} onClick={() => setTab("perfil-root")} />
-            <DocumentosView idioma={idioma} />
-          </>
-        )}
+        {tab === "perfil-documentos" && <DocumentosView idioma={idioma} />}
+
+        {tab === "ajustes" && <SettingsView perfil={data.perfil} data={data} onSave={savePerfil} idioma={idioma} />}
+
+        {tab === "compartir" && <CompartirView idioma={idioma} />}
+
+        {tab === "feedback" && <FeedbackView idioma={idioma} />}
       </main>
 
       {editing && (
@@ -1514,7 +1477,10 @@ function ProfileOnboarding({ onComplete, onSkip, idioma }) {
 
 // Pestaña "Perfil": mismos campos, pero para editar en cualquier momento (no solo al principio).
 // Al guardar, los objetivos se recalculan solos (misma función que en la bienvenida).
-function PerfilView({ perfil, onSave }) {
+// idioma llega ahora como prop (lo decide Ajustes, ver SettingsView) — antes esta pantalla tenía su
+// propio estado local de idioma porque también lo guardaba ella misma; ahora solo lo lee, como
+// hacen el resto de vistas de la app (MenuView, PesoView...).
+function PerfilView({ perfil, onSave, idioma }) {
   const [nombre, setNombre] = useState(perfil?.nombre ?? "");
   const [sexo, setSexo] = useState(perfil?.sexo ?? "mujer");
   const [anioNacimiento, setAnioNacimiento] = useState(perfil?.anioNacimiento ?? "");
@@ -1527,44 +1493,7 @@ function PerfilView({ perfil, onSave }) {
     (perfil?.entrenamientos || []).map((e) => ({ id: uid(), ...e }))
   );
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
-  // Idioma de la interfaz (Fase 5): si el perfil ya tiene uno propio, manda; si no (perfil recién
-  // migrado, todavía en español por defecto), se parte del que se recuerde de la pantalla de
-  // bienvenida. Al guardar, se refleja también en localStorage para que la próxima vez que cierres
-  // sesión, la bienvenida/login ya te salga en ese idioma.
-  const [idioma, setIdioma] = useState(perfil?.idioma ?? leerIdiomaGuardado());
   const [saved, setSaved] = useState(false);
-  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
-
-  // Notificaciones push (Fase 6): notifPush es lo que se guarda en el perfil al pulsar "Guardar
-  // cambios", igual que el resto de campos de esta pantalla. Pedir permiso al navegador, en
-  // cambio, ocurre al momento al pulsar el interruptor (no espera a Guardar) porque es una acción
-  // con efecto inmediato fuera de la app (un diálogo del navegador) — tiene sentido que el
-  // usuario vea al instante si se ha concedido o no, en vez de enterarse solo tras guardar.
-  const [notifPush, setNotifPush] = useState(perfil?.notificacionesPush ?? false);
-  const [notifEstado, setNotifEstado] = useState(""); // "" | "pidiendo" | "error"
-  const [notifError, setNotifError] = useState("");
-
-  async function handleToggleNotificaciones(activar) {
-    setNotifError("");
-    if (!activar) {
-      setNotifPush(false);
-      setNotifEstado("");
-      if (typeof window.disablePushNotifications === "function") {
-        window.disablePushNotifications().catch(() => {});
-      }
-      return;
-    }
-    setNotifEstado("pidiendo");
-    try {
-      await window.requestPushPermission();
-      setNotifPush(true);
-      setNotifEstado("");
-    } catch (err) {
-      setNotifPush(false);
-      setNotifEstado("error");
-      setNotifError(t(idioma, "perfil.notificaciones.error." + (err.code || "generico")));
-    }
-  }
 
   // Reparto de comidas (Fase 4): qué preset está elegido, y el peso (%) de cada comida dentro de
   // él. Los pesos se editan como enteros 0-100 en la interfaz y se convierten a fracción (0-1) al
@@ -1595,8 +1524,11 @@ function PerfilView({ perfil, onSave }) {
     if (!valid) return;
     const repartoComidas = {};
     presetActual.meals.forEach((m) => { repartoComidas[m] = (Number(pesos[m]) || 0) / 100; });
-    guardarIdiomaLocal(idioma);
+    // Se parte de "...perfil" y no de un objeto construido desde cero: onSave sustituye el perfil
+    // entero, así que si esta pantalla no incluyera los campos que edita Ajustes (idioma,
+    // notificaciones...), guardar aquí los borraría sin querer.
     onSave({
+      ...perfil,
       nombre: nombre.trim(),
       sexo,
       anioNacimiento: Number(anioNacimiento),
@@ -1607,8 +1539,6 @@ function PerfilView({ perfil, onSave }) {
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
-      idioma,
-      notificacionesPush: notifPush,
       presetComidas: presetId,
       repartoComidas,
     });
@@ -1630,65 +1560,6 @@ function PerfilView({ perfil, onSave }) {
           objetivo={objetivo} setObjetivo={setObjetivo}
           idioma={idioma}
         />
-
-        <Field label={t(idioma, "perfil.idioma.label")}>
-          <div style={{ display: "flex", gap: 8 }}>
-            {IDIOMAS_DISPONIBLES.map((op) => (
-              <button
-                key={op.key}
-                onClick={() => setIdioma(op.key)}
-                style={{
-                  flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
-                  padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
-                  background: idioma === op.key ? "var(--green-dark)" : "#fff",
-                  color: idioma === op.key ? "#fff" : "var(--ink)",
-                }}
-              >
-                {op.label}
-              </button>
-            ))}
-          </div>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
-            {t(idioma, "perfil.idioma.ayuda")}
-          </div>
-        </Field>
-
-        <Field label={t(idioma, "perfil.notificaciones.label")}>
-          <div style={{ display: "flex", gap: 8 }}>
-            {[
-              { value: true, labelKey: "perfil.notificaciones.activadas" },
-              { value: false, labelKey: "perfil.notificaciones.desactivadas" },
-            ].map((op) => (
-              <button
-                key={String(op.value)}
-                onClick={() => handleToggleNotificaciones(op.value)}
-                disabled={notifEstado === "pidiendo"}
-                style={{
-                  flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
-                  padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
-                  background: notifPush === op.value ? "var(--green-dark)" : "#fff",
-                  color: notifPush === op.value ? "#fff" : "var(--ink)",
-                  cursor: notifEstado === "pidiendo" ? "default" : "pointer",
-                }}
-              >
-                {t(idioma, op.labelKey)}
-              </button>
-            ))}
-          </div>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
-            {t(idioma, "perfil.notificaciones.ayuda")}
-          </div>
-          {notifEstado === "pidiendo" && (
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
-              {t(idioma, "perfil.notificaciones.pidiendoPermiso")}
-            </div>
-          )}
-          {notifEstado === "error" && (
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
-              {notifError}
-            </div>
-          )}
-        </Field>
       </div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginTop: 24, maxWidth: 480 }}>
@@ -1795,27 +1666,6 @@ function PerfilView({ perfil, onSave }) {
           </div>
         )}
       </div>
-
-      <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
-          {t(idioma, "perfilView.eliminarCuenta.titulo")}
-        </div>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
-          {t(idioma, "perfilView.eliminarCuenta.desc")}
-        </div>
-        <button
-          onClick={() => setShowDeleteAccount(true)}
-          style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700,
-            color: "var(--rust)", background: "var(--rust-soft)", border: "none", borderRadius: 7,
-            padding: "8px 12px", cursor: "pointer",
-          }}
-        >
-          {t(idioma, "perfilView.eliminarCuenta.boton")}
-        </button>
-      </div>
-
-      {showDeleteAccount && <DeleteAccountModal onClose={() => setShowDeleteAccount(false)} idioma={idioma} />}
     </>
   );
 }
@@ -1894,6 +1744,248 @@ function DeleteAccountModal({ onClose, idioma }) {
         </ModalBtn>
       </div>
     </ModalShell>
+  );
+}
+
+// ---------- Ajustes ----------
+// Reúne lo que antes vivía repartido dentro de Perfil (idioma, notificaciones, eliminar cuenta) más
+// la descarga de datos que antes vivía en la tarjeta raíz de Perfil. A diferencia de Perfil (que
+// tiene su propio botón "Guardar cambios"), aquí cada ajuste se aplica al momento de tocarlo — no
+// hay nada que "confirmar" después, igual que ya hacía el interruptor de notificaciones.
+// Importante: onSave siempre parte de `{ ...perfil, ... }` en vez de construir un objeto desde
+// cero — savePerfil (en el componente raíz) sustituye el perfil entero por lo que se le pase, así
+// que si esta pantalla mandara solo el campo que toca, borraría sin querer todo lo demás (nombre,
+// reparto de comidas...) que vive en otras pantallas.
+function SettingsView({ perfil, data, onSave, idioma }) {
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [notifEstado, setNotifEstado] = useState(""); // "" | "pidiendo" | "error"
+  const [notifError, setNotifError] = useState("");
+  const notifPush = perfil?.notificacionesPush ?? false;
+
+  function cambiarIdioma(nuevo) {
+    guardarIdiomaLocal(nuevo);
+    onSave({ ...perfil, idioma: nuevo });
+  }
+
+  async function handleToggleNotificaciones(activar) {
+    setNotifError("");
+    if (!activar) {
+      onSave({ ...perfil, notificacionesPush: false });
+      setNotifEstado("");
+      if (typeof window.disablePushNotifications === "function") {
+        window.disablePushNotifications().catch(() => {});
+      }
+      return;
+    }
+    setNotifEstado("pidiendo");
+    try {
+      await window.requestPushPermission();
+      onSave({ ...perfil, notificacionesPush: true });
+      setNotifEstado("");
+    } catch (err) {
+      setNotifEstado("error");
+      setNotifError(t(idioma, "perfil.notificaciones.error." + (err.code || "generico")));
+    }
+  }
+
+  return (
+    <>
+      <SectionIntro text={t(idioma, "ajustes.intro")} />
+
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
+        <Field label={t(idioma, "perfil.idioma.label")}>
+          <LanguageDropdown idioma={idioma} onChange={cambiarIdioma} />
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+            {t(idioma, "perfil.idioma.ayuda")}
+          </div>
+        </Field>
+
+        <Field label={t(idioma, "perfil.notificaciones.label")}>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[
+              { value: true, labelKey: "perfil.notificaciones.activadas" },
+              { value: false, labelKey: "perfil.notificaciones.desactivadas" },
+            ].map((op) => (
+              <button
+                key={String(op.value)}
+                onClick={() => handleToggleNotificaciones(op.value)}
+                disabled={notifEstado === "pidiendo"}
+                style={{
+                  flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+                  padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
+                  background: notifPush === op.value ? "var(--green-dark)" : "#fff",
+                  color: notifPush === op.value ? "#fff" : "var(--ink)",
+                  cursor: notifEstado === "pidiendo" ? "default" : "pointer",
+                }}
+              >
+                {t(idioma, op.labelKey)}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+            {t(idioma, "perfil.notificaciones.ayuda")}
+          </div>
+          {notifEstado === "pidiendo" && (
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
+              {t(idioma, "perfil.notificaciones.pidiendoPermiso")}
+            </div>
+          )}
+          {notifEstado === "error" && (
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
+              {notifError}
+            </div>
+          )}
+        </Field>
+
+        <button
+          onClick={() => descargarDatosJSON(data)}
+          style={{
+            display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
+            cursor: "pointer", padding: 0, marginTop: 4,
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+          }}
+        >
+          <Download size={13} /> {t(idioma, "perfilRoot.descargarDatos")}
+        </button>
+      </div>
+
+      <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
+          {t(idioma, "perfilView.eliminarCuenta.titulo")}
+        </div>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+          {t(idioma, "perfilView.eliminarCuenta.desc")}
+        </div>
+        <button
+          onClick={() => setShowDeleteAccount(true)}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700,
+            color: "var(--rust)", background: "var(--rust-soft)", border: "none", borderRadius: 7,
+            padding: "8px 12px", cursor: "pointer",
+          }}
+        >
+          {t(idioma, "perfilView.eliminarCuenta.boton")}
+        </button>
+      </div>
+
+      {showDeleteAccount && <DeleteAccountModal onClose={() => setShowDeleteAccount(false)} idioma={idioma} />}
+    </>
+  );
+}
+
+// ---------- Compartir ----------
+// FoodDraft no está en ninguna tienda de apps todavía (y aunque lo esté, tampoco se puede buscar
+// por marca como Instagram) — la única forma de que alguien llegue es que le pasen el enlace.
+// El botón de compartir usa la Web Share API nativa del navegador (navigator.share) — nada de
+// librerías: abre el panel del propio sistema (WhatsApp, Telegram, correo...). No está disponible
+// en todos los navegadores de escritorio, así que se detecta y, si no existe, sencillamente no se
+// muestra el botón — el enlace copiable de arriba siempre funciona como alternativa universal.
+function CompartirView({ idioma }) {
+  const [copiado, setCopiado] = useState(false);
+  const url = typeof window !== "undefined" ? window.location.origin + window.location.pathname : "";
+  const soportaCompartir = typeof navigator !== "undefined" && typeof navigator.share === "function";
+
+  async function copiarEnlace() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch (e) {
+      // Sin permiso de portapapeles (poco común) — no pasa nada, el enlace sigue visible para copiarlo a mano.
+    }
+  }
+
+  async function compartir() {
+    try {
+      await navigator.share({ title: "FoodDraft", text: t(idioma, "compartir.mensaje"), url });
+    } catch (e) {
+      // El usuario cerró el panel de compartir sin elegir nada, o el navegador lo canceló — no es un error que avisar.
+    }
+  }
+
+  return (
+    <>
+      <SectionIntro text={t(idioma, "compartir.intro")} />
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 12px" }}>
+          <Link2 size={15} color="var(--ink-soft)" style={{ flexShrink: 0 }} />
+          <span style={{ flex: 1, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {url}
+          </span>
+          <button
+            onClick={copiarEnlace}
+            style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--green-dark)" }}
+          >
+            {copiado ? t(idioma, "compartir.copiado") : t(idioma, "compartir.copiar")}
+          </button>
+        </div>
+
+        {soportaCompartir && (
+          <button
+            onClick={compartir}
+            style={{
+              width: "100%", marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+              color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "11px 18px", cursor: "pointer",
+            }}
+          >
+            <Share2 size={16} /> {t(idioma, "compartir.compartirApps")}
+          </button>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ---------- Ayuda y comentarios ----------
+// Cada categoría abre el cliente de correo del propio dispositivo (mailto:) con el asunto ya
+// puesto — deliberadamente así de simple: nada de backend, ni Cloud Function, ni servicio de envío
+// de correo de terceros, coherente con que functions/ hoy solo tiene lo justo (Stripe y Gemini).
+// El correo también se deja visible en texto plano por si el dispositivo no tiene cliente de correo
+// configurado (raro en móvil, no tan raro en escritorio) y el enlace mailto: no hace nada.
+const FEEDBACK_CATEGORIAS = [
+  { key: "bug", icon: AlertCircle, color: "var(--rust)" },
+  { key: "idea", icon: Lightbulb, color: "var(--mustard-dark)" },
+  { key: "traduccion", icon: Globe, color: "var(--olive)" },
+  { key: "premium", icon: Sparkles, color: "var(--coffee)" },
+  { key: "privacidad", icon: Lock, color: "var(--green)" },
+  { key: "otro", icon: Mail, color: "var(--ink-soft)" },
+];
+
+function FeedbackView({ idioma }) {
+  function abrirCorreo(key) {
+    const asunto = encodeURIComponent(t(idioma, `feedback.${key}.asunto`));
+    const cuerpo = encodeURIComponent(t(idioma, `feedback.${key}.cuerpo`));
+    window.location.href = `mailto:draftedfood@gmail.com?subject=${asunto}&body=${cuerpo}`;
+  }
+
+  return (
+    <>
+      <SectionIntro text={t(idioma, "feedback.intro")} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480 }}>
+        {FEEDBACK_CATEGORIAS.map((cat) => {
+          const Icon = cat.icon;
+          return (
+            <button
+              key={cat.key}
+              onClick={() => abrirCorreo(cat.key)}
+              style={{
+                display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%",
+                background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "13px 14px", cursor: "pointer",
+              }}
+            >
+              <Icon size={19} color={cat.color} style={{ flexShrink: 0 }} />
+              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>
+                {t(idioma, `feedback.${cat.key}`)}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 14, maxWidth: 480 }}>
+        {t(idioma, "feedback.correoVisible", { correo: "draftedfood@gmail.com" })}
+      </div>
+    </>
   );
 }
 
@@ -3009,7 +3101,7 @@ function Shell({ children }) {
   );
 }
 
-function Header({ saveState, idioma }) {
+function Header({ saveState, idioma, onOpenMenu }) {
   return (
     <header
       style={{
@@ -3031,7 +3123,21 @@ function Header({ saveState, idioma }) {
           background: "rgba(255,255,255,0.05)",
         }}
       />
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", position: "relative" }}>
+      {/* Abre el menú lateral (ver DrawerMenu) — sustituye a la barra de pestañas de antes. Vive
+          en el propio Header porque este se pinta una sola vez fuera de <main>, así que el botón
+          queda accesible desde cualquier pantalla sin tener que repetirlo en cada una. */}
+      <button
+        onClick={onOpenMenu}
+        aria-label={t(idioma, "drawer.abrir")}
+        style={{
+          position: "absolute", top: 22, left: 22, zIndex: 2,
+          background: "rgba(255,255,255,0.12)", border: "none", borderRadius: 8,
+          padding: 7, display: "flex", cursor: "pointer",
+        }}
+      >
+        <Menu size={19} color="#fff" />
+      </button>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", position: "relative", paddingLeft: 42 }}>
         <div>
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65, marginBottom: 4 }}>
             FoodDraft
@@ -3064,18 +3170,11 @@ function SaveIndicator({ state, idioma }) {
   );
 }
 
-const MENU_TAB_META = { labelKey: "tab.menu", icon: CalendarDays };
-const CONFIG_TAB_META = { labelKey: "tab.configuracion", icon: Layers };
-const PROFILE_TAB_META = { labelKey: "tab.perfil", icon: User };
-
 // Qué categorías "hoja" pertenecen a cada grupo de la pantalla de Configuración.
 // Un único origen de datos: sirve tanto para saber a qué grupo pertenece una categoría
 // (para el botón "volver") como para pintar las tarjetas de cada grupo.
 const MACRO_CATS = ["proteina", "carbo", "verdura", "grasa"];
 const ESPECIALES_CATS = ["desayuno", "media_manana", "merienda", "cerrado", "especial"];
-const CONFIG_LEAF_TABS = [...MACRO_CATS, ...ESPECIALES_CATS, "combos", "alimentos", "cocinar"];
-const CONFIG_TABS = ["config-root", "macros-root", "especiales-root", ...CONFIG_LEAF_TABS];
-const PERFIL_TABS = ["perfil-root", "perfil-datos", "perfil-peso", "perfil-resumen", "perfil-medidas", "perfil-premium", "perfil-documentos"];
 
 function groupOfCat(cat) {
   if (MACRO_CATS.includes(cat)) return "macros-root";
@@ -3083,54 +3182,242 @@ function groupOfCat(cat) {
   return "config-root";
 }
 
-function TabBar({ tab, setTab, idioma }) {
-  const tabs = [
-    { key: "menu", meta: MENU_TAB_META },
-    { key: "config-root", meta: CONFIG_TAB_META },
-    { key: "perfil", meta: PROFILE_TAB_META },
-  ];
+// ---------- Bandera de un idioma, dibujada a mano en SVG ----------
+// No se usan los emoji de bandera (🇪🇸, 🇬🇧...) a propósito: catalán, gallego y euskera no tienen
+// código de país ISO, así que su emoji de bandera no existe — y aunque se construyera "a mano" con
+// las secuencias de subdivisión de Unicode, no son secuencias reconocidas oficialmente (RGI) fuera
+// de las de Reino Unido, así que no se pintarían como bandera en la mayoría de sistemas (aparecería
+// un icono roto o nada). Dibujarlas en SVG garantiza que se vean igual en cualquier navegador.
+// Las banderas autonómicas (Senyera, la de Galicia, la Ikurriña) son las oficiales de cada
+// comunidad, no símbolos partidistas — mismo criterio que usan las webs de sus propios gobiernos.
+function FlagIcon({ lang, size = 20 }) {
+  const w = Math.round(size * 1.5);
+  const vb = "0 0 30 20";
+  const wrapStyle = { borderRadius: 3, display: "block", flexShrink: 0 };
+  if (lang === "es") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#AA151B" />
+        <rect y="5" width="30" height="10" fill="#F1BF00" />
+      </svg>
+    );
+  }
+  if (lang === "en") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#00247D" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#fff" strokeWidth="4" />
+        <line x1="30" y1="0" x2="0" y2="20" stroke="#fff" strokeWidth="4" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#CF142B" strokeWidth="1.8" />
+        <line x1="30" y1="0" x2="0" y2="20" stroke="#CF142B" strokeWidth="1.8" />
+        <line x1="15" y1="0" x2="15" y2="20" stroke="#fff" strokeWidth="6" />
+        <line x1="0" y1="10" x2="30" y2="10" stroke="#fff" strokeWidth="6" />
+        <line x1="15" y1="0" x2="15" y2="20" stroke="#CF142B" strokeWidth="3" />
+        <line x1="0" y1="10" x2="30" y2="10" stroke="#CF142B" strokeWidth="3" />
+      </svg>
+    );
+  }
+  if (lang === "ca") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#FCDD09" />
+        {[1, 3, 5, 7].map((i) => (
+          <rect key={i} y={(20 / 9) * i} width="30" height={20 / 9} fill="#DA121A" />
+        ))}
+      </svg>
+    );
+  }
+  if (lang === "gl") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#fff" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#0090C4" strokeWidth="5" />
+      </svg>
+    );
+  }
+  if (lang === "eu") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#D52B1E" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#009B48" strokeWidth="4.5" />
+        <line x1="30" y1="0" x2="0" y2="20" stroke="#009B48" strokeWidth="4.5" />
+        <line x1="15" y1="0" x2="15" y2="20" stroke="#fff" strokeWidth="5" />
+        <line x1="0" y1="10" x2="30" y2="10" stroke="#fff" strokeWidth="5" />
+      </svg>
+    );
+  }
+  return null;
+}
+
+// ---------- Selector de idioma buscable, con banderas (Fase de menú lateral) ----------
+// Sustituye a la fila de botones de idioma que había antes en Perfil — con 5 idiomas ya no cabían
+// bien en una fila, y esta forma escala sin rediseñar si se añaden más adelante. onChange se llama
+// al momento al elegir uno (no hace falta un botón "Guardar" aparte): igual que el interruptor de
+// notificaciones, es una preferencia que tiene sentido aplicar en el instante, no en un lote.
+function LanguageDropdown({ idioma, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const actual = IDIOMAS_DISPONIBLES.find((i) => i.key === idioma) || IDIOMAS_DISPONIBLES[0];
+  const filtrados = IDIOMAS_DISPONIBLES.filter((i) => i.label.toLowerCase().includes(query.trim().toLowerCase()));
+
+  function elegir(key) {
+    onChange(key);
+    setOpen(false);
+    setQuery("");
+  }
+
   return (
-    <nav
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: 9, width: "100%",
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+          padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)", background: "#fff", color: "var(--ink)",
+          cursor: "pointer",
+        }}
+      >
+        <FlagIcon lang={actual.key} size={17} />
+        <span style={{ letterSpacing: 0.3 }}>{actual.key.toUpperCase()}</span>
+        <span style={{ flex: 1, textAlign: "left", fontWeight: 500, color: "var(--ink-soft)" }}>{actual.label}</span>
+        <ChevronDown size={15} color="var(--ink-soft)" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, zIndex: 5,
+            background: "#fff", border: "1px solid var(--line)", borderRadius: 10,
+            boxShadow: "0 6px 20px rgba(0,0,0,0.12)", padding: 8,
+          }}
+        >
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t(idioma, "ajustes.idioma.buscar")}
+            style={{ ...inputStyle, marginBottom: 6 }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, maxHeight: 220, overflowY: "auto" }}>
+            {filtrados.map((op) => (
+              <button
+                key={op.key}
+                onClick={() => elegir(op.key)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 9, textAlign: "left",
+                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, padding: "8px 8px", borderRadius: 6,
+                  border: "none", background: op.key === idioma ? "var(--green-soft)" : "transparent", cursor: "pointer",
+                }}
+              >
+                <FlagIcon lang={op.key} size={16} />
+                <span style={{ fontWeight: 700, letterSpacing: 0.3 }}>{op.key.toUpperCase()}</span>
+                <span style={{ color: "var(--ink-soft)" }}>{op.label}</span>
+              </button>
+            ))}
+            {filtrados.length === 0 && (
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", padding: "8px 6px" }}>
+                {t(idioma, "ajustes.idioma.sinResultados")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Menú lateral (drawer) ----------
+// Sustituye a la antigua TabBar de tres pestañas horizontales. El grupo de arriba son destinos que
+// ya existían (Menú, Configuración, Seguimiento de peso, Resumen mensual, Medidas, Documentos,
+// Premium) — de momento solo cambia cómo se llega a ellos, no lo que contienen; reorganizar su
+// contenido (fusionar reparto de comidas, agrupar seguimiento de peso con medidas/resumen...) es
+// trabajo de la siguiente tanda. El grupo de abajo (Compartir, Ayuda y comentarios, Ajustes,
+// Perfil) sí es nuevo del todo en esta tanda.
+function DrawerMenu({ open, onClose, tab, setTab, idioma, premium }) {
+  function ir(destino) {
+    setTab(destino);
+    onClose();
+  }
+
+  const arriba = [
+    { key: "menu", label: t(idioma, "tab.menu"), icon: CalendarDays },
+    { key: "config-root", label: t(idioma, "tab.configuracion"), icon: Layers },
+    { key: "perfil-peso", label: t(idioma, "perfilRoot.seguimientoPeso"), icon: Scale },
+    { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), icon: TrendingUp },
+    { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), icon: Ruler },
+    { key: "perfil-documentos", label: t(idioma, "perfilRoot.documentos"), icon: FileText },
+    { key: "perfil-premium", label: premium.active ? t(idioma, "perfilRoot.premium") : t(idioma, "perfilRoot.hazteremium"), icon: Sparkles },
+  ];
+  const abajo = [
+    { key: "compartir", label: t(idioma, "drawer.compartir"), icon: Share2 },
+    { key: "feedback", label: t(idioma, "drawer.feedback"), icon: Mail },
+    { key: "ajustes", label: t(idioma, "drawer.ajustes"), icon: Settings },
+    { key: "perfil-datos", label: t(idioma, "tab.perfil"), icon: User },
+  ];
+
+  if (!open) return null;
+
+  return (
+    <>
+      <div
+        onClick={onClose}
+        style={{ position: "fixed", inset: 0, background: "rgba(20,20,19,0.4)", zIndex: 40 }}
+      />
+      <div
+        style={{
+          position: "fixed", top: 0, left: 0, bottom: 0, width: "min(78vw, 280px)", zIndex: 41,
+          background: "var(--paper)", boxShadow: "3px 0 22px rgba(0,0,0,0.22)",
+          display: "flex", flexDirection: "column", padding: "18px 12px 16px", boxSizing: "border-box",
+          overflowY: "auto",
+        }}
+      >
+        <button
+          onClick={onClose}
+          aria-label={t(idioma, "drawer.cerrar")}
+          style={{ alignSelf: "flex-end", background: "none", border: "none", cursor: "pointer", padding: 6, marginBottom: 6 }}
+        >
+          <X size={19} color="var(--ink-soft)" />
+        </button>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {arriba.map((item) => (
+            <DrawerItem key={item.key} item={item} active={tab === item.key} onClick={() => ir(item.key)} />
+          ))}
+        </div>
+
+        <div style={{ flex: 1, minHeight: 24 }} />
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, borderTop: "1px solid var(--line)", paddingTop: 8 }}>
+          {abajo.map((item) => (
+            <DrawerItem key={item.key} item={item} active={tab === item.key} onClick={() => ir(item.key)} />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function DrawerItem({ item, active, onClick }) {
+  const Icon = item.icon;
+  return (
+    <button
+      onClick={onClick}
       style={{
-        display: "flex",
-        background: "var(--green)",
-        paddingLeft: 12,
+        display: "flex", alignItems: "center", gap: 11, textAlign: "left", width: "100%",
+        padding: "10px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+        background: active ? "var(--green-soft)" : "transparent",
       }}
     >
-      {tabs.map(({ key, meta }) => {
-        const Icon = meta.icon;
-        // "Configuración" y "Perfil" se marcan activas mientras estemos en cualquier pantalla de
-        // dentro (nivel 2, nivel 3...), no solo en su tarjeta raíz.
-        const active = key === "config-root" ? CONFIG_TABS.includes(tab) : key === "perfil" ? PERFIL_TABS.includes(tab) : tab === key;
-        return (
-          <button
-            key={key}
-            onClick={() => setTab(key === "perfil" ? "perfil-root" : key)}
-            style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif",
-              border: "none",
-              background: active ? "var(--paper)" : "transparent",
-              color: active ? "var(--green-dark)" : "rgba(255,255,255,0.85)",
-              padding: "12px 18px",
-              fontSize: 13.5,
-              fontWeight: active ? 700 : 500,
-              borderRadius: "10px 10px 0 0",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              whiteSpace: "nowrap",
-              marginTop: active ? 0 : 6,
-              transition: "all 0.15s",
-              flex: 1,
-              justifyContent: "center",
-            }}
-          >
-            <Icon size={14} />
-            {t(idioma, meta.labelKey)}
-          </button>
-        );
-      })}
-    </nav>
+      <Icon size={17} color={active ? "var(--green-dark)" : "var(--ink-soft)"} />
+      <span
+        style={{
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5,
+          fontWeight: active ? 700 : 500, color: active ? "var(--green-dark)" : "var(--ink)",
+        }}
+      >
+        {item.label}
+      </span>
+    </button>
   );
 }
 

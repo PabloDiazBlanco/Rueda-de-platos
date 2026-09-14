@@ -325,26 +325,94 @@ function removeLogoutButton() {
   if (btn) btn.remove();
 }
 
+// ---------- Bandera de un idioma, dibujada a mano en SVG ----------
+// Copia exacta de la de app.jsx — no se comparte entre los dos archivos porque no hay ninguna capa
+// de componentes UI compartida entre auth-bootstrap.jsx y app.jsx (Logica/ es solo lógica sin JSX,
+// ver CLAUDE.md), y son cinco SVG pequeños, no compensa montar nada para evitar esta duplicación.
+// No se usan emoji de bandera a propósito: catalán, gallego y euskera no tienen código de país
+// ISO, así que su emoji de bandera no existe de forma fiable en la mayoría de sistemas.
+function FlagIcon({ lang, size = 20 }) {
+  const w = Math.round(size * 1.5);
+  const vb = "0 0 30 20";
+  const wrapStyle = { borderRadius: 3, display: "block", flexShrink: 0 };
+  if (lang === "es") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#AA151B" />
+        <rect y="5" width="30" height="10" fill="#F1BF00" />
+      </svg>
+    );
+  }
+  if (lang === "en") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#00247D" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#fff" strokeWidth="4" />
+        <line x1="30" y1="0" x2="0" y2="20" stroke="#fff" strokeWidth="4" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#CF142B" strokeWidth="1.8" />
+        <line x1="30" y1="0" x2="0" y2="20" stroke="#CF142B" strokeWidth="1.8" />
+        <line x1="15" y1="0" x2="15" y2="20" stroke="#fff" strokeWidth="6" />
+        <line x1="0" y1="10" x2="30" y2="10" stroke="#fff" strokeWidth="6" />
+        <line x1="15" y1="0" x2="15" y2="20" stroke="#CF142B" strokeWidth="3" />
+        <line x1="0" y1="10" x2="30" y2="10" stroke="#CF142B" strokeWidth="3" />
+      </svg>
+    );
+  }
+  if (lang === "ca") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#FCDD09" />
+        {[1, 3, 5, 7].map((i) => (
+          <rect key={i} y={(20 / 9) * i} width="30" height={20 / 9} fill="#DA121A" />
+        ))}
+      </svg>
+    );
+  }
+  if (lang === "gl") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#fff" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#0090C4" strokeWidth="5" />
+      </svg>
+    );
+  }
+  if (lang === "eu") {
+    return (
+      <svg width={w} height={size} viewBox={vb} style={wrapStyle}>
+        <rect width="30" height="20" fill="#D52B1E" />
+        <line x1="0" y1="0" x2="30" y2="20" stroke="#009B48" strokeWidth="4.5" />
+        <line x1="30" y1="0" x2="0" y2="20" stroke="#009B48" strokeWidth="4.5" />
+        <line x1="15" y1="0" x2="15" y2="20" stroke="#fff" strokeWidth="5" />
+        <line x1="0" y1="10" x2="30" y2="10" stroke="#fff" strokeWidth="5" />
+      </svg>
+    );
+  }
+  return null;
+}
+
 // ---------- Selector de idioma (bienvenida/login) ----------
 // Solo cambia el idioma de estas pantallas de antes de iniciar sesión (y se recuerda en
 // localStorage vía guardarIdiomaLocal, ver Logica/i18n.js) — una vez dentro de la app con sesión
-// iniciada, manda perfil.idioma, elegible también desde Perfil.
+// iniciada, manda perfil.idioma, elegible también desde Perfil (Ajustes, en el menú lateral).
 function IdiomaSwitch({ idioma, onChange }) {
   return (
-    <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 4 }}>
+    <div style={{ position: "absolute", top: 14, right: 14, display: "flex", gap: 5 }}>
       {IDIOMAS_DISPONIBLES.map((i) => (
         <button
           key={i.key}
           onClick={() => onChange(i.key)}
+          aria-label={i.label}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700,
-            padding: "4px 9px", borderRadius: 20, border: "1px solid #ddd6bf",
-            background: idioma === i.key ? "#1f4d38" : "#fffdf7",
-            color: idioma === i.key ? "#fff" : "#6b6a5e",
-            cursor: "pointer",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+            padding: "3px 5px 4px", borderRadius: 8, border: "1.5px solid",
+            borderColor: idioma === i.key ? "#1f4d38" : "transparent",
+            background: "#fffdf7", cursor: "pointer",
           }}
         >
-          {i.key.toUpperCase()}
+          <FlagIcon lang={i.key} size={15} />
+          <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9, fontWeight: 700, color: idioma === i.key ? "#1f4d38" : "#6b6a5e" }}>
+            {i.key.toUpperCase()}
+          </span>
         </button>
       ))}
     </div>
