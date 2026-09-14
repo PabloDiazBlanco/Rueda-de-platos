@@ -293,6 +293,13 @@ function migrateData(rawData) {
     changed = true;
   }
 
+  // Notificaciones push (Fase 6): perfiles ya existentes empiezan desactivados — activarlas pide
+  // permiso al navegador, así que nunca puede hacerse sola sin que el usuario lo pulse él mismo.
+  if (data.perfil && data.perfil.notificacionesPush === undefined) {
+    data.perfil.notificacionesPush = false;
+    changed = true;
+  }
+
   return { data, changed };
 }
 
@@ -1528,6 +1535,37 @@ function PerfilView({ perfil, onSave }) {
   const [saved, setSaved] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
+  // Notificaciones push (Fase 6): notifPush es lo que se guarda en el perfil al pulsar "Guardar
+  // cambios", igual que el resto de campos de esta pantalla. Pedir permiso al navegador, en
+  // cambio, ocurre al momento al pulsar el interruptor (no espera a Guardar) porque es una acción
+  // con efecto inmediato fuera de la app (un diálogo del navegador) — tiene sentido que el
+  // usuario vea al instante si se ha concedido o no, en vez de enterarse solo tras guardar.
+  const [notifPush, setNotifPush] = useState(perfil?.notificacionesPush ?? false);
+  const [notifEstado, setNotifEstado] = useState(""); // "" | "pidiendo" | "error"
+  const [notifError, setNotifError] = useState("");
+
+  async function handleToggleNotificaciones(activar) {
+    setNotifError("");
+    if (!activar) {
+      setNotifPush(false);
+      setNotifEstado("");
+      if (typeof window.disablePushNotifications === "function") {
+        window.disablePushNotifications().catch(() => {});
+      }
+      return;
+    }
+    setNotifEstado("pidiendo");
+    try {
+      await window.requestPushPermission();
+      setNotifPush(true);
+      setNotifEstado("");
+    } catch (err) {
+      setNotifPush(false);
+      setNotifEstado("error");
+      setNotifError(t(idioma, "perfil.notificaciones.error." + (err.code || "generico")));
+    }
+  }
+
   // Reparto de comidas (Fase 4): qué preset está elegido, y el peso (%) de cada comida dentro de
   // él. Los pesos se editan como enteros 0-100 en la interfaz y se convierten a fracción (0-1) al
   // guardar, que es como los espera el resto de la app (objetivosPorComida, generateMenu).
@@ -1570,6 +1608,7 @@ function PerfilView({ perfil, onSave }) {
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
       idioma,
+      notificacionesPush: notifPush,
       presetComidas: presetId,
       repartoComidas,
     });
@@ -1612,6 +1651,43 @@ function PerfilView({ perfil, onSave }) {
           <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
             {t(idioma, "perfil.idioma.ayuda")}
           </div>
+        </Field>
+
+        <Field label={t(idioma, "perfil.notificaciones.label")}>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[
+              { value: true, labelKey: "perfil.notificaciones.activadas" },
+              { value: false, labelKey: "perfil.notificaciones.desactivadas" },
+            ].map((op) => (
+              <button
+                key={String(op.value)}
+                onClick={() => handleToggleNotificaciones(op.value)}
+                disabled={notifEstado === "pidiendo"}
+                style={{
+                  flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+                  padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
+                  background: notifPush === op.value ? "var(--green-dark)" : "#fff",
+                  color: notifPush === op.value ? "#fff" : "var(--ink)",
+                  cursor: notifEstado === "pidiendo" ? "default" : "pointer",
+                }}
+              >
+                {t(idioma, op.labelKey)}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+            {t(idioma, "perfil.notificaciones.ayuda")}
+          </div>
+          {notifEstado === "pidiendo" && (
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
+              {t(idioma, "perfil.notificaciones.pidiendoPermiso")}
+            </div>
+          )}
+          {notifEstado === "error" && (
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
+              {notifError}
+            </div>
+          )}
         </Field>
       </div>
 

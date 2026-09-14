@@ -26,6 +26,7 @@ import {
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
 
 // Identificador público de tu proyecto de Firebase (no es una clave secreta, es normal que
@@ -114,6 +115,86 @@ window.suggestMeals = async function ({ photoDataUrl, especias, otrosIngrediente
     return respuesta.data.sugerencias;
   } catch (err) {
     throw new Error(err.message || "No se han podido generar sugerencias. Inténtalo de nuevo.");
+  }
+};
+
+// ---------- Notificaciones push: recordatorio de pesaje (Fase 6) ----------
+// Clave pública VAPID del proyecto de Firebase — no es secreta (viaja en el propio navegador,
+// igual que firebaseConfig de arriba), pero hay que generarla a mano una sola vez en la consola
+// de Firebase (Configuración del proyecto → Cloud Messaging → pestaña "Web Push certificates" →
+// generar par de claves) y pegarla aquí. Sin esto, requestPushPermission falla con un error de
+// Firebase al pedir el token — no hay forma de evitar este paso manual desde el código.
+const VAPID_PUBLIC_KEY = "PENDIENTE: pega aquí la clave pública VAPID de Firebase";
+
+// Misma "keys" que el resto de datos de la app (ver makeFirestoreStorage más abajo) — así el
+// token vive bajo las mismas reglas de seguridad de siempre (cada usuario solo lee/escribe las
+// suyas), sin necesitar ninguna regla nueva. La Cloud Function programada
+// (functions/sendWeighInReminders.js) lee esta clave para saber a quién mandar el push cada día.
+const PUSH_TOKEN_KEY = "rueda-de-platos:push-token-v1";
+
+function soportaPushNotifications() {
+  return typeof Notification !== "undefined" && "serviceWorker" in navigator;
+}
+
+// Pide permiso de notificaciones al navegador, registra el token de FCM y lo guarda en Firestore.
+// Lanza errores con un `.code` reconocible (mismo patrón que window.deleteAccount) para que
+// PerfilView, en app.jsx, pueda traducirlos a un mensaje en el idioma de la interfaz en vez de
+// mostrar el texto en español de aquí abajo, que es solo un mensaje de repuesto.
+window.requestPushPermission = async function () {
+  if (!soportaPushNotifications()) {
+    const err = new Error("Este navegador no admite notificaciones push.");
+    err.code = "unsupported";
+    throw err;
+  }
+
+  const permiso = await Notification.requestPermission();
+  if (permiso !== "granted") {
+    const err = new Error("No se ha concedido el permiso de notificaciones.");
+    err.code = "permission-denied";
+    throw err;
+  }
+
+  // getToken necesita el registro del service worker para saber a qué archivo (sw.js, con su
+  // manejador onBackgroundMessage) asociar los mensajes que lleguen con la app cerrada.
+  const registration = (await window.swRegistrationPromise) || undefined;
+
+  let token;
+  try {
+    const messaging = getMessaging(firebaseApp);
+    token = await getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY, serviceWorkerRegistration: registration });
+  } catch (e) {
+    const err = new Error("No se ha podido generar el token de notificaciones.");
+    err.code = "token-failed";
+    throw err;
+  }
+  if (!token) {
+    const err = new Error("No se ha podido generar el token de notificaciones.");
+    err.code = "token-failed";
+    throw err;
+  }
+
+  const user = auth.currentUser;
+  if (user) {
+    await setDoc(doc(db, "users", user.uid, "keys", PUSH_TOKEN_KEY), { value: token });
+  }
+  return token;
+};
+
+// Desactivar: revoca el token en el propio navegador y borra la copia guardada en Firestore, para
+// que la Cloud Function programada deje de intentar mandarle nada a esta cuenta. Nunca lanza —se
+// llama también al desmarcar la casilla sin que la interfaz tenga que gestionar un posible error.
+window.disablePushNotifications = async function () {
+  try {
+    if (soportaPushNotifications()) {
+      await deleteToken(getMessaging(firebaseApp));
+    }
+  } catch (e) {
+    // Si ya no había token, o el navegador no coopera al revocarlo, no pasa nada: lo importante
+    // es borrar la copia en Firestore, que es lo que de verdad consulta la Cloud Function.
+  }
+  const user = auth.currentUser;
+  if (user) {
+    await deleteDoc(doc(db, "users", user.uid, "keys", PUSH_TOKEN_KEY)).catch(() => {});
   }
 };
 

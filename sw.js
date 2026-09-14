@@ -6,6 +6,43 @@ const FILES_TO_CACHE = [
   "./Logica/resumenMensual.js", "./Logica/i18n.js",
 ];
 
+// ---------- Notificaciones push en segundo plano (Fase 6) ----------
+// Se usa el SDK "compat" de Firebase por importScripts en vez de los módulos ES que usa el resto
+// de la app (ver auth-bootstrap.jsx e index.html): es la forma que documenta Firebase para
+// service workers clásicos como este (registrado sin {type:"module"} en index.html), y funciona
+// igual en todos los navegadores sin depender de que soporten "module workers". Solo se activa si
+// el navegador soporta FCM — si falla la carga (sin conexión la primera vez, navegador sin
+// soporte), el resto del service worker (caché offline de arriba) sigue funcionando igual.
+try {
+  importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js");
+  importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging-compat.js");
+
+  firebase.initializeApp({
+    apiKey: "AIzaSyDFTu5zVLHA7KjXiW7tKM1Ufa-vY2L8A_o",
+    authDomain: "rueda-de-platos.firebaseapp.com",
+    projectId: "rueda-de-platos",
+    storageBucket: "rueda-de-platos.firebasestorage.app",
+    messagingSenderId: "477523566905",
+    appId: "1:477523566905:web:130cdede8cb500cbdac8e8",
+  });
+
+  // Se dispara solo cuando la app está cerrada o en segundo plano (con la app abierta y en
+  // primer plano, Firebase entrega el mensaje directo al cliente, sin pasar por aquí) — por eso
+  // hace falta mostrar la notificación a mano con showNotification, cosa que el navegador no hace
+  // solo para un mensaje "data-only"/en segundo plano.
+  firebase.messaging().onBackgroundMessage((payload) => {
+    const { title, body } = payload.notification || {};
+    self.registration.showNotification(title || "FoodDraft", {
+      body: body || "",
+      // Sin icono en PNG todavía (ver la hoja de ruta de publicación, Fase 7) — el navegador usa
+      // su icono por defecto mientras tanto. Cuando exista ./icon-192.png, añadirlo aquí.
+      tag: "recordatorio-pesaje",
+    });
+  });
+} catch (e) {
+  // No pasa nada: el resto del service worker (caché offline) sigue funcionando sin notificaciones.
+}
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))

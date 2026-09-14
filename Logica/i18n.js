@@ -95,6 +95,16 @@ const TEXTOS = {
     "perfil.idioma.label": "Idioma",
     "perfil.idioma.ayuda": "El idioma de la interfaz. Por ahora, el resto de los textos de la app puede seguir viéndose en español mientras se traduce por partes.",
 
+    "perfil.notificaciones.label": "Recordatorio de pesaje",
+    "perfil.notificaciones.ayuda": "Un aviso el día que te toque pesarte, aunque tengas la app cerrada. En iPhone solo llega si has instalado la app desde \"Añadir a pantalla de inicio\" — es una restricción de Apple, no de esta app.",
+    "perfil.notificaciones.activadas": "Activadas",
+    "perfil.notificaciones.desactivadas": "Desactivadas",
+    "perfil.notificaciones.pidiendoPermiso": "Pidiendo permiso…",
+    "perfil.notificaciones.error.unsupported": "Este navegador no admite notificaciones push.",
+    "perfil.notificaciones.error.permission-denied": "No has concedido el permiso de notificaciones. Puedes activarlo más tarde desde los ajustes del navegador.",
+    "perfil.notificaciones.error.token-failed": "No se han podido activar las notificaciones. Inténtalo de nuevo.",
+    "perfil.notificaciones.error.generico": "No se han podido activar las notificaciones. Inténtalo de nuevo.",
+
     // Nombres de días y tipos de comida: viven en español en el modelo de datos (DAYS, mealType
     // del menú generado, claves de perfil.repartoComidas) — cambiarlos ahí tocaría el motor de
     // generación de menús y las reglas de combinación, que comparan por igualdad de texto exacta.
@@ -690,6 +700,16 @@ const TEXTOS = {
     "perfil.idioma.label": "Language",
     "perfil.idioma.ayuda": "The interface language. For now, the rest of the app's text may still appear in Spanish while it's translated in stages.",
 
+    "perfil.notificaciones.label": "Weigh-in reminder",
+    "perfil.notificaciones.ayuda": "A notification on the day you're due to weigh in, even with the app closed. On iPhone it only arrives if you installed the app via \"Add to Home Screen\" — that's an Apple restriction, not something this app controls.",
+    "perfil.notificaciones.activadas": "On",
+    "perfil.notificaciones.desactivadas": "Off",
+    "perfil.notificaciones.pidiendoPermiso": "Asking for permission…",
+    "perfil.notificaciones.error.unsupported": "This browser doesn't support push notifications.",
+    "perfil.notificaciones.error.permission-denied": "You haven't granted notification permission. You can turn it on later from your browser settings.",
+    "perfil.notificaciones.error.token-failed": "Couldn't turn on notifications. Please try again.",
+    "perfil.notificaciones.error.generico": "Couldn't turn on notifications. Please try again.",
+
     "dia.Lunes": "Monday", "dia.Martes": "Tuesday", "dia.Miércoles": "Wednesday",
     "dia.Jueves": "Thursday", "dia.Viernes": "Friday", "dia.Sábado": "Saturday", "dia.Domingo": "Sunday",
     "mealType.Desayuno": "Breakfast", "mealType.Media mañana": "Mid-morning snack", "mealType.Comida": "Lunch",
@@ -1277,6 +1297,16 @@ const TEXTOS = {
 
     "perfil.idioma.label": "Idioma",
     "perfil.idioma.ayuda": "L'idioma de la interfície. De moment, la resta de textos de l'app es poden continuar veient en castellà mentre es tradueixen per parts.",
+
+    "perfil.notificaciones.label": "Recordatori de pesada",
+    "perfil.notificaciones.ayuda": "Un avís el dia que et toqui pesar-te, encara que tinguis l'app tancada. A l'iPhone només arriba si has instal·lat l'app amb \"Afegeix a la pantalla d'inici\" — és una restricció d'Apple, no d'aquesta app.",
+    "perfil.notificaciones.activadas": "Activades",
+    "perfil.notificaciones.desactivadas": "Desactivades",
+    "perfil.notificaciones.pidiendoPermiso": "Demanant permís…",
+    "perfil.notificaciones.error.unsupported": "Aquest navegador no admet notificacions push.",
+    "perfil.notificaciones.error.permission-denied": "No has concedit el permís de notificacions. Pots activar-lo més tard des dels ajustos del navegador.",
+    "perfil.notificaciones.error.token-failed": "No s'han pogut activar les notificacions. Torna-ho a provar.",
+    "perfil.notificaciones.error.generico": "No s'han pogut activar les notificacions. Torna-ho a provar.",
 
     "dia.Lunes": "Dilluns", "dia.Martes": "Dimarts", "dia.Miércoles": "Dimecres",
     "dia.Jueves": "Dijous", "dia.Viernes": "Divendres", "dia.Sábado": "Dissabte", "dia.Domingo": "Diumenge",
@@ -1866,6 +1896,16 @@ const TEXTOS = {
     "perfil.idioma.label": "Idioma",
     "perfil.idioma.ayuda": "O idioma da interface. Por agora, o resto dos textos da app pode seguir véndose en castelán mentres se traduce por partes.",
 
+    "perfil.notificaciones.label": "Recordatorio de pesaxe",
+    "perfil.notificaciones.ayuda": "Un aviso o día que toque pesarte, aínda coa app pechada. No iPhone só chega se instalaches a app con \"Engadir á pantalla de inicio\" — é unha restrición de Apple, non desta app.",
+    "perfil.notificaciones.activadas": "Activadas",
+    "perfil.notificaciones.desactivadas": "Desactivadas",
+    "perfil.notificaciones.pidiendoPermiso": "Pedindo permiso…",
+    "perfil.notificaciones.error.unsupported": "Este navegador non admite notificacións push.",
+    "perfil.notificaciones.error.permission-denied": "Non concediches o permiso de notificacións. Podes activalo máis tarde desde os axustes do navegador.",
+    "perfil.notificaciones.error.token-failed": "Non se puideron activar as notificacións. Téntao de novo.",
+    "perfil.notificaciones.error.generico": "Non se puideron activar as notificacións. Téntao de novo.",
+
     "dia.Lunes": "Luns", "dia.Martes": "Martes", "dia.Miércoles": "Mércores",
     "dia.Jueves": "Xoves", "dia.Viernes": "Venres", "dia.Sábado": "Sábado", "dia.Domingo": "Domingo",
     "mealType.Desayuno": "Almorzo", "mealType.Media mañana": "Media mañá", "mealType.Comida": "Comida",
@@ -2453,6 +2493,16 @@ const TEXTOS = {
 
     "perfil.idioma.label": "Hizkuntza",
     "perfil.idioma.ayuda": "Interfazearen hizkuntza. Oraingoz, aplikazioaren gainerako testuak gaztelaniaz ikus daitezke oraindik, zatika itzultzen ari garen bitartean.",
+
+    "perfil.notificaciones.label": "Pisatzeko oroigarria",
+    "perfil.notificaciones.ayuda": "Pisatu behar zaitun eguneko abisu bat, aplikazioa itxita badago ere. iPhone-n \"Hasiera-pantailara gehitu\" bidez instalatu baduzu bakarrik iristen da — hori Apple-ren muga bat da, ez aplikazio honena.",
+    "perfil.notificaciones.activadas": "Aktibatuta",
+    "perfil.notificaciones.desactivadas": "Desaktibatuta",
+    "perfil.notificaciones.pidiendoPermiso": "Baimena eskatzen…",
+    "perfil.notificaciones.error.unsupported": "Nabigatzaile honek ez ditu push jakinarazpenak onartzen.",
+    "perfil.notificaciones.error.permission-denied": "Ez duzu jakinarazpenen baimenik eman. Geroago aktiba dezakezu nabigatzailearen ezarpenetatik.",
+    "perfil.notificaciones.error.token-failed": "Ezin izan dira jakinarazpenak aktibatu. Saiatu berriro.",
+    "perfil.notificaciones.error.generico": "Ezin izan dira jakinarazpenak aktibatu. Saiatu berriro.",
 
     "dia.Lunes": "Astelehena", "dia.Martes": "Asteartea", "dia.Miércoles": "Asteazkena",
     "dia.Jueves": "Osteguna", "dia.Viernes": "Ostirala", "dia.Sábado": "Larunbata", "dia.Domingo": "Igandea",

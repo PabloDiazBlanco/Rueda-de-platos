@@ -31,6 +31,7 @@
     "firebase/firestore": "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js",
     "firebase/functions": "https://www.gstatic.com/firebasejs/12.17.1/firebase-functions.js",
     "firebase/app-check": "https://www.gstatic.com/firebasejs/12.17.1/firebase-app-check.js",
+    "firebase/messaging": "https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging.js",
     "macros": "./Logica/macros.js",
     "seleccion": "./Logica/seleccion.js",
     "comida-calculo": "./Logica/comida-calculo.js",
@@ -54,12 +55,19 @@
 <!-- El guardado de datos y el login se gestionan en auth-bootstrap.jsx (Firebase),
      que se encarga de mostrar el login y, una vez dentro, cargar la app real (app.jsx). -->
 <script>
-  // Registro del service worker para que funcione offline y sea instalable como app.
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch(() => {});
-    });
-  }
+  // Registro del service worker para que funcione offline y sea instalable como app. Se guarda la
+  // promesa en window.swRegistrationPromise para que auth-bootstrap.jsx pueda esperar a que exista
+  // el registro antes de pedir un token de notificaciones push (getToken lo necesita para saber a
+  // qué service worker asociar los mensajes en segundo plano — ver el manejador en sw.js).
+  window.swRegistrationPromise = new Promise((resolve) => {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").then(resolve).catch(() => resolve(null));
+      });
+    } else {
+      resolve(null);
+    }
+  });
 </script>
 
 <script type="text/babel" data-type="module" data-presets="react" src="auth-bootstrap.jsx"></script>
