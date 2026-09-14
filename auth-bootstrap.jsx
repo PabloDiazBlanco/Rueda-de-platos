@@ -124,7 +124,7 @@ window.suggestMeals = async function ({ photoDataUrl, especias, otrosIngrediente
 // de Firebase (Configuración del proyecto → Cloud Messaging → pestaña "Web Push certificates" →
 // generar par de claves) y pegarla aquí. Sin esto, requestPushPermission falla con un error de
 // Firebase al pedir el token — no hay forma de evitar este paso manual desde el código.
-const VAPID_PUBLIC_KEY = "PENDIENTE: pega aquí la clave pública VAPID de Firebase";
+const VAPID_PUBLIC_KEY = "BOVHvRG5q0ac0_Cg8w4WzbPUfvifxWw72x5wnb_YLDFNIx_lDUdmZabecAH98YKoQKLaJS2Hy3MplSUNr0rSJz4";
 
 // Misma "keys" que el resto de datos de la app (ver makeFirestoreStorage más abajo) — así el
 // token vive bajo las mismas reglas de seguridad de siempre (cada usuario solo lee/escribe las
