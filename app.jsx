@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator, Menu, Share2, Mail, Settings, TrendingUp, ChevronDown, Lightbulb, Globe, Lock } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator, Menu, Share2, Mail, Settings, TrendingUp, ChevronDown, Lightbulb, Globe, Lock, Activity, PieChart } from "lucide-react";
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from "macros";
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
@@ -712,8 +712,16 @@ export default function RuedaDePlatos() {
               { key: "combos", label: t(idioma, "nav.combinaciones"), desc: t(idioma, "nav.combinaciones.desc"), icon: Layers, color: "var(--olive)" },
               { key: "alimentos", label: t(idioma, "nav.alimentos"), desc: t(idioma, "nav.alimentos.desc"), icon: Database, color: "var(--coffee)" },
               { key: "cocinar", label: t(idioma, "nav.queCocino"), desc: premium.active ? t(idioma, "nav.queCocino.descTuyo") : t(idioma, "perfilRoot.funcionPremium"), icon: Camera, color: "var(--rust)" },
+              { key: "reparto-comidas", label: t(idioma, "perfilView.repartoComidas.titulo"), desc: t(idioma, "drawer.repartoComidas.desc"), icon: PieChart, color: "var(--mustard-dark)" },
             ]}
           />
+        )}
+
+        {tab === "reparto-comidas" && (
+          <>
+            <BackLink label={t(idioma, "drawer.configuracionComidas")} onClick={() => setTab("config-root")} />
+            <RepartoComidasView perfil={data.perfil} onSave={savePerfil} idioma={idioma} />
+          </>
         )}
 
         {tab === "macros-root" && (
@@ -1001,48 +1009,70 @@ export default function RuedaDePlatos() {
           </div>
         )}
 
-        {/* Los destinos de aquí abajo (perfil-datos, perfil-peso, perfil-resumen, perfil-medidas,
-            perfil-documentos, perfil-premium) antes colgaban de una tarjeta intermedia
-            "perfil-root" a la que se volvía con un BackLink — esa tarjeta ha desaparecido: ahora
-            se llega a cada uno directo desde el menú lateral (DrawerMenu), y el propio ☰ del
-            Header, siempre visible, hace de "volver" en su lugar. Reagrupar su contenido (fusionar
-            reparto de comidas, anidar peso/medidas/resumen bajo un mismo destino...) es trabajo de
-            la siguiente tanda — de momento cada uno sigue siendo exactamente lo que ya era. */}
+        {/* perfil-datos, perfil-documentos y perfil-premium se llegan directos desde el menú
+            lateral (DrawerMenu) — el ☰ del Header, siempre visible, hace de "volver". peso-root sí
+            tiene su propia tarjeta intermedia (mismo patrón que config-root con sus categorías):
+            agrupa seguimiento de peso, medidas corporales y resumen mensual bajo un único destino
+            "Seguimiento de peso" en el menú, con BackLink de vuelta desde cada uno. */}
 
         {tab === "perfil-datos" && <PerfilView perfil={data.perfil} onSave={savePerfil} idioma={idioma} />}
 
+        {tab === "peso-root" && (
+          <BigCardGrid
+            onSelect={setTab}
+            cards={[
+              { key: "perfil-peso", label: t(idioma, "drawer.registroPeso"), desc: premium.active ? t(idioma, "perfilRoot.seguimientoPeso.desc") : t(idioma, "perfilRoot.funcionPremium"), icon: Scale, color: "var(--coffee)" },
+              { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), desc: t(idioma, "perfilRoot.proximamente"), icon: Ruler, color: "var(--berry)" },
+              { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), desc: t(idioma, "perfilRoot.resumenMensual.desc"), icon: TrendingUp, color: "var(--olive)" },
+            ]}
+          />
+        )}
+
         {tab === "perfil-peso" && (
-          premium.active ? (
-            <PesoView
-              perfil={data.perfil}
-              pesoTracking={data.pesoTracking || defaultPesoTracking()}
-              onAddPeso={addPesoEntrada}
-              onUpdateConfig={actualizarConfigPeso}
-              onDismissReminder={descartarRecordatorioHoy}
-              onCerrarCiclo={cerrarCicloPeso}
-              onPausarCiclo={pausarCiclo}
-              onReanudarCiclo={reanudarCiclo}
-              idioma={idioma}
-            />
-          ) : (
-            <PremiumRequiredNotice
-              titulo={t(idioma, "premiumNotice.peso.titulo")}
-              texto={t(idioma, "premiumNotice.peso.texto")}
-              onGoPremium={() => setTab("perfil-premium")}
-              idioma={idioma}
-            />
-          )
+          <>
+            <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
+            {premium.active ? (
+              <PesoView
+                perfil={data.perfil}
+                pesoTracking={data.pesoTracking || defaultPesoTracking()}
+                onAddPeso={addPesoEntrada}
+                onUpdateConfig={actualizarConfigPeso}
+                onDismissReminder={descartarRecordatorioHoy}
+                onCerrarCiclo={cerrarCicloPeso}
+                onPausarCiclo={pausarCiclo}
+                onReanudarCiclo={reanudarCiclo}
+                idioma={idioma}
+              />
+            ) : (
+              <PremiumRequiredNotice
+                titulo={t(idioma, "premiumNotice.peso.titulo")}
+                texto={t(idioma, "premiumNotice.peso.texto")}
+                onGoPremium={() => setTab("perfil-premium")}
+                idioma={idioma}
+              />
+            )}
+          </>
         )}
 
         {tab === "perfil-premium" && <PremiumView premium={premium} idioma={idioma} />}
 
         {tab === "perfil-resumen" && (
-          <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
+          <>
+            <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
+            <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
+          </>
         )}
 
-        {tab === "perfil-medidas" && <MedidasPlaceholderView idioma={idioma} />}
+        {tab === "perfil-medidas" && (
+          <>
+            <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
+            <MedidasPlaceholderView idioma={idioma} />
+          </>
+        )}
 
         {tab === "perfil-documentos" && <DocumentosView idioma={idioma} />}
+
+        {tab === "actividad-diaria" && <ActividadDiariaView perfil={data.perfil} onSave={savePerfil} idioma={idioma} />}
 
         {tab === "ajustes" && <SettingsView perfil={data.perfil} data={data} onSave={savePerfil} idioma={idioma} />}
 
@@ -1147,23 +1177,12 @@ export default function RuedaDePlatos() {
 // A partir de aquí, estos datos solo se tocan desde la pestaña "Perfil".
 // Campos del perfil (compartidos entre la pantalla de bienvenida y la pestaña "Perfil" de edición),
 // para no mantener dos formularios duplicados con el riesgo de que se desincronicen.
-function ProfileFields({
-  nombre, setNombre, sexo, setSexo, anioNacimiento, setAnioNacimiento, altura, setAltura, peso, setPeso,
-  palBase, setPalBase, entrenamientos, setEntrenamientos, objetivo, setObjetivo, idioma,
-}) {
-  const [mostrarDesglose, setMostrarDesglose] = useState(false);
-  const datosCompletos = anioNacimiento && altura && peso;
-
-  function addEntrenamiento() {
-    setEntrenamientos((rows) => [...rows, { id: uid(), tipo: TIPOS_ENTRENAMIENTO[0].key, horas: 1, frecuenciaSemanal: 1 }]);
-  }
-  function updateEntrenamiento(id, patch) {
-    setEntrenamientos((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
-  }
-  function removeEntrenamiento(id) {
-    setEntrenamientos((rows) => rows.filter((r) => r.id !== id));
-  }
-
+// Datos personales (Perfil, en el menú lateral): nombre, sexo, año de nacimiento, altura, peso.
+// Antes vivía junto con actividad diaria en un único ProfileFields — se separó para que Perfil y
+// la nueva Actividad diaria (ver ActividadDiariaFields, más abajo) puedan ser pantallas distintas
+// sin duplicar código; ProfileOnboarding sigue usando las dos juntas, en el mismo orden de
+// siempre, así que el alta de un usuario nuevo no cambia todavía (eso es cosa de una tanda futura).
+function DatosPersonalesFields({ nombre, setNombre, sexo, setSexo, anioNacimiento, setAnioNacimiento, altura, setAltura, peso, setPeso, idioma }) {
   return (
     <>
       <Field label={t(idioma, "campo.nombre")}>
@@ -1200,7 +1219,34 @@ function ProfileFields({
           <input type="number" min={30} max={250} step="0.1" value={peso} onChange={(e) => setPeso(e.target.value)} style={inputStyle} placeholder="kg" />
         </Field>
       </div>
+    </>
+  );
+}
 
+// Actividad diaria (destino propio en el menú lateral): tipo de día a día, entrenamientos
+// habituales y objetivo — antes vivían dentro de Perfil, junto a los datos personales. sexo,
+// anioNacimiento, altura y peso llegan aquí de solo lectura (no se editan en esta pantalla, pero
+// hacen falta para el desglose de calorías, que necesita el perfil completo). Ver el porqué de la
+// separación en DatosPersonalesFields, justo arriba.
+function ActividadDiariaFields({
+  palBase, setPalBase, entrenamientos, setEntrenamientos, objetivo, setObjetivo,
+  sexo, anioNacimiento, altura, peso, idioma,
+}) {
+  const [mostrarDesglose, setMostrarDesglose] = useState(false);
+  const datosCompletos = anioNacimiento && altura && peso;
+
+  function addEntrenamiento() {
+    setEntrenamientos((rows) => [...rows, { id: uid(), tipo: TIPOS_ENTRENAMIENTO[0].key, horas: 1, frecuenciaSemanal: 1 }]);
+  }
+  function updateEntrenamiento(id, patch) {
+    setEntrenamientos((rows) => rows.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+  function removeEntrenamiento(id) {
+    setEntrenamientos((rows) => rows.filter((r) => r.id !== id));
+  }
+
+  return (
+    <>
       <Field label={t(idioma, "campo.tipoDiaADia")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {PAL_BASE_NIVELES.map((n) => (
@@ -1436,15 +1482,19 @@ function ProfileOnboarding({ onComplete, onSkip, idioma }) {
       </div>
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px" }}>
-        <ProfileFields
+        <DatosPersonalesFields
           nombre={nombre} setNombre={setNombre}
           sexo={sexo} setSexo={setSexo}
           anioNacimiento={anioNacimiento} setAnioNacimiento={setAnioNacimiento}
           altura={altura} setAltura={setAltura}
           peso={peso} setPeso={setPeso}
+          idioma={idioma}
+        />
+        <ActividadDiariaFields
           palBase={palBase} setPalBase={setPalBase}
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
           objetivo={objetivo} setObjetivo={setObjetivo}
+          sexo={sexo} anioNacimiento={anioNacimiento} altura={altura} peso={peso}
           idioma={idioma}
         />
 
@@ -1475,17 +1525,81 @@ function ProfileOnboarding({ onComplete, onSkip, idioma }) {
   );
 }
 
-// Pestaña "Perfil": mismos campos, pero para editar en cualquier momento (no solo al principio).
-// Al guardar, los objetivos se recalculan solos (misma función que en la bienvenida).
-// idioma llega ahora como prop (lo decide Ajustes, ver SettingsView) — antes esta pantalla tenía su
-// propio estado local de idioma porque también lo guardaba ella misma; ahora solo lo lee, como
-// hacen el resto de vistas de la app (MenuView, PesoView...).
+// Pestaña "Perfil": desde la Tanda 2 del rediseño de navegación, solo datos personales — actividad
+// diaria (ActividadDiariaView) y reparto de comidas (RepartoComidasView) son destinos propios en
+// el menú lateral. idioma llega como prop (lo decide Ajustes, ver SettingsView).
 function PerfilView({ perfil, onSave, idioma }) {
   const [nombre, setNombre] = useState(perfil?.nombre ?? "");
   const [sexo, setSexo] = useState(perfil?.sexo ?? "mujer");
   const [anioNacimiento, setAnioNacimiento] = useState(perfil?.anioNacimiento ?? "");
   const [altura, setAltura] = useState(perfil?.altura ?? "");
   const [peso, setPeso] = useState(perfil?.peso ?? "");
+  const [saved, setSaved] = useState(false);
+
+  const valid = anioNacimiento && altura && peso;
+
+  function handleSave() {
+    if (!valid) return;
+    // Se parte de "...perfil" y no de un objeto construido desde cero: onSave sustituye el perfil
+    // entero, así que si esta pantalla no incluyera los campos que editan Ajustes, Actividad diaria
+    // o Reparto de comidas, guardar aquí los borraría sin querer.
+    onSave({
+      ...perfil,
+      nombre: nombre.trim(),
+      sexo,
+      anioNacimiento: Number(anioNacimiento),
+      altura: Number(altura),
+      peso: Number(peso),
+    });
+    setSaved(true);
+  }
+
+  return (
+    <>
+      <SectionIntro text={t(idioma, "perfilView.intro")} />
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
+        <DatosPersonalesFields
+          nombre={nombre} setNombre={setNombre}
+          sexo={sexo} setSexo={setSexo}
+          anioNacimiento={anioNacimiento} setAnioNacimiento={setAnioNacimiento}
+          altura={altura} setAltura={setAltura}
+          peso={peso} setPeso={setPeso}
+          idioma={idioma}
+        />
+      </div>
+
+      <div style={{ maxWidth: 480 }}>
+        <button
+          onClick={handleSave}
+          disabled={!valid}
+          style={{
+            width: "100%", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            color: "#fff", background: valid ? "var(--green)" : "var(--line)", border: "none",
+            borderRadius: 9, padding: "12px", cursor: valid ? "pointer" : "default",
+          }}
+        >
+          {t(idioma, "perfilView.guardarCambios")}
+        </button>
+
+        {saved && (
+          <div
+            style={{
+              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--green-dark)",
+              background: "var(--green-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10,
+            }}
+          >
+            {t(idioma, "perfilView.guardadoOk")}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// Actividad diaria: destino propio en el menú lateral desde la Tanda 2 — antes vivía dentro de
+// Perfil. Mismo patrón de guardado que el resto de pantallas nacidas de partir Perfil (ver el
+// comentario de handleSave en PerfilView, arriba): siempre "...perfil" como base.
+function ActividadDiariaView({ perfil, onSave, idioma }) {
   const [palBase, setPalBase] = useState(
     perfil?.palBase ?? (perfil?.actividad ? NIVELES_ACTIVIDAD_LEGACY[perfil.actividad]?.palBaseKey : null) ?? "escritorio"
   );
@@ -1495,9 +1609,62 @@ function PerfilView({ perfil, onSave, idioma }) {
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
   const [saved, setSaved] = useState(false);
 
-  // Reparto de comidas (Fase 4): qué preset está elegido, y el peso (%) de cada comida dentro de
-  // él. Los pesos se editan como enteros 0-100 en la interfaz y se convierten a fracción (0-1) al
-  // guardar, que es como los espera el resto de la app (objetivosPorComida, generateMenu).
+  function handleSave() {
+    onSave({
+      ...perfil,
+      palBase,
+      entrenamientos: entrenamientos
+        .filter((e) => e.horas && e.frecuenciaSemanal)
+        .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
+      objetivo,
+    });
+    setSaved(true);
+  }
+
+  return (
+    <>
+      <SectionIntro text={t(idioma, "actividadDiaria.intro")} />
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
+        <ActividadDiariaFields
+          palBase={palBase} setPalBase={setPalBase}
+          entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
+          objetivo={objetivo} setObjetivo={setObjetivo}
+          sexo={perfil?.sexo} anioNacimiento={perfil?.anioNacimiento} altura={perfil?.altura} peso={perfil?.peso}
+          idioma={idioma}
+        />
+      </div>
+
+      <div style={{ maxWidth: 480 }}>
+        <button
+          onClick={handleSave}
+          style={{
+            width: "100%", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            color: "#fff", background: "var(--green)", border: "none",
+            borderRadius: 9, padding: "12px", cursor: "pointer",
+          }}
+        >
+          {t(idioma, "perfilView.guardarCambios")}
+        </button>
+
+        {saved && (
+          <div
+            style={{
+              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--green-dark)",
+              background: "var(--green-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10,
+            }}
+          >
+            {t(idioma, "perfilView.guardadoOk")}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// Reparto de comidas: destino propio en el menú lateral desde la Tanda 2, dentro de "Configuración
+// de comidas" — antes vivía al final de Perfil. Mismo contenido y misma lógica de siempre (Fase 4),
+// solo cambia dónde vive.
+function RepartoComidasView({ perfil, onSave, idioma }) {
   const [presetId, setPresetId] = useState(perfil?.presetComidas ?? "clasico-4");
   const presetActual = PRESETS_COMIDAS.find((p) => p.id === presetId) || PRESETS_COMIDAS[0];
   const [pesos, setPesos] = useState(() => {
@@ -1508,6 +1675,7 @@ function PerfilView({ perfil, onSave, idioma }) {
     }
     return presetActual.pesosPorDefecto ? { ...presetActual.pesosPorDefecto } : repartoUniforme(presetActual.meals);
   });
+  const [saved, setSaved] = useState(false);
 
   function selectPreset(preset) {
     if (preset.id === presetId) return;
@@ -1518,51 +1686,17 @@ function PerfilView({ perfil, onSave, idioma }) {
   const sumaPesos = presetActual.meals.reduce((s, m) => s + (Number(pesos[m]) || 0), 0);
   const repartoValido = sumaPesos === 100;
 
-  const valid = anioNacimiento && altura && peso && repartoValido;
-
   function handleSave() {
-    if (!valid) return;
+    if (!repartoValido) return;
     const repartoComidas = {};
     presetActual.meals.forEach((m) => { repartoComidas[m] = (Number(pesos[m]) || 0) / 100; });
-    // Se parte de "...perfil" y no de un objeto construido desde cero: onSave sustituye el perfil
-    // entero, así que si esta pantalla no incluyera los campos que edita Ajustes (idioma,
-    // notificaciones...), guardar aquí los borraría sin querer.
-    onSave({
-      ...perfil,
-      nombre: nombre.trim(),
-      sexo,
-      anioNacimiento: Number(anioNacimiento),
-      altura: Number(altura),
-      peso: Number(peso),
-      palBase,
-      entrenamientos: entrenamientos
-        .filter((e) => e.horas && e.frecuenciaSemanal)
-        .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
-      objetivo,
-      presetComidas: presetId,
-      repartoComidas,
-    });
+    onSave({ ...perfil, presetComidas: presetId, repartoComidas });
     setSaved(true);
   }
 
   return (
     <>
-      <SectionIntro text={t(idioma, "perfilView.intro")} />
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
-        <ProfileFields
-          nombre={nombre} setNombre={setNombre}
-          sexo={sexo} setSexo={setSexo}
-          anioNacimiento={anioNacimiento} setAnioNacimiento={setAnioNacimiento}
-          altura={altura} setAltura={setAltura}
-          peso={peso} setPeso={setPeso}
-          palBase={palBase} setPalBase={setPalBase}
-          entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
-          objetivo={objetivo} setObjetivo={setObjetivo}
-          idioma={idioma}
-        />
-      </div>
-
-      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginTop: 24, maxWidth: 480 }}>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
           {t(idioma, "perfilView.repartoComidas.titulo")}
         </div>
@@ -1645,11 +1779,11 @@ function PerfilView({ perfil, onSave, idioma }) {
       <div style={{ maxWidth: 480 }}>
         <button
           onClick={handleSave}
-          disabled={!valid}
+          disabled={!repartoValido}
           style={{
             width: "100%", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
-            color: "#fff", background: valid ? "var(--green)" : "var(--line)", border: "none",
-            borderRadius: 9, padding: "12px", cursor: valid ? "pointer" : "default",
+            color: "#fff", background: repartoValido ? "var(--green)" : "var(--line)", border: "none",
+            borderRadius: 9, padding: "12px", cursor: repartoValido ? "pointer" : "default",
           }}
         >
           {t(idioma, "perfilView.guardarCambios")}
@@ -3327,24 +3461,46 @@ function LanguageDropdown({ idioma, onChange }) {
 }
 
 // ---------- Menú lateral (drawer) ----------
-// Sustituye a la antigua TabBar de tres pestañas horizontales. El grupo de arriba son destinos que
-// ya existían (Menú, Configuración, Seguimiento de peso, Resumen mensual, Medidas, Documentos,
-// Premium) — de momento solo cambia cómo se llega a ellos, no lo que contienen; reorganizar su
-// contenido (fusionar reparto de comidas, agrupar seguimiento de peso con medidas/resumen...) es
-// trabajo de la siguiente tanda. El grupo de abajo (Compartir, Ayuda y comentarios, Ajustes,
-// Perfil) sí es nuevo del todo en esta tanda.
+// Sustituye a la antigua TabBar de tres pestañas horizontales. Desde la Tanda 2, dos ítems del
+// grupo de arriba llevan sub-opciones (ver "children" más abajo): tocar el texto navega al destino
+// "raíz" de ese grupo (la misma tarjeta grande que ya existía, config-root o la nueva peso-root),
+// tocar la flecha despliega las sub-opciones ahí mismo, sin navegar — mismo patrón que un menú de
+// ajustes con flechas (Configuración > General/Facturación/...), para poder saltar directo a una
+// sub-pantalla concreta sin pasar por la tarjeta intermedia. El grupo de abajo (Compartir, Ayuda y
+// comentarios, Ajustes, Perfil) no tiene sub-opciones.
 function DrawerMenu({ open, onClose, tab, setTab, idioma, premium }) {
+  const [expandido, setExpandido] = useState({});
+
   function ir(destino) {
     setTab(destino);
     onClose();
   }
+  function alternarExpandido(key) {
+    setExpandido((e) => ({ ...e, [key]: !e[key] }));
+  }
 
   const arriba = [
     { key: "menu", label: t(idioma, "tab.menu"), icon: CalendarDays },
-    { key: "config-root", label: t(idioma, "tab.configuracion"), icon: Layers },
-    { key: "perfil-peso", label: t(idioma, "perfilRoot.seguimientoPeso"), icon: Scale },
-    { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), icon: TrendingUp },
-    { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), icon: Ruler },
+    {
+      key: "config-root", label: t(idioma, "drawer.configuracionComidas"), icon: Layers,
+      children: [
+        { key: "macros-root", label: t(idioma, "nav.macros"), icon: Utensils },
+        { key: "especiales-root", label: t(idioma, "nav.comidasEspeciales"), icon: Package },
+        { key: "combos", label: t(idioma, "nav.combinaciones"), icon: Shuffle },
+        { key: "alimentos", label: t(idioma, "nav.alimentos"), icon: Database },
+        { key: "cocinar", label: t(idioma, "nav.queCocino"), icon: Camera },
+        { key: "reparto-comidas", label: t(idioma, "perfilView.repartoComidas.titulo"), icon: PieChart },
+      ],
+    },
+    {
+      key: "peso-root", label: t(idioma, "perfilRoot.seguimientoPeso"), icon: Scale,
+      children: [
+        { key: "perfil-peso", label: t(idioma, "drawer.registroPeso"), icon: Scale },
+        { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), icon: Ruler },
+        { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), icon: TrendingUp },
+      ],
+    },
+    { key: "actividad-diaria", label: t(idioma, "drawer.actividadDiaria"), icon: Activity },
     { key: "perfil-documentos", label: t(idioma, "perfilRoot.documentos"), icon: FileText },
     { key: "perfil-premium", label: premium.active ? t(idioma, "perfilRoot.premium") : t(idioma, "perfilRoot.hazteremium"), icon: Sparkles },
   ];
@@ -3381,7 +3537,24 @@ function DrawerMenu({ open, onClose, tab, setTab, idioma, premium }) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {arriba.map((item) => (
-            <DrawerItem key={item.key} item={item} active={tab === item.key} onClick={() => ir(item.key)} />
+            <React.Fragment key={item.key}>
+              <DrawerItem
+                item={item}
+                active={tab === item.key}
+                onClick={() => ir(item.key)}
+                expandible={!!item.children}
+                expandido={!!expandido[item.key]}
+                onToggleExpandir={() => alternarExpandido(item.key)}
+                idioma={idioma}
+              />
+              {item.children && expandido[item.key] && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 1, marginLeft: 15, borderLeft: "1.5px solid var(--line)", paddingLeft: 8, marginBottom: 4 }}>
+                  {item.children.map((sub) => (
+                    <DrawerItem key={sub.key} item={sub} active={tab === sub.key} onClick={() => ir(sub.key)} small />
+                  ))}
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
 
@@ -3397,27 +3570,42 @@ function DrawerMenu({ open, onClose, tab, setTab, idioma, premium }) {
   );
 }
 
-function DrawerItem({ item, active, onClick }) {
+function DrawerItem({ item, active, onClick, expandible, expandido, onToggleExpandir, small, idioma }) {
   const Icon = item.icon;
   return (
-    <button
-      onClick={onClick}
-      style={{
-        display: "flex", alignItems: "center", gap: 11, textAlign: "left", width: "100%",
-        padding: "10px 10px", borderRadius: 8, border: "none", cursor: "pointer",
-        background: active ? "var(--green-soft)" : "transparent",
-      }}
-    >
-      <Icon size={17} color={active ? "var(--green-dark)" : "var(--ink-soft)"} />
-      <span
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <button
+        onClick={onClick}
         style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5,
-          fontWeight: active ? 700 : 500, color: active ? "var(--green-dark)" : "var(--ink)",
+          display: "flex", alignItems: "center", gap: small ? 9 : 11, textAlign: "left", flex: 1, minWidth: 0,
+          padding: small ? "8px 9px" : "10px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+          background: active ? "var(--green-soft)" : "transparent",
         }}
       >
-        {item.label}
-      </span>
-    </button>
+        <Icon size={small ? 15 : 17} color={active ? "var(--green-dark)" : "var(--ink-soft)"} style={{ flexShrink: 0 }} />
+        <span
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: small ? 12.5 : 13.5,
+            fontWeight: active ? 700 : 500, color: active ? "var(--green-dark)" : "var(--ink)",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}
+        >
+          {item.label}
+        </span>
+      </button>
+      {expandible && (
+        <button
+          onClick={onToggleExpandir}
+          aria-label={t(idioma, expandido ? "drawer.colapsar" : "drawer.expandir")}
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 8, display: "flex", flexShrink: 0 }}
+        >
+          <ChevronDown
+            size={15} color="var(--ink-soft)"
+            style={{ transform: expandido ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}
+          />
+        </button>
+      )}
+    </div>
   );
 }
 

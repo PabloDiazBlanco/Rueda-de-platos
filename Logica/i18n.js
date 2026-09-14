@@ -110,6 +110,14 @@ const TEXTOS = {
     "drawer.ajustes": "Ajustes",
     "drawer.compartir": "Compartir",
     "drawer.feedback": "Ayuda y comentarios",
+    "drawer.configuracionComidas": "Configuración de comidas",
+    "drawer.repartoComidas.desc": "Cuántas comidas haces al día, y qué peso tiene cada una.",
+    "drawer.registroPeso": "Registro de peso",
+    "drawer.actividadDiaria": "Actividad diaria",
+    "drawer.expandir": "Mostrar opciones",
+    "drawer.colapsar": "Ocultar opciones",
+
+    "actividadDiaria.intro": "Tu tipo de día a día, tus entrenamientos habituales y tu objetivo actual — se usan para calcular tus calorías y macros.",
 
     "ajustes.intro": "Idioma, notificaciones y todo lo relacionado con tu cuenta.",
     "ajustes.idioma.buscar": "Buscar idioma…",
@@ -752,6 +760,14 @@ const TEXTOS = {
     "drawer.ajustes": "Settings",
     "drawer.compartir": "Share",
     "drawer.feedback": "Help & feedback",
+    "drawer.configuracionComidas": "Meal settings",
+    "drawer.repartoComidas.desc": "How many meals you have a day, and how much weight each one carries.",
+    "drawer.registroPeso": "Weigh-in log",
+    "drawer.actividadDiaria": "Daily activity",
+    "drawer.expandir": "Show options",
+    "drawer.colapsar": "Hide options",
+
+    "actividadDiaria.intro": "Your day-to-day activity type, your usual training, and your current goal — used to calculate your calories and macros.",
 
     "ajustes.intro": "Language, notifications, and everything related to your account.",
     "ajustes.idioma.buscar": "Search for a language…",
@@ -1387,6 +1403,14 @@ const TEXTOS = {
     "drawer.ajustes": "Ajustos",
     "drawer.compartir": "Comparteix",
     "drawer.feedback": "Ajuda i comentaris",
+    "drawer.configuracionComidas": "Configuració de menjars",
+    "drawer.repartoComidas.desc": "Quants àpats fas al dia, i quin pes té cadascun.",
+    "drawer.registroPeso": "Registre de pes",
+    "drawer.actividadDiaria": "Activitat diària",
+    "drawer.expandir": "Mostra les opcions",
+    "drawer.colapsar": "Amaga les opcions",
+
+    "actividadDiaria.intro": "El teu tipus de dia a dia, els teus entrenaments habituals i el teu objectiu actual — es fan servir per calcular les teves calories i macros.",
 
     "ajustes.intro": "Idioma, notificacions i tot el relacionat amb el teu compte.",
     "ajustes.idioma.buscar": "Cerca un idioma…",
@@ -2022,6 +2046,14 @@ const TEXTOS = {
     "drawer.ajustes": "Axustes",
     "drawer.compartir": "Compartir",
     "drawer.feedback": "Axuda e comentarios",
+    "drawer.configuracionComidas": "Configuración de comidas",
+    "drawer.repartoComidas.desc": "Cantas comidas fas ao día, e que peso ten cada unha.",
+    "drawer.registroPeso": "Rexistro de peso",
+    "drawer.actividadDiaria": "Actividade diaria",
+    "drawer.expandir": "Amosar opcións",
+    "drawer.colapsar": "Agochar opcións",
+
+    "actividadDiaria.intro": "O teu tipo de día a día, os teus adestramentos habituais e o teu obxectivo actual — úsanse para calcular as túas calorías e macros.",
 
     "ajustes.intro": "Idioma, notificacións e todo o relacionado coa túa conta.",
     "ajustes.idioma.buscar": "Buscar un idioma…",
@@ -2657,6 +2689,14 @@ const TEXTOS = {
     "drawer.ajustes": "Ezarpenak",
     "drawer.compartir": "Partekatu",
     "drawer.feedback": "Laguntza eta iruzkinak",
+    "drawer.configuracionComidas": "Jakien konfigurazioa",
+    "drawer.repartoComidas.desc": "Egunean zenbat otordu egiten dituzun, eta bakoitzak zenbateko pisua duen.",
+    "drawer.registroPeso": "Pisu-erregistroa",
+    "drawer.actividadDiaria": "Eguneroko jarduera",
+    "drawer.expandir": "Erakutsi aukerak",
+    "drawer.colapsar": "Ezkutatu aukerak",
+
+    "actividadDiaria.intro": "Zure eguneroko jarduera mota, ohiko entrenamenduak eta uneko helburua — zure kaloriak eta makroak kalkulatzeko erabiltzen dira.",
 
     "ajustes.intro": "Hizkuntza, jakinarazpenak eta zure kontuarekin lotutako guztia.",
     "ajustes.idioma.buscar": "Bilatu hizkuntza bat…",
