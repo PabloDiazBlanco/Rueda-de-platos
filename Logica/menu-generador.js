@@ -8,6 +8,12 @@ import { objetivosPorComida } from "objetivos";
 import { weightedPick, allocateCounts, shuffle, clamp, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 
 export function generateMenu(data, avoid = {}) {
+  // Sin perfil (o sin su reparto de comidas) no hay ni idea de qué huecos crear — pasa si se salta
+  // el asistente de perfil entero y aun así se intenta generar un menú. No es un caso guiado desde
+  // la interfaz (el botón de generar vive dentro de la app, después del onboarding), pero conviene
+  // que el motor no reviente si alguna vez se llama así: un menú vacío, no un error.
+  if (!data.perfil || !data.perfil.repartoComidas) return [];
+
   // Mapa nombre -> id, para poder evaluar las reglas de combinación (que se guardan por id)
   // contra los valores del menú (que se guardan por nombre, por legibilidad).
   const idByName = {};
@@ -134,9 +140,12 @@ export function generateMenu(data, avoid = {}) {
       }
     });
 
-  // 4. Lo que sobra -> proteína base (pollo)
+  // 4. Lo que sobra -> proteína base. Si el catálogo no tiene ninguna proteína marcada como base
+  // (perfil nuevo que ha saltado el cuestionario de catálogo, por ejemplo), el hueco se queda sin
+  // proteína — antes aquí había un "Pollo" fijo de respaldo, pero eso dejaba un nombre fantasma sin
+  // ingrediente real detrás (sin macros, sin food vinculado) en vez de un menú simplemente vacío.
   const base = data.ingredients.find((i) => i.category === "proteina" && i.ruleType === "base");
-  pool.forEach((idx) => { if (!slots[idx].closedDish) slots[idx].protein = base ? base.name : "Pollo"; });
+  pool.forEach((idx) => { if (!slots[idx].closedDish) slots[idx].protein = base ? base.name : null; });
 
   // 5. Garbanzos: se superponen sobre Comida/Cena no cerradas, sin ocupar hueco de proteína.
   // Si su frecuencia es "por semana", se garantiza el reparto en cada semana por separado (sin solapes ni huecos vacíos).

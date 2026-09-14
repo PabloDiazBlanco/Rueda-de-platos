@@ -74,82 +74,71 @@ const FOODS_SEED = [
   { id: "f_guacamole", name: "Guacamole fresco (Ifa Eliges)", kcal: 182, prot: 1.8, fat: 16, carb: 8, sal: 1.3, azucares: 1.4, fibra: 3.2, grasaSaturada: 2.4, fuente: "Etiqueta" },
 ];
 
+// ---------- Cuestionario de catálogo (Bloque 3 del rediseño, Tanda 3) ----------
+// Opciones curadas que se ofrecen en el cuestionario de alta, agrupadas por categoría — no es todo
+// FOODS_SEED, es un subconjunto de alimentos "típicos" pensado para elegir con un toque, sin tener
+// que escribir nada. Los gramos por defecto son los mismos que ya usaba la configuración personal
+// de Pablo cuando existía como semilla fija (antes de esta tanda) — valores ya pensados con
+// criterio, reaprovechados aquí en vez de inventar otros desde cero.
+// nombreEs es el "name" que llevará el ingredient de verdad — en español fijo, igual que el resto
+// del modelo de datos (mealType, DAYS...: ver CLAUDE.md, "cambiarlos ahí tocaría el motor"), ya
+// que el motor y las reglas de combinación enlazan por nombre. labelKey es solo para mostrar la
+// tarjeta traducida en el propio cuestionario, nunca se guarda.
+const CUESTIONARIO_PROTEINAS = [
+  { foodId: "f_pechuga_pollo", nombreEs: "Pollo", labelKey: "cuestionario.alimento.pollo", gramos: 150 },
+  { foodId: "f_salmon", nombreEs: "Salmón", labelKey: "cuestionario.alimento.salmon", gramos: 150 },
+  { foodId: "f_merluza", nombreEs: "Merluza", labelKey: "cuestionario.alimento.merluza", gramos: 150 },
+  { foodId: "f_atun", nombreEs: "Atún", labelKey: "cuestionario.alimento.atun", gramos: 100 },
+  { foodId: "f_sardinas", nombreEs: "Sardinas", labelKey: "cuestionario.alimento.sardinas", gramos: 90 },
+  { foodId: "f_huevo", nombreEs: "Huevo", labelKey: "cuestionario.alimento.huevo", gramos: 120 },
+  { foodId: "f_jamon", nombreEs: "Jamón", labelKey: "cuestionario.alimento.jamon", gramos: 80 },
+  { foodId: "f_picada_mixta", nombreEs: "Carne picada", labelKey: "cuestionario.alimento.carnePicada", gramos: 150 },
+];
+const CUESTIONARIO_CARBOS = [
+  { foodId: "f_pasta", nombreEs: "Pasta", labelKey: "cuestionario.alimento.pasta", gramos: 80 },
+  { foodId: "f_arroz_basmati", nombreEs: "Arroz", labelKey: "cuestionario.alimento.arroz", gramos: 80 },
+  { foodId: "f_patata", nombreEs: "Patata", labelKey: "cuestionario.alimento.patata", gramos: 250 },
+  { foodId: "f_gnocchi", nombreEs: "Gnocchi", labelKey: "cuestionario.alimento.gnocchi", gramos: 200 },
+  { foodId: "f_pan_molde", nombreEs: "Pan de molde", labelKey: "cuestionario.alimento.pan", gramos: 80 },
+];
+const CUESTIONARIO_VERDURAS = [
+  { foodId: "f_ensalada", nombreEs: "Ensalada", labelKey: "cuestionario.alimento.ensalada", gramos: 150 },
+  { foodId: "f_tomate", nombreEs: "Tomate", labelKey: "cuestionario.alimento.tomate", gramos: 150 },
+  { foodId: "f_pimiento", nombreEs: "Pimiento y cebolla", labelKey: "cuestionario.alimento.pimiento", gramos: 150 },
+  { foodId: "f_pure_verduras", nombreEs: "Puré de verduras", labelKey: "cuestionario.alimento.pure", gramos: 200 },
+];
+const CUESTIONARIO_GRASAS = [
+  { foodId: "f_aove", nombreEs: "Aceite de oliva", labelKey: "cuestionario.alimento.aove", gramos: 10 },
+  { foodId: "f_anacardos", nombreEs: "Frutos secos", labelKey: "cuestionario.alimento.frutosSecos", gramos: 30 },
+  { foodId: "f_mozzarella", nombreEs: "Queso", labelKey: "cuestionario.alimento.queso", gramos: 30 },
+];
+// Exclusiones por gusto (Pantalla 1): cada chip filtra, de todas las listas de arriba a la vez,
+// los alimentos que llevan eso — deliberadamente solo las que el catálogo puede filtrar de verdad
+// con los datos que tiene hoy (no hay ningún alimento marcado como "picante", por ejemplo, así que
+// esa opción no está: prometer un filtro que no filtra nada sería peor que no ofrecerlo).
+const EXCLUSIONES_DISPONIBLES = [
+  { key: "pescado", labelKey: "cuestionario.exclusion.pescado", foodIds: ["f_salmon", "f_merluza", "f_atun", "f_sardinas"] },
+  { key: "frutosSecos", labelKey: "cuestionario.exclusion.frutosSecos", foodIds: ["f_anacardos", "f_pistachos", "f_cacahuete_polvo"] },
+  { key: "lacteos", labelKey: "cuestionario.exclusion.lacteos", foodIds: ["f_queso_cottage", "f_yogur_prot", "f_mozzarella"] },
+  { key: "cerdo", labelKey: "cuestionario.exclusion.cerdo", foodIds: ["f_jamon", "f_lomo", "f_picada_mixta", "f_hamb_mixta"] },
+];
+
+// Datos con los que arranca una cuenta que no tiene nada guardado todavía. Hasta la Tanda 3 del
+// rediseño de navegación, esto sembraba también los ingredients/blocks con la configuración
+// personal de Pablo (qué proteínas, con qué frecuencia, los bloques de carne roja/pollo
+// picado...) — cualquier cuenta nueva heredaba literalmente su dieta. Ahora eso se decide en el
+// cuestionario de catálogo del propio alta (ver CatalogoOnboarding) o se deja vacío si el usuario
+// prefiere partir de cero y configurarlo él mismo más tarde desde Configuración de comidas — un
+// menú sin ingredientes activos simplemente sale vacío, no es un error (ver generateMenu).
+// foods (el catálogo nutricional en sí) SÍ se mantiene compartido para todo el mundo, igual que
+// antes: es la base de datos de la que tira el cuestionario, y se sigue actualizando sola con
+// alimentos nuevos vía migrateData, sin tocar nada de esto.
 const initialData = () => {
-  const salmonId = uid(), merluzaId = uid(), atunId = uid(), sardinasId = uid(), polloId = uid();
-  const carnePicadaCerdoId = uid(), hamburguesaTerneraId = uid();
-  const carnePicadaPolloId = uid(), hamburguesaPolloId = uid();
-  const pastaId = uid(), arrozId = uid(), gnocchiId = uid(), patatasId = uid();
-  const ensCompletaId = uid(), ensTomateId = uid(), pimientoId = uid(), pureId = uid();
-  const garbanzosId = uid();
-  const hamburguesaCompletaId = uid(), nachosId = uid(), huevosRotosId = uid();
-
-  const bloqueCarneRojaId = uid();
-  const bloquePolloPicadoId = uid();
-  const bloqueCerradosId = uid();
-
   return {
     foods: FOODS_SEED.map((f) => ({ ...f })),
     rules: [],
-    ingredients: [
-      // Proteínas — frecuencia fija individual
-      { id: salmonId, name: "Salmón", category: "proteina", ruleType: "frecuencia", freqCantidad: 1, freqPeriodo: "semana", active: true, foodId: "f_salmon", gramos: 150 },
-      { id: merluzaId, name: "Merluza", category: "proteina", ruleType: "frecuencia", freqCantidad: 1, freqPeriodo: "semana", active: true, foodId: "f_merluza", gramos: 150 },
-      { id: atunId, name: "Atún", category: "proteina", ruleType: "frecuencia", freqCantidad: 2, freqPeriodo: "semana", active: true, foodId: "f_atun", gramos: 100 },
-      { id: sardinasId, name: "Sardinas", category: "proteina", ruleType: "frecuencia", freqCantidad: 1, freqPeriodo: "ciclo", active: true, foodId: "f_sardinas", gramos: 90 },
-      { id: polloId, name: "Pollo (carne)", category: "proteina", ruleType: "base", active: true, foodId: "f_pechuga_pollo", gramos: 150 },
-
-      // Miembros del bloque carne roja
-      { id: carnePicadaCerdoId, name: "Carne picada de cerdo/vacuno", category: "proteina", ruleType: "bloque_miembro", blockId: bloqueCarneRojaId, peso: 1, active: true, foodId: "f_picada_mixta", gramos: 150 },
-      { id: hamburguesaTerneraId, name: "Hamburguesa de ternera/cerdo", category: "proteina", ruleType: "bloque_miembro", blockId: bloqueCarneRojaId, peso: 1, active: true, foodId: "f_hamb_mixta", gramos: 150 },
-
-      // Miembros del bloque pollo picado / hamburguesa pollo (peso = reparto dentro del bloque)
-      { id: carnePicadaPolloId, name: "Carne picada de pollo", category: "proteina", ruleType: "bloque_miembro", blockId: bloquePolloPicadoId, peso: 3, active: true, foodId: "f_picada_pollo", gramos: 150 },
-      { id: hamburguesaPolloId, name: "Hamburguesa de pollo", category: "proteina", ruleType: "bloque_miembro", blockId: bloquePolloPicadoId, peso: 1, active: true, foodId: "f_hamb_pollo", gramos: 150 },
-
-      // Carbos — probabilidad
-      { id: pastaId, name: "Pasta", category: "carbo", ruleType: "probabilidad", probabilidad: 35, active: true, foodId: "f_pasta", gramos: 80 },
-      { id: arrozId, name: "Arroz", category: "carbo", ruleType: "probabilidad", probabilidad: 35, active: true, foodId: "f_arroz_basmati", gramos: 80 },
-      { id: gnocchiId, name: "Gnocchi", category: "carbo", ruleType: "probabilidad", probabilidad: 20, active: true, foodId: "f_gnocchi", gramos: 200 },
-      { id: patatasId, name: "Patatas", category: "carbo", ruleType: "probabilidad", probabilidad: 10, active: true, foodId: "f_patata", gramos: 250 },
-
-      // Verduras / acompañamientos — probabilidad
-      { id: ensCompletaId, name: "Ensalada completa", category: "verdura", ruleType: "probabilidad", probabilidad: 25, active: true, foodId: "f_ensalada", gramos: 150 },
-      { id: ensTomateId, name: "Ensalada de tomate", category: "verdura", ruleType: "probabilidad", probabilidad: 25, active: true, foodId: "f_tomate", gramos: 150 },
-      { id: pimientoId, name: "Pimiento y cebolla sofritos", category: "verdura", ruleType: "probabilidad", probabilidad: 25, active: true, foodId: "f_pimiento", gramos: 150 },
-      { id: pureId, name: "Purés variados", category: "verdura", ruleType: "probabilidad", probabilidad: 25, active: true, foodId: "f_pure_verduras", gramos: 200 },
-
-      // Especial — garbanzos (ahora 2x/semana, garantizado una vez por semana como mínimo, ver motor)
-      { id: garbanzosId, name: "Garbanzos", category: "especial", ruleType: "frecuencia", freqCantidad: 2, freqPeriodo: "semana", active: true, foodId: "f_garbanzos_cocidos", gramos: 120 },
-
-      // Miembros del bloque platos cerrados
-      { id: hamburguesaCompletaId, name: "Hamburguesa completa con pan", category: "cerrado", ruleType: "bloque_miembro", blockId: bloqueCerradosId, probabilidad: 33, active: true },
-      { id: nachosId, name: "Nachos con carne, guacamole y queso", category: "cerrado", ruleType: "bloque_miembro", blockId: bloqueCerradosId, probabilidad: 33, active: true },
-      { id: huevosRotosId, name: "Huevos rotos", category: "cerrado", ruleType: "bloque_miembro", blockId: bloqueCerradosId, probabilidad: 34, active: true },
-    ],
-    blocks: [
-      {
-        id: bloqueCarneRojaId,
-        name: "Carne roja (picada / hamburguesa)",
-        category: "proteina",
-        cicloFrecuencia: 1,
-        distribucion: "Se sortea al 50% cuál de los dos miembros aparece ese día.",
-      },
-      {
-        id: bloquePolloPicadoId,
-        name: "Pollo picado / hamburguesa de pollo",
-        category: "proteina",
-        cicloFrecuencia: 4,
-        distribucion: "Cada ciclo, una semana (al azar) lleva 2x carne picada de pollo, y la otra semana lleva 1x carne picada + 1x hamburguesa de pollo.",
-        weeklyPattern: [{ counts: [2, 0] }, { counts: [1, 1] }],
-      },
-      {
-        id: bloqueCerradosId,
-        name: "Platos cerrados",
-        category: "cerrado",
-        cicloFrecuencia: 1,
-        distribucion: "Ocupa la comida entera (sin carbo ni verdura). Se sortea cuál de los platos toca por probabilidad.",
-      },
-    ],
+    ingredients: [],
+    blocks: [],
     pesoTracking: defaultPesoTracking(),
     listaCompra: { marcados: {}, generadoEn: null },
   };
@@ -469,10 +458,28 @@ export default function RuedaDePlatos() {
     );
   }
 
+  // Alta en dos tiempos (Tanda 3): primero el asistente de perfil (5 pasos) y, solo si no se saltó,
+  // el cuestionario de catálogo (otros 5) — "perfilOnboardingDone" no se marca hasta que el segundo
+  // también termina o se salta, así que HistoriaScreen (en auth-bootstrap.jsx, que vigila ese mismo
+  // campo para enseñar la pantalla de "por qué existe esta app") sigue apareciendo justo al final
+  // de todo, como ya hacía antes de partir esto en dos pantallas. Qué pantalla mostrar se decide
+  // con si `data.perfil` ya existe o no — no hace falta ningún campo nuevo para esto: initialData()
+  // nunca incluye un "perfil", así que su sola presencia ya significa "el primer asistente terminó".
   if (!data.perfilOnboardingDone) {
+    if (!data.perfil) {
+      return (
+        <Shell>
+          <ProfileOnboarding onComplete={guardarPerfilInicial} onSkip={skipPerfil} idioma={idiomaFallback} />
+        </Shell>
+      );
+    }
     return (
       <Shell>
-        <ProfileOnboarding onComplete={savePerfil} onSkip={skipPerfil} idioma={idiomaFallback} />
+        <CatalogoOnboarding
+          idioma={data.perfil.idioma || idiomaFallback}
+          onComplete={completarOnboardingConCatalogo}
+          onSkipAll={saltarCatalogoOnboarding}
+        />
       </Shell>
     );
   }
@@ -521,6 +528,29 @@ export default function RuedaDePlatos() {
     });
   }
   function skipPerfil() {
+    setData((prev) => ({ ...prev, perfilOnboardingDone: true }));
+  }
+
+  // Igual que savePerfil, pero sin marcar perfilOnboardingDone: la usa solo el primer asistente
+  // (ProfileOnboarding), para poder pasar al cuestionario de catálogo justo después sin que el
+  // gate de arriba salte ya a la app completa. Los usos normales de "guardar el perfil" en el resto
+  // de la app (Perfil, Actividad diaria, Reparto de comidas, y el propio SettingsView) siguen
+  // usando savePerfil, que si ya estaba a true lo deja igual — no hay ningún otro sitio donde este
+  // matiz importe.
+  function guardarPerfilInicial(perfil) {
+    setData((prev) => ({ ...prev, perfil, objetivos: calcularObjetivosPerfil(perfil) || prev.objetivos }));
+  }
+
+  // Cierra el alta del todo: guarda lo que haya elegido el cuestionario de catálogo (o nada, si
+  // llega vacío porque el usuario no seleccionó ningún alimento) y ya sí marca perfilOnboardingDone.
+  function completarOnboardingConCatalogo(ingredients) {
+    setData((prev) => ({ ...prev, ingredients, perfilOnboardingDone: true }));
+  }
+
+  // "Saltar todo" desde el cuestionario de catálogo: el catálogo se queda tal cual estaba
+  // (ingredients/blocks vacíos, de initialData()) — el usuario podrá configurarlo él mismo más
+  // adelante desde Configuración de comidas, sin prisa.
+  function saltarCatalogoOnboarding() {
     setData((prev) => ({ ...prev, perfilOnboardingDone: true }));
   }
 
@@ -1232,9 +1262,47 @@ function ActividadDiariaFields({
   palBase, setPalBase, entrenamientos, setEntrenamientos, objetivo, setObjetivo,
   sexo, anioNacimiento, altura, peso, idioma,
 }) {
-  const [mostrarDesglose, setMostrarDesglose] = useState(false);
-  const datosCompletos = anioNacimiento && altura && peso;
+  return (
+    <>
+      <EstiloVidaFields palBase={palBase} setPalBase={setPalBase} idioma={idioma} />
+      <EntrenamientosFields entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos} idioma={idioma} />
+      <ObjetivoFields
+        objetivo={objetivo} setObjetivo={setObjetivo}
+        sexo={sexo} anioNacimiento={anioNacimiento} altura={altura} peso={peso}
+        palBase={palBase} entrenamientos={entrenamientos} idioma={idioma}
+      />
+    </>
+  );
+}
 
+// Las tres piezas de ActividadDiariaFields, separadas — hacía falta para el asistente de alta por
+// pasos (Tanda 3): cada una es su propio paso ahí, mientras que ActividadDiariaView (Tanda 2) las
+// sigue mostrando las tres juntas, sin ningún cambio visible.
+function EstiloVidaFields({ palBase, setPalBase, idioma }) {
+  return (
+    <Field label={t(idioma, "campo.tipoDiaADia")}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {PAL_BASE_NIVELES.map((n) => (
+          <button
+            key={n.key}
+            onClick={() => setPalBase(n.key)}
+            style={{
+              textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
+              background: palBase === n.key ? "var(--green-soft)" : "#fff",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 700, color: palBase === n.key ? "var(--green-dark)" : "var(--ink)" }}>{t(idioma, "pal." + n.key)}</div>
+            <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>{t(idioma, "pal." + n.key + ".desc")}</div>
+          </button>
+        ))}
+      </div>
+    </Field>
+  );
+}
+
+function EntrenamientosFields({ entrenamientos, setEntrenamientos, idioma }) {
   function addEntrenamiento() {
     setEntrenamientos((rows) => [...rows, { id: uid(), tipo: TIPOS_ENTRENAMIENTO[0].key, horas: 1, frecuenciaSemanal: 1 }]);
   }
@@ -1246,70 +1314,60 @@ function ActividadDiariaFields({
   }
 
   return (
-    <>
-      <Field label={t(idioma, "campo.tipoDiaADia")}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {PAL_BASE_NIVELES.map((n) => (
-            <button
-              key={n.key}
-              onClick={() => setPalBase(n.key)}
-              style={{
-                textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
-                padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
-                background: palBase === n.key ? "var(--green-soft)" : "#fff",
-                cursor: "pointer",
-              }}
-            >
-              <div style={{ fontSize: 13, fontWeight: 700, color: palBase === n.key ? "var(--green-dark)" : "var(--ink)" }}>{t(idioma, "pal." + n.key)}</div>
-              <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 1 }}>{t(idioma, "pal." + n.key + ".desc")}</div>
-            </button>
-          ))}
-        </div>
-      </Field>
-
-      <Field label={t(idioma, "campo.entrenamientos")}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
-          {entrenamientos.map((row) => (
-            <div key={row.id} style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 7, padding: "8px 9px" }}>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <select
-                  value={row.tipo}
-                  onChange={(e) => updateEntrenamiento(row.id, { tipo: e.target.value })}
-                  style={{ ...inputStyle, flex: 1, minWidth: 0 }}
-                >
-                  {TIPOS_ENTRENAMIENTO.map((tipo) => (
-                    <option key={tipo.key} value={tipo.key}>{t(idioma, "entrenamiento." + tipo.key)}</option>
-                  ))}
-                </select>
-                <IconBtn onClick={() => removeEntrenamiento(row.id)}><Trash2 size={12} /></IconBtn>
-              </div>
-              <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                <input
-                  type="number" min={0} step="0.25" value={row.horas}
-                  onChange={(e) => updateEntrenamiento(row.id, { horas: e.target.value })}
-                  placeholder={t(idioma, "campo.horasPorSesion")} style={{ ...inputStyle, flex: 1 }}
-                />
-                <input
-                  type="number" min={0} max={7} value={row.frecuenciaSemanal}
-                  onChange={(e) => updateEntrenamiento(row.id, { frecuenciaSemanal: e.target.value })}
-                  placeholder={t(idioma, "campo.vecesPorSemana")} style={{ ...inputStyle, flex: 1 }}
-                />
-              </div>
+    <Field label={t(idioma, "campo.entrenamientos")}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 8 }}>
+        {entrenamientos.map((row) => (
+          <div key={row.id} style={{ background: "#fff", border: "1px solid var(--line)", borderRadius: 7, padding: "8px 9px" }}>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <select
+                value={row.tipo}
+                onChange={(e) => updateEntrenamiento(row.id, { tipo: e.target.value })}
+                style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+              >
+                {TIPOS_ENTRENAMIENTO.map((tipo) => (
+                  <option key={tipo.key} value={tipo.key}>{t(idioma, "entrenamiento." + tipo.key)}</option>
+                ))}
+              </select>
+              <IconBtn onClick={() => removeEntrenamiento(row.id)}><Trash2 size={12} /></IconBtn>
             </div>
-          ))}
-        </div>
-        <button
-          onClick={addEntrenamiento}
-          style={{
-            display: "flex", alignItems: "center", gap: 6, border: "1px dashed var(--line)",
-            background: "transparent", borderRadius: 7, padding: "7px 10px", fontSize: 12.5,
-            color: "var(--ink-soft)", fontFamily: "'Helvetica Neue', Arial, sans-serif",
-          }}
-        >
-          <Plus size={12} /> {t(idioma, "campo.anadirEntrenamiento")}
-        </button>
-      </Field>
+            <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+              <input
+                type="number" min={0} step="0.25" value={row.horas}
+                onChange={(e) => updateEntrenamiento(row.id, { horas: e.target.value })}
+                placeholder={t(idioma, "campo.horasPorSesion")} style={{ ...inputStyle, flex: 1 }}
+              />
+              <input
+                type="number" min={0} max={7} value={row.frecuenciaSemanal}
+                onChange={(e) => updateEntrenamiento(row.id, { frecuenciaSemanal: e.target.value })}
+                placeholder={t(idioma, "campo.vecesPorSemana")} style={{ ...inputStyle, flex: 1 }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={addEntrenamiento}
+        style={{
+          display: "flex", alignItems: "center", gap: 6, border: "1px dashed var(--line)",
+          background: "transparent", borderRadius: 7, padding: "7px 10px", fontSize: 12.5,
+          color: "var(--ink-soft)", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        }}
+      >
+        <Plus size={12} /> {t(idioma, "campo.anadirEntrenamiento")}
+      </button>
+    </Field>
+  );
+}
 
+// El desglose necesita el perfil completo (sexo/anioNacimiento/altura/peso, de solo lectura aquí
+// — ver el comentario de ActividadDiariaFields) más palBase/entrenamientos, que sí se editan en
+// los pasos anteriores del mismo formulario o asistente.
+function ObjetivoFields({ objetivo, setObjetivo, sexo, anioNacimiento, altura, peso, palBase, entrenamientos, idioma }) {
+  const [mostrarDesglose, setMostrarDesglose] = useState(false);
+  const datosCompletos = anioNacimiento && altura && peso;
+
+  return (
+    <>
       <Field label={t(idioma, "campo.objetivoActual")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {Object.keys(OBJETIVO_ETAPAS).map((key) => {
@@ -1438,7 +1496,15 @@ function DesgloseFila({ label, valor, fuerte }) {
   );
 }
 
+// Asistente de alta por pasos (Bloque 2 del rediseño, Tanda 3): antes era un único formulario
+// larguísimo con todos los campos de golpe — ahora son 5 pasos cortos con "Siguiente"/"Atrás",
+// mismos campos de siempre y mismo resultado final (un solo onComplete con todo junto, igual que
+// antes), solo cambia cómo se rellena. "Saltar" sigue disponible en cualquier paso y abandona el
+// asistente entero, como ya hacía antes.
+const ONBOARDING_PASOS = ["datos", "estiloVida", "entrenamientos", "objetivo", "reparto"];
+
 function ProfileOnboarding({ onComplete, onSkip, idioma }) {
+  const [paso, setPaso] = useState(0);
   const [nombre, setNombre] = useState("");
   const [sexo, setSexo] = useState("mujer");
   const [anioNacimiento, setAnioNacimiento] = useState("");
@@ -1447,11 +1513,27 @@ function ProfileOnboarding({ onComplete, onSkip, idioma }) {
   const [palBase, setPalBase] = useState("escritorio");
   const [entrenamientos, setEntrenamientos] = useState([]);
   const [objetivo, setObjetivo] = useState("mantenimiento");
+  const [presetId, setPresetId] = useState("clasico-4");
+  const presetActual = PRESETS_COMIDAS.find((p) => p.id === presetId) || PRESETS_COMIDAS[0];
+  const [pesos, setPesos] = useState(() =>
+    presetActual.pesosPorDefecto ? { ...presetActual.pesosPorDefecto } : repartoUniforme(presetActual.meals)
+  );
 
-  const valid = anioNacimiento && altura && peso;
+  function selectPreset(preset) {
+    if (preset.id === presetId) return;
+    setPresetId(preset.id);
+    setPesos(preset.pesosPorDefecto ? { ...preset.pesosPorDefecto } : repartoUniforme(preset.meals));
+  }
 
-  function handleSave() {
-    if (!valid) return;
+  const datosValidos = anioNacimiento && altura && peso;
+  const sumaPesos = presetActual.meals.reduce((s, m) => s + (Number(pesos[m]) || 0), 0);
+  const repartoValido = sumaPesos === 100;
+  const puedeAvanzar = paso === 0 ? datosValidos : paso === 4 ? repartoValido : true;
+
+  function terminar() {
+    if (!repartoValido) return;
+    const repartoComidas = {};
+    presetActual.meals.forEach((m) => { repartoComidas[m] = (Number(pesos[m]) || 0) / 100; });
     onComplete({
       nombre: nombre.trim(),
       sexo,
@@ -1463,15 +1545,23 @@ function ProfileOnboarding({ onComplete, onSkip, idioma }) {
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
+      presetComidas: presetId,
+      repartoComidas,
       // El idioma elegido (o detectado) antes de iniciar sesión, en la pantalla de bienvenida —
       // así un perfil nuevo no empieza en español por defecto si ya se había puesto en inglés ahí.
       idioma: leerIdiomaGuardado(),
     });
   }
 
+  function siguiente() {
+    if (!puedeAvanzar) return;
+    if (paso === ONBOARDING_PASOS.length - 1) terminar();
+    else setPaso((p) => p + 1);
+  }
+
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <div style={{ textAlign: "center", marginBottom: 22 }}>
+      <div style={{ textAlign: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 34, marginBottom: 8 }}>🍽️</div>
         <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 24, color: "var(--green-dark)", margin: "0 0 6px 0" }}>
           {t(idioma, "onboarding.titulo")}
@@ -1481,47 +1571,401 @@ function ProfileOnboarding({ onComplete, onSkip, idioma }) {
         </p>
       </div>
 
-      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px" }}>
-        <DatosPersonalesFields
-          nombre={nombre} setNombre={setNombre}
-          sexo={sexo} setSexo={setSexo}
-          anioNacimiento={anioNacimiento} setAnioNacimiento={setAnioNacimiento}
-          altura={altura} setAltura={setAltura}
-          peso={peso} setPeso={setPeso}
-          idioma={idioma}
-        />
-        <ActividadDiariaFields
-          palBase={palBase} setPalBase={setPalBase}
-          entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
-          objetivo={objetivo} setObjetivo={setObjetivo}
-          sexo={sexo} anioNacimiento={anioNacimiento} altura={altura} peso={peso}
-          idioma={idioma}
-        />
+      <PasosIndicador pasoActual={paso} pasos={ONBOARDING_PASOS} idioma={idioma} labelPrefix="onboarding.paso" />
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 18 }}>
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px" }}>
+        {paso === 0 && (
+          <DatosPersonalesFields
+            nombre={nombre} setNombre={setNombre}
+            sexo={sexo} setSexo={setSexo}
+            anioNacimiento={anioNacimiento} setAnioNacimiento={setAnioNacimiento}
+            altura={altura} setAltura={setAltura}
+            peso={peso} setPeso={setPeso}
+            idioma={idioma}
+          />
+        )}
+        {paso === 1 && <EstiloVidaFields palBase={palBase} setPalBase={setPalBase} idioma={idioma} />}
+        {paso === 2 && <EntrenamientosFields entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos} idioma={idioma} />}
+        {paso === 3 && (
+          <ObjetivoFields
+            objetivo={objetivo} setObjetivo={setObjetivo}
+            sexo={sexo} anioNacimiento={anioNacimiento} altura={altura} peso={peso}
+            palBase={palBase} entrenamientos={entrenamientos} idioma={idioma}
+          />
+        )}
+        {paso === 4 && (
+          <RepartoComidasFields
+            presetId={presetId} presetActual={presetActual} pesos={pesos} setPesos={setPesos}
+            onSelectPreset={selectPreset} sumaPesos={sumaPesos} repartoValido={repartoValido} idioma={idioma}
+          />
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+          {paso > 0 && (
+            <button
+              onClick={() => setPaso((p) => p - 1)}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+                color: "var(--ink)", background: "#fff", border: "1px solid var(--line)",
+                borderRadius: 9, padding: "12px 16px", cursor: "pointer",
+              }}
+            >
+              {t(idioma, "onboarding.atras")}
+            </button>
+          )}
           <button
-            onClick={handleSave}
-            disabled={!valid}
+            onClick={siguiente}
+            disabled={!puedeAvanzar}
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
-              color: "#fff", background: valid ? "var(--green)" : "var(--line)", border: "none",
-              borderRadius: 9, padding: "12px", cursor: valid ? "pointer" : "default",
+              flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+              color: "#fff", background: puedeAvanzar ? "var(--green)" : "var(--line)", border: "none",
+              borderRadius: 9, padding: "12px", cursor: puedeAvanzar ? "pointer" : "default",
             }}
           >
-            {t(idioma, "onboarding.guardarContinuar")}
-          </button>
-          <button
-            onClick={onSkip}
-            style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)",
-              background: "transparent", border: "none", padding: "6px",
-            }}
-          >
-            {t(idioma, "onboarding.saltar")}
+            {paso === ONBOARDING_PASOS.length - 1 ? t(idioma, "onboarding.guardarContinuar") : t(idioma, "onboarding.siguiente")}
           </button>
         </div>
+        <button
+          onClick={onSkip}
+          style={{
+            width: "100%", marginTop: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)",
+            background: "transparent", border: "none", padding: "6px",
+          }}
+        >
+          {t(idioma, "onboarding.saltar")}
+        </button>
       </div>
     </div>
+  );
+}
+
+// Indicador de progreso reutilizado por los dos asistentes de esta tanda (perfil y cuestionario de
+// catálogo): "Paso X de N" más una barra de puntos rellenos hasta el paso actual. `pasos` es el
+// array de claves de cada asistente (ONBOARDING_PASOS o el del cuestionario) — así no depende de
+// cuál de los dos lo esté usando.
+function PasosIndicador({ pasoActual, pasos, idioma, labelPrefix }) {
+  return (
+    <div style={{ textAlign: "center", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 6 }}>
+        {pasos.map((_, i) => (
+          <div
+            key={i}
+            style={{
+              width: i === pasoActual ? 18 : 6, height: 6, borderRadius: 3,
+              background: i <= pasoActual ? "var(--green)" : "var(--line)", transition: "all 0.15s",
+            }}
+          />
+        ))}
+      </div>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)" }}>
+        {t(idioma, "onboarding.pasoXdeN", { actual: pasoActual + 1, total: pasos.length })} · {t(idioma, `${labelPrefix}.${pasos[pasoActual]}`)}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Cuestionario de catálogo (Bloque 3 del rediseño, Tanda 3) ----------
+// Se muestra justo después del asistente de perfil, solo la primera vez y solo si no se saltó el
+// asistente de perfil (ver el porqué en RuedaDePlatos, junto a guardarPerfilInicial). Construye
+// ingredients a partir de tarjetas elegidas con un toque — nunca hay que escribir nada ni meter un
+// número a mano. "Saltar todo" está disponible en cualquier pantalla, no solo en la intro.
+const CUESTIONARIO_PASOS = ["exclusiones", "proteinas", "carbohidratos", "verduras", "grasas"];
+// Frecuencia semanal para proteínas (1/2/3), peso relativo Poco/Normal/Mucho para el resto —
+// mismas claves de i18n reutilizadas en las 4 pantallas de selección vía SeleccionAlimentosStep.
+const NIVELES_FRECUENCIA = ["cuestionario.nivel.freq1", "cuestionario.nivel.freq2", "cuestionario.nivel.freq3"];
+const NIVELES_PESO = ["cuestionario.nivel.poco", "cuestionario.nivel.normal", "cuestionario.nivel.mucho"];
+
+// A partir de las respuestas, construye la lista de ingredients que arrancará el catálogo de la
+// cuenta nueva. Proteínas -> regla de frecuencia semanal directa (el nivel elegido, 1-3). Carbo/
+// verdura/grasa -> regla de probabilidad, normalizando los pesos relativos (1-3) de lo elegido en
+// cada categoría para que sumen exactamente 100 (el último ajusta el redondeo, mismo método que
+// ya usa RepartoComidasFields con el reparto de comidas).
+function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa }) {
+  const ingredients = [];
+
+  Object.entries(frecuencias).forEach(([foodId, nivel]) => {
+    const opt = CUESTIONARIO_PROTEINAS.find((o) => o.foodId === foodId);
+    if (!opt) return;
+    ingredients.push({
+      id: uid(), name: opt.nombreEs, category: "proteina", ruleType: "frecuencia",
+      freqCantidad: nivel, freqPeriodo: "semana", active: true, foodId, gramos: opt.gramos,
+    });
+  });
+
+  function agregarPorProbabilidad(mapaPesos, opciones, category) {
+    const entradas = Object.entries(mapaPesos);
+    const sumaPesos = entradas.reduce((s, [, w]) => s + w, 0);
+    if (sumaPesos <= 0) return;
+    let acumulado = 0;
+    entradas.forEach(([foodId, w], i) => {
+      const opt = opciones.find((o) => o.foodId === foodId);
+      if (!opt) return;
+      const probabilidad = i === entradas.length - 1 ? 100 - acumulado : Math.round((w / sumaPesos) * 100);
+      acumulado += probabilidad;
+      ingredients.push({
+        id: uid(), name: opt.nombreEs, category, ruleType: "probabilidad",
+        probabilidad, active: true, foodId, gramos: opt.gramos,
+      });
+    });
+  }
+  agregarPorProbabilidad(pesosCarbo, CUESTIONARIO_CARBOS, "carbo");
+  agregarPorProbabilidad(pesosVerdura, CUESTIONARIO_VERDURAS, "verdura");
+  agregarPorProbabilidad(pesosGrasa, CUESTIONARIO_GRASAS, "grasa");
+
+  return ingredients;
+}
+
+function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
+  const [fase, setFase] = useState("intro"); // "intro" | "paso" | "cierre"
+  const [paso, setPaso] = useState(0);
+  const [exclusiones, setExclusiones] = useState([]);
+  const [frecuencias, setFrecuencias] = useState({});
+  const [pesosCarbo, setPesosCarbo] = useState({});
+  const [pesosVerdura, setPesosVerdura] = useState({});
+  const [pesosGrasa, setPesosGrasa] = useState({});
+
+  function estaExcluido(foodId) {
+    return exclusiones.some((key) => EXCLUSIONES_DISPONIBLES.find((e) => e.key === key)?.foodIds.includes(foodId));
+  }
+  function alternarExclusion(key) {
+    setExclusiones((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+  }
+  function alternarSeleccion(setMapa, foodId, nivelInicial) {
+    setMapa((prev) => {
+      if (foodId in prev) {
+        const resto = { ...prev };
+        delete resto[foodId];
+        return resto;
+      }
+      return { ...prev, [foodId]: nivelInicial };
+    });
+  }
+  function ciclarNivel(setMapa, foodId) {
+    setMapa((prev) => ({ ...prev, [foodId]: (prev[foodId] % 3) + 1 }));
+  }
+
+  function siguiente() {
+    if (paso === CUESTIONARIO_PASOS.length - 1) setFase("cierre");
+    else setPaso((p) => p + 1);
+  }
+  function confirmarCierre() {
+    onComplete(construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa }));
+  }
+
+  if (fase === "intro") {
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 60px", textAlign: "center" }}>
+        <div style={{ fontSize: 34, marginBottom: 12 }}>🥗</div>
+        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 22, color: "var(--green-dark)", margin: "0 0 12px" }}>
+          {t(idioma, "cuestionario.intro.titulo")}
+        </h1>
+        <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6, margin: "0 0 26px" }}>
+          {t(idioma, "cuestionario.intro.texto", { n: CUESTIONARIO_PASOS.length })}
+        </p>
+        <button
+          onClick={() => setFase("paso")}
+          style={{
+            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "12px", cursor: "pointer",
+          }}
+        >
+          {t(idioma, "cuestionario.intro.empezar")}
+        </button>
+        <button
+          onClick={onSkipAll}
+          style={{
+            width: "100%", marginTop: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)",
+            background: "transparent", border: "none", padding: "6px",
+          }}
+        >
+          {t(idioma, "cuestionario.saltarTodo")}
+        </button>
+      </div>
+    );
+  }
+
+  if (fase === "cierre") {
+    return (
+      <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 60px", textAlign: "center" }}>
+        <div style={{ fontSize: 34, marginBottom: 12 }}>✅</div>
+        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 22, color: "var(--green-dark)", margin: "0 0 12px" }}>
+          {t(idioma, "cuestionario.cierre.titulo")}
+        </h1>
+        <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6, margin: "0 0 26px" }}>
+          {t(idioma, "cuestionario.cierre.texto")}
+        </p>
+        <button
+          onClick={confirmarCierre}
+          style={{
+            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "12px", cursor: "pointer",
+          }}
+        >
+          {t(idioma, "cuestionario.cierre.entrar")}
+        </button>
+      </div>
+    );
+  }
+
+  // fase === "paso": 5 pantallas — Exclusiones (chips simples) + 4 de selección con tarjetas
+  // (SeleccionAlimentosStep). Las exclusiones elegidas en el paso 0 filtran las opciones que se
+  // ofrecen en los cuatro pasos siguientes.
+  return (
+    <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 20px 60px" }}>
+      <PasosIndicador pasoActual={paso} pasos={CUESTIONARIO_PASOS} idioma={idioma} labelPrefix="cuestionario.paso" />
+
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px" }}>
+        {paso === 0 && (
+          <>
+            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 12 }}>
+              {t(idioma, "cuestionario.exclusiones.titulo")}
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
+              {EXCLUSIONES_DISPONIBLES.map((ex) => {
+                const activo = exclusiones.includes(ex.key);
+                return (
+                  <button
+                    key={ex.key}
+                    onClick={() => alternarExclusion(ex.key)}
+                    style={{
+                      fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 600,
+                      padding: "8px 13px", borderRadius: 20, border: "1px solid var(--line)",
+                      background: activo ? "var(--rust-soft)" : "#fff", color: activo ? "var(--rust)" : "var(--ink)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t(idioma, ex.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {paso === 1 && (
+          <SeleccionAlimentosStep
+            tituloKey="cuestionario.proteinas.titulo"
+            opciones={CUESTIONARIO_PROTEINAS.filter((o) => !estaExcluido(o.foodId))}
+            seleccion={frecuencias}
+            nivelLabels={NIVELES_FRECUENCIA}
+            onToggle={(foodId) => alternarSeleccion(setFrecuencias, foodId, 1)}
+            onCiclarNivel={(foodId) => ciclarNivel(setFrecuencias, foodId)}
+            idioma={idioma}
+          />
+        )}
+        {paso === 2 && (
+          <SeleccionAlimentosStep
+            tituloKey="cuestionario.carbohidratos.titulo"
+            opciones={CUESTIONARIO_CARBOS.filter((o) => !estaExcluido(o.foodId))}
+            seleccion={pesosCarbo}
+            nivelLabels={NIVELES_PESO}
+            onToggle={(foodId) => alternarSeleccion(setPesosCarbo, foodId, 2)}
+            onCiclarNivel={(foodId) => ciclarNivel(setPesosCarbo, foodId)}
+            idioma={idioma}
+          />
+        )}
+        {paso === 3 && (
+          <SeleccionAlimentosStep
+            tituloKey="cuestionario.verduras.titulo"
+            opciones={CUESTIONARIO_VERDURAS.filter((o) => !estaExcluido(o.foodId))}
+            seleccion={pesosVerdura}
+            nivelLabels={NIVELES_PESO}
+            onToggle={(foodId) => alternarSeleccion(setPesosVerdura, foodId, 2)}
+            onCiclarNivel={(foodId) => ciclarNivel(setPesosVerdura, foodId)}
+            idioma={idioma}
+          />
+        )}
+        {paso === 4 && (
+          <SeleccionAlimentosStep
+            tituloKey="cuestionario.grasas.titulo"
+            opciones={CUESTIONARIO_GRASAS.filter((o) => !estaExcluido(o.foodId))}
+            seleccion={pesosGrasa}
+            nivelLabels={NIVELES_PESO}
+            onToggle={(foodId) => alternarSeleccion(setPesosGrasa, foodId, 2)}
+            onCiclarNivel={(foodId) => ciclarNivel(setPesosGrasa, foodId)}
+            idioma={idioma}
+          />
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
+          {paso > 0 && (
+            <button
+              onClick={() => setPaso((p) => p - 1)}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+                color: "var(--ink)", background: "#fff", border: "1px solid var(--line)",
+                borderRadius: 9, padding: "12px 16px", cursor: "pointer",
+              }}
+            >
+              {t(idioma, "onboarding.atras")}
+            </button>
+          )}
+          <button
+            onClick={siguiente}
+            style={{
+              flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+              color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "12px", cursor: "pointer",
+            }}
+          >
+            {paso === CUESTIONARIO_PASOS.length - 1 ? t(idioma, "cuestionario.terminar") : t(idioma, "onboarding.siguiente")}
+          </button>
+        </div>
+        <button
+          onClick={onSkipAll}
+          style={{
+            width: "100%", marginTop: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)",
+            background: "transparent", border: "none", padding: "6px",
+          }}
+        >
+          {t(idioma, "cuestionario.saltarTodo")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Fila seleccionable con nivel: tocar el nombre activa/desactiva el alimento; con el alimento
+// activo aparece un chip aparte a la derecha que, al tocarlo, rota entre los 3 niveles (1/2/3 o
+// Poco/Normal/Mucho, según nivelLabels) — nunca hay que escribir un número.
+function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, onToggle, onCiclarNivel, idioma }) {
+  return (
+    <>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 12 }}>
+        {t(idioma, tituloKey)}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        {opciones.map((opt) => {
+          const nivel = seleccion[opt.foodId];
+          const activo = nivel !== undefined;
+          return (
+            <div key={opt.foodId} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <button
+                onClick={() => onToggle(opt.foodId)}
+                style={{
+                  flex: 1, textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: activo ? 700 : 500,
+                  padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line)",
+                  background: activo ? "var(--green-soft)" : "#fff", color: activo ? "var(--green-dark)" : "var(--ink)",
+                  cursor: "pointer",
+                }}
+              >
+                {t(idioma, opt.labelKey)}
+              </button>
+              {activo && (
+                <button
+                  onClick={() => onCiclarNivel(opt.foodId)}
+                  style={{
+                    flexShrink: 0, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                    padding: "9px 10px", borderRadius: 8, border: "1px solid var(--green)", background: "#fff",
+                    color: "var(--green-dark)", cursor: "pointer", minWidth: 60,
+                  }}
+                >
+                  {t(idioma, nivelLabels[nivel - 1])}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -1697,83 +2141,10 @@ function RepartoComidasView({ perfil, onSave, idioma }) {
   return (
     <>
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
-          {t(idioma, "perfilView.repartoComidas.titulo")}
-        </div>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 14, lineHeight: 1.5 }}>
-          {t(idioma, "perfilView.repartoComidas.intro")}
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
-          {PRESETS_COMIDAS.map((preset) => {
-            const elegido = preset.id === presetId;
-            return (
-              <button
-                key={preset.id}
-                onClick={() => selectPreset(preset)}
-                style={{
-                  textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
-                  padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
-                  background: elegido ? "var(--green-soft)" : "#fff",
-                  cursor: "pointer",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: elegido ? "var(--green-dark)" : "var(--ink)" }}>
-                    {t(idioma, "preset." + preset.id + ".label")}
-                  </span>
-                  {preset.recomendado && (
-                    <span
-                      style={{
-                        fontSize: 10, fontWeight: 700, color: "var(--mustard-dark)", background: "var(--mustard-soft)",
-                        borderRadius: 20, padding: "2px 8px", textTransform: "uppercase", letterSpacing: 0.3,
-                      }}
-                    >
-                      {t(idioma, "perfilView.recomendado")}
-                    </span>
-                  )}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 3, lineHeight: 1.45 }}>{t(idioma, "preset." + preset.id + ".texto")}</div>
-              </button>
-            );
-          })}
-        </div>
-
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
-          {t(idioma, "perfilView.pesoDeCadaComida")}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {presetActual.meals.map((mealType) => (
-            <React.Fragment key={mealType}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)" }}>
-                  {t(idioma, "mealType." + mealType)}
-                </span>
-                <input
-                  type="number" min={0} max={100} step={1}
-                  value={pesos[mealType] ?? 0}
-                  onChange={(e) => setPesos((p) => ({ ...p, [mealType]: e.target.value }))}
-                  style={{ ...inputStyle, width: 64, textAlign: "right" }}
-                />
-                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)" }}>%</span>
-              </div>
-              {mealType === "Cena" && (
-                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: -2 }}>
-                  {t(idioma, "avisoCena")}
-                </div>
-              )}
-            </React.Fragment>
-          ))}
-        </div>
-
-        <div
-          style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, marginTop: 12,
-            color: repartoValido ? "var(--green-dark)" : "var(--rust)",
-          }}
-        >
-          {t(idioma, "perfilView.suma", { n: sumaPesos })}{!repartoValido && t(idioma, "perfilView.sumaAviso")}
-        </div>
+        <RepartoComidasFields
+          presetId={presetId} presetActual={presetActual} pesos={pesos} setPesos={setPesos}
+          onSelectPreset={selectPreset} sumaPesos={sumaPesos} repartoValido={repartoValido} idioma={idioma}
+        />
       </div>
 
       <div style={{ maxWidth: 480 }}>
@@ -1799,6 +2170,93 @@ function RepartoComidasView({ perfil, onSave, idioma }) {
             {t(idioma, "perfilView.guardadoOk")}
           </div>
         )}
+      </div>
+    </>
+  );
+}
+
+// El contenido en sí de "Reparto de comidas", sin estado propio ni botón de guardar — lo maneja
+// quien lo use: RepartoComidasView (guarda al momento) o el asistente de alta por pasos, Tanda 3
+// (guarda junto con el resto del perfil al terminar el asistente entero).
+function RepartoComidasFields({ presetId, presetActual, pesos, setPesos, onSelectPreset, sumaPesos, repartoValido, idioma }) {
+  return (
+    <>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
+        {t(idioma, "perfilView.repartoComidas.titulo")}
+      </div>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 14, lineHeight: 1.5 }}>
+        {t(idioma, "perfilView.repartoComidas.intro")}
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+        {PRESETS_COMIDAS.map((preset) => {
+          const elegido = preset.id === presetId;
+          return (
+            <button
+              key={preset.id}
+              onClick={() => onSelectPreset(preset)}
+              style={{
+                textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
+                background: elegido ? "var(--green-soft)" : "#fff",
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: elegido ? "var(--green-dark)" : "var(--ink)" }}>
+                  {t(idioma, "preset." + preset.id + ".label")}
+                </span>
+                {preset.recomendado && (
+                  <span
+                    style={{
+                      fontSize: 10, fontWeight: 700, color: "var(--mustard-dark)", background: "var(--mustard-soft)",
+                      borderRadius: 20, padding: "2px 8px", textTransform: "uppercase", letterSpacing: 0.3,
+                    }}
+                  >
+                    {t(idioma, "perfilView.recomendado")}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--ink-soft)", marginTop: 3, lineHeight: 1.45 }}>{t(idioma, "preset." + preset.id + ".texto")}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+        {t(idioma, "perfilView.pesoDeCadaComida")}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {presetActual.meals.map((mealType) => (
+          <React.Fragment key={mealType}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)" }}>
+                {t(idioma, "mealType." + mealType)}
+              </span>
+              <input
+                type="number" min={0} max={100} step={1}
+                value={pesos[mealType] ?? 0}
+                onChange={(e) => setPesos((p) => ({ ...p, [mealType]: e.target.value }))}
+                style={{ ...inputStyle, width: 64, textAlign: "right" }}
+              />
+              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)" }}>%</span>
+            </div>
+            {mealType === "Cena" && (
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: -2 }}>
+                {t(idioma, "avisoCena")}
+              </div>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+
+      <div
+        style={{
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, marginTop: 12,
+          color: repartoValido ? "var(--green-dark)" : "var(--rust)",
+        }}
+      >
+        {t(idioma, "perfilView.suma", { n: sumaPesos })}{!repartoValido && t(idioma, "perfilView.sumaAviso")}
       </div>
     </>
   );
