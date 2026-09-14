@@ -1,0 +1,668 @@
+Jan aldakor, egunero pentsatu beharrik gabe.
+Hasi saioa
+Hasi saioa zure datuak ikusteko
+Sortu zure kontua
+Helbide elektronikoa
+Pasahitza
+Momentu bat…
+Hasi saioa
+Sortu kontua
+Jarraitu Google-rekin
+Ez duzu konturik?
+Sortu hemen
+Baduzu kontua?
+Hasi saioa
+Pribatutasun-politika
+Erabilera-baldintzak
+Kargatzen…
+Helbide elektronikoa ez da baliozkoa.
+Ez dago helbide horrekin konturik.
+Pasahitz okerra.
+Helbidea edo pasahitza okerrak dira.
+Dagoeneko badago kontu bat helbide horrekin. Saiatu saioa hasten.
+Pasahitzak gutxienez 6 karaktere izan behar ditu.
+Google-ren leihoa itxi duzu amaitu baino lehen.
+Errore bat gertatu da ({code}). Saiatu berriro.
+Menua
+Konfigurazioa
+Profila
+Zure errezetategia
+Gordetzen…
+Gordeta
+Hizkuntza
+Interfazearen hizkuntza. Oraingoz, aplikazioaren gainerako testuak gaztelaniaz ikus
+daitezke oraindik, zatika itzultzen ari garen bitartean.
+Astelehena
+Asteartea
+Asteazkena
+Osteguna
+Ostirala
+Larunbata
+Igandea
+Gosaria
+Hamaiketakoa
+Bazkaria
+Askaria
+Afaria
+2 asteko zikloa sortzen du, ezarritako maiztasun, bloke eta probabilitate guztiak
+errespetatuz. Botoia sakatzen duzun bakoitzean, menu berri bat zozketatzen da.
+Ikusi helburuak
+Sortu beste menu bat
+Sortu menua (2 aste)
+Oraindik ez duzu menurik sortu. Sakatu goiko botoia lehena sortzeko.
+{n}. astea
+Esportatu PDF gisa
+Erosketa-zerrenda
+Ezkutatu estatistikak
+Ikusi estatistikak
++garbantzuak 50/50
+doitua
+{n} kcal
+Aurreko zikloak
+Aplikazioak azken zikloa erabiltzen du plater itxi bera edo hutsune bakarreko
+taldeetako aukera bera berehala ez errepikatzeko.
+Plater itxia: {nombre}
+datu nutrizionalik gabe
+Otorduaren guztizkoa
+Ezin izan da "{nombres}" konbinazioa saihestu (araua: inoiz ez) egun horretan beste
+aukerarik ez zegoelako.
+Araua aplikatuta: {nombres} ({nivel})
+1 razioa = osagaiaren oinarrizko kantitatea
+Berrezarri
+Gaur bete da
+Markatu gaur bete gisa
+Itxi
+Espero den tartearen barruan
+Erritmoa motelegia
+Tartearen goialdean
+Erritmo gehiegizkoa
+Helburuaren kontrako norabidean doa
+Gomendatutakoaren azpitik
+Onargarria, hobetzekoa
+Gomendatutakoaren gainetik
+Helburuaren % {pct} ({kcal} kcal)
+Ezarri eguneroko helburu bat (goiko botoia) egun honen betetze-ehunekoa ikusteko.
+Gatza, azukreak eta zuntza — aste honetako eguneroko batez bestekoa
+Gatza
+Azukre askeak
+Zuntza
+gomendatua: {n} g/egun baino gutxiago
+onena {optimo} g/egunera arte · muga {maximo} g/egun
+gomendatua: gutxienez {n} g/egun
+Otorduak dituzten {dias} egun{plural} kontuan hartuta · OMEren atalaseak
+(azukrea zure kcal helburura doituta)
+Kalkulu osatugabea — aste honetan erabilitako elikagairen batean {lista} daturik ez
+dago. Guztizko erreala handiagoa izan liteke.
+gatza
+azukreak
+zuntza
+Zure eguneroko helburuak
+Oraindik ez duzu profil osorik, beraz ezin da helbururik kalkulatu. Joan "Profila" fitxara
+eta bete zure datuak (jaiotze-urtea, altuera, pisua eta eguneroko jarduera mota)
+automatikoki kalkula daitezen.
+kcal / egun
+{base} kcal eguneroko + {entrenamiento} kcal entrenamendua (eguneroko batez
+bestekoa)
+TDEE mantentzea {kcal} kcal {etapa} ({signo}{pct}%)
+Proteina
+Gantza
+Karbohidratoak
+Zure ohiko entrenamendu bizkorrekin, idealena {carbMin}g karbohidrato gutxienez
+izatea litzateke, baina kcal horiekin eta gantza jada bere segurtasun-mugan dagoela
+({fatFloor}g), ezin da hara iritsi kaloria-marjina handiagorik gabe.
+Otorduka banaketa
+Mifflin-St Jeor formularekin kalkulatua zure eguneroko jarduerarako, gehi zure ohiko
+entrenamenduen kcal bereizita batuta, arrazoizko errore-marjinarekin (laborategirik
+gabeko kalkulu bat ere ez da % 100 zehatza). Zerbait aldatzen bada (pisua,
+entrenamenduak...), eguneratu "Profila" fitxan eta berriz kalkulatuko da automatikoki.
+Zer iruditzen zaizu konbinazio hau?
+Gustatzen zait
+Ez zait gustatzen
+Nahiko
+Ahal den guztietan
+Gutxiago
+Inoiz ez
+"{nivel}" gisa gorde da Afinitate-arauetan.
+Zure menua
+FoodDraft — kantitateak eskuz sukaldatzeko esportatua
+Erosketa-zerrenda
+Ziklo osoa
+Oraindik ez dago sortutako menurik.
+{total}etik {marcados} markatuta
+Izena (aukerakoa)
+Zein da zure izena?
+Sexua
+Emakumea
+Gizona
+Jaiotze-urtea
+Adib: 1995
+Altuera
+Pisua
+Eguneroko jarduera mota (entrenamendua kontuan hartu gabe)
+Ohiko entrenamenduak (aukerakoa)
+Ordu/saioa
+Aldiz/astea
+Gehitu entrenamendua
+Uneko helburua
+Bulego-lana / ikasketak
+Egunaren zati handiena eserita ematen duzu
+Zutik, dezente mugituz
+Lan aktiboa, ibiltzen zara edo zutik zaude egunaren zati handi batean
+Fisikoki eskatzailea
+Eskulana edo oso aktiboa egunaren zati handienean
+Pisuak / indarra
+Kardio arina (bizkor ibiltzea, bizikleta leuna)
+Erritmo ertaineko korrika
+Txirrindularitza moderatua
+Igeriketa
+Talde-kirola / paddela / tenisa
+HIIT / intentsitate handikoa
+Yoga / pilates
+Mantentzea
+Uneko pisua mantendu
+Bolumen garbia
+Pisua pixkanaka igo, gantza minimizatuz (+% 12)
+Definizio kontserbadorea
+Pisua astiro eta modu seguruan jaitsi (% 15)
+Kalkuluak Mifflin-St Jeor formula erabiltzen du zure eguneroko jarduerarako, eta zure
+ohiko entrenamenduen kcal-ak bereizita batzen ditu (METen bidez), zure gastua
+gehiegi ez estimatzeko zure eguneroko bizimodua eserkorra bada, nahiz eta astean
+hainbat egunetan entrenatu. Laborategirik gabeko kalkulu bat ere ez da % 100 zehatza
+— aplikazio honen helburua ez da zehaztasun absolutua, baizik eta janariarekin
+harreman osasuntsuagoa izaten laguntzea, zerotik pentsatu beharrik gabe.
+Ikusi kalkulu xehatua
+Kalkulu xehatua
+Osatu jaiotze-urtea, altuera eta pisua xehetasuna ikusteko.
+BMR (Mifflin-St Jeor formula)
+× PAL {pal} — {nivel}
+{n} kcal eguneroko
++ Ohiko entrenamenduak (METen bidez)
+= Mantentzeko TDEE
+{etapa} ({signo}{pct}%)
+Hasi baino lehen
+Datu hauekin, aplikazioak zure eguneroko kaloria eta makro helburuak kalkula ditzake.
+Guztiz aukerakoa da.
+Gorde eta jarraitu
+Saltatu oraingoz (ez dut helbururik kalkulatuko)
+Datu hauek zure eguneroko kaloria eta makro helburuak kalkulatzeko erabiltzen dira.
+Aldatu nahi duzunean — automatikoki berriz kalkulatzen dira gordetzean.
+Otorduen banaketa
+Aukeratu egunean zenbat otordu egiten dituzun eta bakoitzak zure eguneroko
+helburuan zenbateko pisua duen — menua sortzeko eta hilabeteko laburpeneko
+betetako otorduen zatia kalkulatzeko erabiltzen da. Bazkaria eta Afaria beti daude.
+Gomendatua
+Otordu bakoitzaren pisua
+Batura: % {n}
+— % 100 izan behar du zehatz-mehatz
+Gorde aldaketak
+Profila eguneratu da — zure helburuak berriz kalkulatu dira. Menua fitxako "Helburuak"
+botoian ikus ditzakezu.
+Ezabatu kontua
+Zure kontua eta zure datu guztiak (elikagaiak, platerak, menuak, pisua, helburuak)
+behin betiko ezabatzen ditu. Ezin da desegin.
+Ezabatu nire kontua
+Klasikoa · 4 otordu
+krononutrizioaren zientzian oinarri gehien duen banaketa: energia egunaren lehen
+erdian kontzentratzen du.
+3 otordu · askaririk gabe
+Gosaria, bazkaria eta afaria, orduen artean ezer gabe — betiko eredua, klasikoak
+baino otordu bat gutxiagorekin baina egunean zehar egitura garbia mantenduz.
+3 otordu · gosaririk gabe
+Gosaria ohituraz saltatzea ikerketa batzuetan gibelean metatutako gantza
+gehiagorekin lotu izan da — ez da larritzeko modukoa, baina jakin egin behar da
+egunero egiten baduzu.
+2 otordu · bazkaria eta afaria
+Baraualdi tartekatua: otordu gutxiago, baina handiagoak. Zenbat eta otordu gutxiago
+egin, orduan eta errazagoa da orduen artean pikoteatzen bukatzea ondo asetzen ez
+bazaituzte — zaindu ondo razioak. Gainera, ebidentziak gehiago babesten du bazkaria
+goizago aurreratzeko bertsioa, berandu baino.
+5 otordu · hamaiketakoarekin
+Otordu txikiagoak eta banatuagoak, jan gabe ordu asko jarraian egon nahi ez
+duenarentzat. Ez da ebidentzia gehien duten ereduetakoa, baina eguna antolatzeko
+modu ohiko eta baliozkoa da.
+Afari kopurutsuak edo oso berandukoak azukrearen kontrol okerragoarekin, atseden
+txarragoarekin eta gibeleko gantza gehiagoko arriskuarekin lotzen dira. Ahal baduzu,
+afaria ez izan egunaren otordurik astunena ez eta berandukoena.
+EZABATU
+Honek zure kontua eta zure datu guztiak behin betiko ezabatzen ditu: elikagaiak,
+platerak, menuak, pisu-historiala eta helburuak. Ezin da desegin.
+Zure pasahitza
+Idatzi {palabra} berresteko
+Ezeztatu
+Ezabatzen…
+Sartu zure pasahitza berresteko.
+Pasahitz okerra.
+Google-ren leihoa itxi duzu berretsi baino lehen.
+Ezin izan da kontua ezabatu. Saiatu berriro.
+Datu pertsonalak
+profila eta helburuak
+Pisuaren jarraipena
+pisatzeak eta joera
+premium eginbidea
+Hilabeteko laburpena
+bete diren otorduak
+Gorputz-neurriak
+laster
+Premium
+Egin zaitez premium
+kudeatu harpidetza
+gehiago desblokeatu
+Dokumentuak
+zergatik funtzionatzen duen horrela
+Deskargatu nire datuen kopia bat
+Ikusi premium
+"Zer sukaldatu?" premium eginbidea da
+Bidali daukazunaren argazkia eta jaso zure katalogoko elikagai hutsekin egindako
+ideiak, makro errealekin — premium harpidetzaren parte.
+Pisuaren jarraipena premium eginbidea da
+Zikloak, joera eta zure helburuen doikuntza automatikoa zure benetako pisuaren
+bilakaeraren arabera — premium harpidetzaren parte.
+Laburpen osoa premium eginbidea da
+Premiumekin, laburpen hau zure uneko helburuarekin eta hilabeteko pisu-joerarekin
+konbinatzen da, grafikoa barne.
+Menuko otordu bakoitzaren xehetasunetik bete gisa markatu dituzun otorduak
+zenbatzen ditu — data errealarekin gordetzen da, menua berriz sortu arren.
+{esperadas}etik {completadas} otordu bete dira
+Egunean {n} otordutan oinarrituta (zure profilean konfiguratua)
+Uneko helburua
+{n} kcal/egun
+Hilabete honetako pisua
+hilabete honetan pisatzerik gabe
+Pisu-joera · {mes}
+Zure otorduen % {pct} bete duzu
+, eta zure pisua
+jaitsi da
+igo da
+mantendu da
+{kg} kg hilabete honetan.
+hilabete honetan.
+Jada premium zara
+Egin zaitez premium
+2,99€/hilean — utzi nahi duzunean
+Momentu bat…
+Kudeatu nire harpidetza
+Harpidetu
+Argazki bidezko etiketa-irakurgailua (hilean 20 analisi AArekin)
+Pisuaren jarraipen osoa: zikloak, joera eta helburuen doikuntza automatikoa
+"Daukadanarekin zer sukaldatu dezaket" argazki eta/edo testu bidez, zure osagaiekin
+Hilabeteko laburpen zabaldua: uneko helburua, hilabeteko pisua eta bere
+joera-grafikoa
+Iragarkirik gabe
+Bidali daukazunaren argazkia (hozkailua, despentsa...), idatzi zein osagai dituzun, edo
+biak — zure katalogoko elikagai hutsekin egindako konbinazioak proposatzen
+dizkizugu, makro errealekin, ez AAren estimazio batekin.
+Aldatu argazkia
+Egin/igo argazkia (aukerakoa)
+Argazkian ondo ateratzen ez diren beste osagai batzuk (aukerakoa)
+Dituzun osagaiak — hemen idatz ditzakezu argazkirik behar izan gabe
+Adib: arroza despentsan, arrautzak
+Eskuragarri dituzun espeziak edo kondimentuak (aukerakoa)
+Adib: komino, piper gorri hautsa, oregano, baratxuri hautsa
+Zer sukalda dezaket?
+Ez dugu zure katalogoko elikagairik ezagutu argazkian. Probatu beste irudi batekin,
+edo gehitu lehenik elikagai horiek katalogora.
+Gorde plater itxi gisa
+Laster
+Hemen larruazal-tolesturak eta gorputz-neurriak (gerria, aldakak...) gehitu ahal izango
+dituzu, balantzako pisutik haratago jarraipena osatzeko. Oraingoz ez da beharrezkoa
+— alboko pisuaren jarraipenak funtsezkoa jada betetzen du.
+Hemen, aplikazioa funtzionatzeko beharrezkoak ez diren arren barrutik nola
+funtzionatzen duen azaltzen duten dokumentuak kontsultatu ahal izango dira — eta
+formulak, ehunekoak edo atalaseak bezalako erabakiak ez daudela zoriz jarrita argi
+utzi nahi dute.
+Oraindik ez dago dokumenturik gehituta
+Prest daudenean, aplikazioaren barne-funtzionamendua azaltzen eta justifikatzen
+duten dokumentuak hemen agertuko dira.
+Pisua igotzen ari da definizio-etapa batean. Zerbait puntualagatik izan liteke, baina
+defizita berrikustea komeni da.
+Oso gutxi galtzen ari zara (% {magnitud}/astea) — nahiko estimulu duen erritmotzat
+jotzen den % {umbral} baino gutxiago.
+Oso azkar galtzen ari zara pisua (% {magnitud}/astea) — % {umbral} baino gehiago,
+muskulu-masa galtzeko arriskuarekin.
+Zure galera-erritmoa (% {magnitud}/astea) goiko zonan dago, % {umbralAviso} eta %
+{umbralAccion} artean.
+Zure galera-erritmoa (% {magnitud}/astea) gomendatutako tartearen barruan dago (%
+{umbralIneficaz}-% {umbralAccion}).
+Pisua jaisten ari da bolumen-etapa batean. Zerbait puntualagatik izan liteke, baina
+superabita berrikustea komeni da.
+Oso gutxi irabazten ari zara (% {magnitud}/hilea) — aurrera egiteko beharrezkotzat
+jotzen den % {umbral} baino gutxiago.
+Oso azkar irabazten ari zara pisua (% {magnitud}/hilea) — % {umbral} baino gehiago,
+batez ere gantza izateko arriskuarekin.
+Zure irabazte-erritmoa (% {magnitud}/hilea) goiko zonan dago, % {umbralAviso} eta %
+{umbralAccion} artean.
+Zure irabazte-erritmoa (% {magnitud}/hilea) gomendatutako tartearen barruan dago (%
+{umbralIneficaz}-% {umbralAccion}).
+3 hilabete
+Urte 1
+Historiko osoa
+Gaixotasuna
+Bidaia
+Hilekoa / likido-atxikipena
+Otordu oso ugaria edo gazia
+Beste bat
+Zehaztu gabe
+Gaur pisatu behar duzu
+Pisuaren jarraipenerako aukeratu zenituen egunetako bat da. Orain bertan erregistra
+dezakezu, azpian, edo gaurko abisua saltatu ez badizu komeni.
+Saltatu gaurkoa
+Ados
+Aldaketa nahiko handia
+{peso} kg nahiko urrun dago zure azken pisatzetik. Ba al dakizu zergatik izan
+daitekeen? Arrazoi bat markatzen baduzu, datu hau ez da zikloaren joeran kontuan
+hartuko — baina hala ere gordeko da.
+Ez, normala da
+Gorde atipiko gisa
+Pisuaren jarraipena
+{titulo} · {fecha}(e)an esportatua
+Joera: {signo}% {pct}/astea
+Data
+Pisua (kg)
+Oharra
+Atipikoa{detalle}
+FoodDraft — zure pisuaren jarraipenetik sortutako dokumentua
+Pisatu zaitez astean 2-3 aldiz, astean zehar banatuta. Zikloa irekita dagoen bitartean
+ez duzu zenbakia nola aldatzen den ikusiko — itxi arte bakarrik, eguneroko aldaketekin
+obsesionatu ez zaitezen.
+Zikloa amaituta — {n} pisatze erregistratuta
+{inicio}tik {fin}ra pausatuta{detalle}
+{signo}% {pct}/astea
+Eguneratu nire profileko pisua {kg} kg-ra
+Orain {kg} kg erregistratuta dituzu — honek zure BMR, proteina eta gantza berriz
+kalkulatzen ditu zure benetako pisuarekin.
+Aplikatu doikuntza: {signo}{kcal} kcal/egun
+Ez du zure etapa aldatzen ({etapa}) — bere baitako intentsitatea baino ez du doitzen.
+Itxi zikloa eta hasi hurrengoa
+Zikloa gaur itxi da
+Esportatu itxiera hau PDF gisa
+Ez dago nahikoa pisatze (atipikoak kontuan hartu gabe) ziklo honetan joera fidagarri
+bat kalkulatzeko. Hurrengoa nahi duzunean has dezakezu.
+Hasi hurrengo zikloa
+Zuzendu gaurko pisua
+Gaurko pisua
+Gorde
+Zikloa martxan — {n} pisatze erregistratuta ~{total}etik, {dias} egun geratzen dira
+berrikuspenerako.
+Zure lehen pisatzeak zikloa irekitzen du. {n} astean berrikusiko da.
+Zikloa {fecha}tik pausatuta{detalle}. Ez du balio itxierarako eta ez dizu pisatzeko
+gogoraraziko.
+Berrekin
+Arrazoia (aukerakoa)
+Pausatu zikloa
+Ezeztatu
+Pausatu zikloa
+Atipiko gisa markatuta{detalle}
+Erregistratuta
+Ezkutatu ezarpenak
+Jarraipenaren ezarpenak
+Aldiz astean
+Gomendatutako egunak: {lista}
+Zikloaren iraupena
+{n} ast.
+Ezin da aldatu zikloa jada irekita dagoenean — hurrengoan aplikatuko da.
+Ezkutatu bilakaera
+Ikusi bilakaera
+Esportatu tarte hau PDF gisa
+Oraindik ez duzu itxitako ziklorik — bilakaera zure lehen zikloa amaitzean beteko da.
+Ez dago nahikoa pisatze tarte honetan. Probatu tarte zabalago batekin.
+Proteinak
+Karbohidratoak
+Barazkiak
+Gantzak
+Plater itxiak
+Bereziak
+Makroak
+proteina, karbohidratoa, barazkia, gantza
+Otordu bereziak
+gosaria, askaria, itxiak
+Konbinazioak
+elikagaien arteko arauak
+Elikagaiak
+katalogoa makroekin
+Zer sukaldatu?
+daukazunarekin
+Proteina berezi bakoitzak astean edo 2 asteko zikloan otordu-kopuru finko bat hartzen
+du. Oilaskoak ez du bere araurik: geratzen den guztia betetzen du, beraz menuaren
+oinarri naturala da.
+Plater itxia ez den otordu bakoitzean probabilitatearen arabera zozketatzen dira.
+Ehunekoek % 100 batu beharko lukete.
+Probabilitatearen arabera zozketatzen dira, karbohidratoak bezala. Ehunekoek % 100
+batu beharko lukete.
+Gantza-aukerak (olioa, aguakatea, fruitu lehorrak, gazta...). Helburu-motorrak otordu
+batean gantza osatu behar duenean, hauen artean zozketatuko du probabilitatearen
+arabera — bat ere gehitzen ez baduzu, oliba-olioa erabiltzen jarraituko du lehenetsi
+gisa.
+Gosari osoen aukerak, besterik gabe konbinatu gabe. 2 astero (14 gosari) ehuneko
+hauen arabera zehatz-mehatz banatzen da, ordena ausaz nahastuz. Ehunekoek %
+100 batu beharko lukete.
+Hamaiketako osoen aukerak, besterik gabe konbinatu gabe. 2 astero (14 otordu)
+ehuneko hauen arabera zehatz-mehatz banatzen da, ordena ausaz nahastuz.
+Ehunekoek % 100 batu beharko lukete.
+Askari osoen aukerak, besterik gabe konbinatu gabe. 2 astero (14 askari) ehuneko
+hauen arabera zehatz-mehatz banatzen da, ordena ausaz nahastuz. Ehunekoek %
+100 batu beharko lukete.
+Osorik doaz, karbohidratorik edo barazkirik gabe konbinatuta. Talde osoa blokearen
+maiztasunarekin agertzen da; barruan, zein plater tokatzen den zozketatzen da.
+Ez dute proteina-lekurik lehiatzen: egun horretan tokatzen den otorduaren gainean
+gainjartzen dira.
+Modifikatzailea: egun horretako karbohidratoarekin 50/50 nahasten da
+Gehitu proteina
+Gehitu karbohidratoa
+Gehitu barazkia / laguntzailea
+Gehitu gantza
+Gehitu gosaria
+Gehitu hamaiketakoa
+Gehitu askaria
+Gehitu berezia
+Uneko batura: % {n} {estado}
+· zuzena
+· % 100 izan beharko luke
+Menuaren oinarria
+2 astero
+astero
+{n}× {periodo}
+% {n}eko probabilitatea
+Datu-baserekin lotu gabe
+1 razioa = {g} g
+Taldea · {n}× 2 astero
+Gehitu taldera
+Ezeztatu
+Gorde
+Ezabatu
+Ziur zaude
+ezabatu nahi duzula? Sortutako menuetan agertzeari utziko dio.
+"{nombre}" elementuaren maiztasuna
+Aldiz 2 astero (zikloa)
+Adib: astean behin agertzeko, jarri 2 (2 aldiz 2 astero). Zenbaki bikoiti batekin, erdia
+aste bakoitzean bermatzen da, inoiz ez biak batera.
+Nulua (inoiz ez)
+Baxua
+Altua
+Maximoa (behartua)
+Elikagaien katalogo zentrala, 100 g-ko balioekin. Menuko osagaiak hemen lotzen dira,
+beraz balio bat zuzentzean erabiltzen den leku guztietan eguneratzen da.
+Bilatu elikagaia…
+Gehitu argazkiarekin
+Elikagai berria
+Esportatu katalogoa
+{total}etik {n} elikagai
+{n}tan erabilia
+100 g-ko
+aseak {n}g
+azukreak {n}g
+zuntza {n}g
+gatza {n}g
+Ez dago "{query}"(r)ekin bat datorren elikagairik.
+Elikagaien katalogoa
+{n} elikagai · 100 g-ko balioak · {fecha}(e)an esportatua
+Elikagaia
+Prot.
+Gantza
+Karb.
+Gatza
+Azuk.
+Zuntza
+Ase.
+Jatorria
+FoodDraft — esportatutako elikagaien katalogoa
+Elikagai berria
+Editatu elikagaia
+Etiketa irakurtzen…
+Irakurri argazkia berriro
+Irakurri balioak argazkitik
+Ezin izan da argazkia irakurri. Probatu argiagoa den beste irudi batekin, edo bete
+datuak eskuz.
+Argazkitik betetako datuak — berrikusi gorde baino lehen, irakurketak huts egin
+dezake.
+Etiketaren irakurketa automatikoa ez dago eskuragarri hemen — oraingoz, bete datuak
+eskuz argazkiari begira.
+Izena
+Adib: Oilasko bularra (gordina)
+Produktuaren 100 g-ko balioak (etiketan agertzen diren bezala).
+Kaloriak (kcal)
+Proteina (g)
+Gantza (g)
+Karbohidratoak (g)
+Xehetasun gehigarria (aukerakoa)
+Horietatik aseak (g)
+Horietatik azukreak (g)
+Zuntza (g)
+Gatza (g)
+Iturria (aukerakoa)
+Adib: Hacendado etiketa
+Ezabatu elikagaia
+Ziur zaude
+katalogotik ezabatu nahi duzula?
+{n} osagai{plural}i lotuta dago ({lista}). Ezabatzen baduzu, osagai horiek makrorik gabe
+geratuko dira beste elikagai batekin lotu arte.
+Elikagai zehatzen arteko afinitate-arauak: proteina, karbohidratoa, barazkia edo
+garbantzuen konbinazio bat probableago edo probabilitate txikiagokoa (edo zuzenean
+ezinezkoa edo derrigorrezkoa) egiten du otordu berean.
+Arau berria
+Oraindik ez duzu araurik sortu. Konbinazioak erabateko askatasunez zozketatzen dira
+lehena gehitu arte.
+(elikagaia ezabatuta)
+Konbinazio-arau berria
+Editatu araua
+1. elementua
+2. elementua
+3. elementua (aukerakoa)
+4. elementua (aukerakoa)
+— Aukeratu —
+— Bat ere ez —
+Afinitate-maila
+Konbinazio hau ez da inoiz aterako, egunen batean beste aukerarik geratzen ez bada
+izan ezik.
+Konbinazio hau ateratzen jarraituko du, baina normala baino askoz maiztasun
+txikiagoarekin.
+Konbinazio honek normala baino ateratzeko probabilitate askoz handiagoa izango du.
+Posible bada, motorrak konbinazio hau bere elementuak ematen diren guztietan gerta
+dadin saiatuko da.
+Aukeratu gutxienez elkarren arteko 2 elementu ezberdin.
+Ezabatu araua
+Ziur zaude araua ezabatu nahi duzula:
+?
+Gehitu
+Editatu
+Izena
+Adib: Izokina
+Plater honen osagaiak
+— Aukeratu elikagai bat —
+Gehitu osagaia
+Platerraren guztizkoa:
+Gehitu gutxienez osagai bat plater honen makroak kalkulatzeko.
+Datu nutrizionalak
+Datu-baseko elikagaia
+— Lotu gabe —
+Gramoak razioko (1.0)
+Adib: 150
+Lotu elikagai bat eta jarri gramoak razio baten makroak ikusteko.
+Kantitate-oharra (aukerakoa)
+Adib: 2 xerra, 1 kikara…
+Arau mota
+Maiztasun finkoa
+Menuaren oinarria (maiztasunik gabe, betegarria)
+Maiztasuna
+Probabilitatea (%)
+Taldearen barruko probabilitatea (%)
+Pribatutasun-politika — FoodDraft
+Azken eguneratzea: 2026ko irailaren 9a
+Tratamenduaren arduraduna
+Pablo Díaz Blanco, Espainia. Kontaktua: draftedfood@gmail.com
+Zein datu biltzen diren
+Kontua: helbide elektronikoa eta, Googlerekin saioa hasten baduzu, zure
+profil-argazkia.
+Profil-datuak: adina, altuera, pisua, sexua, jarduera-maila eta ohiko entrenamenduak,
+helburu nutrizionala.
+Jarraipena: pisatzeen historiala, sortutako menuak, elikagaien katalogoa eta sortzen
+dituzun platerak.
+Etiketa nutrizionalen argazkiak: argazki bidezko irakurgailua erabiltzen baduzu, irudia
+Gemini-ra (Google) bidaltzen da datu nutrizionalak irakurtzeko, eta ez da inongo
+zerbitzarian gordetzen — prozesatu ondoren baztertzen da.
+Zertarako erabiltzen diren
+Zerbitzua emateko bakarrik: zure menuak sortzeko, zure helburu nutrizionalak
+kalkulatzeko eta zure pisuaren jarraipena eramateko. Ez dira
+publizitate-helburuetarako erabiltzen, ezta hirugarrenei saltzen ere.
+Oinarri legala
+Kontu bat sortzean eskatzen duzun zerbitzuaren betearazpena (DBEO 6.1.b art.) eta,
+argazkien kasuan, funtzio hori borondatez erabiltzean ematen duzun berariazko
+baimena.
+Norekin partekatzen diren
+Google Firebase (autentifikazioa, datu-basea, abusuen aurkako babesa eta Gemini
+bidezko argazki-irakurketa), tratamendu-arduradun gisa, bere segurtasun-bermeekin
+eta datuen nazioarteko transferentziarekin.
+Stripe, ordainpeko harpidetza bat kontratatzen baduzu bakarrik, kobrantza kudeatzeko
+(ez zaio osasun-daturik partekatzen, ordainketa prozesatzeko beharrezkoa dena
+bakarrik).
+Ez da ezer partekatzen beste inorekin.
+Zenbat denboraz gordetzen diren
+Zure kontua existitzen den bitartean. Guztiz ezaba dezakezu, zure datu guztiekin
+batera, aplikaziotik edonoiz (Profila Ezabatu kontua).
+Zure eskubideak
+Sarbidea, zuzenketa, ezabapena, aurkakotasuna, eramangarritasuna eta
+tratamenduaren mugapena. Aplikaziotik zure kontua zuzenean ezabatuz erabil
+ditzakezu, edo draftedfood@gmail.com helbidera idatziz.
+Segurtasuna
+Datuak zifratuta bidaiatzen dute eta pertsona bakoitzak bereak ikusi eta aldatu ahal
+izatea bermatzen duten sarbide-arauen bidez babestuta daude.
+Politika honetako aldaketak
+Politika honek modu esanguratsuan aldatzen bada, aplikazioaren barruan jakinaraziko
+da.
+Itzuli FoodDraft-era
+Erabilera-baldintzak — FoodDraft
+Azken eguneratzea: 2026ko irailaren 9a
+Nortzuk garen
+FoodDraft Pablo Díaz Blanco-k, Espainian, kudeatutako zerbitzu bat da. Kontaktua:
+draftedfood@gmail.com
+Zerbitzua zer den
+FoodDraft-ek zure platerekin asteroko menuak sortzen ditu, helburu nutrizional
+orientagarriak kalkulatzen ditu eta zure pisuaren jarraipena eramaten du. Kaloria,
+makro eta helburuen kalkuluak estimazio orientagarriak dira, erabilera orokorreko
+formuletan oinarrituta (Mifflin-St Jeor bezala) — ez dute ordezten mediku,
+elikadura-dietista edo osasun-profesional baten aholkua. Zalantzarik edo egoera
+mediko bat izanez gero, kontsultatu beti profesional batekin.
+Zure kontua
+Zerbitzua erabilera pertsonalerakoa da. Zure pasahitza seguru mantentzeaz eta zure
+kontuaren jarduerarako arduraduna zara. Guztiz ezaba dezakezu edonoiz aplikaziotik
+(Profila Ezabatu kontua).
+Ordainpeko harpidetza
+Ordainpeko bertsioa kontratatzen baduzu, kobrantza Stripe bidez kudeatzen da. Zure
+harpidetzaren kudeaketa-atarian edonoiz utz dezakezu — ezeztapena jada
+ordaindutako epearen amaieran aplikatzen da, kargurik gehiago gabe. Ezeztatzean,
+premium eginbideak eskuragarri egoteari uzten diote, baina zure datuak eta
+aplikazioaren gainerakoa osorik jarraitzen dute.
+Erantzukizuna
+Aplikazioa zure erantzukizunpean erabiltzen duzu. Ez dugu osasun, pisu edo
+gorputz-konposizio emaitza zehatzik bermatzen — aplikazioa zure elikadura
+antolatzeko laguntza-tresna da, ez tratamendu mediko bat. Legeak baimentzen duen
+neurrian, ez da erantzukizunik onartzen aplikazioak ematen duen informazioan
+oinarritutako erabakiengatik.
+Erabilera desegokia
+Kontu bat eten edo ezeztatzeko eskubidea gordetzen dugu, zerbitzuaren erabilera
+desegokiaren kasuan (adibidez, adimen artifiziala erabiltzen duten eginbideez
+abusatzeko saiakerak, edo hirugarrenen kontuetara baimenik gabeko sarbidea).
+Baldintza hauetako aldaketak
+Modu esanguratsuan aldatzen badira, aplikazioaren barruan jakinaraziko da.
+Legeria aplikagarria
+Baldintza hauek Espainiako legeriaren mende daude.
+Itzuli FoodDraft-era

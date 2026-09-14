@@ -1,0 +1,659 @@
+Menja variat, sense haver de pensar-hi cada dia.
+Inicia la sessió
+Inicia la sessió per veure les teves dades
+Crea el teu compte
+Correu electrònic
+Contrasenya
+Un moment…
+Inicia la sessió
+Crea un compte
+Continua amb Google
+No tens compte?
+Crea'l aquí
+Ja tens compte?
+Inicia la sessió
+Política de privacitat
+Termes d'ús
+Carregant…
+El correu electrònic no és vàlid.
+No existeix cap compte amb aquest correu.
+Contrasenya incorrecta.
+Correu o contrasenya incorrectes.
+Ja existeix un compte amb aquest correu. Prova d'iniciar la sessió.
+La contrasenya ha de tenir com a mínim 6 caràcters.
+Has tancat la finestra de Google abans d'acabar.
+S'ha produït un error ({code}). Torna-ho a provar.
+Menú
+Configuració
+Perfil
+El teu receptari
+Desant…
+Desat
+Idioma
+L'idioma de la interfície. De moment, la resta de textos de l'app es poden continuar
+veient en castellà mentre es tradueixen per parts.
+Dilluns
+Dimarts
+Dimecres
+Dijous
+Divendres
+Dissabte
+Diumenge
+Esmorzar
+Mig matí
+Dinar
+Berenar
+Sopar
+Genera un cicle de 2 setmanes respectant totes les freqüències, blocs i probabilitats
+definits. Cada vegada que polsis el botó, se sortejarà un menú nou.
+Veure objectius
+Genera un altre menú
+Genera el menú (2 setmanes)
+Encara no has generat cap menú. Prem el botó de dalt per crear el primer.
+Setmana {n}
+Exporta a PDF
+Llista de la compra
+Amaga les estadístiques
+Veure estadístiques
++cigrons 50/50
+ajustada
+{n} kcal
+Cicles anteriors
+L'app fa servir l'últim cicle per evitar repetir de seguida el mateix plat tancat o la
+mateixa tria en els grups d'un sol forat.
+Plat tancat: {nombre}
+sense dades nutricionals
+Total de l'àpat
+No s'ha pogut evitar la combinació "{nombres}" (regla: mai) per falta d'alternatives
+aquell dia.
+Regla aplicada: {nombres} ({nivel})
+1 ració = la quantitat base de l'ingredient
+Restableix
+Completada avui
+Marca com a completada avui
+Tanca
+Dins del rang esperat
+Ritme massa lent
+Zona alta del rang
+Ritme excessiu
+Va en direcció contrària a l'objectiu
+Per sota del que es recomana
+Acceptable, millorable
+Per sobre del que es recomana
+{pct}% de l'objectiu ({kcal} kcal)
+Fixa un objectiu diari (botó de dalt) per veure el % de compliment d'aquest dia.
+Sal, sucres i fibra — mitjana diària d'aquesta setmana
+Sal
+Sucres lliures
+Fibra
+recomanat: menys de {n} g/dia
+òptim fins a {optimo} g/dia · límit {maximo} g/dia
+recomanat: com a mínim {n} g/dia
+Sobre {dias} dia{plural} amb àpats · llindars de l'OMS
+(sucre ajustat al teu objectiu de kcal)
+Càlcul incomplet — falta la dada de {lista} en algun aliment fet servir aquesta setmana.
+El total real podria ser més alt.
+sal
+sucres
+fibra
+Els teus objectius diaris
+Encara no tens un perfil complet, així que no es pot calcular cap objectiu. Vés a la
+pestanya "Perfil" i omple les teves dades (any de naixement, alçada, pes i tipus de dia
+a dia) perquè es calculin sols.
+kcal / dia
+{base} kcal dia a dia + {entrenamiento} kcal entrenament (mitjana diària)
+TDEE manteniment {kcal} kcal {etapa} ({signo}{pct}%)
+Proteïna
+Greix
+Carbohidrats
+Amb els teus entrenaments intensos habituals, l'ideal seria un mínim de {carbMin}g de
+carbohidrat, però amb aquestes kcal i el greix ja al seu terra de seguretat ({fatFloor}g)
+no s'hi pot arribar sense més marge calòric.
+Repartiment per àpat
+Calculat amb la fórmula de Mifflin-St Jeor per al teu dia a dia, més les kcal dels teus
+entrenaments habituals sumades a part, amb un marge d'error raonable (cap càlcul
+sense laboratori és exacte al 100%). Si alguna cosa canvia (pes, entrenaments...),
+actualitza-ho a la pestanya "Perfil" i es recalcularà sol.
+Què et sembla aquesta combinació?
+M'agrada
+No m'agrada
+Bastant
+Sempre que es pugui
+Menys
+Mai
+Desat a Regles d'afinitat com a "{nivel}".
+El teu menú
+FoodDraft — exportat per cuinar amb les quantitats a mà
+Llista de la compra
+Cicle complet
+Encara no hi ha cap menú generat.
+{marcados} de {total} marcats
+Nom (opcional)
+Com et dius?
+Sexe
+Dona
+Home
+Any de naixement
+Ex: 1995
+Alçada
+Pes
+Tipus de dia a dia (sense comptar l'entrenament)
+Entrenaments habituals (opcional)
+Hores/sessió
+Vegades/setmana
+Afegeix un entrenament
+Objectiu actual
+Feina / estudis d'oficina
+Et passes la major part del dia assegut
+Dret, movent-te bastant
+Feina activa, camines o estàs dret bona part del dia
+Físicament exigent
+Feina manual o molt activa la major part del dia
+Pesos / força
+Cardio lleuger (caminar ràpid, bici suau)
+Córrer a ritme mitjà
+Ciclisme moderat
+Natació
+Esport d'equip / pàdel / tennis
+HIIT / alta intensitat
+Ioga / pilates
+Manteniment
+Mantenir el pes actual
+Volum net
+Puja de pes progressivament, minimitzant el greix (+12%)
+Definició conservadora
+Baixa de pes a un ritme lent i segur (15%)
+El càlcul fa servir la fórmula de Mifflin-St Jeor per al teu dia a dia, i suma a part les kcal
+dels teus entrenaments habituals (via METs), per no sobreestimar la teva despesa si el
+teu dia a dia és sedentari encara que entrenis diversos dies per setmana. Cap càlcul
+sense laboratori és exacte al 100% — l'objectiu d'aquesta app no és la precisió
+absoluta, sinó ajudar-te a tenir una relació més sana amb el menjar, sense haver-la de
+pensar des de zero.
+Veure càlcul desglossat
+Càlcul desglossat
+Completa l'any de naixement, l'alçada i el pes per veure el desglossament.
+BMR (fórmula de Mifflin-St Jeor)
+× PAL {pal} — {nivel}
+{n} kcal dia a dia
++ Entrenaments habituals (via METs)
+= TDEE de manteniment
+{etapa} ({signo}{pct}%)
+Abans de començar
+Amb aquestes dades, l'app pot calcular els teus objectius diaris de calories i macros.
+És totalment opcional.
+Desa i continua
+Salta-ho de moment (no tindré objectius calculats)
+Aquestes dades es fan servir per calcular els teus objectius diaris de calories i macros.
+Canvia-les quan vulguis — es recalculen soles en desar.
+Repartiment d'àpats
+Tria quants àpats fas al dia i quin pes té cadascun sobre el teu objectiu diari — es fa
+servir tant per generar el menú com per a la teva fracció d'àpats completats del resum
+mensual. Dinar i Sopar hi són sempre presents.
+Recomanat
+Pes de cada àpat
+Suma: {n}%
+— ha de sumar exactament 100%
+Desa els canvis
+Perfil actualitzat — els teus objectius s'han recalculat. Els pots veure al botó
+"Objectius" de la pestanya Menú.
+Elimina el compte
+Esborra el teu compte i totes les teves dades (aliments, plats, menús, pes, objectius)
+de forma permanent. No es pot desfer.
+Elimina el meu compte
+Clàssic · 4 àpats
+El repartiment amb més suport a la ciència de la crononutrició: concentra l'energia a la
+primera meitat del dia.
+3 àpats · sense berenar
+Esmorzar, dinar i sopar, sense res entre hores — el patró de tota la vida, amb un àpat
+menys que el clàssic però mantenint una estructura clara al llarg del dia.
+3 àpats · sense esmorzar
+Saltar-se l'esmorzar de manera habitual s'ha relacionat en alguns estudis amb més
+greix acumulat al fetge — no és motiu d'alarma, però convé saber-ho si ho fas cada
+dia.
+2 àpats · dinar i sopar
+Dejuni intermitent: menys àpats, però més grans. Com menys àpats fas, més fàcil és
+acabar picant entre hores si no et sacien prou bé — vigila bé les racions. A més,
+l'evidència dona més suport a la versió amb el dinar avançat cap al matí que no pas
+tard.
+5 àpats · amb mig matí
+Àpats més petits i repartits, per a qui prefereix no passar moltes hores seguides sense
+menjar. No és dels patrons amb més evidència darrere, però és una manera habitual i
+vàlida d'organitzar el dia.
+Els sopars copiosos o molt tardans s'associen a pitjor control del sucre, pitjor descans i
+més risc de greix al fetge. Si pots, que el sopar no sigui ni el més pesat ni el més tardà
+del dia.
+ELIMINAR
+Això esborra permanentment el teu compte i totes les teves dades: aliments, plats,
+menús, historial de pes i objectius. No es pot desfer.
+La teva contrasenya
+Escriu {palabra} per confirmar
+Cancel·la
+Eliminant…
+Introdueix la teva contrasenya per confirmar.
+Contrasenya incorrecta.
+Has tancat la finestra de Google abans de confirmar.
+No s'ha pogut eliminar el compte. Torna-ho a provar.
+Dades personals
+perfil i objectius
+Seguiment de pes
+pesades i tendència
+funció premium
+Resum mensual
+àpats completats
+Mesures corporals
+properament
+Premium
+Fes-te premium
+gestiona la subscripció
+desbloqueja més
+Documents
+per què funciona així
+Descarrega una còpia de les meves dades
+Veure premium
+"Què cuino?" és premium
+Envia una foto del que tinguis i rep idees fetes només amb aliments del teu propi
+catàleg, amb macros reals — part de la subscripció premium.
+El seguiment de pes és premium
+Cicles, tendència i ajust automàtic dels teus objectius segons com evoluciona el teu
+pes real — part de la subscripció premium.
+El resum complet és premium
+Amb premium, aquest resum es combina amb el teu objectiu actual i la teva tendència
+de pes del mes, amb gràfica inclosa.
+Compta els àpats que has marcat com a completats des del detall de cada àpat al
+Menú — es desa amb data real, encara que regeneris el menú.
+{completadas} de {esperadas} àpats completats
+Basat en {n} àpats al dia (configurat al teu perfil)
+Objectiu actual
+{n} kcal/dia
+Pes aquest mes
+sense pesades aquest mes
+Tendència de pes · {mes}
+Has completat el {pct}% dels teus àpats
+, i el teu pes
+ha baixat
+ha pujat
+s'ha mantingut
+{kg} kg aquest mes.
+aquest mes.
+Ja ets premium
+Fes-te premium
+2,99€/mes — cancel·la quan vulguis
+Un moment…
+Gestiona la meva subscripció
+Subscriure'm
+Lector d'etiquetes per foto (20 anàlisis al mes amb IA)
+Seguiment de pes complet: cicles, tendència i ajust automàtic d'objectius
+"Què puc cuinar amb el que tinc" a partir d'una foto i/o text amb els teus ingredients
+Resum mensual ampliat: objectiu actual, pes del mes i la seva gràfica de tendència
+Sense anuncis
+Envia una foto del que tinguis (nevera, rebost...), escriu quins ingredients tens, o totes
+dues coses — et suggerim combinacions fetes només amb aliments del teu propi
+catàleg, amb macros reals, no una estimació de la IA.
+Canvia la foto
+Fes/puja una foto (opcional)
+Altres ingredients que no surtin bé a la foto (opcional)
+Ingredients que tens — els pots escriure aquí sense necessitat de foto
+Ex: arròs al rebost, ous
+Espècies o condiments disponibles (opcional)
+Ex: comí, pebre vermell, orenga, all en pols
+Què puc cuinar?
+No hem reconegut cap aliment del teu catàleg a la foto. Prova amb una altra imatge, o
+afegeix primer aquests aliments al catàleg.
+Desa com a plat tancat
+Properament
+Aquí podràs afegir plecs cutanis i mesures corporals (cintura, maluc...) per completar
+el seguiment més enllà del pes a la bàscula. De moment no cal — el seguiment de pes
+del costat ja cobreix l'essencial.
+Aquí es podran consultar documents que, sense ser necessaris perquè l'app funcioni,
+expliquen com funciona per dins — i busquen deixar clar que decisions com les
+fórmules, els percentatges o els llindars no estan posades a l'atzar.
+Encara no hi ha documents afegits
+Tan bon punt estiguin llestos, aquí apareixeran els documents que expliquen i
+justifiquen el funcionament intern de l'app.
+El pes està pujant en una etapa de definició. Pot ser per alguna cosa puntual, però
+convé revisar el dèficit.
+Estàs perdent molt poc ({magnitud}%/setmana) — per sota del {umbral}% que es
+considera un ritme amb estímul suficient.
+Estàs perdent pes molt ràpid ({magnitud}%/setmana) — per sobre del {umbral}%, amb
+risc de perdre massa muscular.
+El teu ritme de pèrdua ({magnitud}%/setmana) està a la zona alta, entre el
+{umbralAviso}% i el {umbralAccion}%.
+El teu ritme de pèrdua ({magnitud}%/setmana) està dins del rang recomanat
+({umbralIneficaz}%-{umbralAccion}%).
+El pes està baixant en una etapa de volum. Pot ser per alguna cosa puntual, però
+convé revisar el superàvit.
+Estàs guanyant molt poc ({magnitud}%/mes) — per sota del {umbral}% que es
+considera necessari per progressar.
+Estàs guanyant pes molt ràpid ({magnitud}%/mes) — per sobre del {umbral}%, amb
+risc que sigui sobretot greix.
+El teu ritme de guany ({magnitud}%/mes) està a la zona alta, entre el {umbralAviso}% i
+el {umbralAccion}%.
+El teu ritme de guany ({magnitud}%/mes) està dins del rang recomanat
+({umbralIneficaz}%-{umbralAccion}%).
+3 mesos
+1 any
+Històric complet
+Malaltia
+Viatge
+Regla / retenció de líquids
+Àpat molt copiós o salat
+Un altre
+Sense especificar
+Avui toca pesar-te
+És un dels dies que vas triar per al seguiment de pes. Pots registrar-lo ara mateix, just
+a sota, o saltar-te l'avís d'avui si no et va bé.
+Salta-ho avui
+D'acord
+Canvi força gran
+{peso} kg s'allunya bastant de la teva última pesada. Saps a què es pot deure? Si
+marques un motiu, aquesta dada no comptarà per a la tendència del cicle — però es
+desa igualment.
+No, és normal
+Desa com a atípica
+Seguiment de pes
+{titulo} · exportat el {fecha}
+Tendència: {signo}{pct}%/setmana
+Data
+Pes (kg)
+Nota
+Atípica{detalle}
+FoodDraft — document generat a partir del teu seguiment de pes
+Pesa't 2-3 vegades per setmana, repartides al llarg de la setmana. Mentre el cicle
+estigui obert no veuràs el número evolucionar — només en tancar-lo, per no
+obsessionar-te amb les variacions del dia a dia.
+Cicle acabat — {n} pesades registrades
+Pausat del {inicio} al {fin}{detalle}
+{signo}{pct}%/setmana
+Actualitza el meu pes de perfil a {kg} kg
+Ara mateix tens registrats {kg} kg — això recalcula el teu BMR, proteïna i greix amb el
+teu pes real.
+Aplica l'ajust: {signo}{kcal} kcal/dia
+No canvia la teva etapa ({etapa}) — només afina la intensitat dins seu.
+Tanca el cicle i comença el següent
+Cicle tancat avui
+Exporta aquest tancament a PDF
+No hi ha prou pesades (sense comptar les atípiques) per calcular una tendència fiable
+aquest cicle. Pots començar el següent quan vulguis.
+Comença el següent cicle
+Corregeix el pes d'avui
+Pes d'avui
+Desa
+Cicle en curs — {n} de ~{total} pesades registrades, queden {dias} dies per a la revisió.
+La teva primera pesada obre el cicle. Es revisarà d'aquí a {n} setmanes.
+Cicle pausat des del {fecha}{detalle}. No compta per al tancament ni et recordarà
+pesar-te.
+Reprèn
+Motiu (opcional)
+Pausa el cicle
+Cancel·la
+Pausa el cicle
+Marcada com a atípica{detalle}
+Registrada
+Amaga els ajustos
+Ajustos del seguiment
+Vegades per setmana
+Dies suggerits: {lista}
+Durada del cicle
+{n} set.
+No es pot canviar amb un cicle ja obert — s'aplicarà al següent.
+Amaga la progressió
+Veure progressió
+Exporta aquest rang a PDF
+Encara no tens cap cicle tancat — la progressió s'omple en acabar el teu primer cicle.
+No hi ha prou pesades en aquest rang. Prova amb un rang més ampli.
+Proteïnes
+Carbohidrats
+Verdures
+Greixos
+Plats tancats
+Especials
+Macros
+proteïna, carbo, verdura, greix
+Àpats especials
+esmorzar, berenar, tancats
+Combinacions
+regles entre aliments
+Aliments
+catàleg amb macros
+Què cuino?
+amb el que tinguis
+Cada proteïna especial ocupa un nombre fix d'àpats per setmana o per cicle de 2
+setmanes. El pollastre no té regla pròpia: omple tot el que sobra, així que és la base
+natural del menú.
+Se sortegen per probabilitat a cada àpat que no sigui un plat tancat. Els percentatges
+haurien de sumar 100%.
+Se sortegen per probabilitat, igual que els carbohidrats. Els percentatges haurien de
+sumar 100%.
+Opcions de greix (oli, alvocat, fruits secs, formatge...). Quan el motor d'objectius
+necessiti completar greix en un àpat, sortejarà entre aquests per probabilitat — si no
+n'afegeixes cap, continuarà fent servir oli d'oliva per defecte.
+Opcions completes d'esmorzar, sense combinar amb res més. Cada 2 setmanes (14
+esmorzars) es reparteix exactament segons aquests percentatges, barrejant l'ordre a
+l'atzar. Els percentatges haurien de sumar 100%.
+Opcions completes de mig matí, sense combinar amb res més. Cada 2 setmanes (14
+àpats) es reparteix exactament segons aquests percentatges, barrejant l'ordre a
+l'atzar. Els percentatges haurien de sumar 100%.
+Opcions completes de berenar, sense combinar amb res més. Cada 2 setmanes (14
+berenars) es reparteix exactament segons aquests percentatges, barrejant l'ordre a
+l'atzar. Els percentatges haurien de sumar 100%.
+Van sencers, sense combinar amb carbo ni verdura. El grup sencer apareix amb la
+freqüència del bloc; dins seu, se sorteja quin plat toca.
+No competeixen per un forat de proteïna: se superposen sobre l'àpat que toqui aquell
+dia.
+Modificador: barreja 50/50 amb el carbo del dia
+Afegeix proteïna
+Afegeix carbohidrat
+Afegeix verdura / acompanyament
+Afegeix greix
+Afegeix esmorzar
+Afegeix mig matí
+Afegeix berenar
+Afegeix especial
+Suma actual: {n}% {estado}
+· correcte
+· hauria de ser 100%
+Base del menú
+cada 2 setmanes
+per setmana
+{n}× {periodo}
+{n}% de probabilitat
+Sense enllaçar a la base de dades
+1 ració = {g} g
+Grup · {n}× cada 2 setmanes
+Afegeix al grup
+Cancel·la
+Desa
+Elimina
+Segur que vols eliminar
+? Deixarà d'aparèixer als menús generats.
+Freqüència de "{nombre}"
+Vegades cada 2 setmanes (cicle)
+Ex: perquè aparegui 1 vegada per setmana, posa 2 (2 vegades cada 2 setmanes).
+Amb un nombre parell, es garanteix la meitat a cada setmana, mai les dues juntes.
+Nul·la (mai)
+Baixa
+Alta
+Màxima (forçada)
+Catàleg central d'aliments amb els seus valors per 100 g. Els ingredients del menú
+s'enllacen aquí, així que en corregir un valor s'actualitza a tots els llocs on es faci
+servir.
+Cerca un aliment…
+Afegeix amb foto
+Aliment nou
+Exporta el catàleg
+{n} de {total} aliments
+fet servir a {n}
+per 100 g
+saturat {n}g
+sucres {n}g
+fibra {n}g
+sal {n}g
+No hi ha cap aliment que coincideixi amb "{query}".
+Catàleg d'aliments
+{n} aliments · valors per 100 g · exportat el {fecha}
+Aliment
+Prot.
+Greix
+Carb.
+Sal
+Sucr.
+Fibra
+Sat.
+Origen
+FoodDraft — catàleg d'aliments exportat
+Aliment nou
+Edita l'aliment
+Llegint l'etiqueta…
+Torna a llegir la foto
+Llegeix els valors de la foto
+No s'ha pogut llegir la foto. Prova amb una altra imatge més nítida, o omple les dades
+a mà.
+Dades emplenades des de la foto — revisa-les abans de desar, la lectura pot fallar.
+La lectura automàtica de l'etiqueta no està disponible aquí — de moment, omple les
+dades a mà mirant la foto.
+Nom
+Ex: Pit de pollastre (cru)
+Valors per cada 100 g de producte (tal com apareixen a l'etiqueta).
+Calories (kcal)
+Proteïna (g)
+Greix (g)
+Carbohidrats (g)
+Detall addicional (opcional)
+Dels quals saturats (g)
+Dels quals sucres (g)
+Fibra (g)
+Sal (g)
+Font (opcional)
+Ex: Etiqueta Hacendado
+Elimina l'aliment
+Segur que vols eliminar
+del catàleg?
+Està enllaçat a {n} ingredient{plural} ({lista}). Si l'esborres, aquests ingredients es
+quedaran sense macros fins que els enllacis a un altre aliment.
+Regles d'afinitat entre aliments concrets: fes menys o més probable (o directament
+impossible o obligatòria) una combinació de proteïna, carbo, verdura o cigrons dins
+d'un mateix àpat.
+Regla nova
+Encara no has creat cap regla. Les combinacions se sortegen amb total llibertat fins
+que n'afegeixis la primera.
+(aliment eliminat)
+Regla de combinació nova
+Edita la regla
+Element 1
+Element 2
+Element 3 (opcional)
+Element 4 (opcional)
+— Tria —
+— Cap —
+Nivell d'afinitat
+Aquesta combinació no podrà sortir mai, tret que algun dia no quedi cap altra opció
+possible.
+Aquesta combinació continuarà podent sortir, però amb molta menys freqüència del
+normal.
+Aquesta combinació tindrà moltes més probabilitats de sortir del normal.
+Si és possible, el motor intentarà que aquesta combinació es doni sempre que es
+donin els seus elements.
+Tria com a mínim 2 elements diferents entre si.
+Elimina la regla
+Segur que vols eliminar la regla
+?
+Afegeix
+Edita
+Nom
+Ex: Salmó
+Ingredients d'aquest plat
+— Tria un aliment —
+Afegeix un ingredient
+Total del plat:
+Afegeix com a mínim un ingredient per calcular els macros d'aquest plat.
+Dades nutricionals
+Aliment de la base de dades
+— Sense enllaçar —
+Grams per ració (1.0)
+Ex: 150
+Enllaça un aliment i posa els grams per veure els macros d'una ració.
+Nota de quantitat (opcional)
+Ex: 2 filets, 1 tassa…
+Tipus de regla
+Freqüència fixa
+Base del menú (sense freqüència, farciment)
+Freqüència
+Probabilitat (%)
+Probabilitat dins del grup (%)
+Política de privacitat — FoodDraft
+Última actualització: 9 de setembre de 2026
+Responsable del tractament
+Pablo Díaz Blanco, Espanya. Contacte: draftedfood@gmail.com
+Quines dades es recullen
+Compte: correu electrònic i, si inicies la sessió amb Google, la teva foto de perfil.
+Dades de perfil: edat, alçada, pes, sexe, nivell d'activitat i entrenaments habituals,
+objectiu nutricional.
+Seguiment: historial de pesades, menús generats, catàleg d'aliments i plats que creïs.
+Fotos d'etiquetes nutricionals: si fas servir el lector per foto, la imatge s'envia a Gemini
+(Google) per llegir les dades nutricionals i no s'emmagatzema en cap servidor — es
+descarta després de processar-la.
+Per a què es fan servir
+Únicament per prestar el servei: generar els teus menús, calcular els teus objectius
+nutricionals i portar el teu seguiment de pes. No es fan servir amb finalitats
+publicitàries ni es venen a tercers.
+Base legal
+L'execució del servei que sol·licites en crear un compte (art. 6.1.b RGPD) i, en el cas
+de les fotos, el teu consentiment explícit en fer servir aquesta funció de manera
+voluntària.
+Amb qui es comparteixen
+Google Firebase (autenticació, base de dades, protecció antiabús i lectura de fotos via
+Gemini), com a encarregat del tractament, amb les seves pròpies garanties de
+seguretat i transferència internacional de dades.
+Stripe, únicament si contractes una subscripció de pagament, per gestionar el
+cobrament (no se li comparteixen dades de salut, només el que cal per processar el
+pagament).
+No es comparteix res amb ningú més.
+Quant de temps es conserven
+Mentre el teu compte existeixi. Pots eliminar-lo completament, juntament amb totes les
+teves dades, des de l'app en qualsevol moment (Perfil Elimina el compte).
+Els teus drets
+Accés, rectificació, supressió, oposició, portabilitat i limitació del tractament. Els pots
+exercir eliminant el teu compte directament des de l'app, o escrivint a
+draftedfood@gmail.com.
+Seguretat
+Les dades viatgen xifrades i estan protegides per regles d'accés que garanteixen que
+cada persona només pot veure i modificar les seves.
+Canvis en aquesta política
+Si aquesta política canvia de forma rellevant, se n'avisarà dins de la mateixa app.
+Torna a FoodDraft
+Termes d'ús — FoodDraft
+Última actualització: 9 de setembre de 2026
+Qui som
+FoodDraft és un servei operat per Pablo Díaz Blanco, Espanya. Contacte:
+draftedfood@gmail.com
+Què és el servei
+FoodDraft genera menús setmanals a partir dels teus propis plats, calcula objectius
+nutricionals orientatius i porta un seguiment del teu pes. Els càlculs de calories,
+macros i objectius són estimacions orientatives basades en fórmules d'ús general
+(com Mifflin-St Jeor) — no substitueixen el consell d'un metge, nutricionista o
+professional de la salut. Davant de qualsevol dubte o condició mèdica, consulta
+sempre un professional.
+El teu compte
+El servei és d'ús personal. Ets responsable de mantenir segura la teva contrasenya i
+de l'activitat del teu compte. Pots eliminar-lo completament en qualsevol moment des
+de l'app (Perfil Elimina el compte).
+Subscripció de pagament
+Si contractes la versió de pagament, el cobrament es gestiona a través de Stripe. Pots
+cancel·lar en qualsevol moment des del portal de gestió de la teva subscripció — la
+cancel·lació s'aplica al final del període ja pagat, sense càrrecs addicionals. En
+cancel·lar, les funcions premium deixen d'estar disponibles, però les teves dades i la
+resta de l'app continuen intactes.
+Responsabilitat
+Fas servir l'app sota la teva pròpia responsabilitat. No garantim resultats concrets de
+salut, pes o composició corporal — l'app és una eina de suport per organitzar la teva
+alimentació, no un tractament mèdic. En la mesura permesa per la llei, no s'assumeix
+cap responsabilitat per decisions preses a partir de la informació que ofereix l'app.
+Ús indegut
+Ens reservem el dret de suspendre o cancel·lar un compte en cas d'ús indegut del
+servei (per exemple, intents d'abús de les funcions que fan servir intel·ligència artificial,
+o accés no autoritzat a comptes de tercers).
+Canvis en aquests termes
+Si canvien de forma rellevant, se n'avisarà dins de la mateixa app.
+Llei aplicable
+Aquests termes es regeixen per la legislació espanyola.
+Torna a FoodDraft

@@ -1,0 +1,661 @@
+Come variado, sen ter que pensalo cada día.
+Iniciar sesión
+Inicia sesión para ver os teus datos
+Crea a túa conta
+Correo electrónico
+Contrasinal
+Un momento…
+Iniciar sesión
+Crear conta
+Continuar con Google
+Non tes conta?
+Créaa aquí
+Xa tes conta?
+Inicia sesión
+Política de privacidade
+Termos de uso
+Cargando…
+O correo electrónico non é válido.
+Non existe ningunha conta con ese correo.
+Contrasinal incorrecto.
+Correo ou contrasinal incorrectos.
+Xa existe unha conta con ese correo. Proba a iniciar sesión.
+O contrasinal debe ter polo menos 6 caracteres.
+Pechaches a xanela de Google antes de rematar.
+Produciuse un erro ({code}). Téntao de novo.
+Menú
+Configuración
+Perfil
+O teu receitario
+Gardando…
+Gardado
+Idioma
+O idioma da interface. Por agora, o resto dos textos da app pode seguir véndose en
+castelán mentres se traduce por partes.
+Luns
+Martes
+Mércores
+Xoves
+Venres
+Sábado
+Domingo
+Almorzo
+Media mañá
+Comida
+Merenda
+Cea
+Xera un ciclo de 2 semanas respectando todas as frecuencias, bloques e
+probabilidades definidos. Cada vez que premas o botón, sortearase un menú novo.
+Ver obxectivos
+Xerar outro menú
+Xerar menú (2 semanas)
+Aínda non xeraches ningún menú. Preme o botón de arriba para crear o primeiro.
+Semana {n}
+Exportar PDF
+Lista da compra
+Ocultar estatísticas
+Ver estatísticas
++garavanzos 50/50
+axustada
+{n} kcal
+Ciclos anteriores
+A app usa o último ciclo para evitar repetir de inmediato o mesmo prato pechado ou a
+mesma elección nos grupos dun só oco.
+Prato pechado: {nombre}
+sen datos nutricionais
+Total da comida
+Non se puido evitar a combinación "{nombres}" (regra: nunca) por falta de alternativas
+ese día.
+Regra aplicada: {nombres} ({nivel})
+1 ración = a cantidade base do ingrediente
+Restablecer
+Completada hoxe
+Marcar como completada hoxe
+Pechar
+Dentro do rango esperado
+Ritmo demasiado lento
+Zona alta do rango
+Ritmo excesivo
+Vai en dirección contraria ao obxectivo
+Por debaixo do recomendado
+Aceptable, mellorable
+Por riba do recomendado
+{pct}% do obxectivo ({kcal} kcal)
+Fixa un obxectivo diario (botón de arriba) para ver o % de cumprimento deste día.
+Sal, azucres e fibra — media diaria desta semana
+Sal
+Azucres libres
+Fibra
+recomendado: menos de {n} g/día
+óptimo ata {optimo} g/día · límite {maximo} g/día
+recomendado: polo menos {n} g/día
+Sobre {dias} día{plural} con comidas · limiares da OMS
+(azucre axustado ao teu obxectivo de kcal)
+Cálculo incompleto — falta o dato de {lista} nalgún alimento usado esta semana. O
+total real podería ser maior.
+sal
+azucres
+fibra
+Os teus obxectivos diarios
+Aínda non tes un perfil completo, así que non se pode calcular ningún obxectivo. Vai á
+pestana "Perfil" e enche os teus datos (ano de nacemento, altura, peso e tipo de día a
+día) para que se calculen sos.
+kcal / día
+{base} kcal día a día + {entrenamiento} kcal adestramento (media diaria)
+TDEE mantemento {kcal} kcal {etapa} ({signo}{pct}%)
+Proteína
+Graxa
+Carbohidratos
+Cos teus adestramentos intensos habituais, o ideal sería un mínimo de {carbMin}g de
+carbohidrato, pero con estas kcal e a graxa xa no seu chan de seguridade ({fatFloor}g)
+non se pode chegar sen máis marxe calórica.
+Reparto por comida
+Calculado coa fórmula de Mifflin-St Jeor para o teu día a día, máis as kcal dos teus
+adestramentos habituais sumadas á parte, cunha marxe de erro razoable (ningún
+cálculo sen laboratorio é exacto ao 100%). Se algo cambia (peso, adestramentos...),
+actualízao na pestana "Perfil" e recalcularase só.
+Que che parece esta combinación?
+Gústame
+Non me gusta
+Bastante
+Sempre que se poida
+Menos
+Nunca
+Gardado en Regras de afinidade como "{nivel}".
+O teu menú
+FoodDraft — exportado para cociñar coas cantidades a man
+Lista da compra
+Ciclo completo
+Aínda non hai ningún menú xerado.
+{marcados} de {total} marcados
+Nome (opcional)
+Como te chamas?
+Sexo
+Muller
+Home
+Ano de nacemento
+Ex: 1995
+Altura
+Peso
+Tipo de día a día (sen contar o adestramento)
+Adestramentos habituais (opcional)
+Horas/sesión
+Veces/semana
+Engadir adestramento
+Obxectivo actual
+Traballo / estudos de escritorio
+Pasas a maior parte do día sentado
+De pé, movéndote bastante
+Traballo activo, camiñas ou estás de pé boa parte do día
+Fisicamente esixente
+Traballo manual ou moi activo a maior parte do día
+Pesas / forza
+Cardio lixeiro (camiñar rápido, bici suave)
+Correr a ritmo medio
+Ciclismo moderado
+Natación
+Deporte de equipo / pádel / tenis
+HIIT / alta intensidade
+Ioga / pilates
+Mantemento
+Manter o peso actual
+Volume limpo
+Sobe de peso progresivamente, minimizando a graxa (+12%)
+Definición conservadora
+Baixa de peso a un ritmo lento e seguro (15%)
+O cálculo usa a fórmula de Mifflin-St Jeor para o teu día a día, e suma á parte as kcal
+dos teus adestramentos habituais (vía METs), para non sobreestimar o teu gasto se o
+teu día a día é sedentario aínda que adestres varios días por semana. Ningún cálculo
+sen laboratorio é exacto ao 100% — o obxectivo desta app non é a precisión absoluta,
+senón axudarche a ter unha relación máis sa coa comida, sen ter que pensala desde
+cero.
+Ver cálculo desglosado
+Cálculo desglosado
+Completa o ano de nacemento, a altura e o peso para ver o desglose.
+BMR (fórmula de Mifflin-St Jeor)
+× PAL {pal} — {nivel}
+{n} kcal día a día
++ Adestramentos habituais (vía METs)
+= TDEE de mantemento
+{etapa} ({signo}{pct}%)
+Antes de comezar
+Con estes datos, a app pode calcular os teus obxectivos diarios de calorías e macros.
+É completamente opcional.
+Gardar e continuar
+Saltar por agora (non terei obxectivos calculados)
+Estes datos úsanse para calcular os teus obxectivos diarios de calorías e macros.
+Cámbiaos cando queiras — recalcúlanse sos ao gardar.
+Reparto de comidas
+Elixe cantas comidas fas ao día e que peso ten cada unha sobre o teu obxectivo diario
+— úsase tanto para xerar o menú coma para a túa fracción de comidas completadas
+do resumo mensual. Comida e Cea están sempre presentes.
+Recomendado
+Peso de cada comida
+Suma: {n}%
+— debe sumar exactamente 100%
+Gardar cambios
+Perfil actualizado — os teus obxectivos recalculáronse. Podes velos no botón
+"Obxectivos" da pestana Menú.
+Eliminar conta
+Borra a túa conta e todos os teus datos (alimentos, pratos, menús, peso, obxectivos)
+de forma permanente. Non se pode desfacer.
+Eliminar a miña conta
+Clásico · 4 comidas
+O reparto con máis respaldo na ciencia da crononutrición: concentra a enerxía na
+primeira metade do día.
+3 comidas · sen merenda
+Almorzo, comida e cea, sen nada entre horas — o patrón de toda a vida, cunha
+comida menos que o clásico pero mantendo unha estrutura clara ao longo do día.
+3 comidas · sen almorzo
+Saltar o almorzo de forma habitual relacionouse nalgúns estudos con máis graxa
+acumulada no fígado — non é motivo de alarma, pero convén sabelo se o fas todos os
+días.
+2 comidas · comida e cea
+Xaxún intermitente: menos comidas, pero máis grandes. Canto menos comidas fas,
+máis fácil é acabar picando entre horas se non che sacian ben — vixía ben as racións.
+Ademais, a evidencia respalda máis a versión coa comida adiantada cara á mañá que
+tarde.
+5 comidas · con media mañá
+Comidas máis pequenas e repartidas, para quen prefire non pasar moitas horas
+seguidas sen comer. Non é dos patróns con máis evidencia detrás, pero é unha forma
+habitual e válida de organizar o día.
+As ceas copiosas ou moi tardías asócianse a peor control do azucre, peor descanso e
+máis risco de graxa no fígado. Se podes, que a cea non sexa nin a máis pesada nin a
+máis tardía do día.
+ELIMINAR
+Isto borra permanentemente a túa conta e todos os teus datos: alimentos, pratos,
+menús, historial de peso e obxectivos. Non se pode desfacer.
+O teu contrasinal
+Escribe {palabra} para confirmar
+Cancelar
+Eliminando…
+Introduce o teu contrasinal para confirmar.
+Contrasinal incorrecto.
+Pechaches a xanela de Google antes de confirmar.
+Non se puido eliminar a conta. Téntao de novo.
+Datos persoais
+perfil e obxectivos
+Seguimento de peso
+pesadas e tendencia
+función premium
+Resumo mensual
+comidas completadas
+Medidas corporais
+proximamente
+Premium
+Faite premium
+xestionar subscrición
+desbloquea máis
+Documentos
+por que funciona así
+Descargar unha copia dos meus datos
+Ver premium
+"Que cociño?" é premium
+Envía unha foto do que teñas e recibe ideas feitas só con alimentos do teu propio
+catálogo, con macros reais — parte da subscrición premium.
+O seguimento de peso é premium
+Ciclos, tendencia e axuste automático dos teus obxectivos segundo evolucione o teu
+peso real — parte da subscrición premium.
+O resumo completo é premium
+Con premium, este resumo combínase co teu obxectivo actual e a túa tendencia de
+peso do mes, con gráfica incluída.
+Conta as comidas que marcaches como completadas desde o detalle de cada comida
+no Menú — gárdase con data real, aínda que rexeneres o menú.
+{completadas} de {esperadas} comidas completadas
+Baseado en {n} comidas ao día (configurado no teu perfil)
+Obxectivo actual
+{n} kcal/día
+Peso este mes
+sen pesadas este mes
+Tendencia de peso · {mes}
+Completaches o {pct}% das túas comidas
+, e o teu peso
+baixou
+subiu
+mantívose
+{kg} kg este mes.
+este mes.
+Xa es premium
+Faite premium
+2,99€/mes — cancela cando queiras
+Un momento…
+Xestionar a miña subscrición
+Subscribirme
+Lector de etiquetas por foto (20 análises ao mes con IA)
+Seguimento de peso completo: ciclos, tendencia e axuste automático de obxectivos
+"Que podo cociñar co que teño" a partir dunha foto e/ou texto cos teus ingredientes
+Resumo mensual ampliado: obxectivo actual, peso do mes e a súa gráfica de
+tendencia
+Sen anuncios
+Envía unha foto do que teñas (neveira, despensa...), escribe que ingredientes tes, ou
+ambas as cousas — suxerímosche combinacións feitas só con alimentos do teu propio
+catálogo, con macros reais, non unha estimación da IA.
+Cambiar foto
+Facer/subir foto (opcional)
+Outros ingredientes que non saian ben na foto (opcional)
+Ingredientes que tes — podes escribilos aquí sen necesidade de foto
+Ex: arroz na despensa, ovos
+Especias ou condimentos dispoñibles (opcional)
+Ex: comiño, pemento moído, ourego, allo en po
+Que podo cociñar?
+Non recoñecemos ningún alimento do teu catálogo na foto. Proba con outra imaxe, ou
+engade primeiro eses alimentos ao catálogo.
+Gardar como prato pechado
+Proximamente
+Aquí poderás engadir pregues cutáneos e medidas corporais (cintura, cadeira...) para
+completar o seguimento máis alá do peso na báscula. Por agora non é necesario — o
+seguimento de peso do lado xa cobre o esencial.
+Aquí poderanse consultar documentos que, sen ser necesarios para que a app
+funcione, explican como funciona por dentro — e buscan deixar claro que decisións
+como as fórmulas, as porcentaxes ou os limiares non están postas ao azar.
+Aínda non hai documentos engadidos
+En canto estean listos, aquí aparecerán os documentos que explican e xustifican o
+funcionamento interno da app.
+O peso está subindo nunha etapa de definición. Pode deberse a algo puntual, pero
+convén revisar o déficit.
+Estás perdendo moi pouco ({magnitud}%/semana) — por debaixo do {umbral}% que
+se considera un ritmo con estímulo suficiente.
+Estás perdendo peso moi rápido ({magnitud}%/semana) — por riba do {umbral}%, con
+risco de perder masa muscular.
+O teu ritmo de perda ({magnitud}%/semana) está na zona alta, entre o {umbralAviso}%
+e o {umbralAccion}%.
+O teu ritmo de perda ({magnitud}%/semana) está dentro do rango recomendado
+({umbralIneficaz}%-{umbralAccion}%).
+O peso está baixando nunha etapa de volume. Pode deberse a algo puntual, pero
+convén revisar o superávit.
+Estás gañando moi pouco ({magnitud}%/mes) — por debaixo do {umbral}% que se
+considera necesario para progresar.
+Estás gañando peso moi rápido ({magnitud}%/mes) — por riba do {umbral}%, con
+risco de que sexa sobre todo graxa.
+O teu ritmo de ganancia ({magnitud}%/mes) está na zona alta, entre o {umbralAviso}%
+e o {umbralAccion}%.
+O teu ritmo de ganancia ({magnitud}%/mes) está dentro do rango recomendado
+({umbralIneficaz}%-{umbralAccion}%).
+3 meses
+1 ano
+Histórico completo
+Enfermidade
+Viaxe
+Regra / retención de líquidos
+Comida moi copiosa ou salgada
+Outro
+Sen especificar
+Hoxe tócache pesarte
+É un dos días que escolliches para o seguimento de peso. Podes rexistralo agora
+mesmo, xusto debaixo, ou saltar o aviso de hoxe se non che vén ben.
+Saltar por hoxe
+Vale
+Cambio bastante grande
+{peso} kg aléxase bastante da túa última pesada. Sabes a que se pode deber? Se
+marcas un motivo, este dato non contará para a tendencia do ciclo — pero gárdase
+igualmente.
+Non, é normal
+Gardar como atípica
+Seguimento de peso
+{titulo} · exportado o {fecha}
+Tendencia: {signo}{pct}%/semana
+Data
+Peso (kg)
+Nota
+Atípica{detalle}
+FoodDraft — documento xerado a partir do teu seguimento de peso
+Pésate 2-3 veces por semana, repartidas ao longo da semana. Mentres o ciclo estea
+aberto non verás o número evolucionar — só ao pechalo, para non obsesionarte coas
+variacións do día a día.
+Ciclo rematado — {n} pesadas rexistradas
+Pausado do {inicio} ao {fin}{detalle}
+{signo}{pct}%/semana
+Actualizar o meu peso de perfil a {kg} kg
+Agora mesmo tes rexistrados {kg} kg — isto recalcula o teu BMR, proteína e graxa co
+teu peso real.
+Aplicar axuste: {signo}{kcal} kcal/día
+Non cambia a túa etapa ({etapa}) — só afina a intensidade dentro dela.
+Pechar ciclo e comezar o seguinte
+Ciclo pechado hoxe
+Exportar este peche en PDF
+Non hai pesadas suficientes (sen contar as atípicas) para calcular unha tendencia
+fiable este ciclo. Podes comezar o seguinte cando queiras.
+Comezar o seguinte ciclo
+Corrixir o peso de hoxe
+Peso de hoxe
+Gardar
+Ciclo en curso — {n} de ~{total} pesadas rexistradas, quedan {dias} días para a
+revisión.
+A túa primeira pesada abre o ciclo. Revisarase dentro de {n} semanas.
+Ciclo pausado desde o {fecha}{detalle}. Non conta para o peche nin che lembrará
+pesarte.
+Retomar
+Motivo (opcional)
+Pausar ciclo
+Cancelar
+Pausar ciclo
+Marcada como atípica{detalle}
+Rexistrada
+Ocultar axustes
+Axustes do seguimento
+Veces por semana
+Días suxeridos: {lista}
+Duración do ciclo
+{n} sem.
+Non se pode cambiar cun ciclo xa aberto — aplicarase ao seguinte.
+Ocultar progresión
+Ver progresión
+Exportar este rango en PDF
+Aínda non tes ningún ciclo pechado — a progresión enchese ao rematar o teu primeiro
+ciclo.
+Non hai pesadas suficientes neste rango. Proba cun rango máis amplo.
+Proteínas
+Carbohidratos
+Verduras
+Graxas
+Pratos pechados
+Especiais
+Macros
+proteína, carbo, verdura, graxa
+Comidas especiais
+almorzo, merenda, pechados
+Combinacións
+regras entre alimentos
+Alimentos
+catálogo con macros
+Que cociño?
+co que teñas
+Cada proteína especial ocupa un número fixo de comidas por semana ou por ciclo de
+2 semanas. O polo non ten regra propia: enche todo o que sobra, así que é a base
+natural do menú.
+Sortéanse por probabilidade en cada comida que non sexa un prato pechado. As
+porcentaxes deberían sumar 100%.
+Sortéanse por probabilidade, igual que os carbohidratos. As porcentaxes deberían
+sumar 100%.
+Opcións de graxa (aceite, aguacate, froitos secos, queixo...). Cando o motor de
+obxectivos necesite completar graxa nunha comida, sorteará entre estas por
+probabilidade — se non engades ningunha, seguirá usando aceite de oliva por
+defecto.
+Opcións completas de almorzo, sen combinar con nada máis. Cada 2 semanas (14
+almorzos) repártese exactamente segundo estas porcentaxes, mesturando a orde ao
+azar. As porcentaxes deberían sumar 100%.
+Opcións completas de media mañá, sen combinar con nada máis. Cada 2 semanas
+(14 comidas) repártese exactamente segundo estas porcentaxes, mesturando a orde
+ao azar. As porcentaxes deberían sumar 100%.
+Opcións completas de merenda, sen combinar con nada máis. Cada 2 semanas (14
+merendas) repártese exactamente segundo estas porcentaxes, mesturando a orde ao
+azar. As porcentaxes deberían sumar 100%.
+Van enteiros, sen combinar con carbo nin verdura. O grupo enteiro aparece coa
+frecuencia do bloque; dentro, sortéase cal prato toca.
+Non compiten por un oco de proteína: superpóñense sobre a comida que toque ese
+día.
+Modificador: mestura 50/50 co carbo do día
+Engadir proteína
+Engadir carbohidrato
+Engadir verdura / acompañamento
+Engadir graxa
+Engadir almorzo
+Engadir media mañá
+Engadir merenda
+Engadir especial
+Suma actual: {n}% {estado}
+· correcto
+· debería ser 100%
+Base do menú
+cada 2 semanas
+por semana
+{n}× {periodo}
+{n}% de probabilidade
+Sen enlazar á base de datos
+1 ración = {g} g
+Grupo · {n}× cada 2 semanas
+Engadir ao grupo
+Cancelar
+Gardar
+Eliminar
+Seguro que queres eliminar
+? Deixará de aparecer nos menús xerados.
+Frecuencia de "{nombre}"
+Veces cada 2 semanas (ciclo)
+Ex: para que apareza 1 vez por semana, pon 2 (2 veces cada 2 semanas). Cun
+número par, garántese a metade en cada semana, nunca as dúas xuntas.
+Nula (nunca)
+Baixa
+Alta
+Máxima (forzada)
+Catálogo central de alimentos cos seus valores por 100 g. Os ingredientes do menú
+enlázanse aquí, así que ao corrixir un valor actualízase en todos os sitios onde se use.
+Buscar alimento…
+Engadir con foto
+Novo alimento
+Exportar catálogo
+{n} de {total} alimentos
+usado en {n}
+por 100 g
+saturada {n}g
+azucres {n}g
+fibra {n}g
+sal {n}g
+Non hai ningún alimento que coincida con "{query}".
+Catálogo de alimentos
+{n} alimentos · valores por 100 g · exportado o {fecha}
+Alimento
+Prot.
+Graxa
+Carb.
+Sal
+Azuc.
+Fibra
+Sat.
+Orixe
+FoodDraft — catálogo de alimentos exportado
+Novo alimento
+Editar alimento
+Lendo a etiqueta…
+Volver ler a foto
+Ler valores da foto
+Non se puido ler a foto. Proba con outra imaxe máis nítida, ou enche os datos a man.
+Datos completados desde a foto — revísaos antes de gardar, a lectura pode fallar.
+A lectura automática da etiqueta non está dispoñible aquí — de momento, enche os
+datos a man mirando a foto.
+Nome
+Ex: Peito de polo (cru)
+Valores por cada 100 g de produto (tal como aparecen na etiqueta).
+Calorías (kcal)
+Proteína (g)
+Graxa (g)
+Carbohidratos (g)
+Detalle adicional (opcional)
+Das cales saturadas (g)
+Dos cales azucres (g)
+Fibra (g)
+Sal (g)
+Fonte (opcional)
+Ex: Etiqueta Hacendado
+Eliminar alimento
+Seguro que queres eliminar
+do catálogo?
+Está enlazado a {n} ingrediente{plural} ({lista}). Se o borras, eses ingredientes
+quedarán sen macros ata que os enlaces a outro alimento.
+Regras de afinidade entre alimentos concretos: fai menos ou máis probable (ou
+directamente imposible ou obrigatoria) unha combinación de proteína, carbo, verdura
+ou garavanzos dentro dunha mesma comida.
+Nova regra
+Aínda non creaches ningunha regra. As combinacións sortéanse con total liberdade
+ata que engadas a primeira.
+(alimento eliminado)
+Nova regra de combinación
+Editar regra
+Elemento 1
+Elemento 2
+Elemento 3 (opcional)
+Elemento 4 (opcional)
+— Elixe —
+— Ningún —
+Nivel de afinidade
+Esta combinación non poderá saír nunca, salvo que algún día non quede ningunha
+outra opción posible.
+Esta combinación seguirá podendo saír, pero con moita menos frecuencia do normal.
+Esta combinación terá moitas máis probabilidades de saír do normal.
+Se é posible, o motor intentará que esta combinación se dea sempre que se dean os
+seus elementos.
+Elixe polo menos 2 elementos distintos entre si.
+Eliminar regra
+Seguro que queres eliminar a regra
+?
+Engadir
+Editar
+Nome
+Ex: Salmón
+Ingredientes deste prato
+— Elixe un alimento —
+Engadir ingrediente
+Total do prato:
+Engade polo menos un ingrediente para calcular os macros deste prato.
+Datos nutricionais
+Alimento da base de datos
+— Sen enlazar —
+Gramos por ración (1.0)
+Ex: 150
+Enlaza un alimento e pon os gramos para ver os macros dunha ración.
+Nota de cantidade (opcional)
+Ex: 2 filetes, 1 cunca…
+Tipo de regra
+Frecuencia fixa
+Base do menú (sen frecuencia, recheo)
+Frecuencia
+Probabilidade (%)
+Probabilidade dentro do grupo (%)
+Política de privacidade — FoodDraft
+Última actualización: 9 de setembro de 2026
+Responsable do tratamento
+Pablo Díaz Blanco, España. Contacto: draftedfood@gmail.com
+Que datos se recollen
+Conta: correo electrónico e, se inicias sesión con Google, a túa foto de perfil.
+Datos de perfil: idade, altura, peso, sexo, nivel de actividade e adestramentos
+habituais, obxectivo nutricional.
+Seguimento: historial de pesadas, menús xerados, catálogo de alimentos e pratos que
+crees.
+Fotos de etiquetas nutricionais: se usas o lector por foto, a imaxe envíase a Gemini
+(Google) para ler os datos nutricionais e non se almacena en ningún servidor —
+descártase despois de procesala.
+Para que se usan
+Unicamente para prestar o servizo: xerar os teus menús, calcular os teus obxectivos
+nutricionais e levar o teu seguimento de peso. Non se usan con fins publicitarios nin se
+venden a terceiros.
+Base legal
+A execución do servizo que solicitas ao crear unha conta (art. 6.1.b RGPD) e, no caso
+das fotos, o teu consentimento explícito ao usar esa función de forma voluntaria.
+Con quen se comparten
+Google Firebase (autenticación, base de datos, protección antiabuso e lectura de fotos
+vía Gemini), como encargado do tratamento, coas súas propias garantías de
+seguridade e transferencia internacional de datos.
+Stripe, unicamente se contratas unha subscrición de pagamento, para xestionar o
+cobro (non se lle comparten datos de saúde, só o necesario para procesar o
+pagamento).
+Non se comparte nada con ninguén máis.
+Canto tempo se conservan
+Mentres a túa conta exista. Podes eliminala por completo, xunto con todos os teus
+datos, desde a app en calquera momento (Perfil Eliminar conta).
+Os teus dereitos
+Acceso, rectificación, supresión, oposición, portabilidade e limitación do tratamento.
+Podes exercelos eliminando a túa conta directamente desde a app, ou escribindo a
+draftedfood@gmail.com.
+Seguridade
+Os datos viaxan cifrados e están protexidos por regras de acceso que garanten que
+cada persoa só pode ver e modificar os seus.
+Cambios nesta política
+Se esta política cambia de forma relevante, avisarase dentro da propia app.
+Volver a FoodDraft
+Termos de uso — FoodDraft
+Última actualización: 9 de setembro de 2026
+Quen somos
+FoodDraft é un servizo operado por Pablo Díaz Blanco, España. Contacto:
+draftedfood@gmail.com
+Que é o servizo
+FoodDraft xera menús semanais a partir dos teus propios pratos, calcula obxectivos
+nutricionais orientativos e leva un seguimento do teu peso. Os cálculos de calorías,
+macros e obxectivos son estimacións orientativas baseadas en fórmulas de uso xeral
+(como Mifflin-St Jeor) — non substitúen o consello dun médico, nutricionista ou
+profesional da saúde. Ante calquera dúbida ou condición médica, consulta sempre un
+profesional.
+A túa conta
+O servizo é de uso persoal. Es responsable de manter seguro o teu contrasinal e da
+actividade da túa conta. Podes eliminala por completo en calquera momento desde a
+app (Perfil Eliminar conta).
+Subscrición de pagamento
+Se contratas a versión de pagamento, o cobro xestiónase a través de Stripe. Podes
+cancelar en calquera momento desde o portal de xestión da túa subscrición — a
+cancelación aplícase ao final do período xa pagado, sen cargos adicionais. Ao
+cancelar, as funcións premium deixan de estar dispoñibles, pero os teus datos e o
+resto da app seguen intactos.
+Responsabilidade
+Usas a app baixo a túa propia responsabilidade. Non garantimos resultados concretos
+de saúde, peso ou composición corporal — a app é unha ferramenta de apoio para
+organizar a túa alimentación, non un tratamento médico. Na medida permitida pola lei,
+non se asume responsabilidade por decisións tomadas a partir da información que
+ofrece a app.
+Uso indebido
+Reservámonos o dereito de suspender ou cancelar unha conta en caso de uso
+indebido do servizo (por exemplo, intentos de abuso das funcións que usan
+intelixencia artificial, ou acceso non autorizado a contas de terceiros).
+Cambios nestes termos
+Se cambian de forma relevante, avisarase dentro da propia app.
+Lei aplicable
+Estes termos réxense pola lexislación española.
+Volver a FoodDraft
