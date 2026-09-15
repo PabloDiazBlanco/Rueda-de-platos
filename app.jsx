@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator, Menu, Share2, Mail, Settings, TrendingUp, ChevronDown, Lightbulb, Globe, Lock, Activity, PieChart } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator, Menu, Share2, Mail, Settings, TrendingUp, ChevronDown, Lightbulb, Globe, Lock, Activity, PieChart, Undo2 } from "lucide-react";
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from "macros";
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
@@ -394,6 +394,32 @@ export default function RuedaDePlatos() {
     setData((prev) => ({ ...prev, listaCompra: { marcados: {}, generadoEn: entry.generatedAt } }));
   }
 
+  // Deshacer: vuelve al ciclo que había antes del último generado. history[0] es siempre el más
+  // reciente (el que se está deshaciendo), así que el destino es history[1] — y como se quita
+  // history[0] de la lista, repetir "Deshacer" sigue retrocediendo un paso más, hasta donde llegue
+  // el historial guardado (hasta HISTORY_MAX ciclos).
+  async function handleUndoMenu() {
+    if (history.length < 2) return;
+    const previous = history[1];
+    setMenu(previous.slots);
+    setMenuWeek(1);
+    const newHistory = history.slice(1);
+    setHistory(newHistory);
+    try {
+      await window.storage.set(MENU_STORAGE_KEY, JSON.stringify(previous.slots), false);
+    } catch (e) {
+      // si falla el guardado, el menú sigue visible en pantalla igualmente
+    }
+    try {
+      await window.storage.set(HISTORY_STORAGE_KEY, JSON.stringify(newHistory), false);
+    } catch (e) {
+      // el historial no es crítico: si falla el guardado, seguimos igualmente
+    }
+    // Mismo motivo que al generar: la lista de la compra marcada corresponde al menú que se acaba
+    // de abandonar, no al que se restaura.
+    setData((prev) => ({ ...prev, listaCompra: { marcados: {}, generadoEn: previous.generatedAt } }));
+  }
+
   function toggleMarcadoCompra(key) {
     setData((prev) => {
       const lc = prev.listaCompra || { marcados: {}, generadoEn: null };
@@ -719,6 +745,7 @@ export default function RuedaDePlatos() {
           <MenuView
             menu={menu}
             onGenerate={handleGenerateMenu}
+            onUndo={handleUndoMenu}
             menuWeek={menuWeek}
             setMenuWeek={setMenuWeek}
             history={history}
@@ -1331,16 +1358,26 @@ function EntrenamientosFields({ entrenamientos, setEntrenamientos, idioma }) {
               <IconBtn onClick={() => removeEntrenamiento(row.id)}><Trash2 size={12} /></IconBtn>
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-              <input
-                type="number" min={0} step="0.25" value={row.horas}
-                onChange={(e) => updateEntrenamiento(row.id, { horas: e.target.value })}
-                placeholder={t(idioma, "campo.horasPorSesion")} style={{ ...inputStyle, flex: 1 }}
-              />
-              <input
-                type="number" min={0} max={7} value={row.frecuenciaSemanal}
-                onChange={(e) => updateEntrenamiento(row.id, { frecuenciaSemanal: e.target.value })}
-                placeholder={t(idioma, "campo.vecesPorSemana")} style={{ ...inputStyle, flex: 1 }}
-              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 2, fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+                  {t(idioma, "campo.horasPorSesion")}
+                </div>
+                <input
+                  type="number" min={0} step="0.25" value={row.horas}
+                  onChange={(e) => updateEntrenamiento(row.id, { horas: e.target.value })}
+                  style={{ ...inputStyle, width: "100%" }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 2, fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+                  {t(idioma, "campo.vecesPorSemana")}
+                </div>
+                <input
+                  type="number" min={0} max={7} value={row.frecuenciaSemanal}
+                  onChange={(e) => updateEntrenamiento(row.id, { frecuenciaSemanal: e.target.value })}
+                  style={{ ...inputStyle, width: "100%" }}
+                />
+              </div>
             </div>
           </div>
         ))}
@@ -4108,7 +4145,7 @@ function BackLink({ label, onClick }) {
   );
 }
 
-function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada, idioma }) {
+function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada, idioma }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
@@ -4132,26 +4169,48 @@ function MenuView({ menu, onGenerate, menuWeek, setMenuWeek, history, data, onUp
           {t(idioma, "menu.verObjetivos")}
         </button>
       </div>
-      <button
-        onClick={onGenerate}
-        style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif",
-          fontSize: 13.5,
-          fontWeight: 700,
-          color: "#fff",
-          background: "var(--green)",
-          border: "none",
-          borderRadius: 9,
-          padding: "11px 18px",
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          marginBottom: 18,
-        }}
-      >
-        <Shuffle size={15} />
-        {menu ? t(idioma, "menu.generarOtro") : t(idioma, "menu.generarPrimero")}
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+        <button
+          onClick={onGenerate}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontSize: 13.5,
+            fontWeight: 700,
+            color: "#fff",
+            background: "var(--green)",
+            border: "none",
+            borderRadius: 9,
+            padding: "11px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Shuffle size={15} />
+          {menu ? t(idioma, "menu.generarOtro") : t(idioma, "menu.generarPrimero")}
+        </button>
+        {history && history.length >= 2 && (
+          <button
+            onClick={onUndo}
+            style={{
+              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              fontSize: 12.5,
+              fontWeight: 700,
+              color: "var(--ink-soft)",
+              background: "transparent",
+              border: "1px solid var(--line)",
+              borderRadius: 9,
+              padding: "10px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Undo2 size={14} />
+            {t(idioma, "menu.deshacer")}
+          </button>
+        )}
+      </div>
 
       {!menu && (
         <div
