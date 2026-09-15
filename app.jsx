@@ -580,6 +580,15 @@ export default function RuedaDePlatos() {
     setData((prev) => ({ ...prev, perfilOnboardingDone: true }));
   }
 
+  // Repetir el cuestionario de catálogo desde Ajustes (por si alguien se arrepiente o lo saltó sin
+  // querer). Solo toca perfilOnboardingDone, nunca perfil: como data.perfil ya existe, el gate de
+  // arriba lleva directo a CatalogoOnboarding, sin pasar otra vez por ProfileOnboarding — y al
+  // completarlo o saltarlo se reutilizan completarOnboardingConCatalogo/saltarCatalogoOnboarding
+  // de siempre, que ya dejan perfilOnboardingDone a true al terminar.
+  function repetirCuestionarioCatalogo() {
+    setData((prev) => ({ ...prev, perfilOnboardingDone: false }));
+  }
+
   // ---------- Seguimiento de peso ----------
   // Añade (o corrige, si ya hay una pesada guardada hoy) la pesada del día. Si es la primera del
   // ciclo, arranca el ciclo en la fecha de hoy.
@@ -1131,7 +1140,7 @@ export default function RuedaDePlatos() {
 
         {tab === "actividad-diaria" && <ActividadDiariaView perfil={data.perfil} onSave={savePerfil} idioma={idioma} />}
 
-        {tab === "ajustes" && <SettingsView perfil={data.perfil} data={data} onSave={savePerfil} idioma={idioma} />}
+        {tab === "ajustes" && <SettingsView perfil={data.perfil} data={data} onSave={savePerfil} onRepetirCuestionario={repetirCuestionarioCatalogo} idioma={idioma} />}
 
         {tab === "compartir" && <CompartirView idioma={idioma} />}
 
@@ -2385,8 +2394,9 @@ function DeleteAccountModal({ onClose, idioma }) {
 // cero — savePerfil (en el componente raíz) sustituye el perfil entero por lo que se le pase, así
 // que si esta pantalla mandara solo el campo que toca, borraría sin querer todo lo demás (nombre,
 // reparto de comidas...) que vive en otras pantallas.
-function SettingsView({ perfil, data, onSave, idioma }) {
+function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idioma }) {
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [showRepetirCuestionario, setShowRepetirCuestionario] = useState(false);
   const [notifEstado, setNotifEstado] = useState(""); // "" | "pidiendo" | "error"
   const [notifError, setNotifError] = useState("");
   const notifPush = perfil?.notificacionesPush ?? false;
@@ -2478,7 +2488,26 @@ function SettingsView({ perfil, data, onSave, idioma }) {
         </button>
       </div>
 
-      <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
+      <div style={{ border: "1px solid var(--mustard-dark)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mustard-dark)", marginBottom: 4 }}>
+          {t(idioma, "ajustes.repetirCuestionario.titulo")}
+        </div>
+        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+          {t(idioma, "ajustes.repetirCuestionario.desc")}
+        </div>
+        <button
+          onClick={() => setShowRepetirCuestionario(true)}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700,
+            color: "var(--mustard-dark)", background: "var(--mustard-soft)", border: "none", borderRadius: 7,
+            padding: "8px 12px", cursor: "pointer",
+          }}
+        >
+          {t(idioma, "ajustes.repetirCuestionario.boton")}
+        </button>
+      </div>
+
+      <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 16, maxWidth: 480 }}>
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
           {t(idioma, "perfilView.eliminarCuenta.titulo")}
         </div>
@@ -2498,7 +2527,35 @@ function SettingsView({ perfil, data, onSave, idioma }) {
       </div>
 
       {showDeleteAccount && <DeleteAccountModal onClose={() => setShowDeleteAccount(false)} idioma={idioma} />}
+      {showRepetirCuestionario && (
+        <ConfirmRepetirCuestionarioModal
+          onCancel={() => setShowRepetirCuestionario(false)}
+          onConfirm={() => {
+            setShowRepetirCuestionario(false);
+            onRepetirCuestionario();
+          }}
+          idioma={idioma}
+        />
+      )}
     </>
+  );
+}
+
+// Confirmación simple (sin reautenticación, a diferencia de eliminar cuenta): repetir el
+// cuestionario reemplaza los ingredientes/bloques actuales, pero no es una acción destructiva de
+// verdad — no borra cuenta ni datos de peso/menús, y siempre se puede volver a editar a mano desde
+// Configuración de comidas después. Por eso un solo paso de confirmación es suficiente.
+function ConfirmRepetirCuestionarioModal({ onCancel, onConfirm, idioma }) {
+  return (
+    <ModalShell onClose={onCancel} title={t(idioma, "ajustes.repetirCuestionario.titulo")}>
+      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
+        {t(idioma, "ajustes.repetirCuestionario.confirmTexto")}
+      </p>
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
+        <ModalBtn onClick={onCancel} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn onClick={onConfirm} variant="danger">{t(idioma, "ajustes.repetirCuestionario.confirmar")}</ModalBtn>
+      </div>
+    </ModalShell>
   );
 }
 
