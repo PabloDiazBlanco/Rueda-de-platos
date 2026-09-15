@@ -97,7 +97,10 @@ export function dayTotals(data, menu, week, day) {
 // (desayuno/merienda/plato cerrado hechos de varios ingredientes) se abren en sus componentes
 // por separado, en vez de mostrar solo el total — es lo que hace falta para saber cuánto pesar
 // de cada cosa. Respeta las raciones que el usuario haya ajustado para esa comida.
-export function mealExportParts(data, meal) {
+// `conCantidades: false` (Menú simple, Tanda 3 del rediseño) deja los mismos nombres pero sin el
+// gramaje — sigue abriendo los platos compuestos en sus componentes, porque aunque no se sepa
+// cuánto pesar, sigue haciendo falta saber que hay que comprar pan Y jamón, no solo "el plato".
+export function mealExportParts(data, meal, { conCantidades = true } = {}) {
   const components = mealComponents(data, meal);
   const parts = [];
   components.forEach((c) => {
@@ -105,10 +108,13 @@ export function mealExportParts(data, meal) {
     if (ing && Array.isArray(ing.composicion) && ing.composicion.length) {
       ing.composicion.forEach((item) => {
         const food = getFood(data, item.foodId);
+        const nombre = food ? food.name : item.foodId;
+        if (!conCantidades) { parts.push(nombre); return; }
         const gramos = Math.round(Number(item.gramos) * c.raciones);
-        parts.push(food ? `${food.name} (${gramos}g)` : `${item.foodId} (${gramos}g)`);
+        parts.push(`${nombre} (${gramos}g)`);
       });
     } else if (c.macros) {
+      if (!conCantidades) { parts.push(c.label); return; }
       const suffix = c.note ? ` ${c.note}` : "";
       parts.push(`${c.label}${suffix} (${Math.round(c.macros.gramos)}g)`);
     } else {
@@ -123,7 +129,9 @@ export function mealExportParts(data, meal) {
 // merienda, cerrados) se abren en sus alimentos reales, porque eso es lo que se compra; se agrupan
 // por la categoría del ingrediente al que pertenecen (así el pan/carne/queso de una hamburguesa
 // completa caen todos bajo "Platos cerrados", en vez de repartirse por categorías que no tienen).
-export function calcularListaCompra(data, menu, weekFilter) {
+// `conCantidades: false` (Menú simple, Tanda 3 del rediseño): mismos alimentos, mismo agrupado, pero
+// el gramaje agregado no se devuelve — solo hace falta saber qué comprar, no cuánto.
+export function calcularListaCompra(data, menu, weekFilter, { conCantidades = true } = {}) {
   if (!menu) return [];
   const slots = menu.filter((s) => weekFilter === "todo" || s.week === weekFilter);
   const totales = {};
@@ -152,5 +160,6 @@ export function calcularListaCompra(data, menu, weekFilter) {
     });
   });
 
-  return Object.values(totales).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  const lista = Object.values(totales).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  return conCantidades ? lista : lista.map(({ key, nombre, categoria }) => ({ key, nombre, categoria }));
 }

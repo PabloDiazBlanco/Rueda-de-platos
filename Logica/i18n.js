@@ -85,7 +85,6 @@ const TEXTOS = {
     "error.popupCerrado": "Has cerrado la ventana de Google antes de terminar.",
     "error.generico": "Ha ocurrido un error ({code}). Inténtalo de nuevo.",
 
-    "tab.menu": "Menú",
     "tab.configuracion": "Configuración",
     "tab.perfil": "Perfil",
     "header.tuRecetario": "Tu recetario",
@@ -116,6 +115,13 @@ const TEXTOS = {
     "drawer.actividadDiaria": "Actividad diaria",
     "drawer.expandir": "Mostrar opciones",
     "drawer.colapsar": "Ocultar opciones",
+    "drawer.menus": "Menús",
+    "drawer.menuCompleto": "Menú completo",
+    "drawer.menuCompleto.desc": "calorías, macros, gramos",
+    "drawer.menuSimple": "Menú simple",
+    "drawer.menuSimple.desc": "solo las combinaciones",
+    "menuSimple.intro": "El mismo generador, pero sin calorías ni macros ni gramos — solo la idea de qué combinar cada día. Si quieres el detalle completo, usa Menú completo.",
+    "menuSimple.garbanzos": "Garbanzos",
 
     "actividadDiaria.intro": "Tu tipo de día a día, tus entrenamientos habituales y tu objetivo actual — se usan para calcular tus calorías y macros.",
 
@@ -242,6 +248,7 @@ const TEXTOS = {
 
     "print.tuMenu": "Tu menú",
     "print.pie": "FoodDraft — exportado para cocinar con las cantidades a mano",
+    "print.pieSimple": "FoodDraft — solo las combinaciones, sin cantidades ajustadas",
 
     "listaCompra.titulo": "Lista de la compra",
     "listaCompra.cicloCompleto": "Ciclo completo",
@@ -798,7 +805,6 @@ const TEXTOS = {
     "error.popupCerrado": "You closed the Google window before finishing.",
     "error.generico": "Something went wrong ({code}). Please try again.",
 
-    "tab.menu": "Menu",
     "tab.configuracion": "Settings",
     "tab.perfil": "Profile",
     "header.tuRecetario": "Your recipe book",
@@ -829,6 +835,13 @@ const TEXTOS = {
     "drawer.actividadDiaria": "Daily activity",
     "drawer.expandir": "Show options",
     "drawer.colapsar": "Hide options",
+    "drawer.menus": "Menus",
+    "drawer.menuCompleto": "Full menu",
+    "drawer.menuCompleto.desc": "calories, macros, grams",
+    "drawer.menuSimple": "Simple menu",
+    "drawer.menuSimple.desc": "just the combinations",
+    "menuSimple.intro": "The same generator, but with no calories, macros or grams — just the idea of what to combine each day. Want the full detail? Use Full menu.",
+    "menuSimple.garbanzos": "Chickpeas",
 
     "actividadDiaria.intro": "Your day-to-day activity type, your usual training, and your current goal — used to calculate your calories and macros.",
 
@@ -951,6 +964,7 @@ const TEXTOS = {
 
     "print.tuMenu": "Your menu",
     "print.pie": "FoodDraft — exported for cooking with the amounts by hand",
+    "print.pieSimple": "FoodDraft — just the combinations, no adjusted amounts",
 
     "listaCompra.titulo": "Shopping list",
     "listaCompra.cicloCompleto": "Full cycle",
@@ -1504,7 +1518,6 @@ const TEXTOS = {
     "error.popupCerrado": "Has tancat la finestra de Google abans d'acabar.",
     "error.generico": "S'ha produït un error ({code}). Torna-ho a provar.",
 
-    "tab.menu": "Menú",
     "tab.configuracion": "Configuració",
     "tab.perfil": "Perfil",
     "header.tuRecetario": "El teu receptari",
@@ -1535,6 +1548,13 @@ const TEXTOS = {
     "drawer.actividadDiaria": "Activitat diària",
     "drawer.expandir": "Mostra les opcions",
     "drawer.colapsar": "Amaga les opcions",
+    "drawer.menus": "Menús",
+    "drawer.menuCompleto": "Menú complet",
+    "drawer.menuCompleto.desc": "calories, macros, grams",
+    "drawer.menuSimple": "Menú simple",
+    "drawer.menuSimple.desc": "només les combinacions",
+    "menuSimple.intro": "El mateix generador, però sense calories ni macros ni grams — només la idea de què combinar cada dia. Si vols el detall complet, fes servir Menú complet.",
+    "menuSimple.garbanzos": "Cigrons",
 
     "actividadDiaria.intro": "El teu tipus de dia a dia, els teus entrenaments habituals i el teu objectiu actual — es fan servir per calcular les teves calories i macros.",
 
@@ -1657,6 +1677,7 @@ const TEXTOS = {
 
     "print.tuMenu": "El teu menú",
     "print.pie": "FoodDraft — exportat per cuinar amb les quantitats a mà",
+    "print.pieSimple": "FoodDraft — només les combinacions, sense quantitats ajustades",
 
     "listaCompra.titulo": "Llista de la compra",
     "listaCompra.cicloCompleto": "Cicle complet",
@@ -2210,7 +2231,6 @@ const TEXTOS = {
     "error.popupCerrado": "Pechaches a xanela de Google antes de rematar.",
     "error.generico": "Produciuse un erro ({code}). Téntao de novo.",
 
-    "tab.menu": "Menú",
     "tab.configuracion": "Configuración",
     "tab.perfil": "Perfil",
     "header.tuRecetario": "O teu receitario",
@@ -2241,6 +2261,13 @@ const TEXTOS = {
     "drawer.actividadDiaria": "Actividade diaria",
     "drawer.expandir": "Amosar opcións",
     "drawer.colapsar": "Agochar opcións",
+    "drawer.menus": "Menús",
+    "drawer.menuCompleto": "Menú completo",
+    "drawer.menuCompleto.desc": "calorías, macros, gramos",
+    "drawer.menuSimple": "Menú simple",
+    "drawer.menuSimple.desc": "só as combinacións",
+    "menuSimple.intro": "O mesmo xerador, pero sen calorías nin macros nin gramos — só a idea de que combinar cada día. Se queres o detalle completo, usa Menú completo.",
+    "menuSimple.garbanzos": "Garavanzos",
 
     "actividadDiaria.intro": "O teu tipo de día a día, os teus adestramentos habituais e o teu obxectivo actual — úsanse para calcular as túas calorías e macros.",
 
@@ -2363,6 +2390,7 @@ const TEXTOS = {
 
     "print.tuMenu": "O teu menú",
     "print.pie": "FoodDraft — exportado para cociñar coas cantidades a man",
+    "print.pieSimple": "FoodDraft — só as combinacións, sen cantidades axustadas",
 
     "listaCompra.titulo": "Lista da compra",
     "listaCompra.cicloCompleto": "Ciclo completo",
@@ -2916,7 +2944,6 @@ const TEXTOS = {
     "error.popupCerrado": "Google-ren leihoa itxi duzu amaitu baino lehen.",
     "error.generico": "Errore bat gertatu da ({code}). Saiatu berriro.",
 
-    "tab.menu": "Menua",
     "tab.configuracion": "Konfigurazioa",
     "tab.perfil": "Profila",
     "header.tuRecetario": "Zure errezetategia",
@@ -2947,6 +2974,13 @@ const TEXTOS = {
     "drawer.actividadDiaria": "Eguneroko jarduera",
     "drawer.expandir": "Erakutsi aukerak",
     "drawer.colapsar": "Ezkutatu aukerak",
+    "drawer.menus": "Menuak",
+    "drawer.menuCompleto": "Menu osoa",
+    "drawer.menuCompleto.desc": "kaloriak, makroak, gramoak",
+    "drawer.menuSimple": "Menu sinplea",
+    "drawer.menuSimple.desc": "konbinazioak bakarrik",
+    "menuSimple.intro": "Sortzaile bera, baina kaloriarik, makrorik edo gramorik gabe — egunero zer konbinatu ideia bakarrik. Xehetasun osoa nahi baduzu, erabili Menu osoa.",
+    "menuSimple.garbanzos": "Garbantzuak",
 
     "actividadDiaria.intro": "Zure eguneroko jarduera mota, ohiko entrenamenduak eta uneko helburua — zure kaloriak eta makroak kalkulatzeko erabiltzen dira.",
 
@@ -3069,6 +3103,7 @@ const TEXTOS = {
 
     "print.tuMenu": "Zure menua",
     "print.pie": "FoodDraft — kantitateak eskuz sukaldatzeko esportatua",
+    "print.pieSimple": "FoodDraft — konbinazioak bakarrik, doitu gabeko kantitateak",
 
     "listaCompra.titulo": "Erosketa-zerrenda",
     "listaCompra.cicloCompleto": "Ziklo osoa",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator, Menu, Share2, Mail, Settings, TrendingUp, ChevronDown, Lightbulb, Globe, Lock, Activity, PieChart, Undo2 } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Check, Utensils, Wheat, Salad, Package, Sparkles, AlertCircle, CalendarDays, Shuffle, Coffee, Cookie, Apple, Database, Search, Link2, Download, Layers, Camera, User, Droplet, Scale, Ruler, FileText, ThumbsUp, ThumbsDown, Calculator, Menu, Share2, Mail, Settings, TrendingUp, ChevronDown, Lightbulb, Globe, Lock, Activity, PieChart, Undo2, ListChecks } from "lucide-react";
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from "macros";
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
@@ -141,6 +141,7 @@ const initialData = () => {
     blocks: [],
     pesoTracking: defaultPesoTracking(),
     listaCompra: { marcados: {}, generadoEn: null },
+    listaCompraSimple: { marcados: {}, generadoEn: null },
   };
 };
 
@@ -159,6 +160,10 @@ const CATEGORY_META = {
 const STORAGE_KEY = "rueda-de-platos:data-v1";
 const MENU_STORAGE_KEY = "rueda-de-platos:menu-v1";
 const HISTORY_STORAGE_KEY = "rueda-de-platos:history-v1";
+// Menú simple (Tanda 3 del rediseño): ciclo y ciclos anteriores independientes de los de arriba —
+// las dos pantallas conviven, cada una con su propio "Generar"/"Deshacer", sin pisarse.
+const MENU_SIMPLE_STORAGE_KEY = "rueda-de-platos:menu-simple-v1";
+const HISTORY_SIMPLE_STORAGE_KEY = "rueda-de-platos:history-simple-v1";
 const HISTORY_MAX = 8;
 
 // Parchea datos ya guardados que se crearon con una versión anterior del código,
@@ -257,6 +262,14 @@ function migrateData(rawData) {
     changed = true;
   }
 
+  // Lista de la compra de Menú simple (Tanda 3 del rediseño): independiente de la de arriba, porque
+  // Menú simple genera sus propios ciclos, separados de los de Menú completo — marcar algo comprado
+  // en uno no debería afectar al otro.
+  if (!data.listaCompraSimple) {
+    data.listaCompraSimple = { marcados: {}, generadoEn: null };
+    changed = true;
+  }
+
   // Comidas completadas (resumen mensual): registro por fecha real, aparte del menú en sí.
   if (!data.comidasCompletadas) {
     data.comidasCompletadas = {};
@@ -318,6 +331,9 @@ export default function RuedaDePlatos() {
   const [menu, setMenu] = useState(null);
   const [menuWeek, setMenuWeek] = useState(1);
   const [history, setHistory] = useState([]);
+  const [menuSimple, setMenuSimple] = useState(null);
+  const [menuSimpleWeek, setMenuSimpleWeek] = useState(1);
+  const [historySimple, setHistorySimple] = useState([]);
   const [premium, setPremium] = useState({ active: false });
   const saveTimer = useRef(null);
 
@@ -366,6 +382,18 @@ export default function RuedaDePlatos() {
         if (historyRes && historyRes.value) setHistory(JSON.parse(historyRes.value));
       } catch (e) {
         // no hay historial todavía, no pasa nada
+      }
+      try {
+        const menuSimpleRes = await window.storage.get(MENU_SIMPLE_STORAGE_KEY, false);
+        if (menuSimpleRes && menuSimpleRes.value) setMenuSimple(JSON.parse(menuSimpleRes.value));
+      } catch (e) {
+        // no hay menú simple generado todavía, no pasa nada
+      }
+      try {
+        const historySimpleRes = await window.storage.get(HISTORY_SIMPLE_STORAGE_KEY, false);
+        if (historySimpleRes && historySimpleRes.value) setHistorySimple(JSON.parse(historySimpleRes.value));
+      } catch (e) {
+        // no hay historial de menú simple todavía, no pasa nada
       } finally {
         setLoading(false);
       }
@@ -427,6 +455,62 @@ export default function RuedaDePlatos() {
       if (marcados[key]) delete marcados[key];
       else marcados[key] = true;
       return { ...prev, listaCompra: { ...lc, marcados } };
+    });
+  }
+
+  // ---------- Menú simple (Tanda 3 del rediseño) ----------
+  // Mismo motor de siempre (generateMenu ya separa "qué toca" de "cuánto pesar de cada cosa" —
+  // aquí simplemente no se muestra esa segunda parte), pero con su propio ciclo, su propio
+  // historial y su propia lista de la compra, independientes de los de Menú completo: las dos
+  // pantallas conviven sin pisarse, cada una con su "Generar"/"Deshacer".
+  async function handleGenerateMenuSimple() {
+    const avoid = lastPicksFromHistory(historySimple, data);
+    const result = generateMenu(data, avoid);
+    setMenuSimple(result);
+    setMenuSimpleWeek(1);
+    try {
+      await window.storage.set(MENU_SIMPLE_STORAGE_KEY, JSON.stringify(result), false);
+    } catch (e) {
+      // si falla el guardado, el menú sigue visible en pantalla igualmente
+    }
+    const entry = { id: uid(), generatedAt: new Date().toISOString(), slots: result };
+    const newHistory = [entry, ...historySimple].slice(0, HISTORY_MAX);
+    setHistorySimple(newHistory);
+    try {
+      await window.storage.set(HISTORY_SIMPLE_STORAGE_KEY, JSON.stringify(newHistory), false);
+    } catch (e) {
+      // el historial no es crítico: si falla el guardado, seguimos igualmente
+    }
+    setData((prev) => ({ ...prev, listaCompraSimple: { marcados: {}, generadoEn: entry.generatedAt } }));
+  }
+
+  async function handleUndoMenuSimple() {
+    if (historySimple.length < 2) return;
+    const previous = historySimple[1];
+    setMenuSimple(previous.slots);
+    setMenuSimpleWeek(1);
+    const newHistory = historySimple.slice(1);
+    setHistorySimple(newHistory);
+    try {
+      await window.storage.set(MENU_SIMPLE_STORAGE_KEY, JSON.stringify(previous.slots), false);
+    } catch (e) {
+      // si falla el guardado, el menú sigue visible en pantalla igualmente
+    }
+    try {
+      await window.storage.set(HISTORY_SIMPLE_STORAGE_KEY, JSON.stringify(newHistory), false);
+    } catch (e) {
+      // el historial no es crítico: si falla el guardado, seguimos igualmente
+    }
+    setData((prev) => ({ ...prev, listaCompraSimple: { marcados: {}, generadoEn: previous.generatedAt } }));
+  }
+
+  function toggleMarcadoCompraSimple(key) {
+    setData((prev) => {
+      const lc = prev.listaCompraSimple || { marcados: {}, generadoEn: null };
+      const marcados = { ...lc.marcados };
+      if (marcados[key]) delete marcados[key];
+      else marcados[key] = true;
+      return { ...prev, listaCompraSimple: { ...lc, marcados } };
     });
   }
 
@@ -750,6 +834,16 @@ export default function RuedaDePlatos() {
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} setTab={setTab} idioma={idioma} premium={premium} />
 
       <main style={{ padding: "20px 22px 60px" }}>
+        {tab === "menus-root" && (
+          <BigCardGrid
+            onSelect={setTab}
+            cards={[
+              { key: "menu", label: t(idioma, "drawer.menuCompleto"), desc: t(idioma, "drawer.menuCompleto.desc"), icon: CalendarDays, color: "var(--green)" },
+              { key: "menu-simple", label: t(idioma, "drawer.menuSimple"), desc: t(idioma, "drawer.menuSimple.desc"), icon: ListChecks, color: "var(--olive)" },
+            ]}
+          />
+        )}
+
         {tab === "menu" && (
           <MenuView
             menu={menu}
@@ -765,6 +859,20 @@ export default function RuedaDePlatos() {
             onToggleMarcadoCompra={toggleMarcadoCompra}
             onUpsertRule={upsertRule}
             onToggleComidaCompletada={toggleComidaCompletada}
+            idioma={idioma}
+          />
+        )}
+
+        {tab === "menu-simple" && (
+          <MenuSimpleView
+            menu={menuSimple}
+            onGenerate={handleGenerateMenuSimple}
+            onUndo={handleUndoMenuSimple}
+            menuWeek={menuSimpleWeek}
+            setMenuWeek={setMenuSimpleWeek}
+            history={historySimple}
+            data={data}
+            onToggleMarcadoCompra={toggleMarcadoCompraSimple}
             idioma={idioma}
           />
         )}
@@ -4032,7 +4140,13 @@ function DrawerMenu({ open, onClose, tab, setTab, idioma, premium }) {
   }
 
   const arriba = [
-    { key: "menu", label: t(idioma, "tab.menu"), icon: CalendarDays },
+    {
+      key: "menus-root", label: t(idioma, "drawer.menus"), icon: CalendarDays,
+      children: [
+        { key: "menu", label: t(idioma, "drawer.menuCompleto"), icon: CalendarDays },
+        { key: "menu-simple", label: t(idioma, "drawer.menuSimple"), icon: ListChecks },
+      ],
+    },
     {
       key: "config-root", label: t(idioma, "drawer.configuracionComidas"), icon: Layers,
       children: [
@@ -4456,6 +4570,180 @@ function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, da
   );
 }
 
+// Menú simple (Tanda 3 del rediseño): la misma idea de "organizar la semana" que Menú completo,
+// pero deliberadamente sin nada de calorías, macros ni gramos — solo el borrador de combinaciones.
+// Reutiliza el mismo generateMenu de siempre (la selección de qué toca cada día ya es independiente
+// del ajuste de raciones a objetivos, ver Logica/menu-generador.js), así que no hace falta ningún
+// motor nuevo: aquí sencillamente no se pide ni se muestra la parte de cantidades. Lleva su propio
+// ciclo, su propio historial y su propia lista de la compra, separados de Menú completo — las dos
+// pantallas conviven sin pisarse.
+function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onToggleMarcadoCompra, idioma }) {
+  const [showListaCompra, setShowListaCompra] = useState(false);
+
+  return (
+    <>
+      <SectionIntro text={t(idioma, "menuSimple.intro")} />
+
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+        <button
+          onClick={onGenerate}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontSize: 13.5,
+            fontWeight: 700,
+            color: "#fff",
+            background: "var(--green)",
+            border: "none",
+            borderRadius: 9,
+            padding: "11px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Shuffle size={15} />
+          {menu ? t(idioma, "menu.generarOtro") : t(idioma, "menu.generarPrimero")}
+        </button>
+        {history && history.length >= 2 && (
+          <button
+            onClick={onUndo}
+            style={{
+              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              fontSize: 12.5,
+              fontWeight: 700,
+              color: "var(--ink-soft)",
+              background: "transparent",
+              border: "1px solid var(--line)",
+              borderRadius: 9,
+              padding: "10px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Undo2 size={14} />
+            {t(idioma, "menu.deshacer")}
+          </button>
+        )}
+      </div>
+
+      {!menu && (
+        <div
+          style={{
+            border: "1.5px dashed var(--line)",
+            borderRadius: 12,
+            padding: "40px 20px",
+            textAlign: "center",
+            color: "var(--ink-soft)",
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontSize: 13,
+          }}
+        >
+          {t(idioma, "menu.sinMenuTodavia")}
+        </div>
+      )}
+
+      {menu && (
+        <>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+            {[1, 2].map((w) => (
+              <button
+                key={w}
+                onClick={() => setMenuWeek(w)}
+                style={{
+                  fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  padding: "7px 14px",
+                  borderRadius: 20,
+                  border: "1px solid var(--line)",
+                  background: menuWeek === w ? "var(--green-dark)" : "var(--card)",
+                  color: menuWeek === w ? "#fff" : "var(--ink)",
+                }}
+              >
+                {t(idioma, "menu.semana", { n: w })}
+              </button>
+            ))}
+            <button
+              onClick={() => window.print()}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
+                borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              <Download size={13} /> {t(idioma, "menu.exportarPdf")}
+            </button>
+            <button
+              onClick={() => setShowListaCompra(true)}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                color: "var(--coffee)", background: "var(--coffee-soft)", border: "none",
+                borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              {t(idioma, "menu.listaCompra")}
+            </button>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {DAYS.map((day) => {
+              const dayMeals = menu.filter((s) => s.week === menuWeek && s.day === day);
+              return (
+                <div key={day} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {dayMeals.map((m) => {
+                      const combinacion = m.closedDish
+                        ? m.closedDish
+                        : m.item
+                        ? m.item
+                        : [m.protein, m.carbo, m.verdura, m.garbanzos ? t(idioma, "menuSimple.garbanzos") : null].filter(Boolean).join(" + ") || "—";
+                      return (
+                        <div
+                          key={m.id}
+                          style={{
+                            display: "flex", alignItems: "baseline", gap: 10,
+                            fontFamily: "'Helvetica Neue', Arial, sans-serif", padding: "4px 6px",
+                          }}
+                        >
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>
+                            {t(idioma, "mealType." + m.mealType)}
+                          </span>
+                          <span style={{ fontSize: 13, color: m.closedDish ? "var(--rust)" : "var(--ink)", fontWeight: m.closedDish ? 600 : 400 }}>
+                            {combinacion}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <HistoryPanel history={history} idioma={idioma} />
+
+      <PrintExport data={data} menu={menu} idioma={idioma} conCantidades={false} />
+
+      {showListaCompra && (
+        <ListaCompraModal
+          data={data}
+          menu={menu}
+          menuWeek={menuWeek}
+          listaCompra={data.listaCompraSimple || { marcados: {}, generadoEn: null }}
+          onToggle={onToggleMarcadoCompra}
+          onClose={() => setShowListaCompra(false)}
+          idioma={idioma}
+          conCantidades={false}
+        />
+      )}
+    </>
+  );
+}
+
 // Barras de calorías por día de la semana seleccionada, más el desglose de macros de cada día.
 // Todo se recalcula en cada render a partir de menu+data, así que si cambias una ración
 // (o el propio menú), se actualiza solo, sin ningún paso extra.
@@ -4467,7 +4755,7 @@ function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, da
 // y una hoja de estilos "@media print" oculta el resto de la app y muestra solo esto
 // cuando el usuario pulsa "Exportar PDF" (que solo llama a window.print()).
 // Así funciona igual de bien en Claude y en la versión web, sin nada que se pueda romper.
-function PrintExport({ data, menu, idioma }) {
+function PrintExport({ data, menu, idioma, conCantidades = true }) {
   if (!menu) return null;
   return (
     <div id="print-export">
@@ -4500,7 +4788,7 @@ function PrintExport({ data, menu, idioma }) {
               {DAYS.map((day) => {
                 const dayMeals = menu.filter((s) => s.week === week && s.day === day);
                 if (!dayMeals.length) return null;
-                const totals = dayTotals(data, menu, week, day);
+                const totals = conCantidades ? dayTotals(data, menu, week, day) : null;
                 return (
                   <div
                     key={day}
@@ -4516,12 +4804,12 @@ function PrintExport({ data, menu, idioma }) {
                         {dayMeals.map((m) => (
                           <div key={m.id} style={{ fontSize: 11, lineHeight: 1.45 }}>
                             <span style={{ fontWeight: 700, color: "#a9721f" }}>{t(idioma, "mealType." + m.mealType)}: </span>
-                            <span>{mealExportParts(data, m).join(", ") || "—"}</span>
+                            <span>{mealExportParts(data, m, { conCantidades }).join(", ") || "—"}</span>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <PrintDonut totals={totals} />
+                    {conCantidades && <PrintDonut totals={totals} />}
                   </div>
                 );
               })}
@@ -4530,7 +4818,7 @@ function PrintExport({ data, menu, idioma }) {
         })}
 
         <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
-          {t(idioma, "print.pie")}
+          {t(idioma, conCantidades ? "print.pie" : "print.pieSimple")}
         </div>
       </div>
     </div>
@@ -4585,9 +4873,9 @@ const LISTA_COMPRA_ORDEN_CATS = [...MACRO_CATS, ...ESPECIALES_CATS];
 // Lista de la compra: agrega el menú (una semana o el ciclo completo) por alimento y lo agrupa por
 // categoría. Las marcas de "ya lo tengo" se guardan en data.listaCompra y sobreviven a cerrar la
 // app — solo se olvidan cuando generas un menú nuevo (ver handleGenerateMenu).
-function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose, idioma }) {
+function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose, idioma, conCantidades = true }) {
   const [alcance, setAlcance] = useState(menuWeek || 1);
-  const items = calcularListaCompra(data, menu, alcance);
+  const items = calcularListaCompra(data, menu, alcance, { conCantidades });
   const marcados = listaCompra.marcados || {};
 
   const grupos = {};
@@ -4641,7 +4929,7 @@ function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {grupos[cat].map((it) => {
                       const marcado = !!marcados[it.key];
-                      const kg = it.gramos / 1000;
+                      const kg = conCantidades ? it.gramos / 1000 : 0;
                       const cantidad = kg >= 1 ? `${Math.round(kg * 10) / 10} kg` : `${Math.round(it.gramos)} g`;
                       return (
                         <label
@@ -4658,9 +4946,11 @@ function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, onClose
                           }}>
                             {it.nombre}
                           </span>
-                          <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>
-                            {cantidad}
-                          </span>
+                          {conCantidades && (
+                            <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>
+                              {cantidad}
+                            </span>
+                          )}
                         </label>
                       );
                     })}
