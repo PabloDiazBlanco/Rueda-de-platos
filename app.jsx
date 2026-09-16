@@ -1174,8 +1174,8 @@ export default function RuedaDePlatos() {
             foods={data.foods || []}
             ingredients={data.ingredients}
             onEdit={(food) => setEditingFood({ mode: "edit", food })}
-            onNew={() => setEditingFood({ mode: "new" })}
-            onNewFromPhoto={(photoDataUrl) => setEditingFood({ mode: "new", photo: photoDataUrl })}
+            onNew={(categoriaSugerida) => setEditingFood({ mode: "new", categoriaSugerida })}
+            onNewFromPhoto={(photoDataUrl, categoriaSugerida) => setEditingFood({ mode: "new", photo: photoDataUrl, categoriaSugerida })}
             onDelete={(food) => setConfirmDeleteFood(food)}
             idioma={idioma}
           />
@@ -5782,6 +5782,7 @@ function HistoryPanel({ history, idioma }) {
 
 function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto, idioma }) {
   const [query, setQuery] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState(null); // null = todas las categorías
   const [exportando, setExportando] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -5793,19 +5794,24 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
   }
 
   const usageCount = (foodId) => ingredients.filter((i) => i.foodId === foodId).length;
-  const filtered = query.trim()
-    ? foods.filter((f) => f.name.toLowerCase().includes(query.trim().toLowerCase()))
-    : foods;
   // Alimentos creados antes de la categorización (Tanda 1) o con una categoria que ya no existe
   // caen en "sin categoría" — nunca desaparecen de la lista por una categoria vacía o inválida.
   const bucketKeyFor = (f) => (CATEGORIAS_ALIMENTOS.some((c) => c.key === f.categoria) ? f.categoria : "__sin_categoria");
+  const hayAlimentosSinCategoria = foods.some((f) => bucketKeyFor(f) === "__sin_categoria");
+  const porCategoria = categoriaFiltro ? foods.filter((f) => bucketKeyFor(f) === categoriaFiltro) : foods;
+  const filtered = query.trim()
+    ? porCategoria.filter((f) => f.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : porCategoria;
+  // Al crear un alimento nuevo con un filtro de categoría real puesto, se sugiere esa misma
+  // categoría en el formulario — "todas" y "sin categoría" no son categorías reales que sugerir.
+  const categoriaSugerida = categoriaFiltro && categoriaFiltro !== "__sin_categoria" ? categoriaFiltro : undefined;
 
   function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
     e.target.value = ""; // permite volver a elegir la misma foto si hace falta repetir
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => onNewFromPhoto(reader.result);
+    reader.onload = () => onNewFromPhoto(reader.result, categoriaSugerida);
     reader.readAsDataURL(file);
   }
 
@@ -5813,7 +5819,7 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
     <>
       <SectionIntro text={t(idioma, "foodsView.intro")} />
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
         <div style={{ position: "relative", flex: "1 1 220px" }}>
           <Search size={14} style={{ position: "absolute", left: 10, top: 11, color: "var(--ink-soft)" }} />
           <input
@@ -5823,6 +5829,15 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
             style={{ ...inputStyle, paddingLeft: 32 }}
           />
         </div>
+        <CategoriaAlimentoDropdown
+          categoria={categoriaFiltro}
+          onChange={setCategoriaFiltro}
+          hayAlimentosSinCategoria={hayAlimentosSinCategoria}
+          idioma={idioma}
+        />
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         <button
           onClick={() => fileInputRef.current && fileInputRef.current.click()}
           style={{
@@ -5843,7 +5858,7 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
           style={{ display: "none" }}
         />
         <button
-          onClick={onNew}
+          onClick={() => onNew(categoriaSugerida)}
           style={{
             fontFamily: "'Helvetica Neue', Arial, sans-serif",
             fontSize: 13, fontWeight: 700, color: "#fff", background: "var(--green)",
@@ -5870,79 +5885,56 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
         {t(idioma, "foodsView.deTotal", { n: filtered.length, total: foods.length })}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-        {[...CATEGORIAS_ALIMENTOS.map((c) => c.key), "__sin_categoria"]
-          .map((key) => ({ key, cat: CATEGORIAS_ALIMENTOS.find((c) => c.key === key), items: filtered.filter((f) => bucketKeyFor(f) === key) }))
-          .filter((g) => g.items.length > 0)
-          .map(({ key, cat, items }) => (
-            <div key={key}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                <span style={{ fontSize: 15 }}>{cat ? cat.emoji : "🗂️"}</span>
-                <span
-                  style={{
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700,
-                    color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5,
-                  }}
-                >
-                  {cat ? t(idioma, cat.labelKey) : t(idioma, "categoriaAlimento.sinCategoria")}
-                </span>
-                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
-                  ({items.length})
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {filtered.map((f) => {
+          const uses = usageCount(f.id);
+          return (
+            <div
+              key={f.id}
+              style={{
+                background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10,
+                padding: "11px 13px",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14.5, lineHeight: 1.3 }}>{f.name}</div>
+                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 3 }}>
+                    {f.fuente}
+                    {uses > 0 && (
+                      <span style={{ color: "var(--green)", fontWeight: 700 }}>
+                        {" · "}<Link2 size={9} style={{ verticalAlign: "middle" }} /> {t(idioma, "foodsView.usadoEn", { n: uses })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                  <IconBtn onClick={() => onEdit(f)}><Pencil size={13} /></IconBtn>
+                  <IconBtn onClick={() => onDelete(f)}><Trash2 size={13} /></IconBtn>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                <MacroPill label="kcal" value={f.kcal} color="var(--rust)" bg="var(--rust-soft)" />
+                <MacroPill label="P" value={`${f.prot} g`} color="var(--green-dark)" bg="var(--green-soft)" />
+                <MacroPill label="G" value={`${f.fat} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
+                <MacroPill label="C" value={`${f.carb} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
+                  {t(idioma, "foodsView.por100g")}
                 </span>
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {items.map((f) => {
-                  const uses = usageCount(f.id);
-                  return (
-                    <div
-                      key={f.id}
-                      style={{
-                        background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10,
-                        padding: "11px 13px",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 14.5, lineHeight: 1.3 }}>{f.name}</div>
-                          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 3 }}>
-                            {f.fuente}
-                            {uses > 0 && (
-                              <span style={{ color: "var(--green)", fontWeight: 700 }}>
-                                {" · "}<Link2 size={9} style={{ verticalAlign: "middle" }} /> {t(idioma, "foodsView.usadoEn", { n: uses })}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                          <IconBtn onClick={() => onEdit(f)}><Pencil size={13} /></IconBtn>
-                          <IconBtn onClick={() => onDelete(f)}><Trash2 size={13} /></IconBtn>
-                        </div>
-                      </div>
-                      <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
-                        <MacroPill label="kcal" value={f.kcal} color="var(--rust)" bg="var(--rust-soft)" />
-                        <MacroPill label="P" value={`${f.prot} g`} color="var(--green-dark)" bg="var(--green-soft)" />
-                        <MacroPill label="G" value={`${f.fat} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-                        <MacroPill label="C" value={`${f.carb} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
-                        <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
-                          {t(idioma, "foodsView.por100g")}
-                        </span>
-                      </div>
-                      {(f.grasaSaturada !== undefined || f.azucares !== undefined || f.fibra !== undefined || f.sal !== undefined) && (
-                        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginTop: 6 }}>
-                          {[
-                            f.grasaSaturada !== undefined && t(idioma, "foodsView.saturada", { n: f.grasaSaturada }),
-                            f.azucares !== undefined && t(idioma, "foodsView.azucares", { n: f.azucares }),
-                            f.fibra !== undefined && t(idioma, "foodsView.fibra", { n: f.fibra }),
-                            f.sal !== undefined && t(idioma, "foodsView.sal", { n: f.sal }),
-                          ].filter(Boolean).join(" · ")}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+              {(f.grasaSaturada !== undefined || f.azucares !== undefined || f.fibra !== undefined || f.sal !== undefined) && (
+                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginTop: 6 }}>
+                  {[
+                    f.grasaSaturada !== undefined && t(idioma, "foodsView.saturada", { n: f.grasaSaturada }),
+                    f.azucares !== undefined && t(idioma, "foodsView.azucares", { n: f.azucares }),
+                    f.fibra !== undefined && t(idioma, "foodsView.fibra", { n: f.fibra }),
+                    f.sal !== undefined && t(idioma, "foodsView.sal", { n: f.sal }),
+                  ].filter(Boolean).join(" · ")}
+                </div>
+              )}
             </div>
-          ))}
+          );
+        })}
         {filtered.length === 0 && (
           <div style={{
             border: "1.5px dashed var(--line)", borderRadius: 10, padding: "26px 16px",
@@ -5956,6 +5948,91 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
 
       {exportando && <PrintFoods foods={foods} idioma={idioma} />}
     </>
+  );
+}
+
+// Desplegable de categoría para Alimentos: mismo mecanismo que LanguageDropdown (botón con la
+// selección actual + panel con buscador que se abre encima, sin navegar a ningún sitio), pero con
+// el estilo visual de una fila de menú (emoji + nombre, sin insignias) en vez de las insignias de
+// bandera+código que usa el de idioma — es una lista de filtro, no un selector de idioma.
+function CategoriaAlimentoDropdown({ categoria, onChange, hayAlimentosSinCategoria, idioma }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+
+  const opciones = [
+    { key: null, emoji: "📁", label: t(idioma, "foodsView.todasLasCategorias") },
+    ...CATEGORIAS_ALIMENTOS.map((c) => ({ key: c.key, emoji: c.emoji, label: t(idioma, c.labelKey) })),
+    ...(hayAlimentosSinCategoria ? [{ key: "__sin_categoria", emoji: "🗂️", label: t(idioma, "categoriaAlimento.sinCategoria") }] : []),
+  ];
+  const actual = opciones.find((o) => o.key === categoria) || opciones[0];
+  const filtradas = opciones.filter((o) => o.label.toLowerCase().includes(query.trim().toLowerCase()));
+
+  function elegir(key) {
+    onChange(key);
+    setOpen(false);
+    setQuery("");
+  }
+
+  return (
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          display: "flex", alignItems: "center", gap: 8,
+          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+          padding: "9px 12px", borderRadius: 8, border: "1px solid var(--line)", background: "#fff", color: "var(--ink)",
+          cursor: "pointer", whiteSpace: "nowrap",
+        }}
+      >
+        <span style={{ fontSize: 15 }}>{actual.emoji}</span>
+        <span>{actual.label}</span>
+        <ChevronDown size={14} color="var(--ink-soft)" style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 5, minWidth: 240,
+            background: "#fff", border: "1px solid var(--line)", borderRadius: 10,
+            boxShadow: "0 6px 20px rgba(0,0,0,0.12)", padding: 8,
+          }}
+        >
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={t(idioma, "foodsView.buscarCategoria")}
+            style={{ ...inputStyle, marginBottom: 6 }}
+          />
+          <div style={{ display: "flex", flexDirection: "column", gap: 1, maxHeight: 280, overflowY: "auto" }}>
+            {filtradas.map((op) => {
+              const seleccionado = op.key === categoria;
+              return (
+                <button
+                  key={op.key ?? "todas"}
+                  onClick={() => elegir(op.key)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 9, textAlign: "left", width: "100%",
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: seleccionado ? 700 : 500,
+                    padding: "8px 9px", borderRadius: 8, border: "none",
+                    background: seleccionado ? "var(--green-soft)" : "transparent",
+                    color: seleccionado ? "var(--green-dark)" : "var(--ink)", cursor: "pointer",
+                  }}
+                >
+                  <span style={{ fontSize: 15, flexShrink: 0 }}>{op.emoji}</span>
+                  <span>{op.label}</span>
+                </button>
+              );
+            })}
+            {filtradas.length === 0 && (
+              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", padding: "8px 6px" }}>
+                {t(idioma, "foodsView.sinResultadosCategoria")}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -6041,7 +6118,7 @@ function MacroPill({ label, value, color, bg }) {
 function FoodEditModal({ state, onClose, onSave, idioma }) {
   const existing = state.food;
   const [name, setName] = useState(existing ? existing.name : "");
-  const [categoria, setCategoria] = useState(existing?.categoria || CATEGORIAS_ALIMENTOS[0].key);
+  const [categoria, setCategoria] = useState(existing?.categoria || state.categoriaSugerida || CATEGORIAS_ALIMENTOS[0].key);
   const [kcal, setKcal] = useState(existing ? existing.kcal : "");
   const [prot, setProt] = useState(existing ? existing.prot : "");
   const [fat, setFat] = useState(existing ? existing.fat : "");

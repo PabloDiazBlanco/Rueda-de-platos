@@ -648,6 +648,9 @@ const TEXTOS = {
 
     "foodsView.intro": "Catálogo central de alimentos con sus valores por 100 g. Los ingredientes del menú se enlazan aquí, así que al corregir un valor se actualiza en todos los sitios donde se use.",
     "foodsView.buscar": "Buscar alimento…",
+    "foodsView.todasLasCategorias": "Todas las categorías",
+    "foodsView.buscarCategoria": "Buscar categoría…",
+    "foodsView.sinResultadosCategoria": "No se ha encontrado ninguna categoría.",
     "foodsView.anadirConFoto": "Añadir con foto",
     "foodsView.nuevoAlimento": "Nuevo alimento",
     "foodsView.exportarCatalogo": "Exportar catálogo",
@@ -1389,6 +1392,9 @@ const TEXTOS = {
 
     "foodsView.intro": "Central food catalog with values per 100 g. Menu ingredients link here, so fixing a value updates it everywhere it's used.",
     "foodsView.buscar": "Search food…",
+    "foodsView.todasLasCategorias": "All categories",
+    "foodsView.buscarCategoria": "Search category…",
+    "foodsView.sinResultadosCategoria": "No category found.",
     "foodsView.anadirConFoto": "Add with photo",
     "foodsView.nuevoAlimento": "New food",
     "foodsView.exportarCatalogo": "Export catalog",
@@ -2127,6 +2133,9 @@ const TEXTOS = {
 
     "foodsView.intro": "Catàleg central d'aliments amb els seus valors per 100 g. Els ingredients del menú s'enllacen aquí, així que en corregir un valor s'actualitza a tots els llocs on es faci servir.",
     "foodsView.buscar": "Cerca un aliment…",
+    "foodsView.todasLasCategorias": "Totes les categories",
+    "foodsView.buscarCategoria": "Cerca una categoria…",
+    "foodsView.sinResultadosCategoria": "No s'ha trobat cap categoria.",
     "foodsView.anadirConFoto": "Afegeix amb foto",
     "foodsView.nuevoAlimento": "Aliment nou",
     "foodsView.exportarCatalogo": "Exporta el catàleg",
@@ -2865,6 +2874,9 @@ const TEXTOS = {
 
     "foodsView.intro": "Catálogo central de alimentos cos seus valores por 100 g. Os ingredientes do menú enlázanse aquí, así que ao corrixir un valor actualízase en todos os sitios onde se use.",
     "foodsView.buscar": "Buscar alimento…",
+    "foodsView.todasLasCategorias": "Todas as categorías",
+    "foodsView.buscarCategoria": "Buscar categoría…",
+    "foodsView.sinResultadosCategoria": "Non se atopou ningunha categoría.",
     "foodsView.anadirConFoto": "Engadir con foto",
     "foodsView.nuevoAlimento": "Novo alimento",
     "foodsView.exportarCatalogo": "Exportar catálogo",
@@ -3603,6 +3615,9 @@ const TEXTOS = {
 
     "foodsView.intro": "Elikagaien katalogo zentrala, 100 g-ko balioekin. Menuko osagaiak hemen lotzen dira, beraz balio bat zuzentzean erabiltzen den leku guztietan eguneratzen da.",
     "foodsView.buscar": "Bilatu elikagaia…",
+    "foodsView.todasLasCategorias": "Kategoria guztiak",
+    "foodsView.buscarCategoria": "Bilatu kategoria…",
+    "foodsView.sinResultadosCategoria": "Ez da kategoriarik aurkitu.",
     "foodsView.anadirConFoto": "Gehitu argazkiarekin",
     "foodsView.nuevoAlimento": "Elikagai berria",
     "foodsView.exportarCatalogo": "Esportatu katalogoa",
