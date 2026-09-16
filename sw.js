@@ -63,12 +63,16 @@ self.addEventListener("activate", (event) => {
 // (y la guarda en caché de paso). Solo usa la copia guardada si no hay conexión.
 // Así, cada vez que actualices los archivos en GitHub, se refleja solo la próxima vez que abras
 // la app con internet, sin tener que borrar nada a mano.
+// { cache: "no-store" } es la parte que hace esto de verdad "red primero": sin esto, un fetch()
+// normal puede devolver la copia que el propio navegador tenga en su caché HTTP (GitHub Pages
+// sirve estos archivos con Cache-Control: max-age=600) sin llegar a tocar el servidor — el service
+// worker "cree" que pidió lo último, pero recibe una copia de hasta 10 minutos de antigüedad.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: "no-store" })
       .then((response) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
