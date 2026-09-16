@@ -628,6 +628,7 @@ export default function RuedaDePlatos() {
       <Shell>
         <CatalogoOnboarding
           idioma={data.perfil.idioma || idiomaFallback}
+          repartoComidas={data.perfil.repartoComidas}
           onComplete={completarOnboardingConCatalogo}
           onSkipAll={saltarCatalogoOnboarding}
         />
@@ -1864,18 +1865,54 @@ function PasosIndicador({ pasoActual, pasos, idioma, labelPrefix }) {
 // asistente de perfil (ver el porqué en RuedaDePlatos, junto a guardarPerfilInicial). Construye
 // ingredients a partir de tarjetas elegidas con un toque — nunca hay que escribir nada ni meter un
 // número a mano. "Saltar todo" está disponible en cualquier pantalla, no solo en la intro.
-const CUESTIONARIO_PASOS = ["exclusiones", "proteinas", "carbohidratos", "verduras", "grasas"];
+// Pasos base, siempre presentes. "desayuno" (Tanda 2, piloto) se añade condicionalmente dentro
+// del componente según el reparto de comidas del perfil — ver pasosCuestionario() más abajo.
+const CUESTIONARIO_PASOS_BASE = ["exclusiones", "proteinas", "carbohidratos", "verduras", "grasas"];
+function pasosCuestionario(repartoComidas) {
+  const incluyeDesayuno = !!(repartoComidas && repartoComidas.Desayuno !== undefined);
+  return incluyeDesayuno ? [...CUESTIONARIO_PASOS_BASE, "desayuno"] : CUESTIONARIO_PASOS_BASE;
+}
 // Frecuencia semanal para proteínas (1/2/3), peso relativo Poco/Normal/Mucho para el resto —
-// mismas claves de i18n reutilizadas en las 4 pantallas de selección vía SeleccionAlimentosStep.
+// mismas claves de i18n reutilizadas en las 4 pantallas de selección vía SeleccionAlimentosStep,
+// y también por los arquetipos de Desayuno (su "nivel" pesa igual que Poco/Normal/Mucho).
 const NIVELES_FRECUENCIA = ["cuestionario.nivel.freq1", "cuestionario.nivel.freq2", "cuestionario.nivel.freq3"];
 const NIVELES_PESO = ["cuestionario.nivel.poco", "cuestionario.nivel.normal", "cuestionario.nivel.mucho"];
+
+// Arquetipos de Desayuno (Tanda 2, piloto de la reorganización del catálogo por categorías).
+// Cada uno señala qué carpeta(s) de CATEGORIAS_ALIMENTOS abrir para completarlo: "grupos" con más
+// de un elemento implica una sub-selección guiada, en orden (p.ej. pan, luego acompañamiento);
+// un solo grupo con multiSelect implica elegir libremente entre varias carpetas a la vez, sin guiar.
+// "nombreEs" es el nombre fijo del ingrediente resultante (en español, como el resto del modelo de
+// datos — ver CLAUDE.md), independiente del idioma de la interfaz.
+const ARQUETIPOS_DESAYUNO = [
+  {
+    key: "tostadas", nombreEs: "Tostadas", labelKey: "arquetipo.desayuno.tostadas", emoji: "🍞",
+    grupos: [
+      { categorias: ["panes"], multiSelect: false, labelKey: "arquetipo.grupo.pan" },
+      { categorias: ["embutido_fiambre", "lacteos", "grasas", "snacks_procesados"], multiSelect: true, labelKey: "arquetipo.grupo.acompanamiento" },
+    ],
+  },
+  {
+    key: "cereales_lacteo", nombreEs: "Cereales con lácteo", labelKey: "arquetipo.desayuno.cerealesLacteo", emoji: "🥣",
+    grupos: [
+      { categorias: ["cereales"], multiSelect: false, labelKey: "arquetipo.grupo.cereal" },
+      { categorias: ["lacteos"], multiSelect: false, labelKey: "arquetipo.grupo.lacteo" },
+    ],
+  },
+  {
+    key: "combinado", nombreEs: "Plato combinado", labelKey: "arquetipo.desayuno.combinado", emoji: "🍽️",
+    grupos: [
+      { categorias: ["proteinas", "embutido_fiambre", "panes", "lacteos", "vegetales", "frutas"], multiSelect: true, labelKey: "arquetipo.grupo.libre" },
+    ],
+  },
+];
 
 // A partir de las respuestas, construye la lista de ingredients que arrancará el catálogo de la
 // cuenta nueva. Proteínas -> regla de frecuencia semanal directa (el nivel elegido, 1-3). Carbo/
 // verdura/grasa -> regla de probabilidad, normalizando los pesos relativos (1-3) de lo elegido en
 // cada categoría para que sumen exactamente 100 (el último ajusta el redondeo, mismo método que
 // ya usa RepartoComidasFields con el reparto de comidas).
-function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa }) {
+function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, desayunoSeleccion }) {
   const ingredients = [];
 
   Object.entries(frecuencias).forEach(([foodId, nivel]) => {
@@ -1907,10 +1944,44 @@ function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesos
   agregarPorProbabilidad(pesosVerdura, CUESTIONARIO_VERDURAS, "verdura");
   agregarPorProbabilidad(pesosGrasa, CUESTIONARIO_GRASAS, "grasa");
 
+  // Desayuno (Tanda 2, piloto): cada arquetipo elegido se convierte en un ingrediente categoría
+  // "desayuno" con su propia composición — la misma mecánica que ya usa la app para desayunos y
+  // platos cerrados creados a mano (ver EditModal). Los gramos de cada fila de la composición son
+  // el valor por defecto de la categoría del alimento (CATEGORIAS_ALIMENTOS), no uno curado a mano
+  // por alimento — deliberadamente aproximados, para eso está el aviso en el propio paso.
+  if (desayunoSeleccion) {
+    const entradas = Object.entries(desayunoSeleccion);
+    const sumaNiveles = entradas.reduce((s, [, v]) => s + v.nivel, 0);
+    if (sumaNiveles > 0) {
+      let acumulado = 0;
+      entradas.forEach(([arqKey, v], i) => {
+        const arquetipo = ARQUETIPOS_DESAYUNO.find((a) => a.key === arqKey);
+        if (!arquetipo) return;
+        const composicion = [];
+        arquetipo.grupos.forEach((grupo, gi) => {
+          (v.grupos[gi] || []).forEach((foodId) => {
+            const food = FOODS_SEED.find((f) => f.id === foodId);
+            const cat = food && CATEGORIAS_ALIMENTOS.find((c) => c.key === food.categoria);
+            composicion.push({ id: uid(), foodId, gramos: cat ? cat.gramosDefecto : 50 });
+          });
+        });
+        // Arquetipo marcado pero sin ningún alimento elegido dentro: no genera nada, para no dejar
+        // un "plato" vacío sin composición real.
+        if (!composicion.length) return;
+        const probabilidad = i === entradas.length - 1 ? 100 - acumulado : Math.round((v.nivel / sumaNiveles) * 100);
+        acumulado += probabilidad;
+        ingredients.push({
+          id: uid(), name: arquetipo.nombreEs, category: "desayuno", ruleType: "probabilidad",
+          probabilidad, active: true, composicion,
+        });
+      });
+    }
+  }
+
   return ingredients;
 }
 
-function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
+function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
   const [fase, setFase] = useState("intro"); // "intro" | "paso" | "cierre"
   const [paso, setPaso] = useState(0);
   const [exclusiones, setExclusiones] = useState([]);
@@ -1918,6 +1989,10 @@ function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
   const [pesosCarbo, setPesosCarbo] = useState({});
   const [pesosVerdura, setPesosVerdura] = useState({});
   const [pesosGrasa, setPesosGrasa] = useState({});
+  // desayunoSeleccion: { [arquetipoKey]: { nivel: 1|2|3, grupos: { [índiceDeGrupo]: foodId[] } } }
+  const [desayunoSeleccion, setDesayunoSeleccion] = useState({});
+
+  const pasos = pasosCuestionario(repartoComidas);
 
   function estaExcluido(foodId) {
     return exclusiones.some((key) => EXCLUSIONES_DISPONIBLES.find((e) => e.key === key)?.foodIds.includes(foodId));
@@ -1939,12 +2014,36 @@ function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
     setMapa((prev) => ({ ...prev, [foodId]: (prev[foodId] % 3) + 1 }));
   }
 
+  function alternarArquetipoDesayuno(key) {
+    setDesayunoSeleccion((prev) => {
+      if (prev[key]) {
+        const { [key]: _omitido, ...resto } = prev;
+        return resto;
+      }
+      return { ...prev, [key]: { nivel: 2, grupos: {} } };
+    });
+  }
+  function ciclarNivelArquetipoDesayuno(key) {
+    setDesayunoSeleccion((prev) => ({ ...prev, [key]: { ...prev[key], nivel: (prev[key].nivel % 3) + 1 } }));
+  }
+  function alternarFoodEnGrupoDesayuno(arqKey, grupoIdx, foodId, multiSelect) {
+    setDesayunoSeleccion((prev) => {
+      const arq = prev[arqKey];
+      if (!arq) return prev;
+      const actual = arq.grupos[grupoIdx] || [];
+      const nuevo = multiSelect
+        ? (actual.includes(foodId) ? actual.filter((f) => f !== foodId) : [...actual, foodId])
+        : (actual.includes(foodId) ? [] : [foodId]);
+      return { ...prev, [arqKey]: { ...arq, grupos: { ...arq.grupos, [grupoIdx]: nuevo } } };
+    });
+  }
+
   function siguiente() {
-    if (paso === CUESTIONARIO_PASOS.length - 1) setFase("cierre");
+    if (paso === pasos.length - 1) setFase("cierre");
     else setPaso((p) => p + 1);
   }
   function confirmarCierre() {
-    onComplete(construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa }));
+    onComplete(construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, desayunoSeleccion }));
   }
 
   if (fase === "intro") {
@@ -1955,7 +2054,7 @@ function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
           {t(idioma, "cuestionario.intro.titulo")}
         </h1>
         <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6, margin: "0 0 26px" }}>
-          {t(idioma, "cuestionario.intro.texto", { n: CUESTIONARIO_PASOS.length })}
+          {t(idioma, "cuestionario.intro.texto", { n: pasos.length })}
         </p>
         <button
           onClick={() => setFase("paso")}
@@ -2002,12 +2101,13 @@ function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
     );
   }
 
-  // fase === "paso": 5 pantallas — Exclusiones (chips simples) + 4 de selección con tarjetas
-  // (SeleccionAlimentosStep). Las exclusiones elegidas en el paso 0 filtran las opciones que se
-  // ofrecen en los cuatro pasos siguientes.
+  // fase === "paso": Exclusiones (chips simples) + 4 de selección con tarjetas
+  // (SeleccionAlimentosStep) + Desayuno (SeleccionDesayunoStep, Tanda 2, solo si está en el
+  // reparto de comidas). Las exclusiones elegidas en el paso 0 filtran las opciones de todos los
+  // pasos siguientes, incluido Desayuno.
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 20px 60px" }}>
-      <PasosIndicador pasoActual={paso} pasos={CUESTIONARIO_PASOS} idioma={idioma} labelPrefix="cuestionario.paso" />
+      <PasosIndicador pasoActual={paso} pasos={pasos} idioma={idioma} labelPrefix="cuestionario.paso" />
 
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px" }}>
         {paso === 0 && (
@@ -2080,6 +2180,16 @@ function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
             idioma={idioma}
           />
         )}
+        {paso === 5 && (
+          <SeleccionDesayunoStep
+            seleccion={desayunoSeleccion}
+            onToggleArquetipo={alternarArquetipoDesayuno}
+            onCiclarNivel={ciclarNivelArquetipoDesayuno}
+            onToggleFood={alternarFoodEnGrupoDesayuno}
+            estaExcluido={estaExcluido}
+            idioma={idioma}
+          />
+        )}
 
         <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
           {paso > 0 && (
@@ -2101,7 +2211,7 @@ function CatalogoOnboarding({ idioma, onComplete, onSkipAll }) {
               color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "12px", cursor: "pointer",
             }}
           >
-            {paso === CUESTIONARIO_PASOS.length - 1 ? t(idioma, "cuestionario.terminar") : t(idioma, "onboarding.siguiente")}
+            {paso === pasos.length - 1 ? t(idioma, "cuestionario.terminar") : t(idioma, "onboarding.siguiente")}
           </button>
         </div>
         <button
@@ -2155,6 +2265,123 @@ function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, o
                 >
                   {t(idioma, nivelLabels[nivel - 1])}
                 </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// Paso "Desayuno" del cuestionario (Tanda 2, piloto de la reorganización por categorías): en vez
+// de una lista plana de alimentos, tarjetas de "arquetipo" (Tostadas, Cereales con lácteo, Plato
+// combinado) que, al activarse, despliegan debajo su propia sub-selección por carpeta de
+// CATEGORIAS_ALIMENTOS — una o dos guiadas en orden, o una libre entre varias a la vez.
+// Los nombres de los alimentos se muestran tal cual están en la base de datos (en español, ver
+// CLAUDE.md) — a diferencia de CUESTIONARIO_PROTEINAS y compañía, estas carpetas no tienen todavía
+// una traducción propia por alimento; es una limitación conocida de este piloto, no un olvido.
+function SeleccionDesayunoStep({ seleccion, onToggleArquetipo, onCiclarNivel, onToggleFood, estaExcluido, idioma }) {
+  return (
+    <>
+      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
+        {t(idioma, "cuestionario.desayuno.titulo")}
+      </div>
+      <div
+        style={{
+          display: "flex", alignItems: "flex-start", gap: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          fontSize: 11.5, color: "var(--mustard-dark)", background: "var(--mustard-soft)", borderRadius: 8,
+          padding: "9px 11px", marginBottom: 14, lineHeight: 1.5,
+        }}
+      >
+        <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
+        <span>{t(idioma, "cuestionario.desayuno.aviso")}</span>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {ARQUETIPOS_DESAYUNO.map((arq) => {
+          const arqSel = seleccion[arq.key];
+          const activo = !!arqSel;
+          return (
+            <div
+              key={arq.key}
+              style={{
+                border: "1px solid var(--line)", borderRadius: 10, padding: "10px 11px",
+                background: activo ? "var(--green-soft)" : "#fff",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  onClick={() => onToggleArquetipo(arq.key)}
+                  style={{
+                    flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer",
+                    display: "flex", alignItems: "center", gap: 8, padding: 0,
+                  }}
+                >
+                  <span style={{ fontSize: 19 }}>{arq.emoji}</span>
+                  <span
+                    style={{
+                      fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5,
+                      fontWeight: activo ? 700 : 500, color: activo ? "var(--green-dark)" : "var(--ink)",
+                    }}
+                  >
+                    {t(idioma, arq.labelKey)}
+                  </span>
+                </button>
+                {activo && (
+                  <button
+                    onClick={() => onCiclarNivel(arq.key)}
+                    style={{
+                      flexShrink: 0, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                      padding: "8px 10px", borderRadius: 8, border: "1px solid var(--green)", background: "#fff",
+                      color: "var(--green-dark)", cursor: "pointer", minWidth: 60,
+                    }}
+                  >
+                    {t(idioma, NIVELES_PESO[arqSel.nivel - 1])}
+                  </button>
+                )}
+              </div>
+
+              {activo && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+                  {arq.grupos.map((grupo, gi) => {
+                    const opciones = FOODS_SEED.filter((f) => grupo.categorias.includes(f.categoria) && !estaExcluido(f.id));
+                    if (!opciones.length) return null;
+                    const elegidos = arqSel.grupos[gi] || [];
+                    return (
+                      <div key={gi}>
+                        <div
+                          style={{
+                            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, fontWeight: 700,
+                            color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6,
+                          }}
+                        >
+                          {t(idioma, grupo.labelKey)}
+                        </div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {opciones.map((food) => {
+                            const marcado = elegidos.includes(food.id);
+                            const catFood = CATEGORIAS_ALIMENTOS.find((c) => c.key === food.categoria);
+                            return (
+                              <button
+                                key={food.id}
+                                onClick={() => onToggleFood(arq.key, gi, food.id, grupo.multiSelect)}
+                                style={{
+                                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 600,
+                                  padding: "6px 10px", borderRadius: 20, border: "1px solid var(--line)",
+                                  background: marcado ? "var(--green-dark)" : "#fff",
+                                  color: marcado ? "#fff" : "var(--ink)", cursor: "pointer",
+                                }}
+                              >
+                                {catFood?.emoji} {food.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
           );
