@@ -5796,6 +5796,9 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
   const filtered = query.trim()
     ? foods.filter((f) => f.name.toLowerCase().includes(query.trim().toLowerCase()))
     : foods;
+  // Alimentos creados antes de la categorización (Tanda 1) o con una categoria que ya no existe
+  // caen en "sin categoría" — nunca desaparecen de la lista por una categoria vacía o inválida.
+  const bucketKeyFor = (f) => (CATEGORIAS_ALIMENTOS.some((c) => c.key === f.categoria) ? f.categoria : "__sin_categoria");
 
   function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
@@ -5867,56 +5870,79 @@ function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto
         {t(idioma, "foodsView.deTotal", { n: filtered.length, total: foods.length })}
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {filtered.map((f) => {
-          const uses = usageCount(f.id);
-          return (
-            <div
-              key={f.id}
-              style={{
-                background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10,
-                padding: "11px 13px",
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 14.5, lineHeight: 1.3 }}>{f.name}</div>
-                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 3 }}>
-                    {f.fuente}
-                    {uses > 0 && (
-                      <span style={{ color: "var(--green)", fontWeight: 700 }}>
-                        {" · "}<Link2 size={9} style={{ verticalAlign: "middle" }} /> {t(idioma, "foodsView.usadoEn", { n: uses })}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
-                  <IconBtn onClick={() => onEdit(f)}><Pencil size={13} /></IconBtn>
-                  <IconBtn onClick={() => onDelete(f)}><Trash2 size={13} /></IconBtn>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
-                <MacroPill label="kcal" value={f.kcal} color="var(--rust)" bg="var(--rust-soft)" />
-                <MacroPill label="P" value={`${f.prot} g`} color="var(--green-dark)" bg="var(--green-soft)" />
-                <MacroPill label="G" value={`${f.fat} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-                <MacroPill label="C" value={`${f.carb} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
-                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
-                  {t(idioma, "foodsView.por100g")}
+      <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+        {[...CATEGORIAS_ALIMENTOS.map((c) => c.key), "__sin_categoria"]
+          .map((key) => ({ key, cat: CATEGORIAS_ALIMENTOS.find((c) => c.key === key), items: filtered.filter((f) => bucketKeyFor(f) === key) }))
+          .filter((g) => g.items.length > 0)
+          .map(({ key, cat, items }) => (
+            <div key={key}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                <span style={{ fontSize: 15 }}>{cat ? cat.emoji : "🗂️"}</span>
+                <span
+                  style={{
+                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700,
+                    color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5,
+                  }}
+                >
+                  {cat ? t(idioma, cat.labelKey) : t(idioma, "categoriaAlimento.sinCategoria")}
+                </span>
+                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
+                  ({items.length})
                 </span>
               </div>
-              {(f.grasaSaturada !== undefined || f.azucares !== undefined || f.fibra !== undefined || f.sal !== undefined) && (
-                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginTop: 6 }}>
-                  {[
-                    f.grasaSaturada !== undefined && t(idioma, "foodsView.saturada", { n: f.grasaSaturada }),
-                    f.azucares !== undefined && t(idioma, "foodsView.azucares", { n: f.azucares }),
-                    f.fibra !== undefined && t(idioma, "foodsView.fibra", { n: f.fibra }),
-                    f.sal !== undefined && t(idioma, "foodsView.sal", { n: f.sal }),
-                  ].filter(Boolean).join(" · ")}
-                </div>
-              )}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {items.map((f) => {
+                  const uses = usageCount(f.id);
+                  return (
+                    <div
+                      key={f.id}
+                      style={{
+                        background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10,
+                        padding: "11px 13px",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 14.5, lineHeight: 1.3 }}>{f.name}</div>
+                          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 3 }}>
+                            {f.fuente}
+                            {uses > 0 && (
+                              <span style={{ color: "var(--green)", fontWeight: 700 }}>
+                                {" · "}<Link2 size={9} style={{ verticalAlign: "middle" }} /> {t(idioma, "foodsView.usadoEn", { n: uses })}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                          <IconBtn onClick={() => onEdit(f)}><Pencil size={13} /></IconBtn>
+                          <IconBtn onClick={() => onDelete(f)}><Trash2 size={13} /></IconBtn>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                        <MacroPill label="kcal" value={f.kcal} color="var(--rust)" bg="var(--rust-soft)" />
+                        <MacroPill label="P" value={`${f.prot} g`} color="var(--green-dark)" bg="var(--green-soft)" />
+                        <MacroPill label="G" value={`${f.fat} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
+                        <MacroPill label="C" value={`${f.carb} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+                        <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
+                          {t(idioma, "foodsView.por100g")}
+                        </span>
+                      </div>
+                      {(f.grasaSaturada !== undefined || f.azucares !== undefined || f.fibra !== undefined || f.sal !== undefined) && (
+                        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginTop: 6 }}>
+                          {[
+                            f.grasaSaturada !== undefined && t(idioma, "foodsView.saturada", { n: f.grasaSaturada }),
+                            f.azucares !== undefined && t(idioma, "foodsView.azucares", { n: f.azucares }),
+                            f.fibra !== undefined && t(idioma, "foodsView.fibra", { n: f.fibra }),
+                            f.sal !== undefined && t(idioma, "foodsView.sal", { n: f.sal }),
+                          ].filter(Boolean).join(" · ")}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          );
-        })}
+          ))}
         {filtered.length === 0 && (
           <div style={{
             border: "1.5px dashed var(--line)", borderRadius: 10, padding: "26px 16px",
@@ -6015,6 +6041,7 @@ function MacroPill({ label, value, color, bg }) {
 function FoodEditModal({ state, onClose, onSave, idioma }) {
   const existing = state.food;
   const [name, setName] = useState(existing ? existing.name : "");
+  const [categoria, setCategoria] = useState(existing?.categoria || CATEGORIAS_ALIMENTOS[0].key);
   const [kcal, setKcal] = useState(existing ? existing.kcal : "");
   const [prot, setProt] = useState(existing ? existing.prot : "");
   const [fat, setFat] = useState(existing ? existing.fat : "");
@@ -6066,6 +6093,7 @@ function FoodEditModal({ state, onClose, onSave, idioma }) {
     onSave({
       id: existing ? existing.id : "f_" + uid(),
       name: name.trim(),
+      categoria,
       kcal: Number(kcal) || 0,
       prot: Number(prot) || 0,
       fat: Number(fat) || 0,
@@ -6137,6 +6165,14 @@ function FoodEditModal({ state, onClose, onSave, idioma }) {
 
       <Field label={t(idioma, "foodEditModal.nombre")}>
         <input autoFocus value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} placeholder={t(idioma, "foodEditModal.nombrePlaceholder")} />
+      </Field>
+
+      <Field label={t(idioma, "foodEditModal.categoria")}>
+        <select value={categoria} onChange={(e) => setCategoria(e.target.value)} style={inputStyle}>
+          {CATEGORIAS_ALIMENTOS.map((c) => (
+            <option key={c.key} value={c.key}>{c.emoji} {t(idioma, c.labelKey)}</option>
+          ))}
+        </select>
       </Field>
 
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginBottom: 8 }}>
