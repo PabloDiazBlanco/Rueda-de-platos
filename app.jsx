@@ -27,51 +27,92 @@ import { t, IDIOMAS_DISPONIBLES, DEFAULT_IDIOMA, leerIdiomaGuardado, guardarIdio
 // "fuente" indica de dónde sale el dato: etiqueta real de producto o valor estándar contrastado.
 const FOODS_SEED = [
   // Proteínas
-  { id: "f_pechuga_pollo", name: "Pechuga de pollo (cruda)", kcal: 165, prot: 31, fat: 3.6, carb: 0, sal: 0.1, azucares: 0, fibra: 0, grasaSaturada: 1, fuente: "Estándar" },
-  { id: "f_hamb_pollo", name: "Hamburguesa de pollo (Hacendado)", kcal: 144, prot: 17, fat: 7, carb: 3, fuente: "Etiqueta" },
-  { id: "f_picada_pollo", name: "Carne picada de pollo (Hacendado)", kcal: 124, prot: 16.6, fat: 5.3, carb: 1, fuente: "Etiqueta" },
-  { id: "f_picada_mixta", name: "Carne picada ternera/cerdo", kcal: 163, prot: 17, fat: 9.5, carb: 1, fuente: "Etiqueta (media)" },
-  { id: "f_hamb_mixta", name: "Hamburguesa ternera/cerdo (Hacendado)", kcal: 226, prot: 18, fat: 17, carb: 2, fuente: "Etiqueta" },
-  { id: "f_salmon", name: "Salmón (crudo)", kcal: 144, prot: 20, fat: 12, carb: 0, sal: 0.1, azucares: 0, fibra: 0, fuente: "Estándar" },
-  { id: "f_merluza", name: "Merluza / pescada (Hacendado)", kcal: 82, prot: 18, fat: 1.5, carb: 0.5, sal: 0.24, azucares: 0.5, fibra: 0, grasaSaturada: 0.3, fuente: "Etiqueta" },
-  { id: "f_atun", name: "Atún al natural (escurrido)", kcal: 105, prot: 22.5, fat: 1.2, carb: 0, fuente: "Etiqueta" },
-  { id: "f_sardinas", name: "Sardinas en aceite de oliva (escurridas)", kcal: 207, prot: 24, fat: 14, carb: 0, fuente: "Etiqueta" },
-  { id: "f_pavo", name: "Pechuga de pavo fiambre (El Pozo)", kcal: 90, prot: 20.3, fat: 1.5, carb: 0, sal: 1.8, azucares: 0, fibra: 0, grasaSaturada: 0.3, fuente: "Etiqueta" },
-  { id: "f_jamon", name: "Jamón curado (Navidul)", kcal: 212, prot: 30, fat: 10, carb: 0.5, sal: 5, azucares: 0.5, fibra: 0, grasaSaturada: 3.8, fuente: "Etiqueta" },
-  { id: "f_lomo", name: "Lomo embuchado (Boadas)", kcal: 203, prot: 35, fat: 7, carb: 0.7, sal: 3.5, azucares: 0.7, fibra: 0, grasaSaturada: 2.2, fuente: "Etiqueta" },
-  { id: "f_huevo", name: "Huevo entero (crudo)", kcal: 140, prot: 12.7, fat: 9.5, carb: 0.3, sal: 0, azucares: 0.27, fibra: 0, grasaSaturada: 2.64, fuente: "Etiqueta" },
+  { id: "f_pechuga_pollo", name: "Pechuga de pollo (cruda)", categoria: "proteinas", kcal: 165, prot: 31, fat: 3.6, carb: 0, sal: 0.1, azucares: 0, fibra: 0, grasaSaturada: 1, fuente: "Estándar" },
+  { id: "f_hamb_pollo", name: "Hamburguesa de pollo (Hacendado)", categoria: "proteinas", kcal: 144, prot: 17, fat: 7, carb: 3, fuente: "Etiqueta" },
+  { id: "f_picada_pollo", name: "Carne picada de pollo (Hacendado)", categoria: "proteinas", kcal: 124, prot: 16.6, fat: 5.3, carb: 1, fuente: "Etiqueta" },
+  { id: "f_picada_mixta", name: "Carne picada ternera/cerdo", categoria: "proteinas", kcal: 163, prot: 17, fat: 9.5, carb: 1, fuente: "Etiqueta (media)" },
+  { id: "f_hamb_mixta", name: "Hamburguesa ternera/cerdo (Hacendado)", categoria: "proteinas", kcal: 226, prot: 18, fat: 17, carb: 2, fuente: "Etiqueta" },
+  { id: "f_salmon", name: "Salmón (crudo)", categoria: "proteinas", kcal: 144, prot: 20, fat: 12, carb: 0, sal: 0.1, azucares: 0, fibra: 0, fuente: "Estándar" },
+  { id: "f_merluza", name: "Merluza / pescada (Hacendado)", categoria: "proteinas", kcal: 82, prot: 18, fat: 1.5, carb: 0.5, sal: 0.24, azucares: 0.5, fibra: 0, grasaSaturada: 0.3, fuente: "Etiqueta" },
+  { id: "f_atun", name: "Atún al natural (escurrido)", categoria: "proteinas", kcal: 105, prot: 22.5, fat: 1.2, carb: 0, fuente: "Etiqueta" },
+  { id: "f_sardinas", name: "Sardinas en aceite de oliva (escurridas)", categoria: "proteinas", kcal: 207, prot: 24, fat: 14, carb: 0, fuente: "Etiqueta" },
+  { id: "f_huevo", name: "Huevo entero (crudo)", categoria: "proteinas", kcal: 140, prot: 12.7, fat: 9.5, carb: 0.3, sal: 0, azucares: 0.27, fibra: 0, grasaSaturada: 2.64, fuente: "Etiqueta" },
 
-  // Carbohidratos
-  { id: "f_pasta", name: "Pasta / macarrón (cruda, Hacendado)", kcal: 357, prot: 11, fat: 1.5, carb: 70, sal: 0.1, azucares: 3.5, fibra: 4, grasaSaturada: 0.3, fuente: "Etiqueta" },
-  { id: "f_arroz_basmati", name: "Arroz basmati (crudo, Hacendado)", kcal: 353, prot: 8.06, fat: 1, carb: 78, sal: 0, azucares: 0.17, fibra: 0.92, grasaSaturada: 0.19, fuente: "Etiqueta" },
-  { id: "f_patata", name: "Patata (cruda)", kcal: 77, prot: 2, fat: 0.1, carb: 17, sal: 0.01, azucares: 1, fibra: 2, fuente: "Estándar" },
-  { id: "f_gnocchi", name: "Gnocchi (fresco, Ifa Eliges)", kcal: 156, prot: 3, fat: 0.5, carb: 30, sal: 0.63, azucares: 0.5, fibra: 1.9, grasaSaturada: 0.1, fuente: "Etiqueta" },
-  { id: "f_garbanzos_cocidos", name: "Garbanzos cocidos (bote)", kcal: 119, prot: 6.5, fat: 2.6, carb: 16, fibra: 5, fuente: "Estándar" },
-  { id: "f_pan_molde", name: "Pan de molde natural (Hacendado)", kcal: 265, prot: 9.1, fat: 3.5, carb: 48, sal: 1.1, azucares: 3.8, fibra: 1.2, grasaSaturada: 0.6, fuente: "Etiqueta" },
-  { id: "f_pan_brioche", name: "Pan hamburguesa brioche (Hacendado)", kcal: 340, prot: 11, fat: 8, carb: 55, sal: 0.86, azucares: 11, fibra: 2, grasaSaturada: 2.2, fuente: "Etiqueta" },
-  { id: "f_cereales_cacao", name: "Cereales de cacao (Hacendado)", kcal: 389, prot: 13, fat: 5, carb: 70, sal: 0.6, azucares: 9, fibra: 9.5, grasaSaturada: 1.5, fuente: "Etiqueta" },
+  // Embutido / fiambre — antes mezclados con Proteínas; carpeta propia porque se comen de otra
+  // forma (acompañamiento/topping) y llevan bastante más sal.
+  { id: "f_pavo", name: "Pechuga de pavo fiambre (El Pozo)", categoria: "embutido_fiambre", kcal: 90, prot: 20.3, fat: 1.5, carb: 0, sal: 1.8, azucares: 0, fibra: 0, grasaSaturada: 0.3, fuente: "Etiqueta" },
+  { id: "f_jamon", name: "Jamón curado (Navidul)", categoria: "embutido_fiambre", kcal: 212, prot: 30, fat: 10, carb: 0.5, sal: 5, azucares: 0.5, fibra: 0, grasaSaturada: 3.8, fuente: "Etiqueta" },
+  { id: "f_lomo", name: "Lomo embuchado (Boadas)", categoria: "embutido_fiambre", kcal: 203, prot: 35, fat: 7, carb: 0.7, sal: 3.5, azucares: 0.7, fibra: 0, grasaSaturada: 2.2, fuente: "Etiqueta" },
 
-  // Verduras y acompañamientos
-  { id: "f_ensalada", name: "Ensalada variada (hoja, tomate, etc.)", kcal: 25, prot: 1.5, fat: 0.3, carb: 3.5, fibra: 1.5, fuente: "Estándar" },
-  { id: "f_tomate", name: "Tomate (crudo)", kcal: 18, prot: 0.9, fat: 0.2, carb: 3.9, azucares: 2.6, fibra: 1.2, fuente: "Estándar" },
-  { id: "f_pimiento", name: "Pimiento (crudo)", kcal: 27, prot: 1, fat: 0.3, carb: 6, azucares: 4.2, fibra: 2.1, fuente: "Estándar" },
-  { id: "f_cebolla", name: "Cebolla (cruda)", kcal: 40, prot: 1.1, fat: 0.1, carb: 9.3, azucares: 4.2, fibra: 1.7, fuente: "Estándar" },
-  { id: "f_pure_verduras", name: "Puré de verduras", kcal: 55, prot: 1.5, fat: 1.5, carb: 8, fuente: "Estándar" },
+  // Carbohidratos (almidones "de plato principal" — pan, cereales y legumbres se separan abajo)
+  { id: "f_pasta", name: "Pasta / macarrón (cruda, Hacendado)", categoria: "carbohidratos", kcal: 357, prot: 11, fat: 1.5, carb: 70, sal: 0.1, azucares: 3.5, fibra: 4, grasaSaturada: 0.3, fuente: "Etiqueta" },
+  { id: "f_arroz_basmati", name: "Arroz basmati (crudo, Hacendado)", categoria: "carbohidratos", kcal: 353, prot: 8.06, fat: 1, carb: 78, sal: 0, azucares: 0.17, fibra: 0.92, grasaSaturada: 0.19, fuente: "Etiqueta" },
+  { id: "f_patata", name: "Patata (cruda)", categoria: "carbohidratos", kcal: 77, prot: 2, fat: 0.1, carb: 17, sal: 0.01, azucares: 1, fibra: 2, fuente: "Estándar" },
+  { id: "f_gnocchi", name: "Gnocchi (fresco, Ifa Eliges)", categoria: "carbohidratos", kcal: 156, prot: 3, fat: 0.5, carb: 30, sal: 0.63, azucares: 0.5, fibra: 1.9, grasaSaturada: 0.1, fuente: "Etiqueta" },
 
-  // Lácteos y otros
-  { id: "f_queso_cottage", name: "Queso cottage (Ifa Eliges)", kcal: 66, prot: 12, fat: 1.5, carb: 2, sal: 0.6, azucares: 2, fibra: 0, grasaSaturada: 0.1, fuente: "Etiqueta" },
-  { id: "f_yogur_prot", name: "Yogur proteínas (Hacendado)", kcal: 52, prot: 10, fat: 0.3, carb: 3.1, sal: 0.1, azucares: 3.1, fibra: 0, grasaSaturada: 0.1, fuente: "Etiqueta" },
-  { id: "f_mozzarella", name: "Queso rallado mozzarella (Ifa Eliges)", kcal: 285, prot: 21, fat: 21, carb: 0.8, sal: 1, azucares: 0.8, fibra: 0, grasaSaturada: 14, fuente: "Etiqueta" },
-  { id: "f_aove", name: "Aceite de oliva virgen extra", kcal: 900, prot: 0, fat: 100, carb: 0, sal: 0, azucares: 0, fibra: 0, grasaSaturada: 14, fuente: "Estándar" },
-  { id: "f_cafe_leche", name: "Café con leche (taza 200 ml)", kcal: 33, prot: 1.5, fat: 1.2, carb: 2.5, fuente: "Estándar (por 100 ml)" },
+  // Legumbres — antes dentro de Carbohidratos "a la fuerza"
+  { id: "f_garbanzos_cocidos", name: "Garbanzos cocidos (bote)", categoria: "legumbres", kcal: 119, prot: 6.5, fat: 2.6, carb: 16, fibra: 5, fuente: "Estándar" },
 
-  // Frutos secos y snacks
-  { id: "f_anacardos", name: "Anacardos naturales sin sal", kcal: 589, prot: 17.5, fat: 45, carb: 31, sal: 0, azucares: 6, fibra: 3.3, grasaSaturada: 8, fuente: "Estándar" },
-  { id: "f_pistachos", name: "Pistachos naturales sin sal", kcal: 580, prot: 19, fat: 48, carb: 21, sal: 0, azucares: 8, fibra: 10, grasaSaturada: 6, fuente: "Estándar" },
-  { id: "f_cacahuete_polvo", name: "Cacahuete en polvo desgrasado (Eroski)", kcal: 470, prot: 47, fat: 8, carb: 24, sal: 0, azucares: 8.8, fibra: 14, grasaSaturada: 2, fuente: "Etiqueta" },
-  { id: "f_choco85", name: "Chocolate negro 85%", kcal: 600, prot: 9, fat: 46, carb: 20, azucares: 16, grasaSaturada: 26, fuente: "Estándar" },
-  { id: "f_nachos", name: "Nachos (Ifa Eliges)", kcal: 486, prot: 5.1, fat: 22, carb: 65, azucares: 1.2, fibra: 4.8, grasaSaturada: 2.5, fuente: "Etiqueta" },
-  { id: "f_guacamole", name: "Guacamole fresco (Ifa Eliges)", kcal: 182, prot: 1.8, fat: 16, carb: 8, sal: 1.3, azucares: 1.4, fibra: 3.2, grasaSaturada: 2.4, fuente: "Etiqueta" },
+  // Panes — carpeta propia, no dentro de Carbohidratos
+  { id: "f_pan_molde", name: "Pan de molde natural (Hacendado)", categoria: "panes", kcal: 265, prot: 9.1, fat: 3.5, carb: 48, sal: 1.1, azucares: 3.8, fibra: 1.2, grasaSaturada: 0.6, fuente: "Etiqueta" },
+  { id: "f_pan_brioche", name: "Pan hamburguesa brioche (Hacendado)", categoria: "panes", kcal: 340, prot: 11, fat: 8, carb: 55, sal: 0.86, azucares: 11, fibra: 2, grasaSaturada: 2.2, fuente: "Etiqueta" },
+
+  // Cereales (de desayuno) — carpeta propia
+  { id: "f_cereales_cacao", name: "Cereales de cacao (Hacendado)", categoria: "cereales", kcal: 389, prot: 13, fat: 5, carb: 70, sal: 0.6, azucares: 9, fibra: 9.5, grasaSaturada: 1.5, fuente: "Etiqueta" },
+
+  // Vegetales
+  { id: "f_ensalada", name: "Ensalada variada (hoja, tomate, etc.)", categoria: "vegetales", kcal: 25, prot: 1.5, fat: 0.3, carb: 3.5, fibra: 1.5, fuente: "Estándar" },
+  { id: "f_tomate", name: "Tomate (crudo)", categoria: "vegetales", kcal: 18, prot: 0.9, fat: 0.2, carb: 3.9, azucares: 2.6, fibra: 1.2, fuente: "Estándar" },
+  { id: "f_pimiento", name: "Pimiento (crudo)", categoria: "vegetales", kcal: 27, prot: 1, fat: 0.3, carb: 6, azucares: 4.2, fibra: 2.1, fuente: "Estándar" },
+  { id: "f_cebolla", name: "Cebolla (cruda)", categoria: "vegetales", kcal: 40, prot: 1.1, fat: 0.1, carb: 9.3, azucares: 4.2, fibra: 1.7, fuente: "Estándar" },
+  { id: "f_pure_verduras", name: "Puré de verduras", categoria: "vegetales", kcal: 55, prot: 1.5, fat: 1.5, carb: 8, fuente: "Estándar" },
+
+  // Frutas — catálogo nuevo, no existía ninguna fruta antes de esta tanda. Selección inicial de
+  // las más comunes; se amplía/cambia más adelante sin ningún problema.
+  { id: "f_manzana", name: "Manzana (cruda)", categoria: "frutas", kcal: 52, prot: 0.3, fat: 0.2, carb: 14, azucares: 10, fibra: 2.4, fuente: "Estándar" },
+  { id: "f_platano", name: "Plátano (crudo)", categoria: "frutas", kcal: 89, prot: 1.1, fat: 0.3, carb: 23, azucares: 12, fibra: 2.6, fuente: "Estándar" },
+  { id: "f_naranja", name: "Naranja (cruda)", categoria: "frutas", kcal: 47, prot: 0.9, fat: 0.1, carb: 12, azucares: 9, fibra: 2.4, fuente: "Estándar" },
+  { id: "f_pera", name: "Pera (cruda)", categoria: "frutas", kcal: 57, prot: 0.4, fat: 0.1, carb: 15, azucares: 10, fibra: 3.1, fuente: "Estándar" },
+  { id: "f_fresas", name: "Fresas (crudas)", categoria: "frutas", kcal: 32, prot: 0.7, fat: 0.3, carb: 7.7, azucares: 4.9, fibra: 2, fuente: "Estándar" },
+  { id: "f_uvas", name: "Uvas (crudas)", categoria: "frutas", kcal: 69, prot: 0.7, fat: 0.2, carb: 18, azucares: 16, fibra: 0.9, fuente: "Estándar" },
+
+  // Lácteos (incluye el café con leche: no encaja mejor en ninguna otra carpeta y lleva leche de verdad)
+  { id: "f_queso_cottage", name: "Queso cottage (Ifa Eliges)", categoria: "lacteos", kcal: 66, prot: 12, fat: 1.5, carb: 2, sal: 0.6, azucares: 2, fibra: 0, grasaSaturada: 0.1, fuente: "Etiqueta" },
+  { id: "f_yogur_prot", name: "Yogur proteínas (Hacendado)", categoria: "lacteos", kcal: 52, prot: 10, fat: 0.3, carb: 3.1, sal: 0.1, azucares: 3.1, fibra: 0, grasaSaturada: 0.1, fuente: "Etiqueta" },
+  { id: "f_mozzarella", name: "Queso rallado mozzarella (Ifa Eliges)", categoria: "lacteos", kcal: 285, prot: 21, fat: 21, carb: 0.8, sal: 1, azucares: 0.8, fibra: 0, grasaSaturada: 14, fuente: "Etiqueta" },
+  { id: "f_cafe_leche", name: "Café con leche (taza 200 ml)", categoria: "lacteos", kcal: 33, prot: 1.5, fat: 1.2, carb: 2.5, fuente: "Estándar (por 100 ml)" },
+
+  // Grasas — antes mezclado en "Lácteos y otros", sin pintar nada ahí
+  { id: "f_aove", name: "Aceite de oliva virgen extra", categoria: "grasas", kcal: 900, prot: 0, fat: 100, carb: 0, sal: 0, azucares: 0, fibra: 0, grasaSaturada: 14, fuente: "Estándar" },
+
+  // Frutos secos — separados de los snacks procesados (antes en el mismo cajón de sastre)
+  { id: "f_anacardos", name: "Anacardos naturales sin sal", categoria: "frutos_secos", kcal: 589, prot: 17.5, fat: 45, carb: 31, sal: 0, azucares: 6, fibra: 3.3, grasaSaturada: 8, fuente: "Estándar" },
+  { id: "f_pistachos", name: "Pistachos naturales sin sal", categoria: "frutos_secos", kcal: 580, prot: 19, fat: 48, carb: 21, sal: 0, azucares: 8, fibra: 10, grasaSaturada: 6, fuente: "Estándar" },
+  { id: "f_cacahuete_polvo", name: "Cacahuete en polvo desgrasado (Eroski)", categoria: "frutos_secos", kcal: 470, prot: 47, fat: 8, carb: 24, sal: 0, azucares: 8.8, fibra: 14, grasaSaturada: 2, fuente: "Etiqueta" },
+
+  // Snacks procesados
+  { id: "f_choco85", name: "Chocolate negro 85%", categoria: "snacks_procesados", kcal: 600, prot: 9, fat: 46, carb: 20, azucares: 16, grasaSaturada: 26, fuente: "Estándar" },
+  { id: "f_nachos", name: "Nachos (Ifa Eliges)", categoria: "snacks_procesados", kcal: 486, prot: 5.1, fat: 22, carb: 65, azucares: 1.2, fibra: 4.8, grasaSaturada: 2.5, fuente: "Etiqueta" },
+  { id: "f_guacamole", name: "Guacamole fresco (Ifa Eliges)", categoria: "snacks_procesados", kcal: 182, prot: 1.8, fat: 16, carb: 8, sal: 1.3, azucares: 1.4, fibra: 3.2, grasaSaturada: 2.4, fuente: "Etiqueta" },
+];
+
+// Carpetas de la base de datos de alimentos (distinto de CATEGORY_META más abajo, que clasifica
+// reglas de ingrediente, no alimentos crudos). Cada carpeta agrupa foods[] por categoria y da un
+// gramaje de partida — por categoría, no por alimento — para cuando el cuestionario de catálogo
+// (Tanda 2) construya combinaciones sin pedir una cantidad curada para cada alimento nuevo.
+const CATEGORIAS_ALIMENTOS = [
+  { key: "proteinas", labelKey: "categoriaAlimento.proteinas", emoji: "🍗", gramosDefecto: 150 },
+  { key: "embutido_fiambre", labelKey: "categoriaAlimento.embutidoFiambre", emoji: "🥓", gramosDefecto: 30 },
+  { key: "carbohidratos", labelKey: "categoriaAlimento.carbohidratos", emoji: "🍝", gramosDefecto: 80 },
+  { key: "panes", labelKey: "categoriaAlimento.panes", emoji: "🍞", gramosDefecto: 60 },
+  { key: "cereales", labelKey: "categoriaAlimento.cereales", emoji: "🥣", gramosDefecto: 40 },
+  { key: "legumbres", labelKey: "categoriaAlimento.legumbres", emoji: "🫘", gramosDefecto: 150 },
+  { key: "vegetales", labelKey: "categoriaAlimento.vegetales", emoji: "🥗", gramosDefecto: 150 },
+  { key: "frutas", labelKey: "categoriaAlimento.frutas", emoji: "🍎", gramosDefecto: 150 },
+  { key: "lacteos", labelKey: "categoriaAlimento.lacteos", emoji: "🥛", gramosDefecto: 125 },
+  { key: "grasas", labelKey: "categoriaAlimento.grasas", emoji: "🫒", gramosDefecto: 10 },
+  { key: "frutos_secos", labelKey: "categoriaAlimento.frutosSecos", emoji: "🥜", gramosDefecto: 30 },
+  { key: "snacks_procesados", labelKey: "categoriaAlimento.snacksProcesados", emoji: "🍫", gramosDefecto: 30 },
 ];
 
 // ---------- Cuestionario de catálogo (Bloque 3 del rediseño, Tanda 3) ----------
@@ -196,12 +237,12 @@ function migrateData(rawData) {
       changed = true;
     }
 
-    // Alimentos que ya existían antes de añadir sal/azúcares/fibra/grasa saturada al catálogo:
-    // se completan solo esos campos nuevos si faltan, sin tocar kcal/proteína/grasa/carbohidratos
-    // por si el usuario ya los había editado a mano.
+    // Alimentos que ya existían antes de añadir sal/azúcares/fibra/grasa saturada (y, en esta
+    // tanda, categoria) al catálogo: se completan solo esos campos nuevos si faltan, sin tocar
+    // kcal/proteína/grasa/carbohidratos por si el usuario ya los había editado a mano.
     const seedById = {};
     FOODS_SEED.forEach((f) => { seedById[f.id] = f; });
-    const EXTRA_FIELDS = ["sal", "azucares", "fibra", "grasaSaturada"];
+    const EXTRA_FIELDS = ["sal", "azucares", "fibra", "grasaSaturada", "categoria"];
     data.foods.forEach((food) => {
       const seed = seedById[food.id];
       if (!seed) return;
