@@ -1865,12 +1865,18 @@ function PasosIndicador({ pasoActual, pasos, idioma, labelPrefix }) {
 // asistente de perfil (ver el porqué en RuedaDePlatos, junto a guardarPerfilInicial). Construye
 // ingredients a partir de tarjetas elegidas con un toque — nunca hay que escribir nada ni meter un
 // número a mano. "Saltar todo" está disponible en cualquier pantalla, no solo en la intro.
-// Pasos base, siempre presentes. "desayuno" (Tanda 2, piloto) se añade condicionalmente dentro
-// del componente según el reparto de comidas del perfil — ver pasosCuestionario() más abajo.
+// Pasos base, siempre presentes. Los tres pasos de "comida ligera" (desayuno, media mañana,
+// merienda — Tanda 2 piloto de desayuno, Tanda 3 extiende el mismo mecanismo a los otros dos) se
+// añaden condicionalmente al final, según qué comidas tenga el reparto elegido en el perfil — ver
+// pasosCuestionario() más abajo. Un preset como "3 comidas · sin desayuno" no añade el paso
+// "desayuno"; uno como "5 comidas · con media mañana" añade también "media_manana".
 const CUESTIONARIO_PASOS_BASE = ["exclusiones", "proteinas", "carbohidratos", "verduras", "grasas"];
 function pasosCuestionario(repartoComidas) {
-  const incluyeDesayuno = !!(repartoComidas && repartoComidas.Desayuno !== undefined);
-  return incluyeDesayuno ? [...CUESTIONARIO_PASOS_BASE, "desayuno"] : CUESTIONARIO_PASOS_BASE;
+  const pasos = [...CUESTIONARIO_PASOS_BASE];
+  if (repartoComidas && repartoComidas.Desayuno !== undefined) pasos.push("desayuno");
+  if (repartoComidas && repartoComidas["Media mañana"] !== undefined) pasos.push("media_manana");
+  if (repartoComidas && repartoComidas.Merienda !== undefined) pasos.push("merienda");
+  return pasos;
 }
 // Frecuencia semanal para proteínas (1/2/3), peso relativo Poco/Normal/Mucho para el resto —
 // mismas claves de i18n reutilizadas en las 4 pantallas de selección vía SeleccionAlimentosStep,
@@ -1878,13 +1884,17 @@ function pasosCuestionario(repartoComidas) {
 const NIVELES_FRECUENCIA = ["cuestionario.nivel.freq1", "cuestionario.nivel.freq2", "cuestionario.nivel.freq3"];
 const NIVELES_PESO = ["cuestionario.nivel.poco", "cuestionario.nivel.normal", "cuestionario.nivel.mucho"];
 
-// Arquetipos de Desayuno (Tanda 2, piloto de la reorganización del catálogo por categorías).
-// Cada uno señala qué carpeta(s) de CATEGORIAS_ALIMENTOS abrir para completarlo: "grupos" con más
-// de un elemento implica una sub-selección guiada, en orden (p.ej. pan, luego acompañamiento);
-// un solo grupo con multiSelect implica elegir libremente entre varias carpetas a la vez, sin guiar.
-// "nombreEs" es el nombre fijo del ingrediente resultante (en español, como el resto del modelo de
-// datos — ver CLAUDE.md), independiente del idioma de la interfaz.
-const ARQUETIPOS_DESAYUNO = [
+// Arquetipos de comida ligera (Tanda 2, piloto solo para Desayuno; Tanda 3 reutiliza exactamente
+// las mismas 3 plantillas, sin cambiar nada de ellas, también para Media mañana y Merienda — están
+// pensadas para "montar un plato" a partir de pan/cereal/lácteo/fruta, algo que no es exclusivo del
+// desayuno). Cada una señala qué carpeta(s) de CATEGORIAS_ALIMENTOS abrir para completarla: "grupos"
+// con más de un elemento implica una sub-selección guiada, en orden (p.ej. pan, luego
+// acompañamiento); un solo grupo con multiSelect implica elegir libremente entre varias carpetas a
+// la vez, sin guiar. "nombreEs" es el nombre fijo del ingrediente resultante (en español, como el
+// resto del modelo de datos — ver CLAUDE.md), independiente del idioma de la interfaz.
+// Deliberadamente compartidas entre las tres comidas por ahora: cuando haga falta diferenciar las
+// opciones por comida (pendiente, ver conversación), esto se separará en tres arrays propios.
+const ARQUETIPOS_COMIDA_LIGERA = [
   {
     key: "tostadas", nombreEs: "Tostadas", labelKey: "arquetipo.desayuno.tostadas", emoji: "🍞",
     grupos: [
@@ -1912,7 +1922,7 @@ const ARQUETIPOS_DESAYUNO = [
 // verdura/grasa -> regla de probabilidad, normalizando los pesos relativos (1-3) de lo elegido en
 // cada categoría para que sumen exactamente 100 (el último ajusta el redondeo, mismo método que
 // ya usa RepartoComidasFields con el reparto de comidas).
-function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, desayunoSeleccion }) {
+function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, comidasLigeras }) {
   const ingredients = [];
 
   Object.entries(frecuencias).forEach(([foodId, nivel]) => {
@@ -1944,38 +1954,46 @@ function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesos
   agregarPorProbabilidad(pesosVerdura, CUESTIONARIO_VERDURAS, "verdura");
   agregarPorProbabilidad(pesosGrasa, CUESTIONARIO_GRASAS, "grasa");
 
-  // Desayuno (Tanda 2, piloto): cada arquetipo elegido se convierte en un ingrediente categoría
-  // "desayuno" con su propia composición — la misma mecánica que ya usa la app para desayunos y
-  // platos cerrados creados a mano (ver EditModal). Los gramos de cada fila de la composición son
-  // el valor por defecto de la categoría del alimento (CATEGORIAS_ALIMENTOS), no uno curado a mano
-  // por alimento — deliberadamente aproximados, para eso está el aviso en el propio paso.
-  if (desayunoSeleccion) {
-    const entradas = Object.entries(desayunoSeleccion);
+  // Comidas ligeras (desayuno: Tanda 2 piloto; media mañana y merienda: Tanda 3, mismo mecanismo):
+  // cada arquetipo elegido se convierte en un ingrediente de la categoría correspondiente
+  // ("desayuno"/"media_manana"/"merienda") con su propia composición — la misma mecánica que ya usa
+  // la app para desayunos y platos cerrados creados a mano (ver EditModal). Los gramos de cada fila
+  // de la composición son el valor por defecto de la categoría del alimento (CATEGORIAS_ALIMENTOS),
+  // no uno curado a mano por alimento — deliberadamente aproximados, para eso está el aviso en el
+  // propio paso. Las tres comidas se resuelven por separado (una selección no afecta a la otra),
+  // aunque compartan el mismo catálogo de arquetipos.
+  function agregarComidaLigera(seleccion, category) {
+    if (!seleccion) return;
+    const entradas = Object.entries(seleccion);
     const sumaNiveles = entradas.reduce((s, [, v]) => s + v.nivel, 0);
-    if (sumaNiveles > 0) {
-      let acumulado = 0;
-      entradas.forEach(([arqKey, v], i) => {
-        const arquetipo = ARQUETIPOS_DESAYUNO.find((a) => a.key === arqKey);
-        if (!arquetipo) return;
-        const composicion = [];
-        arquetipo.grupos.forEach((grupo, gi) => {
-          (v.grupos[gi] || []).forEach((foodId) => {
-            const food = FOODS_SEED.find((f) => f.id === foodId);
-            const cat = food && CATEGORIAS_ALIMENTOS.find((c) => c.key === food.categoria);
-            composicion.push({ id: uid(), foodId, gramos: cat ? cat.gramosDefecto : 50 });
-          });
-        });
-        // Arquetipo marcado pero sin ningún alimento elegido dentro: no genera nada, para no dejar
-        // un "plato" vacío sin composición real.
-        if (!composicion.length) return;
-        const probabilidad = i === entradas.length - 1 ? 100 - acumulado : Math.round((v.nivel / sumaNiveles) * 100);
-        acumulado += probabilidad;
-        ingredients.push({
-          id: uid(), name: arquetipo.nombreEs, category: "desayuno", ruleType: "probabilidad",
-          probabilidad, active: true, composicion,
+    if (sumaNiveles <= 0) return;
+    let acumulado = 0;
+    entradas.forEach(([arqKey, v], i) => {
+      const arquetipo = ARQUETIPOS_COMIDA_LIGERA.find((a) => a.key === arqKey);
+      if (!arquetipo) return;
+      const composicion = [];
+      arquetipo.grupos.forEach((grupo, gi) => {
+        (v.grupos[gi] || []).forEach((foodId) => {
+          const food = FOODS_SEED.find((f) => f.id === foodId);
+          const cat = food && CATEGORIAS_ALIMENTOS.find((c) => c.key === food.categoria);
+          composicion.push({ id: uid(), foodId, gramos: cat ? cat.gramosDefecto : 50 });
         });
       });
-    }
+      // Arquetipo marcado pero sin ningún alimento elegido dentro: no genera nada, para no dejar
+      // un "plato" vacío sin composición real.
+      if (!composicion.length) return;
+      const probabilidad = i === entradas.length - 1 ? 100 - acumulado : Math.round((v.nivel / sumaNiveles) * 100);
+      acumulado += probabilidad;
+      ingredients.push({
+        id: uid(), name: arquetipo.nombreEs, category, ruleType: "probabilidad",
+        probabilidad, active: true, composicion,
+      });
+    });
+  }
+  if (comidasLigeras) {
+    agregarComidaLigera(comidasLigeras.desayuno, "desayuno");
+    agregarComidaLigera(comidasLigeras.media_manana, "media_manana");
+    agregarComidaLigera(comidasLigeras.merienda, "merienda");
   }
 
   return ingredients;
@@ -1989,8 +2007,11 @@ function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
   const [pesosCarbo, setPesosCarbo] = useState({});
   const [pesosVerdura, setPesosVerdura] = useState({});
   const [pesosGrasa, setPesosGrasa] = useState({});
-  // desayunoSeleccion: { [arquetipoKey]: { nivel: 1|2|3, grupos: { [índiceDeGrupo]: foodId[] } } }
+  // Una selección independiente por cada comida ligera (Tanda 3: antes solo existía la de
+  // desayuno). Misma forma en las tres: { [arquetipoKey]: { nivel: 1|2|3, grupos: { [índiceDeGrupo]: foodId[] } } }.
   const [desayunoSeleccion, setDesayunoSeleccion] = useState({});
+  const [mediaMananaSeleccion, setMediaMananaSeleccion] = useState({});
+  const [meriendaSeleccion, setMeriendaSeleccion] = useState({});
 
   const pasos = pasosCuestionario(repartoComidas);
 
@@ -2014,8 +2035,10 @@ function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
     setMapa((prev) => ({ ...prev, [foodId]: (prev[foodId] % 3) + 1 }));
   }
 
-  function alternarArquetipoDesayuno(key) {
-    setDesayunoSeleccion((prev) => {
+  // Genéricos: parametrizados por el setState de la comida ligera concreta (desayuno/media
+  // mañana/merienda), para no triplicar la misma lógica tres veces (Tanda 3).
+  function alternarArquetipoComidaLigera(setMapa, key) {
+    setMapa((prev) => {
       if (prev[key]) {
         const { [key]: _omitido, ...resto } = prev;
         return resto;
@@ -2023,11 +2046,11 @@ function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
       return { ...prev, [key]: { nivel: 2, grupos: {} } };
     });
   }
-  function ciclarNivelArquetipoDesayuno(key) {
-    setDesayunoSeleccion((prev) => ({ ...prev, [key]: { ...prev[key], nivel: (prev[key].nivel % 3) + 1 } }));
+  function ciclarNivelArquetipoComidaLigera(setMapa, key) {
+    setMapa((prev) => ({ ...prev, [key]: { ...prev[key], nivel: (prev[key].nivel % 3) + 1 } }));
   }
-  function alternarFoodEnGrupoDesayuno(arqKey, grupoIdx, foodId, multiSelect) {
-    setDesayunoSeleccion((prev) => {
+  function alternarFoodEnGrupoComidaLigera(setMapa, arqKey, grupoIdx, foodId, multiSelect) {
+    setMapa((prev) => {
       const arq = prev[arqKey];
       if (!arq) return prev;
       const actual = arq.grupos[grupoIdx] || [];
@@ -2043,7 +2066,10 @@ function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
     else setPaso((p) => p + 1);
   }
   function confirmarCierre() {
-    onComplete(construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, desayunoSeleccion }));
+    onComplete(construirIngredientesDesdeCuestionario({
+      frecuencias, pesosCarbo, pesosVerdura, pesosGrasa,
+      comidasLigeras: { desayuno: desayunoSeleccion, media_manana: mediaMananaSeleccion, merienda: meriendaSeleccion },
+    }));
   }
 
   if (fase === "intro") {
@@ -2102,9 +2128,10 @@ function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
   }
 
   // fase === "paso": Exclusiones (chips simples) + 4 de selección con tarjetas
-  // (SeleccionAlimentosStep) + Desayuno (SeleccionDesayunoStep, Tanda 2, solo si está en el
-  // reparto de comidas). Las exclusiones elegidas en el paso 0 filtran las opciones de todos los
-  // pasos siguientes, incluido Desayuno.
+  // (SeleccionAlimentosStep) + hasta 3 pasos de comida ligera (SeleccionComidaLigeraStep: desayuno
+  // desde la Tanda 2, media mañana y merienda desde la Tanda 3), cada uno solo si esa comida está en
+  // el reparto elegido. Las exclusiones elegidas en el paso 0 filtran las opciones de todos los
+  // pasos siguientes, incluidos los de comida ligera.
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 20px 60px" }}>
       <PasosIndicador pasoActual={paso} pasos={pasos} idioma={idioma} labelPrefix="cuestionario.paso" />
@@ -2180,12 +2207,35 @@ function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
             idioma={idioma}
           />
         )}
-        {paso === 5 && (
-          <SeleccionDesayunoStep
+        {pasos[paso] === "desayuno" && (
+          <SeleccionComidaLigeraStep
+            tituloKey="cuestionario.desayuno.titulo"
             seleccion={desayunoSeleccion}
-            onToggleArquetipo={alternarArquetipoDesayuno}
-            onCiclarNivel={ciclarNivelArquetipoDesayuno}
-            onToggleFood={alternarFoodEnGrupoDesayuno}
+            onToggleArquetipo={(key) => alternarArquetipoComidaLigera(setDesayunoSeleccion, key)}
+            onCiclarNivel={(key) => ciclarNivelArquetipoComidaLigera(setDesayunoSeleccion, key)}
+            onToggleFood={(arqKey, gi, foodId, multi) => alternarFoodEnGrupoComidaLigera(setDesayunoSeleccion, arqKey, gi, foodId, multi)}
+            estaExcluido={estaExcluido}
+            idioma={idioma}
+          />
+        )}
+        {pasos[paso] === "media_manana" && (
+          <SeleccionComidaLigeraStep
+            tituloKey="cuestionario.mediaManana.titulo"
+            seleccion={mediaMananaSeleccion}
+            onToggleArquetipo={(key) => alternarArquetipoComidaLigera(setMediaMananaSeleccion, key)}
+            onCiclarNivel={(key) => ciclarNivelArquetipoComidaLigera(setMediaMananaSeleccion, key)}
+            onToggleFood={(arqKey, gi, foodId, multi) => alternarFoodEnGrupoComidaLigera(setMediaMananaSeleccion, arqKey, gi, foodId, multi)}
+            estaExcluido={estaExcluido}
+            idioma={idioma}
+          />
+        )}
+        {pasos[paso] === "merienda" && (
+          <SeleccionComidaLigeraStep
+            tituloKey="cuestionario.merienda.titulo"
+            seleccion={meriendaSeleccion}
+            onToggleArquetipo={(key) => alternarArquetipoComidaLigera(setMeriendaSeleccion, key)}
+            onCiclarNivel={(key) => ciclarNivelArquetipoComidaLigera(setMeriendaSeleccion, key)}
+            onToggleFood={(arqKey, gi, foodId, multi) => alternarFoodEnGrupoComidaLigera(setMeriendaSeleccion, arqKey, gi, foodId, multi)}
             estaExcluido={estaExcluido}
             idioma={idioma}
           />
@@ -2274,18 +2324,20 @@ function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, o
   );
 }
 
-// Paso "Desayuno" del cuestionario (Tanda 2, piloto de la reorganización por categorías): en vez
-// de una lista plana de alimentos, tarjetas de "arquetipo" (Tostadas, Cereales con lácteo, Plato
-// combinado) que, al activarse, despliegan debajo su propia sub-selección por carpeta de
-// CATEGORIAS_ALIMENTOS — una o dos guiadas en orden, o una libre entre varias a la vez.
+// Paso de comida ligera del cuestionario (Tanda 2, piloto solo para Desayuno; Tanda 3 reutiliza el
+// mismo componente, sin cambios, también para Media mañana y Merienda — solo cambia `tituloKey` y
+// qué selección/setState le pasa CatalogoOnboarding): en vez de una lista plana de alimentos,
+// tarjetas de "arquetipo" (Tostadas, Cereales con lácteo, Plato combinado) que, al activarse,
+// despliegan debajo su propia sub-selección por carpeta de CATEGORIAS_ALIMENTOS — una o dos guiadas
+// en orden, o una libre entre varias a la vez.
 // Los nombres de los alimentos se muestran tal cual están en la base de datos (en español, ver
 // CLAUDE.md) — a diferencia de CUESTIONARIO_PROTEINAS y compañía, estas carpetas no tienen todavía
 // una traducción propia por alimento; es una limitación conocida de este piloto, no un olvido.
-function SeleccionDesayunoStep({ seleccion, onToggleArquetipo, onCiclarNivel, onToggleFood, estaExcluido, idioma }) {
+function SeleccionComidaLigeraStep({ tituloKey, seleccion, onToggleArquetipo, onCiclarNivel, onToggleFood, estaExcluido, idioma }) {
   return (
     <>
       <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
-        {t(idioma, "cuestionario.desayuno.titulo")}
+        {t(idioma, tituloKey)}
       </div>
       <div
         style={{
@@ -2295,11 +2347,11 @@ function SeleccionDesayunoStep({ seleccion, onToggleArquetipo, onCiclarNivel, on
         }}
       >
         <AlertCircle size={13} style={{ flexShrink: 0, marginTop: 1 }} />
-        <span>{t(idioma, "cuestionario.desayuno.aviso")}</span>
+        <span>{t(idioma, "cuestionario.comidaLigera.aviso")}</span>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {ARQUETIPOS_DESAYUNO.map((arq) => {
+        {ARQUETIPOS_COMIDA_LIGERA.map((arq) => {
           const arqSel = seleccion[arq.key];
           const activo = !!arqSel;
           return (
