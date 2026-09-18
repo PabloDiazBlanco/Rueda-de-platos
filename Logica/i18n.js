@@ -233,7 +233,7 @@ const TEXTOS = {
     "objetivosModal.proteina": "Proteína",
     "objetivosModal.grasa": "Grasa",
     "objetivosModal.carbos": "Carbos",
-    "objetivosModal.carbMinAviso": "Con tus entrenamientos intensos habituales, lo ideal sería un mínimo de {carbMin}g de carbohidrato, pero con estas kcal y la grasa ya en su suelo de seguridad ({fatFloor}g) no se puede llegar sin más margen calórico.",
+    "objetivosModal.carbMinAviso": "Con tus entrenamientos habituales, lo ideal sería un mínimo de {carbMin}g de carbohidrato, pero con estas kcal y la grasa ya en su suelo de seguridad ({fatFloor}g) no se puede llegar sin más margen calórico.",
     "objetivosModal.repartoPorComida": "Reparto por comida",
     "objetivosModal.formula": "Calculado con la fórmula de Mifflin-St Jeor para tu día a día, más las kcal de tus entrenamientos habituales sumadas aparte, con un margen de error razonable (ningún cálculo sin laboratorio es exacto al 100%). Si algo cambia (peso, entrenamientos...), actualízalo en la pestaña \"Perfil\" y se recalculará solo.",
 
@@ -979,7 +979,7 @@ const TEXTOS = {
     "objetivosModal.proteina": "Protein",
     "objetivosModal.grasa": "Fat",
     "objetivosModal.carbos": "Carbs",
-    "objetivosModal.carbMinAviso": "With your usual intense training, the ideal would be a minimum of {carbMin}g of carbohydrate, but with these kcal and fat already at its safety floor ({fatFloor}g), it can't be reached without more calorie room.",
+    "objetivosModal.carbMinAviso": "With your usual training, the ideal would be a minimum of {carbMin}g of carbohydrate, but with these kcal and fat already at its safety floor ({fatFloor}g), it can't be reached without more calorie room.",
     "objetivosModal.repartoPorComida": "Split by meal",
     "objetivosModal.formula": "Calculated with the Mifflin-St Jeor formula for your day-to-day, plus the kcal from your usual training added separately, with a reasonable margin of error (no calculation without a lab is 100% exact). If anything changes (weight, training...), update it in the \"Profile\" tab and it'll recalculate itself.",
 
@@ -1722,7 +1722,7 @@ const TEXTOS = {
     "objetivosModal.proteina": "Proteïna",
     "objetivosModal.grasa": "Greix",
     "objetivosModal.carbos": "Carbohidrats",
-    "objetivosModal.carbMinAviso": "Amb els teus entrenaments intensos habituals, l'ideal seria un mínim de {carbMin}g de carbohidrat, però amb aquestes kcal i el greix ja al seu terra de seguretat ({fatFloor}g) no s'hi pot arribar sense més marge calòric.",
+    "objetivosModal.carbMinAviso": "Amb els teus entrenaments habituals, l'ideal seria un mínim de {carbMin}g de carbohidrat, però amb aquestes kcal i el greix ja al seu terra de seguretat ({fatFloor}g) no s'hi pot arribar sense més marge calòric.",
     "objetivosModal.repartoPorComida": "Repartiment per àpat",
     "objetivosModal.formula": "Calculat amb la fórmula de Mifflin-St Jeor per al teu dia a dia, més les kcal dels teus entrenaments habituals sumades a part, amb un marge d'error raonable (cap càlcul sense laboratori és exacte al 100%). Si alguna cosa canvia (pes, entrenaments...), actualitza-ho a la pestanya \"Perfil\" i es recalcularà sol.",
 
@@ -2465,7 +2465,7 @@ const TEXTOS = {
     "objetivosModal.proteina": "Proteína",
     "objetivosModal.grasa": "Graxa",
     "objetivosModal.carbos": "Carbohidratos",
-    "objetivosModal.carbMinAviso": "Cos teus adestramentos intensos habituais, o ideal sería un mínimo de {carbMin}g de carbohidrato, pero con estas kcal e a graxa xa no seu chan de seguridade ({fatFloor}g) non se pode chegar sen máis marxe calórica.",
+    "objetivosModal.carbMinAviso": "Cos teus adestramentos habituais, o ideal sería un mínimo de {carbMin}g de carbohidrato, pero con estas kcal e a graxa xa no seu chan de seguridade ({fatFloor}g) non se pode chegar sen máis marxe calórica.",
     "objetivosModal.repartoPorComida": "Reparto por comida",
     "objetivosModal.formula": "Calculado coa fórmula de Mifflin-St Jeor para o teu día a día, máis as kcal dos teus adestramentos habituais sumadas á parte, cunha marxe de erro razoable (ningún cálculo sen laboratorio é exacto ao 100%). Se algo cambia (peso, adestramentos...), actualízao na pestana \"Perfil\" e recalcularase só.",
 
@@ -3208,7 +3208,7 @@ const TEXTOS = {
     "objetivosModal.proteina": "Proteina",
     "objetivosModal.grasa": "Gantza",
     "objetivosModal.carbos": "Karbohidratoak",
-    "objetivosModal.carbMinAviso": "Zure ohiko entrenamendu bizkorrekin, idealena {carbMin}g karbohidrato gutxienez izatea litzateke, baina kcal horiekin eta gantza jada bere segurtasun-mugan dagoela ({fatFloor}g), ezin da hara iritsi kaloria-marjina handiagorik gabe.",
+    "objetivosModal.carbMinAviso": "Zure ohiko entrenamenduekin, idealena {carbMin}g karbohidrato gutxienez izatea litzateke, baina kcal horiekin eta gantza jada bere segurtasun-mugan dagoela ({fatFloor}g), ezin da hara iritsi kaloria-marjina handiagorik gabe.",
     "objetivosModal.repartoPorComida": "Otorduka banaketa",
     "objetivosModal.formula": "Mifflin-St Jeor formularekin kalkulatua zure eguneroko jarduerarako, gehi zure ohiko entrenamenduen kcal bereizita batuta, arrazoizko errore-marjinarekin (laborategirik gabeko kalkulu bat ere ez da % 100 zehatza). Zerbait aldatzen bada (pisua, entrenamenduak...), eguneratu \"Profila\" fitxan eta berriz kalkulatuko da automatikoki.",
 

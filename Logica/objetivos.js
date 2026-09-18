@@ -27,12 +27,19 @@ export const TIPOS_ENTRENAMIENTO = [
 ];
 
 // Gramos/kg de proteína y grasa según el volumen semanal de entrenamiento (suma de sesiones de
-// todos los entrenamientos habituales). Mismos valores que el sistema de niveles anterior.
+// todos los entrenamientos habituales).
+// Proteína recalibrada el 18/09/2026: los tramos de 3-5 y 6-7 sesiones comparten ahora 1,6 g/kg en
+// vez de escalar hasta 2,0. Tres meta-análisis independientes (Morton et al. 2018, BJSM; Tagawa et
+// al. 2021, Nutrition Reviews; Nunes et al. 2022, J Cachexia Sarcopenia Muscle — los tres archivados
+// en Estudios de apoyo de la aplicación/g-kg proteina/) convergen en que el punto de rendimientos
+// decrecientes para maximizar la síntesis de proteína muscular está en ~1,6 g/kg/día,
+// independientemente de cuánto se entrene por encima de ese umbral — por eso los dos tramos altos
+// comparten valor en vez de seguir subiendo. Ver Evidencia científica, sección 4.
 export const NIVELES_MACROS = [
   { min: 0, max: 0, protPerKg: 1.0, fatPerKg: 0.85 },
   { min: 1, max: 2, protPerKg: 1.3, fatPerKg: 0.9 },
-  { min: 3, max: 5, protPerKg: 1.7, fatPerKg: 1.0 },
-  { min: 6, max: Infinity, protPerKg: 2.0, fatPerKg: 1.25 },
+  { min: 3, max: 5, protPerKg: 1.6, fatPerKg: 1.0 },
+  { min: 6, max: Infinity, protPerKg: 1.6, fatPerKg: 1.25 },
 ];
 export function nivelMacrosPorSesiones(sesionesSemana) {
   return NIVELES_MACROS.find((n) => sesionesSemana >= n.min && sesionesSemana <= n.max) || NIVELES_MACROS[0];
@@ -53,9 +60,15 @@ export const NIVELES_ACTIVIDAD_LEGACY = {
 // volumen/definición, sustituye la proteína g/kg de la tabla por volumen de entrenamiento por un
 // valor propio de la etapa (pensado para proteger masa muscular en déficit, o dar margen amplio
 // en superávit sin necesidad de forzar la proteína). La grasa y el reparto de comidas no cambian.
+// Volumen recalibrado el 18/09/2026 (1,8 → 1,6 g/kg): "maximizar la ganancia de músculo" es
+// exactamente la pregunta que estudian Morton/Tagawa/Nunes (ver NIVELES_MACROS más arriba) — el
+// superávit calórico no cambia esa meseta, así que volumen comparte ahora el mismo valor que el
+// tramo alto de mantenimiento. Definición se queda igual: la pregunta en déficit es distinta
+// ("frenar la pérdida de músculo", no "maximizarla") y ahí la evidencia (Iraki 2019, Hector &
+// Phillips 2018, y la actualización 2025 de Refalo/Trexler/Helms) no muestra la misma meseta.
 export const OBJETIVO_ETAPAS = {
   mantenimiento: { label: "Mantenimiento", desc: "Mantener el peso actual", ajusteKcalPct: 0, protPerKg: null },
-  volumen: { label: "Volumen limpio", desc: "Sube de peso progresivamente, minimizando la grasa (+12%)", ajusteKcalPct: 12, protPerKg: 1.8 },
+  volumen: { label: "Volumen limpio", desc: "Sube de peso progresivamente, minimizando la grasa (+12%)", ajusteKcalPct: 12, protPerKg: 1.6 },
   definicion: { label: "Definición conservadora", desc: "Baja de peso a ritmo lento y seguro (−15%)", ajusteKcalPct: -15, protPerKg: 2.2 },
 };
 
@@ -74,30 +87,41 @@ export const LIMITE_SUPERAVIT_PCT = 15;
 export const FAT_FLOOR_PER_KG = 0.6;
 export const FAT_FLOOR_PCT_KCAL = 0.20;
 
-// Entrenamientos considerados "intensos" a efectos de proteger el glucógeno: MET ≥ 6 (cubre pesas,
-// HIIT, correr, ciclismo, natación y deporte de equipo; deja fuera cardio ligero y yoga/pilates).
-export const MET_INTENSO_MIN = 6;
+// Qué entrenamientos cuentan para el suelo de carbohidrato. Hasta el 18/09/2026 solo contaban los de
+// MET ≥ 6 (dejaba fuera cardio ligero y yoga/pilates, como si no gastaran nada de glucógeno) — se
+// amplía a cualquier entrenamiento habitual porque Amawi et al. (2024, ya citado por la app) sitúa
+// el mínimo hasta para intensidad baja (<60 min) en 3-5 g/kg, muy por encima de lo que el filtro
+// anterior protegía. El MET mínimo real de TIPOS_ENTRENAMIENTO es 3 (yoga/pilates), así que fijarlo
+// en 1 es, en la práctica, "cuenta cualquier entrenamiento registrado".
+export const MET_INTENSO_MIN = 1;
 
-// Gramos/kg de carbohidrato mínimo si hay entrenamiento intenso habitual, escalado por su volumen
-// semanal igual que la tabla de proteína/grasa. Sin entrenamiento intenso no se aplica ningún suelo:
-// el carbohidrato sigue siendo "lo que sobra" tras proteína y grasa, como hasta ahora.
+// Gramos/kg de carbohidrato mínimo si hay entrenamiento habitual, escalado por su volumen semanal
+// igual que la tabla de proteína/grasa. Sin entrenamiento no se aplica ningún suelo: el carbohidrato
+// sigue siendo "lo que sobra" tras proteína y grasa, como hasta ahora.
+// Recalibrado el 18/09/2026: los valores anteriores (1,5/1,75/2,0) quedaban por debajo hasta del
+// mínimo que la propia Amawi et al. (2024) da para intensidad baja (3-5 g/kg) — no eran ya un suelo
+// conservador, sino insuficientes frente a cualquier fuente real. Los nuevos valores abren más la
+// horquilla en vez de subir los tres por igual: el suelo es un objetivo *diario*, aplicado todos los
+// días del ciclo (no solo el día de entreno) — para 1-2 sesiones/semana ese suelo diario ya es
+// generoso de por sí en la mayoría de días de descanso, mientras que para 6-7 sesiones/semana casi
+// todos los días SON día de entreno, así que ahí el suelo diario debe acercarse más a lo que hace
+// falta para rendir bien ese día. Ver Evidencia científica, sección 5.
 export const CARB_MIN_NIVELES = [
-  { min: 1, max: 2, carbPerKg: 1.5 },
-  { min: 3, max: 5, carbPerKg: 1.75 },
-  { min: 6, max: Infinity, carbPerKg: 2.0 },
+  { min: 1, max: 2, carbPerKg: 2.5 },
+  { min: 3, max: 5, carbPerKg: 4.0 },
+  { min: 6, max: Infinity, carbPerKg: 5.5 },
 ];
-export function carbMinPerKgPorSesiones(sesionesIntensasSemana) {
-  if (sesionesIntensasSemana <= 0) return null;
-  return (CARB_MIN_NIVELES.find((n) => sesionesIntensasSemana >= n.min && sesionesIntensasSemana <= n.max) || CARB_MIN_NIVELES[CARB_MIN_NIVELES.length - 1]).carbPerKg;
+export function carbMinPerKgPorSesiones(sesionesSemana) {
+  if (sesionesSemana <= 0) return null;
+  return (CARB_MIN_NIVELES.find((n) => sesionesSemana >= n.min && sesionesSemana <= n.max) || CARB_MIN_NIVELES[CARB_MIN_NIVELES.length - 1]).carbPerKg;
 }
 
 // Calcula los objetivos diarios a partir del perfil: Mifflin-St Jeor para el BMR, PAL_base para el
 // gasto del día a día, y las kcal de los entrenamientos habituales (vía METs) sumadas aparte.
 // La proteína usa una tabla de gramos/kg según el volumen semanal de entrenamiento (o el valor fijo
-// de la etapa de objetivo). La grasa parte de esa misma tabla, pero puede cederle kcal al
-// carbohidrato —sin bajar nunca de su suelo de seguridad— si hay entrenamiento intenso y el
-// carbohidrato restante no llega a su mínimo de glucógeno. Devuelve null si el perfil está
-// incompleto, nunca calcula "a medias" con huecos.
+// de la etapa de objetivo). La grasa nunca baja de su suelo de seguridad, y puede cederle kcal al
+// carbohidrato si hay entrenamiento habitual y el carbohidrato restante no llega a su mínimo de
+// glucógeno. Devuelve null si el perfil está incompleto, nunca calcula "a medias" con huecos.
 export function calcularObjetivosPerfil(perfil) {
   if (!perfil || !perfil.anioNacimiento || !perfil.altura || !perfil.peso) return null;
 
@@ -136,7 +160,11 @@ export function calcularObjetivosPerfil(perfil) {
   const kcalTotal = kcalMantenimiento * (1 + pctCombinadoClamped / 100);
 
   const sesionesSemana = entrenamientos.reduce((sum, e) => sum + (Number(e.frecuenciaSemanal) || 0), 0);
-  const sesionesIntensasSemana = entrenamientos.reduce((sum, e) => {
+  // Sesiones que cuentan para el suelo de carbohidrato (ver MET_INTENSO_MIN más arriba) — hoy
+  // prácticamente idéntico a sesionesSemana, ya que el umbral cubre cualquier entrenamiento
+  // registrado, pero se calcula aparte por si en el futuro se añade un tipo de entrenamiento con
+  // MET por debajo de ese umbral.
+  const sesionesParaCarbSemana = entrenamientos.reduce((sum, e) => {
     const tipo = TIPOS_ENTRENAMIENTO.find((t) => t.key === e.tipo);
     if (!tipo || tipo.mets < MET_INTENSO_MIN || !e.frecuenciaSemanal) return sum;
     return sum + (Number(e.frecuenciaSemanal) || 0);
@@ -148,24 +176,29 @@ export function calcularObjetivosPerfil(perfil) {
 
   const fatTargetG = nivelMacros.fatPerKg * perfil.peso;
   const fatFloorG = Math.max(FAT_FLOOR_PER_KG * perfil.peso, (FAT_FLOOR_PCT_KCAL * kcalTotal) / 9);
+  // El objetivo de grasa nunca puede nacer por debajo de su propio suelo — antes esto solo se
+  // corregía como efecto secundario de cederle kcal al carbohidrato (más abajo), así que si no hacía
+  // falta ese ajuste (p. ej. sin entrenamiento intenso) el suelo podía traspasarse en silencio.
+  const fatObjetivoG = Math.max(fatTargetG, fatFloorG);
 
-  const carbMinPerKg = carbMinPerKgPorSesiones(sesionesIntensasSemana);
+  const carbMinPerKg = carbMinPerKgPorSesiones(sesionesParaCarbSemana);
   const carbMinG = carbMinPerKg !== null ? carbMinPerKg * perfil.peso : null;
 
-  // Reparto "normal": la grasa se queda en su valor de tabla y el carbohidrato es lo que sobra.
-  const carbGConFatObjetivo = Math.max(0, kcalTotal - protG * 4 - fatTargetG * 9) / 4;
+  // Reparto "normal": la grasa se queda en su valor de tabla (o su suelo, si el de tabla ya estaba
+  // por debajo) y el carbohidrato es lo que sobra.
+  const carbGConFatObjetivo = Math.max(0, kcalTotal - protG * 4 - fatObjetivoG * 9) / 4;
 
-  let fatG = fatTargetG;
+  let fatG = fatObjetivoG;
   let carbG = carbGConFatObjetivo;
   let carbMinNotMet = false;
 
-  // Si hay un mínimo de carbohidrato (entrenamiento intenso) y el reparto normal no lo alcanza,
+  // Si hay un mínimo de carbohidrato (entrenamiento habitual) y el reparto normal no lo alcanza,
   // se le ceden a la grasa las kcal que hagan falta, pero solo hasta su propio suelo de seguridad.
   if (carbMinG !== null && carbGConFatObjetivo < carbMinG) {
     const kcalFaltantes = (carbMinG - carbGConFatObjetivo) * 4;
-    const margenFatG = Math.max(0, fatTargetG - fatFloorG);
+    const margenFatG = Math.max(0, fatObjetivoG - fatFloorG);
     const reduccionFatG = Math.min(margenFatG, kcalFaltantes / 9);
-    fatG = fatTargetG - reduccionFatG;
+    fatG = fatObjetivoG - reduccionFatG;
     carbG = carbGConFatObjetivo + (reduccionFatG * 9) / 4;
     carbMinNotMet = carbG + 0.5 < carbMinG;
   }

@@ -47,8 +47,12 @@ export function crearGrupos(mod) {
         {
           nombre: "Definición · 90kg · pesas 5x/semana · sin calibración",
           ejecutar: () => {
+            // Recalibrado 18/09/2026: el suelo de carbohidrato (3-5 sesiones/semana) subió a 4,0
+            // g/kg (antes 1,75), así que aquí ya no llega ni cediendo toda la grasa disponible hasta
+            // su propio suelo (90g → 54g, el mínimo de 0,6 g/kg de un hombre de 90 kg) — el aviso de
+            // "carbohidrato mínimo no alcanzado" se activa a propósito en este caso.
             const r = calcularObjetivosPerfil(perfilBase());
-            return comparar(r, { kcal: 2320, prot: 198, fat: 90, carb: 180, ajustePct: -15, bmr: 1875 });
+            return comparar(r, { kcal: 2320, prot: 198, fat: 54, carb: 261, ajustePct: -15, bmr: 1875, carbMinNotMet: true });
           },
         },
         {
@@ -80,6 +84,21 @@ export function crearGrupos(mod) {
               palBase: "escritorio", objetivo: "mantenimiento", entrenamientos: [],
             });
             return comparar(r, { ajustePct: 0, carbMin: null });
+          },
+        },
+        {
+          nombre: "Mantenimiento · 70kg · día a día exigente · sin entrenamiento (el suelo de grasa se respeta sin pasar por el ajuste de carbohidrato)",
+          ejecutar: () => {
+            // Regresión del bug de grasa corregido el 18/09/2026: sin entrenamiento, carbMin es
+            // null y el bloque que antes era la ÚNICA vía para hacer cumplir el suelo de grasa
+            // nunca se ejecuta. Con un TDEE alto (día a día "exigente", PAL 1,65) el 20% de las kcal
+            // (65,7g) supera al 0,85 g/kg de la tabla (59,5g) — antes de la corrección, fat se
+            // quedaba en 59,5g, por debajo de su propio suelo, en silencio.
+            const r = calcularObjetivosPerfil({
+              anioNacimiento: new Date().getFullYear() - 20, altura: 190, peso: 70, sexo: "hombre",
+              palBase: "exigente", objetivo: "mantenimiento", entrenamientos: [],
+            });
+            return comparar(r, { kcal: 2958, prot: 70, fat: 66, carb: 522, carbMin: null, ajustePct: 0, bmr: 1793 });
           },
         },
       ],
