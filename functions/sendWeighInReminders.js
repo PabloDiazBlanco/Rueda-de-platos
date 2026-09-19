@@ -68,16 +68,36 @@ exports.sendWeighInReminders = onSchedule(
   async () => {
     const hoy = new Date();
     const hoyISO = fechaISO(hoy);
-    const candidatos = await usuariosConNotificacionesActivas();
+
+    // Registro temporal de diagnóstico (añadido 2026-09-20, investigando por qué el 16/09 no llegó
+    // ningún recordatorio pese a ser día sugerido): antes, un fallo aquí tiraba toda la función sin
+    // dejar ni rastro, porque esta llamada era la única sin try/catch de toda la función. Los
+    // logger.info() de abajo son también parte de ese diagnóstico — dejan constancia de por qué se
+    // omite cada candidato, para distinguir "se saltó a propósito" de "algo falló en silencio". Quitar
+    // cuando se confirme la causa real (avisará el usuario tras comprobar el próximo día sugerido).
+    let candidatos;
+    try {
+      candidatos = await usuariosConNotificacionesActivas();
+    } catch (err) {
+      logger.error("No se ha podido listar los usuarios con notificaciones activas", err);
+      return;
+    }
+    logger.info(`Recordatorio de pesaje: ${candidatos.length} candidato(s) con token guardado`);
 
     await Promise.all(
       candidatos.map(async ({ uid, token }) => {
-        if (!token) return;
+        if (!token) {
+          logger.info(`${uid}: token vacío, se omite`);
+          return;
+        }
 
         let datos;
         try {
           const snap = await admin.firestore().doc(`users/${uid}/keys/${STORAGE_KEY}`).get();
-          if (!snap.exists) return;
+          if (!snap.exists) {
+            logger.info(`${uid}: sin documento de datos guardado, se omite`);
+            return;
+          }
           datos = JSON.parse(snap.data().value);
         } catch (err) {
           logger.error(`No se han podido leer los datos de ${uid} para el recordatorio de pesaje`, err);
@@ -85,29 +105,43 @@ exports.sendWeighInReminders = onSchedule(
         }
 
         const pesoTracking = datos.pesoTracking;
-        if (!pesoTracking) return;
+        if (!pesoTracking) {
+          logger.info(`${uid}: sin seguimiento de peso configurado, se omite`);
+          return;
+        }
 
         // Mientras el ciclo esté pausado (viaje, enfermedad...) no se dispara el recordatorio —
         // mismo criterio que ya aplica la propia app (ver PesoView en app.jsx).
         const pausaActiva = (pesoTracking.pausas || []).some((p) => p.fin === null);
-        if (pausaActiva) return;
+        if (pausaActiva) {
+          logger.info(`${uid}: ciclo de peso en pausa, se omite`);
+          return;
+        }
 
-        if (!esDiaSugeridoPeso(pesoTracking.vecesSemana, hoy)) return;
+        if (!esDiaSugeridoPeso(pesoTracking.vecesSemana, hoy)) {
+          logger.info(`${uid}: hoy no es día sugerido (vecesSemana=${pesoTracking.vecesSemana}), se omite`);
+          return;
+        }
 
         const yaRegistradoHoy = (pesoTracking.entradas || []).some((e) => e.fecha === hoyISO);
-        if (yaRegistradoHoy) return;
+        if (yaRegistradoHoy) {
+          logger.info(`${uid}: ya registrado hoy, se omite`);
+          return;
+        }
 
         const idioma = (datos.perfil && datos.perfil.idioma) || "es";
         const { titulo, cuerpo } = TEXTOS_PUSH[idioma] || TEXTOS_PUSH.es;
 
         try {
           await admin.messaging().send({ token, notification: { title: titulo, body: cuerpo } });
+          logger.info(`${uid}: recordatorio enviado`);
         } catch (err) {
           // El permiso se revocó, se desinstaló la PWA, o el token caducó: se borra para no
           // volver a intentarlo cada día con un token que ya no sirve. Cualquier otro fallo (red,
           // cuota puntual de FCM...) se deja tal cual, para reintentarlo mañana solo.
           if (err.code === "messaging/registration-token-not-registered") {
             await admin.firestore().doc(`users/${uid}/keys/${PUSH_TOKEN_KEY}`).delete().catch(() => {});
+            logger.info(`${uid}: token caducado o no registrado, se borra`);
           } else {
             logger.error(`No se ha podido enviar el recordatorio de pesaje a ${uid}`, err);
           }
