@@ -47,12 +47,12 @@ export function crearGrupos(mod) {
         {
           nombre: "Definición · 90kg · pesas 5x/semana · sin calibración",
           ejecutar: () => {
-            // Recalibrado 18/09/2026: el suelo de carbohidrato (3-5 sesiones/semana) subió a 4,0
-            // g/kg (antes 1,75), así que aquí ya no llega ni cediendo toda la grasa disponible hasta
-            // su propio suelo (90g → 54g, el mínimo de 0,6 g/kg de un hombre de 90 kg) — el aviso de
-            // "carbohidrato mínimo no alcanzado" se activa a propósito en este caso.
+            // Recalibrado 19/09/2026: en definición el suelo de carbohidrato deja de escalar por
+            // carga de entrenamiento y pasa a un valor plano de 2,6 g/kg (antes 4,0 g/kg, tramo de
+            // 3-5 sesiones) — aquí sí se alcanza cediendo parte de la grasa disponible (90g → 65,8g,
+            // sin llegar a su suelo de 54g), a diferencia del tramo más ambicioso de antes.
             const r = calcularObjetivosPerfil(perfilBase());
-            return comparar(r, { kcal: 2320, prot: 198, fat: 54, carb: 261, ajustePct: -15, bmr: 1875, carbMinNotMet: true });
+            return comparar(r, { kcal: 2320, prot: 198, fat: 66, carb: 234, ajustePct: -15, bmr: 1875, carbMinNotMet: false });
           },
         },
         {
@@ -99,6 +99,21 @@ export function crearGrupos(mod) {
               palBase: "exigente", objetivo: "mantenimiento", entrenamientos: [],
             });
             return comparar(r, { kcal: 2958, prot: 70, fat: 66, carb: 522, carbMin: null, ajustePct: 0, bmr: 1793 });
+          },
+        },
+        {
+          nombre: "Mantenimiento · 95kg · pesas 6x/semana (suelo de carbohidrato por carga de entrenamiento, tramo alto)",
+          ejecutar: () => {
+            // Recalibrado 19/09/2026: fuera de definición, el suelo de carbohidrato ya no escala por
+            // número de sesiones sino por kcal de entrenamiento/kg de peso al día (aquí 6*95*1*6/7÷95
+            // ≈ 5,14 kcal/kg/día, tramo "alto" de CARGA_ENTRENAMIENTO_NIVELES → 4,5 g/kg = 427,5g).
+            // Ni cediendo toda la grasa disponible hasta su suelo (118,75g → 63,98g) se llega del
+            // todo — comprueba que el mecanismo de ajuste funciona igual con el nuevo suelo.
+            const r = calcularObjetivosPerfil({
+              anioNacimiento: new Date().getFullYear() - 31, altura: 178, peso: 95, sexo: "hombre",
+              palBase: "escritorio", objetivo: "mantenimiento", entrenamientos: [{ tipo: "pesas", horas: 1, frecuenciaSemanal: 6 }],
+            });
+            return comparar(r, { kcal: 2879, prot: 152, fat: 83, carb: 380, carbMinNotMet: false, ajustePct: 0 });
           },
         },
       ],

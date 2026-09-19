@@ -87,41 +87,62 @@ export const LIMITE_SUPERAVIT_PCT = 15;
 export const FAT_FLOOR_PER_KG = 0.6;
 export const FAT_FLOOR_PCT_KCAL = 0.20;
 
-// Qué entrenamientos cuentan para el suelo de carbohidrato. Hasta el 18/09/2026 solo contaban los de
-// MET ≥ 6 (dejaba fuera cardio ligero y yoga/pilates, como si no gastaran nada de glucógeno) — se
-// amplía a cualquier entrenamiento habitual porque Amawi et al. (2024, ya citado por la app) sitúa
-// el mínimo hasta para intensidad baja (<60 min) en 3-5 g/kg, muy por encima de lo que el filtro
-// anterior protegía. El MET mínimo real de TIPOS_ENTRENAMIENTO es 3 (yoga/pilates), así que fijarlo
-// en 1 es, en la práctica, "cuenta cualquier entrenamiento registrado".
-export const MET_INTENSO_MIN = 1;
-
-// Gramos/kg de carbohidrato mínimo si hay entrenamiento habitual, escalado por su volumen semanal
-// igual que la tabla de proteína/grasa. Sin entrenamiento no se aplica ningún suelo: el carbohidrato
-// sigue siendo "lo que sobra" tras proteína y grasa, como hasta ahora.
-// Recalibrado el 18/09/2026: los valores anteriores (1,5/1,75/2,0) quedaban por debajo hasta del
-// mínimo que la propia Amawi et al. (2024) da para intensidad baja (3-5 g/kg) — no eran ya un suelo
-// conservador, sino insuficientes frente a cualquier fuente real. Los nuevos valores abren más la
-// horquilla en vez de subir los tres por igual: el suelo es un objetivo *diario*, aplicado todos los
-// días del ciclo (no solo el día de entreno) — para 1-2 sesiones/semana ese suelo diario ya es
-// generoso de por sí en la mayoría de días de descanso, mientras que para 6-7 sesiones/semana casi
-// todos los días SON día de entreno, así que ahí el suelo diario debe acercarse más a lo que hace
-// falta para rendir bien ese día. Ver Evidencia científica, sección 5.
-export const CARB_MIN_NIVELES = [
-  { min: 1, max: 2, carbPerKg: 2.5 },
-  { min: 3, max: 5, carbPerKg: 4.0 },
-  { min: 6, max: Infinity, carbPerKg: 5.5 },
+// Suelo de carbohidrato mínimo si hay entrenamiento habitual. Recalibrado el 19/09/2026: hasta
+// entonces escalaba por NÚMERO de sesiones/semana (con un filtro de MET mínimo aparte, ver historial
+// git) — eso mezclaba "cuántos días entrenas" con "cuánto entrenas de verdad": alguien haciendo yoga
+// 7 días/semana (MET 3, sesiones cortas) caía en el mismo tramo que alguien levantando pesas fuerte
+// 6 días — cosas muy distintas tratadas igual, y además ignoraba la duración (una caminata de 30 min
+// y una sesión de pesas de 2h contaban igual, "1 sesión").
+//
+// Ahora escala por CARGA de entrenamiento: kcal de entrenamiento por kg de peso al día
+// (kcalEntrenamiento / peso, ya calculado más abajo para el TDEE — no es una fórmula nueva, se
+// reutiliza). Al dividir por peso, "MET × peso × horas ÷ peso" se cancela y queda simplemente
+// "MET × horas" de cada sesión — así que cada tipo de entrenamiento ya pesa según su intensidad
+// real dentro del propio cálculo, sin necesitar un filtro de MET mínimo aparte (por eso desaparece
+// la antigua constante MET_INTENSO_MIN). Y al normalizar por peso, dos personas con el mismo
+// entrenamiento relativo caen en el mismo tramo aunque pesen distinto.
+//
+// Los cortes de carga (1,5 y 3,5 kcal/kg/día) equivalen a 630 y 1.470 MET-minutos/semana — la misma
+// unidad con la que la OMS traza la frontera entre actividad "moderada" y "muy activa" en sus guías
+// de actividad física (500-1.000 MET-min/semana como referencia de actividad con beneficios claros
+// de salud). No es una cifra de un estudio de nutrición deportiva — es el mismo tipo de decisión de
+// ingeniería razonada que ya se documenta en LIMITE_DEFICIT_PCT/LIMITE_SUPERAVIT_PCT.
+export const CARGA_ENTRENAMIENTO_NIVELES = [
+  { max: 1.5, carbPerKg: 2.5 },
+  { max: 3.5, carbPerKg: 3.5 },
+  { max: Infinity, carbPerKg: 4.0 }, // recalibrado 19/09/2026, 4,5→4,0: probado contra diez
+  // perfiles sintéticos (peso/sexo/patrón de entrenamiento muy distintos), 4,5 fallaba en 3 de 10
+  // incluso en mantenimiento (no solo en déficit) — peso alto + carga "alta" no extrema. 4,0 sí
+  // se cumplió en los diez. Ver Evidencia científica, sección 5.
 ];
-export function carbMinPerKgPorSesiones(sesionesSemana) {
+
+// En definición (déficit calórico) el suelo deja de escalar por carga de entrenamiento y pasa a un
+// valor plano. La evidencia general de entrenamiento (Kerksick 2017, Amawi 2024 — la que respalda
+// CARGA_ENTRENAMIENTO_NIVELES) no tiene en cuenta el déficit; la evidencia específica de restricción
+// calórica (Helms, Aragon & Fitschen 2014; Roberts, Helms, Trexler & Fitschen 2020; Ruiz-Castellano
+// et al. 2021 — ver Estudios de apoyo de la aplicación/g-kg carbohidrato/) trata el carbohidrato en
+// déficit como variable residual del presupuesto calórico, no como objetivo de rendimiento, y da un
+// rango de referencia de 2-5 g/kg para la fase de pérdida de grasa — sin que ningún ensayo controlado
+// haya demostrado experimentalmente un umbral exacto (ver Evidencia científica, sección 5). Se fija
+// 2,6 g/kg: parte baja-media de ese rango, por debajo incluso del suelo de Amawi para intensidad
+// baja, pensado para activarse con relativa facilidad sin dejar de ser alcanzable para la mayoría de
+// perfiles reales en déficit.
+export const CARB_MIN_DEFICIT_PER_KG = 2.6;
+
+export function carbMinPerKgPorCarga(sesionesSemana, kcalEntrenamientoPorKgDia, objetivoKey) {
   if (sesionesSemana <= 0) return null;
-  return (CARB_MIN_NIVELES.find((n) => sesionesSemana >= n.min && sesionesSemana <= n.max) || CARB_MIN_NIVELES[CARB_MIN_NIVELES.length - 1]).carbPerKg;
+  if (objetivoKey === "definicion") return CARB_MIN_DEFICIT_PER_KG;
+  return (CARGA_ENTRENAMIENTO_NIVELES.find((n) => kcalEntrenamientoPorKgDia <= n.max) || CARGA_ENTRENAMIENTO_NIVELES[CARGA_ENTRENAMIENTO_NIVELES.length - 1]).carbPerKg;
 }
 
 // Calcula los objetivos diarios a partir del perfil: Mifflin-St Jeor para el BMR, PAL_base para el
 // gasto del día a día, y las kcal de los entrenamientos habituales (vía METs) sumadas aparte.
 // La proteína usa una tabla de gramos/kg según el volumen semanal de entrenamiento (o el valor fijo
 // de la etapa de objetivo). La grasa nunca baja de su suelo de seguridad, y puede cederle kcal al
-// carbohidrato si hay entrenamiento habitual y el carbohidrato restante no llega a su mínimo de
-// glucógeno. Devuelve null si el perfil está incompleto, nunca calcula "a medias" con huecos.
+// carbohidrato si hay entrenamiento habitual y el carbohidrato restante no llega a su mínimo — en
+// mantenimiento/volumen ese mínimo escala con la carga de entrenamiento, en definición es un valor
+// plano y más conservador (ver carbMinPerKgPorCarga más arriba, con el porqué de la diferencia).
+// Devuelve null si el perfil está incompleto, nunca calcula "a medias" con huecos.
 export function calcularObjetivosPerfil(perfil) {
   if (!perfil || !perfil.anioNacimiento || !perfil.altura || !perfil.peso) return null;
 
@@ -160,15 +181,9 @@ export function calcularObjetivosPerfil(perfil) {
   const kcalTotal = kcalMantenimiento * (1 + pctCombinadoClamped / 100);
 
   const sesionesSemana = entrenamientos.reduce((sum, e) => sum + (Number(e.frecuenciaSemanal) || 0), 0);
-  // Sesiones que cuentan para el suelo de carbohidrato (ver MET_INTENSO_MIN más arriba) — hoy
-  // prácticamente idéntico a sesionesSemana, ya que el umbral cubre cualquier entrenamiento
-  // registrado, pero se calcula aparte por si en el futuro se añade un tipo de entrenamiento con
-  // MET por debajo de ese umbral.
-  const sesionesParaCarbSemana = entrenamientos.reduce((sum, e) => {
-    const tipo = TIPOS_ENTRENAMIENTO.find((t) => t.key === e.tipo);
-    if (!tipo || tipo.mets < MET_INTENSO_MIN || !e.frecuenciaSemanal) return sum;
-    return sum + (Number(e.frecuenciaSemanal) || 0);
-  }, 0);
+  // Carga de entrenamiento normalizada por peso, para el suelo de carbohidrato (ver
+  // carbMinPerKgPorCarga más arriba) — reutiliza kcalEntrenamiento, no es un cálculo nuevo.
+  const kcalEntrenamientoPorKgDia = kcalEntrenamiento / perfil.peso;
 
   const nivelMacros = legacy || nivelMacrosPorSesiones(sesionesSemana);
   const protPerKg = etapa.protPerKg ?? nivelMacros.protPerKg;
@@ -178,10 +193,10 @@ export function calcularObjetivosPerfil(perfil) {
   const fatFloorG = Math.max(FAT_FLOOR_PER_KG * perfil.peso, (FAT_FLOOR_PCT_KCAL * kcalTotal) / 9);
   // El objetivo de grasa nunca puede nacer por debajo de su propio suelo — antes esto solo se
   // corregía como efecto secundario de cederle kcal al carbohidrato (más abajo), así que si no hacía
-  // falta ese ajuste (p. ej. sin entrenamiento intenso) el suelo podía traspasarse en silencio.
+  // falta ese ajuste (p. ej. sin entrenamiento) el suelo podía traspasarse en silencio.
   const fatObjetivoG = Math.max(fatTargetG, fatFloorG);
 
-  const carbMinPerKg = carbMinPerKgPorSesiones(sesionesParaCarbSemana);
+  const carbMinPerKg = carbMinPerKgPorCarga(sesionesSemana, kcalEntrenamientoPorKgDia, objetivoKey);
   const carbMinG = carbMinPerKg !== null ? carbMinPerKg * perfil.peso : null;
 
   // Reparto "normal": la grasa se queda en su valor de tabla (o su suelo, si el de tabla ya estaba
