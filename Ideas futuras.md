@@ -188,3 +188,8 @@ con datos que ya existen (cruzando los días 100% completados contra `dayTotals`
 comiste en su lugar" de la idea anterior, para no tener que descartar del cálculo los días con
 alguna comida no completada. Sin diseñar en detalle todavía — queda anotado para retomarlo más
 adelante, no es prioridad ahora.
+
+
+## Chatbot con la API de gemini limitada para algo como preguntas de nutrición, preguntas que se afinarán más a futuro
+
+## Contar para macros/micros los vegetales y las frutas, pero no tenerlas en cuenta para el conteo de calorías con el objetivo de no obseseionarse, pero así se puede tener un cálculo completo sobre valores que no suponen tanto a nivel mental
