@@ -28,112 +28,149 @@ ver con cómo carga el navegador la app. Esa regla no aplica ahí, pero tampoco 
 la app nunca importa nada de `functions/`, ni al revés (ver más abajo el único código duplicado a
 mano entre las dos mitades).
 
-Esto tiene una consecuencia técnica concreta que hay que respetar: **el `importmap` decide dónde
-buscar un archivo, no lo transforma**. Un módulo sin JSX se puede importar con nombre corto sin
-más. Un archivo con JSX necesita pasar por Babel antes de que el navegador lo toque — por eso
-`auth-bootstrap.jsx` carga `app.jsx` a mano (`fetch` + `Babel.transform` + `Blob` +
-`import()` dinámico) en vez de un `import` normal. No repliques ese patrón para dividir
-componentes React en varios archivos sin pensarlo — ver la sección "Por qué la UI no está
-dividida" más abajo.
+Esto tiene una consecuencia técnica concreta: **el `importmap` decide dónde buscar un archivo, no lo
+transforma**. Un módulo sin JSX (todo `logica/`) se importa con nombre corto sin más. Los archivos
+con JSX (`app.jsx` y `ui/`) necesitan pasar por Babel antes de ejecutarse: de eso se encarga
+`cargador-ui.js` (ver "Cómo se carga la interfaz").
 
 ## Arquitectura de módulos
 
 ```
-index.html            → importmap + carga auth-bootstrap.jsx
+index.html             → importmap + carga auth-bootstrap.jsx
 auth-bootstrap.jsx     → login/Firestore/App Check, puente con las Cloud Functions (window.*),
-                          luego carga app.jsx (fetch+Babel+blob)
-app.jsx                → TODOS los componentes React + el componente principal.
-                          Importa la capa de lógica de abajo con nombre corto.
+                          luego carga la interfaz con cargador-ui.js
+cargador-ui.js         → carga app.jsx y ui/ (Babel + registro de módulos propio, sin build)
+app.jsx                → componente principal (~100 líneas): reúne los hooks de ui/estado/, decide si
+                          toca carga, alta o app, y pinta la pantalla elegida
 
-Logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
-Logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
-Logica/seleccion.js            → sorteo ponderado + reglas de combinación (weightedPick, pickWithRules...)
-Logica/comida-calculo.js       → mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra
-Logica/objetivos.js            → PAL/TDEE/macros objetivo, calcularObjetivosPerfil, objetivosPorComida,
+ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
+  archivos.json         lista de TODOS los archivos de ui/ (la usan el cargador y sw.js)
+  estilos.js            tipografías (FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO)
+  pantallas.jsx         tabla destino del menú lateral (`tab`) → pantalla
+  estado/               hooks: datos.js (useDatos, usePremium, useCargaInicial), menu.js (useMenu,
+                          el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js
+  comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores)
+  marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral
+  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/   una carpeta por área de la app
+
+logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
+logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
+logica/seleccion.js            → sorteo ponderado + reglas de combinación (weightedPick, pickWithRules...)
+logica/comida-calculo.js       → mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra
+logica/objetivos.js            → PAL/TDEE/macros objetivo, calcularObjetivosPerfil, objetivosPorComida,
                                   presets de reparto de comidas (PRESETS_COMIDAS)
-Logica/menu-generador.js       → generateMenu, lastPicksFromHistory (el motor de generación completo)
-Logica/peso.js                 → seguimiento de peso: tendencia, cambios atípicos, ciclos
-Logica/salud-publica.js        → resumenNutrientesSemana: sal/azúcares/fibra contra umbrales de la OMS
-Logica/resumenMensual.js       → calcularResumenMensual, pesoEnMes (comidas completadas + peso del mes)
-Logica/i18n.js                 → diccionario de textos por idioma (ES/EN/CA/GL/EU) y la función t()
+logica/menu-generador.js       → generateMenu, lastPicksFromHistory (el motor de generación completo)
+logica/peso.js                 → seguimiento de peso: tendencia, cambios atípicos, ciclos
+logica/salud-publica.js        → resumenNutrientesSemana: sal/azúcares/fibra contra umbrales de la OMS
+logica/resumen-mensual.js      → calcularResumenMensual, pesoEnMes (comidas completadas + peso del mes)
+logica/i18n.js                 → diccionario de textos por idioma (ES/EN/CA/GL/EU) y la función t()
+logica/datos-iniciales.js      → FOODS_SEED, CATEGORIAS_ALIMENTOS, initialData (cuenta nueva)
+logica/cuestionario.js         → opciones del cuestionario de alta y construirIngredientesDesdeCuestionario
+logica/migraciones.js          → migrateData
 ```
 
-Todos los módulos de lógica son **sin JSX, sin React**, y solo se importan entre sí (nunca desde
-`app.jsx` hacia dentro). El único cruce que existe hoy es `peso.js` → `i18n.js`, solo para traducir
-el mensaje de `evaluarTendencia` y los meses de `formatFechaCorta`. `app.jsx` es quien los importa
-a todos. Viven en `Logica/`, aparte de los
-archivos de arranque de la raíz (`index.html`, `auth-bootstrap.jsx`, `sw.js`, `manifest.json`,
-`icon.svg` — estos sí tienen que quedarse en la raíz: `sw.js` en concreto necesita estar ahí para
-que su "scope" cubra toda la app).
+Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
+de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (mensaje de
+`evaluarTendencia` y meses de `formatFechaCorta`), `datos-iniciales.js` → `peso.js`,
+`cuestionario.js` → `comun.js` y `datos-iniciales.js`, y `migraciones.js` → `datos-iniciales.js`,
+`objetivos.js`, `peso.js` e `i18n.js`. La interfaz importa `logica/` por **nombre corto** y otros
+archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
+arranque se quedan en la raíz (`index.html`, `auth-bootstrap.jsx`, `cargador-ui.js`, `sw.js`,
+`manifest.json`, `icon.svg`): `sw.js` en concreto necesita estar ahí para que su "scope" cubra toda
+la app.
 
-**Al crear un módulo nuevo de lógica**, ponlo en `Logica/` y registra su nombre corto en **dos**
-sitios, o `Validacion/` dejará de cargar sin avisar con un error claro:
-- `index.html` → `"nombre": "./Logica/archivo.js"`
-- `Validacion/index.html` → `"nombre": "../Logica/archivo.js"` (un nivel arriba)
+**Al crear un módulo nuevo de lógica**, ponlo en `logica/` y registra su nombre corto en **dos**
+sitios, o `validacion/` dejará de cargar sin avisar con un error claro:
+- `index.html` → `"nombre": "./logica/archivo.js"`
+- `validacion/index.html` → `"nombre": "../logica/archivo.js"` (un nivel arriba)
 
-Como todo se importa por nombre corto (nunca por ruta relativa) entre los propios módulos y desde
-`app.jsx`, mover un archivo de sitio no obliga a tocar nada dentro de él — solo estas dos entradas
-del `importmap` y la de `sw.js` de abajo.
+Y añádelo a `FILES_TO_CACHE` en `sw.js` (ver más abajo). Como todo se importa por nombre corto
+entre los propios módulos y desde la interfaz, mover un archivo de sitio no obliga a tocar nada
+dentro de él — solo esas entradas.
 
-Y si alguna función del módulo debe seguir siendo accesible desde `Validacion/tests.js` (que la
-coge del objeto exportado por `app.jsx`, no del módulo directamente), añade también
-`export { nombreFuncion };` en `app.jsx` después del `import`. Mira los imports actuales al
-principio de `app.jsx` para ver el patrón exacto.
+**Al crear un archivo nuevo de interfaz**, ponlo en su carpeta de `ui/` y añádelo a
+`ui/archivos.json`. No hace falta tocar ningún `importmap`. Si se te olvida, la app funciona igual
+con conexión, pero `validacion/` lo marca en rojo (grupo "Carga de la interfaz") y el archivo no
+quedaría disponible sin conexión.
 
-## Por qué la UI no está dividida
+Para que `validacion/tests.js` pueda usar una función de `logica/`, lo más directo es importarla en
+el propio `tests.js` por su nombre corto (así lo hacen los casos de `migrateData` y del
+cuestionario). Las más antiguas las recoge del objeto exportado por `app.jsx` (`export { ... }` al
+principio de `app.jsx`); ese patrón sigue funcionando.
 
-`app.jsx` se quedó con toda la capa de componentes (~7.200 líneas a septiembre de 2026 — empezó
-en ~4.000 cuando se tomó esta decisión, y ha crecido con premium, i18n y el rediseño de navegación)
-a propósito, tras evaluar dividirla también. Un componente con JSX que importa a otro componente
-con JSX no se puede resolver solo con el `importmap` (ver arriba) — habría hecho falta o bien enseñar al service
-worker (`sw.js`) a transformar `.jsx` al vuelo en cada fetch (arriesgado: toca el arranque offline
-de una PWA que se usa a diario, con problemas conocidos de sincronización en la primera
-instalación), o bien un loader manual con imports dinámicos en vez de `import` normal (cambia
-cómo se escribe el código en todos los componentes, para un beneficio dudoso). Se decidió que no
-compensaba: la parte con más lógica de negocio y más riesgo de bugs ya está fuera y con tests; lo
-que queda en `app.jsx` es "solo" UI, más plano y con menos responsabilidades mezcladas.
+## Cómo se carga la interfaz (`cargador-ui.js`)
 
-Si en el futuro `app.jsx` vuelve a crecer mucho y se quiere retomar esto, empieza releyendo esta
-sección — el análisis ya está hecho, no hay que repetirlo desde cero.
+Hasta octubre de 2026 toda la interfaz vivía en un único `app.jsx` (~7.200 líneas) porque un
+archivo con JSX que importa a otro con JSX no se puede resolver solo con el `importmap`, y las dos
+salidas que se habían evaluado eran malas: enseñar a `sw.js` a transformar `.jsx` en cada petición
+(arriesgado para el arranque sin conexión) o cargar componentes con `import()` dinámico (cambia
+cómo se escribe todo el código). La reestructuración de octubre de 2026 usó una tercera vía:
+
+`cargador-ui.js` descarga `app.jsx` y los archivos de `ui/`, los pasa por Babel con el plugin
+`transform-modules-commonjs` (ya incluido en Babel Standalone), que convierte sus `import`/`export`
+en llamadas a un registro propio, y los enlaza entre sí en el navegador. Los nombres cortos
+(`react`, `lucide-react`, los módulos de `logica/`) se siguen resolviendo con el `importmap`. Lo
+usan tanto `auth-bootstrap.jsx` como `validacion/index.html`, así que las pruebas cargan exactamente
+la misma interfaz que la app. Reglas al escribir en `ui/`:
+
+- **Cada archivo con JSX importa React** (`import React from "react"`): el JSX se transforma en
+  `React.createElement`, así que React tiene que estar en el ámbito del archivo.
+- **Imports entre archivos de la interfaz, con ruta relativa y extensión** (`.jsx` o `.js`).
+- **No uses al cargarse el módulo** (fuera de funciones) algo importado de otro archivo de `ui/`;
+  solo dentro de componentes o funciones. Así los ciclos entre archivos no dan problemas.
+- El cargador pide los archivos con `cache: "no-cache"` para no mezclar archivos nuevos y viejos
+  tras un despliegue. Un error de sintaxis dice en qué archivo está, y en las herramientas del
+  navegador cada archivo aparece con su nombre real.
+- Coste de arranque: Babel transforma toda la interfaz en cada carga (~0,5 s en escritorio, medido
+  en octubre de 2026; más en móvil). Una mejora pendiente es guardar el resultado transformado
+  entre visitas — no está hecho porque hay que invalidarlo bien tras cada despliegue.
 
 ## Al añadir un archivo `.js`/`.jsx` nuevo que la app carga siempre
 
-Además de registrarlo en los dos `importmap` (ver arriba), añádelo a `FILES_TO_CACHE` en
-`sw.js` y sube en uno la versión de `CACHE_NAME`. Si no lo haces, el archivo nuevo solo queda
-disponible offline después de haberlo pedido con conexión al menos una vez — la estrategia de
-`sw.js` es "red primero con cacheo de paso", así que en el uso normal no se nota, pero falla si
-alguien instala la PWA estando ya sin conexión. Se nos olvidó al crear los 7 módulos de la capa
-de lógica; quedó corregido después, pero es fácil que vuelva a pasar.
+Además de registrarlo donde toque (los dos `importmap` y `FILES_TO_CACHE` de `sw.js` si es de
+`logica/`; `ui/archivos.json` si es de la interfaz, que `sw.js` lee solo), sube en uno la versión
+de `CACHE_NAME` en `sw.js`. Si no lo haces, el service worker ya instalado no se reinstala y el
+archivo nuevo solo queda disponible sin conexión después de haberlo pedido con conexión al menos
+una vez — la estrategia de `sw.js` es "red primero con cacheo de paso", así que en el uso normal no
+se nota, pero falla si alguien instala la PWA estando ya sin conexión. Se nos olvidó al crear los
+7 primeros módulos de la capa de lógica; quedó corregido después, pero es fácil que vuelva a pasar.
 
 ## Migraciones de datos guardados
 
-`migrateData` (en `app.jsx`) se ejecuta sobre cualquier dato cargado desde Firestore/localStorage
-antes de usarlo. Si cambias la forma de los datos guardados (un campo nuevo, un catálogo que
-crece, una estructura que cambia), añade aquí el parche correspondiente — nunca asumas que los
-datos ya guardados de antes tienen la forma nueva. El patrón siempre es el mismo: comprobar si
-falta algo y completarlo sin pisar lo que el usuario ya haya editado a mano (mira los bloques
-existentes como ejemplo, especialmente el de `FOODS_SEED` y los campos añadidos después).
+`migrateData` (en `logica/migraciones.js`) se ejecuta sobre cualquier dato cargado desde
+Firestore/localStorage antes de usarlo (lo llama `useDatos`, en `ui/estado/datos.js`). Si cambias la
+forma de los datos guardados (un campo nuevo, un catálogo que crece, una estructura que cambia),
+añade aquí el parche correspondiente — nunca asumas que los datos ya guardados de antes tienen la
+forma nueva. El patrón siempre es el mismo: comprobar si falta algo y completarlo sin pisar lo que
+el usuario ya haya editado a mano (mira los bloques existentes como ejemplo, especialmente el de
+`FOODS_SEED` y los campos añadidos después). Y añade su caso en `validacion/tests.js` (grupo
+"migrateData"): es lo que protege los datos de todas las cuentas.
 
 ## Menú completo y Menú simple
 
 Hay dos pantallas de menú que conviven, y las dos usan el mismo `generateMenu`:
 
-- **Menú completo** (`MenuView`): con kcal, macros, raciones ajustables y comparación contra los
-  objetivos del día. Ciclo en `menu-v1`, historial en `history-v1`, lista de la compra en
+- **Menú completo** (`MenuView`, `ui/menu/menu-completo.jsx`): con kcal, macros, raciones ajustables
+  y comparación contra los objetivos del día. Ciclo en `menu-v1`, historial en `history-v1`, lista de la compra en
   `data.listaCompra`.
-- **Menú simple** (`MenuSimpleView`): solo el borrador de combinaciones, sin calorías ni gramos.
+- **Menú simple** (`MenuSimpleView`, `ui/menu/menu-simple.jsx`): solo el borrador de combinaciones,
+  sin calorías ni gramos.
   Tiene su propio ciclo (`menu-simple-v1`), su propio historial (`history-simple-v1`) y su propia
   lista de la compra (`data.listaCompraSimple`), independientes de los de arriba — generar o
   deshacer en uno nunca toca al otro. Para no mostrar cantidades, `mealExportParts` y
   `calcularListaCompra` aceptan `{ conCantidades: false }`.
 
-Todas las claves de almacenamiento (`STORAGE_KEY`, `MENU_STORAGE_KEY`...) empiezan por
-`rueda-de-platos:` — ver la nota sobre el nombre al principio de este archivo.
+El estado de los dos lo lleva el mismo hook, `useMenu` (`ui/estado/menu.js`), con una configuración
+distinta para cada uno (`MENU_COMPLETO` y `MENU_SIMPLE`: claves de almacenamiento y campo de la
+lista de la compra) — así es imposible que una mejora llegue a uno y se olvide en el otro.
+
+Todas las claves de almacenamiento (`STORAGE_KEY` en `ui/estado/datos.js`; las de los menús en
+`MENU_COMPLETO`/`MENU_SIMPLE`, `ui/estado/menu.js`) empiezan por `rueda-de-platos:` — ver la nota sobre el nombre al principio de este archivo.
 
 ## Internacionalización
 
 La interfaz existe en 5 idiomas: español (por defecto), inglés, catalán, gallego y euskera.
-`Logica/i18n.js` es un diccionario propio (no una API de traducción en vivo, para que siga
+`logica/i18n.js` es un diccionario propio (no una API de traducción en vivo, para que siga
 funcionando sin conexión); se usa con `t(idioma, "clave", { variables })`. Si una clave falta en un
 idioma, cae a español; si falta también ahí, devuelve la propia clave — así un texto sin registrar
 se nota enseguida en pantalla en vez de romper nada.
@@ -177,7 +214,7 @@ Puntos que hay que saber antes de tocarlas:
   porque quien llama es Stripe, no la app.
 - **Coste**: `setGlobalOptions({ maxInstances: 10 })` en `index.js` pone un techo duro por función.
 - **Código duplicado a mano**: `sendWeighInReminders.js` repite `esDiaSugeridoPeso`, `fechaISO` y la
-  tabla de días sugeridos de `Logica/peso.js`, porque `peso.js` es un módulo ESM de navegador (usa
+  tabla de días sugeridos de `logica/peso.js`, porque `peso.js` es un módulo ESM de navegador (usa
   nombres cortos del `importmap`) y esta carpeta es Node CommonJS, sin build que las una. **Si
   cambias la regla de días sugeridos en `peso.js`, cámbiala también ahí.** Esa función también
   descubre a quién avisar leyendo `users/{uid}/keys/rueda-de-platos:push-token-v1` con una
@@ -195,7 +232,7 @@ La app se sirve desde **GitHub Pages** (`https://pablodiazblanco.github.io/Rueda
 ningún paso de build ni de despliegue manual: un push a `main` llega a la app real que se usa a
 diario en cuestión de minutos. No hay `.github/` ni CI, y `firebase.json` solo configura `functions`
 (no hay Firebase Hosting). Consecuencia práctica: **un error de sintaxis o de import en un push
-llega directo a producción**, así que no subas nada sin haber pasado antes por `Validacion/` y
+llega directo a producción**, así que no subas nada sin haber pasado antes por `validacion/` y
 haber mirado la consola (ver "Cómo verificar un cambio").
 
 ## Idioma y estilo
@@ -207,6 +244,11 @@ habitual en otro proyecto — es intencionado, este código va de la mano de los
 (`local/divulgacion/`) y
 se espera que se entienda sin tener que releerlos. Mantén ese tono al añadir código nuevo, no lo
 recortes a comentarios mínimos por costumbre.
+
+Los estilos de la interfaz se escriben en línea (`style={{...}}`), con los colores como variables
+CSS de tema (definidas en `Shell`, `ui/marco/cabecera.jsx`) y las tipografías como constantes de
+`ui/estilos.js` (`FUENTE_TEXTO`, `FUENTE_TITULOS`, `FUENTE_MONO`): no escribas el nombre de la
+fuente a mano en un componente nuevo.
 
 ## Servicios de IA (Gemini)
 
@@ -232,23 +274,30 @@ transacción de Firestore *antes* de llamar a Gemini y se devuelve si la llamada
 
 ## Cómo verificar un cambio antes de darlo por bueno
 
-Nunca abras `index.html` ni `Validacion/index.html` con `file://` — los `fetch` e imports
+Nunca abras `index.html` ni `validacion/index.html` con `file://` — los `fetch` e imports
 relativos no resuelven igual y algunas cosas fallan en silencio o de forma distinta a producción.
 
 1. Sirve el repo por `http://localhost` con el servidor estático ya configurado en
    `.claude/launch.json` (Python `http.server`, puerto 8420 — usa `preview_start` con `name: "static"`).
-2. Abre `http://localhost:8420/Validacion/index.html` y comprueba que el contador de arriba dice
-   "X / X casos superados" (todos en verde, ninguno por debajo del total). Esa página carga
-   `app.jsx` tal cual (mismo mecanismo que `auth-bootstrap.jsx`), nunca una copia — si pasa ahí,
-   el código real funciona. Los valores "esperado" de cada caso se verifican a mano antes de
-   guardarlos como referencia (lee la cabecera de `Validacion/tests.js`) — no los cambies para
+2. Abre `http://localhost:8420/validacion/index.html` y comprueba que el contador de arriba dice
+   "X / X casos superados" (todos en verde, ninguno por debajo del total). Esa página carga la
+   interfaz con el mismo `cargador-ui.js` que la app (`app.jsx` y todo `ui/`), nunca una copia — si
+   pasa ahí, el código real funciona. Incluye el grupo "Carga de la interfaz", que comprueba que
+   `ui/archivos.json` coincide con lo que se carga de verdad. Los valores "esperado" de cada caso se verifican a mano antes de
+   guardarlos como referencia (lee la cabecera de `validacion/tests.js`) — no los cambies para
    que un caso pase, cambia el código.
-3. Revisa la consola del navegador por si hay errores de import silenciosos.
-4. Si el cambio toca algo que `Validacion` no cubre (por ejemplo `generateMenu`, que es
-   aleatorio y no tiene casos con valores fijos), haz una comprobación aparte: importa el módulo
-   directamente en la consola con el mismo patrón fetch+Babel+blob y llama a la función con datos
-   sintéticos, o pide confirmación manual en la app real autenticada.
-5. Añade casos nuevos a `Validacion/tests.js` cuando el cambio introduzca lógica de cálculo nueva
+3. Revisa la consola del navegador por si hay errores de import silenciosos. Ojo con dos trampas
+   ya vividas: (a) la caché HTTP y la del service worker pueden servir archivos viejos — antes de
+   concluir nada, quita el registro del service worker, vacía sus cachés y pide los archivos con
+   `cache: "reload"` desde una página que no controle; (b) Windows no distingue mayúsculas en las
+   rutas pero GitHub Pages sí: una ruta `Logica/` que funciona en local da 404 en producción.
+4. Si el cambio toca algo que `validacion/` no cubre (por ejemplo `generateMenu`, que es
+   aleatorio y no tiene casos con valores fijos), haz una comprobación aparte: desde la consola de
+   `validacion/index.html` (que ya tiene el importmap) importa el módulo de `logica/` con
+   `await import("menu-generador")` y llama a la función con datos sintéticos; para la interfaz,
+   `await (await import("cargador-ui")).cargarApp({ base: "../" })`. O pide confirmación manual
+   en la app real autenticada.
+5. Añade casos nuevos a `validacion/tests.js` cuando el cambio introduzca lógica de cálculo nueva
    que hoy no esté cubierta.
 
 ## Firestore
@@ -288,9 +337,9 @@ guiones, sin espacios ni tildes.
 | `local/referencias/` | Papers académicos originales (con DOI) que respaldan esos PDFs, por tema (`g-kg-proteina/`, `g-kg-carbohidrato/`, `split-de-comidas/`...). Son la fuente primaria, no redundantes con los PDFs. Si algún día se añade contenido claramente no académico (volcados de páginas web con trackers, etc.), se elimina |
 | `local/investigacion/` | Investigaciones a fondo que respaldan una decisión de cálculo concreta, una carpeta por tema con `informe.md` y `notas/` (hoy: `carbohidrato-minimo-deficit/`). Los PDFs de Evidencia científica y de Fundamentos remiten a ese informe |
 | `local/ideas/` | `ideas-futuras.md` (ideas agrupadas por letras A-G, sin diseñar ni priorizar; al retomar una, relee su sección entera) e `investigacion-entrenamiento.md` (estudio previo de la idea de gimnasio) |
-| `local/archivo/` | Material ya cerrado: `ideas-originales.docx` (del que salió el rediseño de navegación de septiembre de 2026) y `traducciones/` (revisión de la Fase 5; la fuente real de las traducciones es `Logica/i18n.js`) |
+| `local/archivo/` | Material ya cerrado: `ideas-originales.docx` (del que salió el rediseño de navegación de septiembre de 2026) y `traducciones/` (revisión de la Fase 5; la fuente real de las traducciones es `logica/i18n.js`) |
 
-Lo que **sí** está en el repositorio y no es la app: `functions/` (backend), `Validacion/`
+Lo que **sí** está en el repositorio y no es la app: `functions/` (backend), `validacion/`
 (herramienta de mantenimiento, no se enlaza desde `index.html` ni se registra en el service worker),
 `README.md` y este archivo.
 
@@ -305,12 +354,13 @@ público). Se decidió no reescribir el historial por ahora; si se retoma, es un
   tiene el suyo, y es un proyecto aparte).
 - No añadir librerías externas fuera de lo ya declarado en el `importmap` (React, Firebase,
   lucide-react, vía esm.sh/CDN).
-- No dividir los componentes React de `app.jsx` en más archivos sin releer antes la sección
-  "Por qué la UI no está dividida".
+- No volver a acumular pantallas o componentes en `app.jsx`: cada pantalla va en su archivo de
+  `ui/` (y en `ui/archivos.json`), el estado en un hook de `ui/estado/` y la lógica sin React en
+  `logica/`. Y nada de `logica/` importa de `ui/` ni de `app.jsx`.
 - No hacer commit de nada sin que se pida explícitamente.
 - No sacar nada de `local/` al repositorio ni quitar `local/` del `.gitignore`: el repositorio es
   público y GitHub Pages lo publicaría todo.
 - No cambiar la licencia (`LICENSE`: todos los derechos reservados) sin actualizar a la vez la sección
   «Propiedad intelectual» de los términos de uso (`terminos.propiedadTexto` en los cinco idiomas de
-  `Logica/i18n.js`), y viceversa. Son dos mitades del mismo compromiso.
-- No dar un cambio en la lógica por terminado sin pasar por `Validacion/` primero.
+  `logica/i18n.js`), y viceversa. Son dos mitades del mismo compromiso.
+- No dar un cambio en la lógica por terminado sin pasar por `validacion/` primero.

@@ -40,24 +40,24 @@ No hay bundler, no hay `npm install`, no hay `package.json`. El navegador hace t
 
 ```
 index.html
-  │  <script type="importmap">  → react, firebase y los módulos de Logica/ por nombre corto
+  │  <script type="importmap">  → react, firebase y los módulos de logica/ por nombre corto
   │  Babel Standalone (CDN)     → transforma JSX al vuelo, sin paso de compilación
   ▼
 auth-bootstrap.jsx   (login, Firestore, App Check, puente con las Cloud Functions)
-  │  fetch + Babel.transform + Blob + import() dinámico
+  │  cargador-ui.js: descarga, pasa por Babel y enlaza app.jsx + ui/ (import/export normales)
   ▼
-app.jsx              (todos los componentes React)
+app.jsx + ui/        (componente principal + 38 archivos de interfaz, por pantalla)
   │  import { ... } from "nombre-corto"     ← resuelto por el importmap
   ▼
-Logica/*.js          (10 módulos de lógica pura, sin JSX, sin React)
+logica/*.js          (13 módulos de lógica pura, sin JSX, sin React)
 ```
 
 La única pieza de servidor es `functions/` (Cloud Functions de Firebase: pagos con Stripe, Gemini
 con cuota mensual y el recordatorio de pesaje por notificación push). Es un proyecto Node aparte,
 con su propio `package.json`, y no forma parte de cómo carga el navegador la app.
 
-Esta decisión está documentada con su porqué técnico completo (incluida la razón de que la UI
-**no** esté dividida en más archivos) en [`CLAUDE.md`](./CLAUDE.md) — léelo antes de tocar cómo
+Esta decisión está documentada con su porqué técnico completo (incluido cómo se reparte la
+interfaz en varios archivos sin build) en [`CLAUDE.md`](./CLAUDE.md) — léelo antes de tocar cómo
 carga la app.
 
 ## Estructura del repositorio
@@ -66,12 +66,20 @@ carga la app.
 Rueda-de-platos/
 ├── index.html                       entrada de la app + importmap
 ├── auth-bootstrap.jsx               login, Firestore, App Check, puente con las Cloud Functions
-├── app.jsx                          todos los componentes React
+├── cargador-ui.js                   carga app.jsx + ui/ con Babel, sin build
+├── app.jsx                          componente principal (estado y pantalla actual)
 ├── sw.js                            service worker (offline / PWA / notificaciones push)
 ├── manifest.json, icon.svg          metadatos de la PWA
 ├── privacidad.html, terminos.html   páginas legales (con selector de idioma propio)
 │
-├── Logica/                          lógica de negocio, sin JSX
+├── ui/                              la interfaz (React), un archivo por pantalla o pieza
+│   ├── archivos.json                  lista de archivos de ui/ (cargador + modo sin conexión)
+│   ├── estilos.js, pantallas.jsx      tipografías; tabla destino → pantalla
+│   ├── estado/                        hooks: datos, menú, catálogo, perfil, peso
+│   ├── comun/, marco/                 piezas reutilizadas; Shell, cabecera y menú lateral
+│   └── menu/, catalogo/, perfil/, onboarding/, peso/, premium/, ajustes/
+│
+├── logica/                          lógica de negocio, sin JSX ni React
 │   ├── comun.js                       uid(), DAYS
 │   ├── macros.js                      cálculo de macros por alimento
 │   ├── seleccion.js                   sorteo ponderado + reglas de combinación
@@ -80,7 +88,10 @@ Rueda-de-platos/
 │   ├── menu-generador.js              el motor de generación del menú
 │   ├── peso.js                        tendencia de peso, cambios atípicos
 │   ├── salud-publica.js               sal/azúcares/fibra frente a los umbrales de la OMS
-│   ├── resumenMensual.js              resumen del mes (comidas completadas + peso)
+│   ├── resumen-mensual.js             resumen del mes (comidas completadas + peso)
+│   ├── datos-iniciales.js             catálogo base de alimentos y datos de una cuenta nueva
+│   ├── cuestionario.js                cuestionario de catálogo del alta
+│   ├── migraciones.js                 migrateData (datos guardados de versiones anteriores)
 │   └── i18n.js                        diccionario de textos ES/EN/CA/GL/EU
 │
 ├── functions/                       Cloud Functions de Firebase (Node 22, proyecto aparte)
@@ -91,11 +102,12 @@ Rueda-de-platos/
 │   ├── suggestMeals.js                «qué puedo cocinar» (Gemini, con cuota)
 │   └── sendWeighInReminders.js        push diario de recordatorio de pesaje
 │
-├── Validacion/                      arnés de pruebas de regresión (no es parte de la app)
+├── validacion/                      arnés de pruebas de regresión (no es parte de la app)
 │   ├── index.html
 │   └── tests.js
 │
 ├── CLAUDE.md                        convenciones del proyecto
+├── LICENSE                          todos los derechos reservados
 └── README.md                        este archivo
 ```
 
@@ -113,7 +125,7 @@ python -m http.server 8420
 ```
 
 y abre `http://localhost:8420/`. El inicio de sesión real necesita conexión a Firebase, así que
-para probar solo los cálculos (sin login) usa en su lugar `Validacion/index.html` — carga
+para probar solo los cálculos (sin login) usa en su lugar `validacion/index.html` — carga
 `app.jsx` tal cual y ejecuta un conjunto de casos de prueba contra resultados ya verificados a
 mano. Las Cloud Functions no se pueden probar así: viven en `functions/` y se despliegan aparte
 (`firebase deploy --only functions`).
@@ -121,7 +133,7 @@ mano. Las Cloud Functions no se pueden probar así: viven en `functions/` y se d
 ## Despliegue
 
 La app se sirve desde **GitHub Pages**, sin paso de build: un push a `main` llega a la app real en
-cuestión de minutos. Como no hay CI que lo frene, conviene pasar por `Validacion/` antes de subir
+cuestión de minutos. Como no hay CI que lo frene, conviene pasar por `validacion/` antes de subir
 nada. Las Cloud Functions, en cambio, se despliegan a mano.
 
 ## Stack técnico
