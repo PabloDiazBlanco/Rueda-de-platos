@@ -9,6 +9,7 @@ import { t } from "i18n";
 import { CATEGORY_META } from "../comun/categorias.js";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { MacroPill } from "../comun/tarjetas.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 function ruleSummary(ing, idioma) {
   if (ing.ruleType === "base") return t(idioma, "catalogo.baseDelMenu");
@@ -38,7 +39,7 @@ export function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote, 
         <div style={{ fontSize: 15, lineHeight: 1.3 }}>
           {ingredient.name}
           {ingredient.cantidad && (
-            <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", display: "block", marginTop: 2 }}>
+            <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", display: "block", marginTop: 2 }}>
               {ingredient.cantidad}
             </span>
           )}
@@ -50,7 +51,7 @@ export function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote, 
       </div>
       <div
         style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          fontFamily: FUENTE_TEXTO,
           fontSize: 11.5,
           fontWeight: 700,
           color: meta.color,
@@ -66,7 +67,7 @@ export function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote, 
 
       {m ? (
         <div style={{ marginTop: 9 }}>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginBottom: 4 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10, color: "var(--ink-soft)", marginBottom: 4 }}>
             {t(idioma, "catalogo.unaRacion", { g: m.gramos })}
           </div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
@@ -78,7 +79,7 @@ export function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote, 
         </div>
       ) : (
         <div style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5,
+          fontFamily: FUENTE_TEXTO, fontSize: 10.5,
           color: "var(--ink-soft)", marginTop: 9, display: "flex", alignItems: "center", gap: 4,
         }}>
           <AlertCircle size={11} /> {t(idioma, "catalogo.sinEnlazar")}
@@ -86,7 +87,7 @@ export function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote, 
       )}
 
       {extraNote && (
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 8 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 8 }}>
           {extraNote}
         </div>
       )}
@@ -110,7 +111,7 @@ export function BlockCard({ block, data, members, onUpdateBlock, onEditMember, o
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              fontFamily: FUENTE_TEXTO,
               fontSize: 11.5,
               fontWeight: 700,
               color: "var(--mustard-dark)",
@@ -126,7 +127,7 @@ export function BlockCard({ block, data, members, onUpdateBlock, onEditMember, o
           )}
         </div>
       </div>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", margin: "8px 0 12px 0" }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", margin: "8px 0 12px 0" }}>
         {block.distribucion}
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -148,13 +149,13 @@ export function BlockCard({ block, data, members, onUpdateBlock, onEditMember, o
             {(() => {
               const mm = data ? composedMacros(data, m, 1) : null;
               return mm ? (
-                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)" }}>
+                <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)" }}>
                   {mm.gramos} g · {fmt(mm.kcal)} kcal
                 </span>
               ) : null;
             })()}
             {showProbabilities && (
-              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--mustard-dark)", fontWeight: 700 }}>
+              <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--mustard-dark)", fontWeight: 700 }}>
                 {m.probabilidad}%
               </span>
             )}
@@ -174,7 +175,7 @@ export function BlockCard({ block, data, members, onUpdateBlock, onEditMember, o
             padding: "7px 10px",
             fontSize: 12.5,
             color: "var(--ink-soft)",
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
           }}
         >
           <Plus size={12} /> {t(idioma, "catalogo.anadirAlGrupo")}
@@ -277,7 +278,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
           }}
         >
           <div style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700,
+            fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700,
             color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: 0.5,
             marginBottom: 9, display: "flex", alignItems: "center", gap: 5,
           }}>
@@ -312,7 +313,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
                     <IconBtn onClick={() => removeComposRow(row.id)}><Trash2 size={12} /></IconBtn>
                   </div>
                   {rowKcal !== null && (
-                    <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 5 }}>
+                    <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 5 }}>
                       {rowKcal} kcal
                     </div>
                   )}
@@ -326,7 +327,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
             style={{
               display: "flex", alignItems: "center", gap: 6, border: "1px dashed var(--line)",
               background: "transparent", borderRadius: 7, padding: "7px 10px", fontSize: 12.5,
-              color: "var(--ink-soft)", fontFamily: "'Helvetica Neue', Arial, sans-serif", marginBottom: 10,
+              color: "var(--ink-soft)", fontFamily: FUENTE_TEXTO, marginBottom: 10,
             }}
           >
             <Plus size={12} /> {t(idioma, "editModal.anadirIngrediente")}
@@ -334,7 +335,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
 
           {composicion.length > 0 ? (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", borderTop: "1px solid var(--line)", paddingTop: 9 }}>
-              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", alignSelf: "center", marginRight: 2 }}>
+              <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", alignSelf: "center", marginRight: 2 }}>
                 {t(idioma, "editModal.totalDelPlato")}
               </span>
               <MacroPill label="kcal" value={fmt(composTotal.kcal)} color="var(--rust)" bg="var(--rust-soft)" />
@@ -343,7 +344,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
               <MacroPill label="C" value={`${fmt(composTotal.carb)} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
             </div>
           ) : (
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)" }}>
               {t(idioma, "editModal.anadeIngrediente")}
             </div>
           )}
@@ -356,7 +357,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
           }}
         >
           <div style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700,
+            fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700,
             color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: 0.5,
             marginBottom: 8, display: "flex", alignItems: "center", gap: 5,
           }}>
@@ -391,7 +392,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
               <MacroPill label="C" value={`${fmt(preview.carb)} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
             </div>
           ) : (
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)" }}>
               {t(idioma, "editModal.enlazaAlimento")}
             </div>
           )}
@@ -471,7 +472,7 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
 export function ConfirmModal({ ingredient, onCancel, onConfirm, idioma }) {
   return (
     <ModalShell onClose={onCancel} title={t(idioma, "confirmModal.titulo")}>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)" }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, color: "var(--ink)" }}>
         {t(idioma, "confirmModal.textoPre")}<strong>{ingredient.name}</strong>{t(idioma, "confirmModal.textoPost")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>
@@ -496,7 +497,7 @@ export function FrequencyModal({ block, onClose, onSave, idioma }) {
           style={inputStyle}
         />
       </Field>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginTop: -4 }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginTop: -4 }}>
         {t(idioma, "frequencyModal.ejemplo")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 20 }}>

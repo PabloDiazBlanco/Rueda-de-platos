@@ -11,6 +11,7 @@ import { t } from "i18n";
 import { ModalShell } from "../comun/modal.jsx";
 import { MacroPill } from "../comun/tarjetas.jsx";
 import { ruleItemLabel } from "../catalogo/reglas.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Ids de los alimentos que forman la combinación "de sabor" de una comida (proteína, carbo,
 // verdura y garbanzos si los lleva) — los mismos que ya evalúa el motor de reglas. La grasa de
@@ -58,7 +59,7 @@ function ComboAfinidad({ meal, data, onUpsertRule, idioma }) {
   const opciones = abierto === "gusta" ? NIVELES_GUSTA : abierto === "nogusta" ? NIVELES_NOGUSTA : null;
 
   return (
-    <div style={{ marginTop: 12, fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+    <div style={{ marginTop: 12, fontFamily: FUENTE_TEXTO }}>
       <div style={{ fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 6 }}>
         {t(idioma, "comboAfinidad.pregunta")} <span style={{ color: "var(--ink)" }}>{nombres}</span>
       </div>
@@ -138,7 +139,7 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
             style={{
               paddingBottom: 11,
               borderBottom: "1px solid var(--line)",
-              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              fontFamily: FUENTE_TEXTO,
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
@@ -177,7 +178,7 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
           borderRadius: 10,
           padding: "12px 14px",
           marginTop: 14,
-          fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          fontFamily: FUENTE_TEXTO,
         }}
       >
         <div style={{ fontSize: 10.5, letterSpacing: 1.5, textTransform: "uppercase", opacity: 0.7, marginBottom: 6 }}>
@@ -203,7 +204,7 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
               <div
                 key={r.id}
                 style={{
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5,
+                  fontFamily: FUENTE_TEXTO, fontSize: 10.5,
                   color: isNulaForced ? "var(--rust)" : "var(--ink-soft)",
                 }}
               >
@@ -217,14 +218,14 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 12 }}>
-        <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)" }}>
+        <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)" }}>
           {t(idioma, "mealDetail.racionBase")}
         </span>
         {anyChanged && (
           <button
             onClick={() => onUpdateMeal(meal.id, { raciones: {} })}
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5,
+              fontFamily: FUENTE_TEXTO, fontSize: 11.5,
               border: "1px solid var(--line)", background: "transparent",
               borderRadius: 7, padding: "5px 10px", color: "var(--ink-soft)",
             }}
@@ -237,7 +238,7 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
       <button
         onClick={onToggleCompletada}
         style={{
-          width: "100%", marginTop: 14, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+          width: "100%", marginTop: 14, fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700,
           color: completadaHoy ? "#fff" : "var(--green-dark)",
           background: completadaHoy ? "var(--green)" : "var(--green-soft)",
           border: "none", borderRadius: 9, padding: "11px",

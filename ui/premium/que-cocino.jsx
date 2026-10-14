@@ -6,6 +6,7 @@ import { composedMacros, fmt } from "macros";
 import { t } from "i18n";
 import { inputStyle } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // "¿Qué puedo cocinar con lo que tengo?" — manda una foto (más, opcionalmente, las especias que
 // tengas) a la Cloud Function, que identifica alimentos de tu propio catálogo en la imagen y
@@ -57,7 +58,7 @@ export function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
         <button
           onClick={() => fileInputRef.current && fileInputRef.current.click()}
           style={{
-            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+            width: "100%", fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700,
             color: "var(--green-dark)", background: "var(--green-soft)", border: "none", borderRadius: 8,
             padding: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 10,
           }}
@@ -73,7 +74,7 @@ export function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
           style={{ display: "none" }}
         />
 
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
           {photo ? t(idioma, "suggestMeals.otrosIngredientesConFoto") : t(idioma, "suggestMeals.otrosIngredientesSinFoto")}
         </div>
         <input
@@ -83,7 +84,7 @@ export function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
           style={{ ...inputStyle, marginBottom: 12 }}
         />
 
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
           {t(idioma, "suggestMeals.especias")}
         </div>
         <input
@@ -97,7 +98,7 @@ export function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
           onClick={handleAnalizar}
           disabled={(!photo && !otrosIngredientes.trim()) || loading}
           style={{
-            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            width: "100%", fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
             color: "#fff", background: (photo || otrosIngredientes.trim()) && !loading ? "var(--green)" : "var(--line)", border: "none",
             borderRadius: 9, padding: "12px", cursor: (photo || otrosIngredientes.trim()) && !loading ? "pointer" : "default",
           }}
@@ -108,7 +109,7 @@ export function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
         {error && (
           <div
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--rust)",
+              fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--rust)",
               background: "var(--rust-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10,
             }}
           >
@@ -118,7 +119,7 @@ export function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
       </div>
 
       {sugerencias && sugerencias.length === 0 && (
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)" }}>
           {t(idioma, "suggestMeals.sinResultados")}
         </div>
       )}
@@ -129,23 +130,23 @@ export function SuggestMealsView({ data, onGuardarComoCerrado, idioma }) {
             const macros = composedMacros(data, { composicion: s.composicion });
             return (
               <div key={i} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px" }}>
-                <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 16, color: "var(--green-dark)", marginBottom: 4 }}>
+                <div style={{ fontFamily: FUENTE_TITULOS, fontSize: 16, color: "var(--green-dark)", marginBottom: 4 }}>
                   {s.nombre}
                 </div>
                 {macros && (
-                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>
+                  <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>
                     {fmt(macros.kcal)} kcal · P {fmt(macros.prot)}g · G {fmt(macros.fat)}g · C {fmt(macros.carb)}g
                   </div>
                 )}
                 {s.pasos_breves && (
-                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)", lineHeight: 1.5, marginBottom: 12 }}>
+                  <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink)", lineHeight: 1.5, marginBottom: 12 }}>
                     {s.pasos_breves}
                   </div>
                 )}
                 <button
                   onClick={() => onGuardarComoCerrado(s)}
                   style={{
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700,
+                    fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700,
                     color: "var(--green-dark)", background: "var(--green-soft)", border: "none", borderRadius: 7,
                     padding: "8px 12px", cursor: "pointer",
                   }}

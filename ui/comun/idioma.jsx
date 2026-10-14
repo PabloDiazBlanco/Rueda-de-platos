@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { t, IDIOMAS_DISPONIBLES } from "i18n";
 import { inputStyle } from "./modal.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // ---------- Bandera de un idioma, dibujada a mano en SVG ----------
 // No se usan los emoji de bandera (🇪🇸, 🇬🇧...) a propósito: catalán, gallego y euskera no tienen
@@ -95,7 +96,7 @@ export function LanguageDropdown({ idioma, onChange }) {
         onClick={() => setOpen((o) => !o)}
         style={{
           display: "flex", alignItems: "center", gap: 9, width: "100%",
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+          fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700,
           padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)", background: "#fff", color: "var(--ink)",
           cursor: "pointer",
         }}
@@ -128,7 +129,7 @@ export function LanguageDropdown({ idioma, onChange }) {
                 onClick={() => elegir(op.key)}
                 style={{
                   display: "flex", alignItems: "center", gap: 9, textAlign: "left",
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, padding: "8px 8px", borderRadius: 6,
+                  fontFamily: FUENTE_TEXTO, fontSize: 13, padding: "8px 8px", borderRadius: 6,
                   border: "none", background: op.key === idioma ? "var(--green-soft)" : "transparent", cursor: "pointer",
                 }}
               >
@@ -138,7 +139,7 @@ export function LanguageDropdown({ idioma, onChange }) {
               </button>
             ))}
             {filtrados.length === 0 && (
-              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", padding: "8px 6px" }}>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", padding: "8px 6px" }}>
                 {t(idioma, "ajustes.idioma.sinResultados")}
               </div>
             )}

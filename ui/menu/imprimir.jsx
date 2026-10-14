@@ -5,6 +5,7 @@ import { fmt } from "macros";
 import { dayTotals, mealExportParts } from "comida-calculo";
 import { DAYS } from "comun";
 import { t } from "i18n";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Barras de calorías por día de la semana seleccionada, más el desglose de macros de cada día.
 // Todo se recalcula en cada render a partir de menu+data, así que si cambias una ración
@@ -31,9 +32,9 @@ export function PrintExport({ data, menu, idioma, conCantidades = true }) {
           #print-export { display: none; }
         }
       `}</style>
-      <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
+      <div style={{ padding: 24, fontFamily: FUENTE_TITULOS, color: "#2b2b26" }}>
         <div style={{ marginBottom: 6 }}>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
             FoodDraft
           </div>
           <h1 style={{ fontSize: 28, color: "#1f4d38", margin: "2px 0 0 0" }}>{t(idioma, "print.tuMenu")}</h1>
@@ -62,7 +63,7 @@ export function PrintExport({ data, menu, idioma, conCantidades = true }) {
                   >
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 15, marginBottom: 6 }}>{t(idioma, "dia." + day)}</div>
-                      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", display: "flex", flexDirection: "column", gap: 3 }}>
+                      <div style={{ fontFamily: FUENTE_TEXTO, display: "flex", flexDirection: "column", gap: 3 }}>
                         {dayMeals.map((m) => (
                           <div key={m.id} style={{ fontSize: 11, lineHeight: 1.45 }}>
                             <span style={{ fontWeight: 700, color: "#a9721f" }}>{t(idioma, "mealType." + m.mealType)}: </span>
@@ -79,7 +80,7 @@ export function PrintExport({ data, menu, idioma, conCantidades = true }) {
           );
         })}
 
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
           {t(idioma, conCantidades ? "print.pie" : "print.pieSimple")}
         </div>
       </div>
@@ -114,14 +115,14 @@ function PrintDonut({ totals }) {
             />
           );
         })}
-        <text x="45" y="42" textAnchor="middle" fontSize="15" fontWeight="700" fill="#1f4d38" fontFamily="'Helvetica Neue', Arial, sans-serif">
+        <text x="45" y="42" textAnchor="middle" fontSize="15" fontWeight="700" fill="#1f4d38" fontFamily={FUENTE_TEXTO}>
           {Math.round(totals.kcal)}
         </text>
-        <text x="45" y="56" textAnchor="middle" fontSize="8" fill="#6b6a5e" fontFamily="'Helvetica Neue', Arial, sans-serif">
+        <text x="45" y="56" textAnchor="middle" fontSize="8" fill="#6b6a5e" fontFamily={FUENTE_TEXTO}>
           kcal
         </text>
       </svg>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 8.5, display: "flex", justifyContent: "center", gap: 4, marginTop: 2 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 8.5, display: "flex", justifyContent: "center", gap: 4, marginTop: 2 }}>
         <span style={{ color: "#1f4d38" }}>P{fmt(totals.prot)}</span>
         <span style={{ color: "#a9721f" }}>G{fmt(totals.fat)}</span>
         <span style={{ color: "#6b4423" }}>C{fmt(totals.carb)}</span>

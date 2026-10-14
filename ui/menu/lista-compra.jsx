@@ -5,6 +5,7 @@ import { calcularListaCompra } from "comida-calculo";
 import { t } from "i18n";
 import { CATEGORY_META, MACRO_CATS, ESPECIALES_CATS } from "../comun/categorias.js";
 import { ModalShell, ModalBtn } from "../comun/modal.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 const LISTA_COMPRA_ORDEN_CATS = [...MACRO_CATS, ...ESPECIALES_CATS];
 
@@ -35,7 +36,7 @@ export function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, 
               flex: 1, padding: "7px 8px", borderRadius: 8, border: "1px solid var(--line)",
               background: alcance === w ? "var(--green-dark)" : "#fff",
               color: alcance === w ? "#fff" : "var(--ink)",
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+              fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
             }}
           >
             {w === "todo" ? t(idioma, "listaCompra.cicloCompleto") : t(idioma, "menu.semana", { n: w })}
@@ -44,12 +45,12 @@ export function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, 
       </div>
 
       {items.length === 0 ? (
-        <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
+        <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)" }}>
           {t(idioma, "listaCompra.sinMenu")}
         </p>
       ) : (
         <>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 10 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 10 }}>
             {t(idioma, "listaCompra.marcados", { marcados: marcadosCount, total: items.length })}
           </div>
           <div style={{ maxHeight: 380, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14 }}>
@@ -60,7 +61,7 @@ export function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, 
                 <div key={cat}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
                     {Icon && <Icon size={13} color={meta.color} />}
-                    <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: meta?.color || "var(--ink)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: meta?.color || "var(--ink)", textTransform: "uppercase", letterSpacing: 0.5 }}>
                       {meta?.label || cat}
                     </span>
                   </div>
@@ -79,13 +80,13 @@ export function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, 
                         >
                           <input type="checkbox" checked={marcado} onChange={() => onToggle(it.key)} />
                           <span style={{
-                            flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13,
+                            flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 13,
                             color: marcado ? "var(--ink-soft)" : "var(--ink)", textDecoration: marcado ? "line-through" : "none",
                           }}>
                             {it.nombre}
                           </span>
                           {conCantidades && (
-                            <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>
+                            <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--ink-soft)" }}>
                               {cantidad}
                             </span>
                           )}

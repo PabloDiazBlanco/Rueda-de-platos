@@ -10,6 +10,7 @@ import { t } from "i18n";
 import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto, idioma }) {
   const [query, setQuery] = useState("");
@@ -85,7 +86,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
         <button
           onClick={() => fileInputRef.current && fileInputRef.current.click()}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
             fontSize: 13, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-soft)",
             border: "none", borderRadius: 8, padding: "9px 14px",
             display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
@@ -104,7 +105,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
         <button
           onClick={onNew}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
             fontSize: 13, fontWeight: 700, color: "#fff", background: "var(--green)",
             border: "none", borderRadius: 8, padding: "9px 14px",
             display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
@@ -115,7 +116,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
         <button
           onClick={exportarCatalogo}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
             fontSize: 13, fontWeight: 700, color: "var(--ink-soft)", background: "transparent",
             border: "1px solid var(--line)", borderRadius: 8, padding: "9px 14px",
             display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
@@ -125,7 +126,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
         </button>
       </div>
 
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 8 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 8 }}>
         {t(idioma, "foodsView.deTotal", { n: totalVisible, total: foods.length })}
       </div>
 
@@ -138,7 +139,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
                 onClick={() => alternar(cat.key)}
                 style={{
                   display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left",
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+                  fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700,
                   padding: "10px 10px", borderRadius: 8, border: "none", cursor: "pointer",
                   background: abierta ? "var(--green-soft)" : "transparent",
                   color: abierta ? "var(--green-dark)" : "var(--ink)",
@@ -153,7 +154,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
               {abierta && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginLeft: 15, borderLeft: "1.5px solid var(--line)", paddingLeft: 10, marginTop: 6, marginBottom: 6 }}>
                   {items.length === 0 && (
-                    <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", padding: "4px 2px" }}>
+                    <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", padding: "4px 2px" }}>
                       {t(idioma, "foodsView.categoriaVacia")}
                     </div>
                   )}
@@ -170,7 +171,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                           <div style={{ minWidth: 0 }}>
                             <div style={{ fontSize: 14.5, lineHeight: 1.3 }}>{f.name}</div>
-                            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 3 }}>
+                            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 3 }}>
                               {f.fuente}
                               {uses > 0 && (
                                 <span style={{ color: "var(--green)", fontWeight: 700 }}>
@@ -189,12 +190,12 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
                           <MacroPill label="P" value={`${f.prot} g`} color="var(--green-dark)" bg="var(--green-soft)" />
                           <MacroPill label="G" value={`${f.fat} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
                           <MacroPill label="C" value={`${f.carb} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
-                          <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
+                          <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
                             {t(idioma, "foodsView.por100g")}
                           </span>
                         </div>
                         {(f.grasaSaturada !== undefined || f.azucares !== undefined || f.fibra !== undefined || f.sal !== undefined) && (
-                          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10, color: "var(--ink-soft)", marginTop: 6 }}>
+                          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10, color: "var(--ink-soft)", marginTop: 6 }}>
                             {[
                               f.grasaSaturada !== undefined && t(idioma, "foodsView.saturada", { n: f.grasaSaturada }),
                               f.azucares !== undefined && t(idioma, "foodsView.azucares", { n: f.azucares }),
@@ -215,7 +216,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
           <div style={{
             border: "1.5px dashed var(--line)", borderRadius: 10, padding: "26px 16px",
             textAlign: "center", color: "var(--ink-soft)",
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13,
+            fontFamily: FUENTE_TEXTO, fontSize: 13,
           }}>
             {t(idioma, "foodsView.sinCoincidencias", { query })}
           </div>
@@ -243,18 +244,18 @@ function PrintFoods({ foods, idioma }) {
           #print-foods { display: none; }
         }
       `}</style>
-      <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
+      <div style={{ padding: 24, fontFamily: FUENTE_TITULOS, color: "#2b2b26" }}>
         <div style={{ marginBottom: 4 }}>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
             FoodDraft
           </div>
           <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>{t(idioma, "printFoods.titulo")}</h1>
         </div>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "#6b6a5e", marginBottom: 16 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "#6b6a5e", marginBottom: 16 }}>
           {t(idioma, "printFoods.resumen", { n: ordenados.length, fecha: formatFechaCorta(fechaISO(new Date()), idioma) })}
         </div>
 
-        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FUENTE_TEXTO, fontSize: 10.5 }}>
           <thead>
             <tr style={{ background: "#1f4d38", color: "#fff" }}>
               {[
@@ -284,7 +285,7 @@ function PrintFoods({ foods, idioma }) {
           </tbody>
         </table>
 
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 20 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 20 }}>
           {t(idioma, "printFoods.pie")}
         </div>
       </div>
@@ -378,7 +379,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
                 style={{
                   width: "100%", marginTop: 8, padding: "9px 12px", borderRadius: 8, border: "none",
                   background: "var(--green)", color: "#fff", fontWeight: 700, fontSize: 13,
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", display: "flex",
+                  fontFamily: FUENTE_TEXTO, display: "flex",
                   alignItems: "center", justifyContent: "center", gap: 6, cursor: analyzing ? "default" : "pointer",
                   opacity: analyzing ? 0.7 : 1,
                 }}
@@ -387,7 +388,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
               </button>
               {analyzeError && (
                 <div style={{
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--rust)",
+                  fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--rust)",
                   background: "var(--rust-soft)", borderRadius: 6, padding: "7px 10px", marginTop: 8,
                 }}>
                   {analyzeError}
@@ -395,7 +396,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
               )}
               {analyzed && !analyzeError && (
                 <div style={{
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--green-dark)",
+                  fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--green-dark)",
                   background: "var(--green-soft)", borderRadius: 6, padding: "7px 10px", marginTop: 8,
                 }}>
                   {t(idioma, "foodEditModal.datosRellenados")}
@@ -405,7 +406,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
           ) : (
             <div
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--mustard-dark)",
+                fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--mustard-dark)",
                 background: "var(--mustard-soft)", borderRadius: 6, padding: "7px 10px", marginTop: 8,
                 display: "flex", alignItems: "center", gap: 6,
               }}
@@ -429,7 +430,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
         </select>
       </Field>
 
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginBottom: 8 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginBottom: 8 }}>
         {t(idioma, "foodEditModal.valoresPor100g")}
       </div>
 
@@ -448,7 +449,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
         </Field>
       </div>
 
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, margin: "14px 0 8px" }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, margin: "14px 0 8px" }}>
         {t(idioma, "foodEditModal.detalleAdicional")}
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -481,7 +482,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
 export function ConfirmFoodDeleteModal({ food, usedBy, onCancel, onConfirm, idioma }) {
   return (
     <ModalShell onClose={onCancel} title={t(idioma, "confirmFoodDelete.titulo")}>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
         {t(idioma, "confirmFoodDelete.textoPre")}<strong>{food.name}</strong>{t(idioma, "confirmFoodDelete.textoPost")}
       </p>
       {usedBy.length > 0 && (
@@ -489,7 +490,7 @@ export function ConfirmFoodDeleteModal({ food, usedBy, onCancel, onConfirm, idio
           style={{
             background: "var(--rust-soft)", borderLeft: "3px solid var(--rust)", borderRadius: 4,
             padding: "10px 12px", marginTop: 12,
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--rust)",
+            fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--rust)",
           }}
         >
           {t(idioma, "confirmFoodDelete.enlazado", { n: usedBy.length, plural: usedBy.length > 1 ? "s" : "", lista: usedBy.map((i) => i.name).join(", ") })}

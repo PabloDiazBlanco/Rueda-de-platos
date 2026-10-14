@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { X, Utensils, Package, Sparkles, CalendarDays, Shuffle, Database, Layers, Camera, User, Scale, Ruler, FileText, Share2, Mail, Settings, TrendingUp, ChevronDown, Activity, PieChart, ListChecks } from "lucide-react";
 import { t } from "i18n";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // ---------- Menú lateral (drawer) ----------
 // Sustituye a la antigua TabBar de tres pestañas horizontales. Desde la Tanda 2, dos ítems del
@@ -135,7 +136,7 @@ function DrawerItem({ item, active, onClick, expandible, expandido, onToggleExpa
         <Icon size={small ? 15 : 17} color={active ? "var(--green-dark)" : "var(--ink-soft)"} style={{ flexShrink: 0 }} />
         <span
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: small ? 12.5 : 13.5,
+            fontFamily: FUENTE_TEXTO, fontSize: small ? 12.5 : 13.5,
             fontWeight: active ? 700 : 500, color: active ? "var(--green-dark)" : "var(--ink)",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}

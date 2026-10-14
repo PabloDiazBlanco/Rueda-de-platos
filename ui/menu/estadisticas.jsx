@@ -12,6 +12,7 @@ import { t } from "i18n";
 import { ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { MacroPill } from "../comun/tarjetas.jsx";
 import { NivelBadge } from "../peso/seguimiento.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
   const [day, setDay] = useState(DAYS[0]);
@@ -42,7 +43,7 @@ export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
             key={d}
             onClick={() => setDay(d)}
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+              fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
               padding: "6px 13px", borderRadius: 20, border: "1px solid var(--line)", flexShrink: 0,
               background: d === day ? "var(--green-dark)" : "var(--paper)",
               color: d === day ? "#fff" : "var(--ink)",
@@ -71,14 +72,14 @@ export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
         </svg>
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <div style={{ fontSize: 25, fontWeight: 700, color: "var(--green-dark)" }}>{Math.round(totals.kcal)}</div>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)" }}>kcal</div>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)" }}>kcal</div>
         </div>
       </div>
 
       {pct !== null && (
         <div style={{ textAlign: "center", marginBottom: 13 }}>
           <span style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+            fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700,
             padding: "4px 11px", borderRadius: 20, background: pctStyle.bg, color: pctStyle.fg,
           }}>
             {t(idioma, "dayStats.pctObjetivo", { pct, kcal: objetivos.kcal })}
@@ -93,7 +94,7 @@ export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
       </div>
 
       {!objetivos?.kcal && (
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginTop: 13, textAlign: "center" }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 13, textAlign: "center" }}>
           {t(idioma, "dayStats.fijaObjetivo")}
         </div>
       )}
@@ -118,10 +119,10 @@ export function ResumenSaludPublica({ data, menu, week, objetivos, idioma }) {
 
   return (
     <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>
         {t(idioma, "saludPublica.titulo")}
       </div>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 12 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginBottom: 12 }}>
         {t(idioma, "saludPublica.sobreDias", { dias: resumen.dias, plural: resumen.dias === 1 ? "" : "s" })}
         {resumen.azucares.kcalPersonalizada ? t(idioma, "saludPublica.azucarAjustado") : ""}
       </div>
@@ -130,10 +131,10 @@ export function ResumenSaludPublica({ data, menu, week, objetivos, idioma }) {
         {filas.map((f) => (
           <div key={f.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <div>
-              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink)" }}>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink)" }}>
                 {f.label}: <strong>{fmt(f.info.media)} {f.unidad}/día</strong>
               </div>
-              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)" }}>{f.detalle}</div>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)" }}>{f.detalle}</div>
             </div>
             <NivelBadge nivel={f.info.nivel} idioma={idioma} />
           </div>
@@ -141,7 +142,7 @@ export function ResumenSaludPublica({ data, menu, week, objetivos, idioma }) {
       </div>
 
       {avisos.length > 0 && (
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--mustard-dark)", marginTop: 12, lineHeight: 1.5 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--mustard-dark)", marginTop: 12, lineHeight: 1.5 }}>
           {t(idioma, "saludPublica.calculoIncompleto", { lista: avisos.map((k) => t(idioma, "saludPublica." + k + ".nombre")).join(", ") })}
         </div>
       )}
@@ -158,7 +159,7 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
         <>
           <div
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--mustard-dark)",
+              fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--mustard-dark)",
               background: "var(--mustard-soft)", borderRadius: 8, padding: "12px 14px", display: "flex",
               alignItems: "flex-start", gap: 8, lineHeight: 1.5,
             }}
@@ -174,14 +175,14 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
         <>
           <div style={{ textAlign: "center", marginBottom: 16 }}>
             <div style={{ fontSize: 32, fontWeight: 700, color: "var(--green-dark)" }}>{objetivosCalculados.kcal}</div>
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)" }}>{t(idioma, "objetivosModal.kcalDia")}</div>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)" }}>{t(idioma, "objetivosModal.kcalDia")}</div>
             {objetivosCalculados.kcalEntrenamiento > 0 && (
-              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
                 {t(idioma, "objetivosModal.desglose", { base: objetivosCalculados.kcalBase, entrenamiento: objetivosCalculados.kcalEntrenamiento })}
               </div>
             )}
             {objetivosCalculados.objetivo !== "mantenimiento" && (
-              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}>
                 {t(idioma, "objetivosModal.tdee", {
                   kcal: objetivosCalculados.kcalMantenimiento,
                   etapa: OBJETIVO_ETAPAS[objetivosCalculados.objetivo].label,
@@ -200,7 +201,7 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
           {objetivosCalculados.carbMinNotMet && (
             <div
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--mustard-dark)",
+                fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--mustard-dark)",
                 background: "var(--mustard-soft)", borderRadius: 8, padding: "10px 12px", marginBottom: 16,
                 display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.5,
               }}
@@ -212,7 +213,7 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
             </div>
           )}
 
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
             {t(idioma, "objetivosModal.repartoPorComida")}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 16 }}>
@@ -223,7 +224,7 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
                   key={mealType}
                   style={{
                     display: "flex", justifyContent: "space-between", alignItems: "center",
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5,
+                    fontFamily: FUENTE_TEXTO, fontSize: 12.5,
                     background: "var(--card)", border: "1px solid var(--line)", borderRadius: 7, padding: "7px 11px",
                   }}
                 >
@@ -238,7 +239,7 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
 
           <div
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)",
+              fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)",
               background: "var(--paper)", borderRadius: 8, padding: "10px 12px", lineHeight: 1.5,
             }}
           >

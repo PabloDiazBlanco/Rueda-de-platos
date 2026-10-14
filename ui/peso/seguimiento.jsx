@@ -6,6 +6,7 @@ import { t } from "i18n";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
 import { PesoLineChart, PrintSeguimiento } from "./grafica.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // DIAS_SEMANA_CORTO (logica/peso.js) ya viene abreviado en español ("Dom","Lun"...) — para
 // traducirlo reusamos las claves "dia.X" (nombre completo) ya existentes: primero se pasa a
@@ -17,7 +18,7 @@ const DIA_CORTO_A_COMPLETO = {
 function RecordatorioPesoModal({ onClose, idioma }) {
   return (
     <ModalShell onClose={onClose} title={t(idioma, "recordatorioPeso.titulo")}>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
         {t(idioma, "recordatorioPeso.texto")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -32,7 +33,7 @@ function PesoAnomaliaModal({ peso, onCancel, onConfirm, idioma }) {
   const [motivo, setMotivo] = useState("");
   return (
     <ModalShell onClose={onCancel} title={t(idioma, "anomaliaPeso.titulo")}>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: 0 }}>
         {t(idioma, "anomaliaPeso.texto", { peso })}
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
@@ -44,7 +45,7 @@ function PesoAnomaliaModal({ peso, onCancel, onConfirm, idioma }) {
               textAlign: "left", padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
               background: motivo === op ? "var(--green-soft)" : "#fff",
               color: motivo === op ? "var(--green-dark)" : "var(--ink)",
-              fontSize: 12.5, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer",
+              fontSize: 12.5, fontFamily: FUENTE_TEXTO, cursor: "pointer",
             }}
           >
             {t(idioma, "motivo." + op)}
@@ -171,14 +172,14 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
 
       {cicloListoParaCierre ? (
         <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700, color: "var(--ink)", marginBottom: 10 }}>
             {t(idioma, "pesoView.cicloTerminado", { n: entradas.length })}
           </div>
 
           {pausas.length > 0 && (
             <div style={{ background: "var(--mustard-soft)", borderRadius: 8, padding: "9px 11px", marginBottom: 12 }}>
               {pausas.map((p, i) => (
-                <div key={i} style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
+                <div key={i} style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
                   {t(idioma, "pesoView.pausadoDelAl", {
                     inicio: formatFechaCorta(p.inicio, idioma),
                     fin: formatFechaCorta(p.fin || hoyISO, idioma),
@@ -193,13 +194,13 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
             <>
               <PesoLineChart entradas={entradas} tendencia={tendencia} idioma={idioma} />
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 20, fontWeight: 700, color: "var(--green-dark)" }}>
+                <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 20, fontWeight: 700, color: "var(--green-dark)" }}>
                   {t(idioma, "pesoView.pctSemana", { signo: tendencia.pctSemana > 0 ? "+" : "", pct: tendencia.pctSemana.toFixed(2) })}
                 </span>
                 {evaluacion && <NivelBadge nivel={evaluacion.nivel} idioma={idioma} />}
               </div>
               {evaluacion && (
-                <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 10 }}>
+                <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, marginTop: 10 }}>
                   {evaluacion.mensaje}
                 </p>
               )}
@@ -208,10 +209,10 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "var(--green-soft)", border: "1px solid var(--green)", borderRadius: 9, padding: "11px 13px", marginTop: 12, cursor: "pointer" }}>
                   <input type="checkbox" checked={actualizarPesoToggle} onChange={(e) => setActualizarPesoToggle(e.target.checked)} style={{ marginTop: 2 }} />
                   <span>
-                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--green-dark)", fontWeight: 700 }}>
+                    <span style={{ display: "block", fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--green-dark)", fontWeight: 700 }}>
                       {t(idioma, "pesoView.actualizarPesoPerfil", { kg: ultimaNormal.peso })}
                     </span>
-                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--green-dark)", marginTop: 2 }}>
+                    <span style={{ display: "block", fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--green-dark)", marginTop: 2 }}>
                       {t(idioma, "pesoView.actualizarPesoExplicacion", { kg: perfil?.peso })}
                     </span>
                   </span>
@@ -222,10 +223,10 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                 <label style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "var(--mustard-soft)", border: "1px solid var(--mustard)", borderRadius: 9, padding: "11px 13px", marginTop: 10, cursor: "pointer" }}>
                   <input type="checkbox" checked={aplicarKcalToggle} onChange={(e) => setAplicarKcalToggle(e.target.checked)} style={{ marginTop: 2 }} />
                   <span>
-                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--mustard-dark)", fontWeight: 700 }}>
+                    <span style={{ display: "block", fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--mustard-dark)", fontWeight: 700 }}>
                       {t(idioma, "pesoView.aplicarAjuste", { signo: evaluacion.sugerenciaKcal > 0 ? "+" : "", kcal: evaluacion.sugerenciaKcal })}
                     </span>
-                    <span style={{ display: "block", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", marginTop: 2 }}>
+                    <span style={{ display: "block", fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--mustard-dark)", marginTop: 2 }}>
                       {t(idioma, "pesoView.noCambiaEtapa", { etapa: t(idioma, "objetivoEtapa." + perfil.objetivo) })}
                     </span>
                   </span>
@@ -243,7 +244,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                   onClick={() => exportarSeguimiento(entradas, tendencia, t(idioma, "pesoView.cicloCerradoHoyTitulo"))}
                   style={{
                     background: "none", border: "none", cursor: "pointer", padding: 0,
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+                    fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
                   }}
                 >
                   {t(idioma, "pesoView.exportarCierre")}
@@ -252,7 +253,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
             </>
           ) : (
             <>
-              <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55 }}>
+              <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55 }}>
                 {t(idioma, "pesoView.sinPesadasSuficientes")}
               </p>
               <ModalBtn variant="solid" onClick={() => onCerrarCiclo({ aplicarKcal: false, actualizarPeso: false })}>{t(idioma, "pesoView.empezarSiguienteCiclo")}</ModalBtn>
@@ -270,14 +271,14 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
               />
               <button
                 onClick={intentarGuardar}
-                style={{ background: "var(--green)", color: "#fff", border: "none", borderRadius: 7, padding: "0 16px", fontSize: 13, fontWeight: 700, fontFamily: "'Helvetica Neue', Arial, sans-serif", cursor: "pointer" }}
+                style={{ background: "var(--green)", color: "#fff", border: "none", borderRadius: 7, padding: "0 16px", fontSize: 13, fontWeight: 700, fontFamily: FUENTE_TEXTO, cursor: "pointer" }}
               >
                 {t(idioma, "pesoView.guardar")}
               </button>
             </div>
           </Field>
 
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>
             {cicloInicioDate ? (
               t(idioma, "pesoView.cicloEnCurso", { n: entradas.length, total: totalEsperado, dias: Math.max(0, diasCiclo - diasTranscurridos) })
             ) : (
@@ -288,7 +289,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
           {cicloInicioDate && (
             pausaActiva ? (
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, background: "var(--mustard-soft)", borderRadius: 8, padding: "9px 11px", marginTop: 8 }}>
-                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
+                <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--mustard-dark)", lineHeight: 1.5 }}>
                   {t(idioma, "pesoView.cicloPausadoDesde", {
                     fecha: formatFechaCorta(pausaActiva.inicio, idioma),
                     detalle: pausaActiva.motivo ? ` — "${pausaActiva.motivo}"` : "",
@@ -297,7 +298,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                 <button
                   onClick={onReanudarCiclo}
                   style={{
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                    fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700,
                     color: "var(--mustard-dark)", background: "#fff", border: "1px solid var(--mustard)",
                     borderRadius: 7, padding: "5px 10px", flexShrink: 0, cursor: "pointer",
                   }}
@@ -320,7 +321,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
               <button
                 onClick={() => setPausando(true)}
                 style={{
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                  fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700,
                   color: "var(--ink-soft)", background: "none", border: "none", padding: 0,
                   marginTop: 6, cursor: "pointer",
                 }}
@@ -337,7 +338,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                   key={e.id}
                   title={e.atipico ? t(idioma, "pesoView.marcadaAtipica", { detalle: e.motivo ? `: ${t(idioma, "motivo." + e.motivo)}` : "" }) : t(idioma, "pesoView.registrada")}
                   style={{
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, fontWeight: 700,
+                    fontFamily: FUENTE_TEXTO, fontSize: 10.5, fontWeight: 700,
                     padding: "3px 8px", borderRadius: 20,
                     color: e.atipico ? "var(--mustard-dark)" : "var(--green-dark)",
                     background: e.atipico ? "var(--mustard-soft)" : "var(--green-soft)",
@@ -355,7 +356,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
         onClick={() => setShowConfig((v) => !v)}
         style={{
           background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 10,
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+          fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
         }}
       >
         {showConfig ? t(idioma, "pesoView.ocultarAjustes") : t(idioma, "pesoView.verAjustes")}
@@ -374,7 +375,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                     flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--line)",
                     background: pesoTracking.vecesSemana === v ? "var(--green-dark)" : "#fff",
                     color: pesoTracking.vecesSemana === v ? "#fff" : "var(--ink)",
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+                    fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700,
                     cursor: cicloInicioDate ? "default" : "pointer", opacity: cicloInicioDate ? 0.6 : 1,
                   }}
                 >
@@ -382,7 +383,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                 </button>
               ))}
             </div>
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 6 }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 6 }}>
               {t(idioma, "pesoView.diasSugeridos", {
                 lista: (DIAS_SUGERIDOS_PESO[pesoTracking.vecesSemana] || [])
                   .map((d) => t(idioma, "dia." + DIA_CORTO_A_COMPLETO[DIAS_SEMANA_CORTO[d]]).slice(0, 3))
@@ -401,7 +402,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                     flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid var(--line)",
                     background: pesoTracking.duracionSemanas === v ? "var(--green-dark)" : "#fff",
                     color: pesoTracking.duracionSemanas === v ? "#fff" : "var(--ink)",
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+                    fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700,
                     cursor: cicloInicioDate ? "default" : "pointer", opacity: cicloInicioDate ? 0.6 : 1,
                   }}
                 >
@@ -411,7 +412,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
             </div>
           </Field>
           {cicloInicioDate && (
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)" }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)" }}>
               {t(idioma, "pesoView.noCambiarConCicloAbierto")}
             </div>
           )}
@@ -422,7 +423,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
         onClick={() => setShowProgresion((v) => !v)}
         style={{
           background: "none", border: "none", cursor: "pointer", padding: 0, marginTop: 10, marginBottom: 10,
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+          fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
         }}
       >
         {showProgresion ? t(idioma, "pesoView.ocultarProgresion") : t(idioma, "pesoView.verProgresion")}
@@ -439,7 +440,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                   padding: "6px 12px", borderRadius: 20, border: "1px solid var(--line)",
                   background: rangoProgresion === r.key ? "var(--green-dark)" : "#fff",
                   color: rangoProgresion === r.key ? "#fff" : "var(--ink)",
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                  fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
                 }}
               >
                 {t(idioma, "rango." + r.key)}
@@ -453,14 +454,14 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                 onClick={() => exportarSeguimiento(historialFiltrado, null, t(idioma, "rango." + rangoProgresion))}
                 style={{
                   marginTop: 10, background: "none", border: "none", cursor: "pointer", padding: 0,
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--green-dark)",
+                  fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--green-dark)",
                 }}
               >
                 {t(idioma, "pesoView.exportarRango")}
               </button>
             </>
           ) : (
-            <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
+            <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
               {historial.length === 0
                 ? t(idioma, "pesoView.sinCiclosCerrados")
                 : t(idioma, "pesoView.sinPesadasEnRango")}

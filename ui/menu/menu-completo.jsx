@@ -13,6 +13,7 @@ import { DayStatsPanel, ResumenSaludPublica, ObjetivosModal } from "./estadistic
 import { ListaCompraModal } from "./lista-compra.jsx";
 import { PrintExport } from "./imprimir.jsx";
 import { HistoryPanel } from "./historial.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada, idioma }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
@@ -29,7 +30,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
         <button
           onClick={() => setEditingObjetivos(true)}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+            fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
             color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
             borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
             flexShrink: 0, whiteSpace: "nowrap",
@@ -42,7 +43,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
         <button
           onClick={onGenerate}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
             fontSize: 13.5,
             fontWeight: 700,
             color: "#fff",
@@ -62,7 +63,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
           <button
             onClick={onUndo}
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              fontFamily: FUENTE_TEXTO,
               fontSize: 12.5,
               fontWeight: 700,
               color: "var(--ink-soft)",
@@ -89,7 +90,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
             padding: "40px 20px",
             textAlign: "center",
             color: "var(--ink-soft)",
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
             fontSize: 13,
           }}
         >
@@ -105,7 +106,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
                 key={w}
                 onClick={() => setMenuWeek(w)}
                 style={{
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                  fontFamily: FUENTE_TEXTO,
                   fontSize: 12.5,
                   fontWeight: 700,
                   padding: "7px 14px",
@@ -121,7 +122,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
             <button
               onClick={() => window.print()}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
                 color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
                 borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
               }}
@@ -131,7 +132,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
             <button
               onClick={() => setShowListaCompra(true)}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
                 color: "var(--coffee)", background: "var(--coffee-soft)", border: "none",
                 borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
               }}
@@ -141,7 +142,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
             <button
               onClick={() => setShowStats((s) => !s)}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 600,
+                fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 600,
                 color: "var(--ink-soft)", background: "transparent", border: "none",
                 padding: "7px 4px", marginLeft: "auto",
               }}
@@ -171,7 +172,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
                           display: "flex",
                           alignItems: "baseline",
                           gap: 10,
-                          fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                          fontFamily: FUENTE_TEXTO,
                           cursor: "pointer",
                           padding: "4px 6px",
                           marginLeft: -6,
@@ -190,7 +191,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
                             {m.garbanzos && (
                               <span
                                 style={{
-                                  fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                                  fontFamily: FUENTE_TEXTO,
                                   fontSize: 10.5,
                                   fontWeight: 700,
                                   color: "var(--mustard-dark)",

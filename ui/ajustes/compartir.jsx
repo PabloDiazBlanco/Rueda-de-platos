@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Sparkles, AlertCircle, Link2, FileText, Share2, Mail, Lightbulb, Globe, Lock } from "lucide-react";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
+import { FUENTE_TEXTO, FUENTE_MONO } from "../estilos.js";
 
 // ---------- Compartir ----------
 // FoodDraft no está en ninguna tienda de apps todavía (y aunque lo esté, tampoco se puede buscar
@@ -41,12 +42,12 @@ export function CompartirView({ idioma }) {
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, background: "var(--paper)", border: "1px solid var(--line)", borderRadius: 8, padding: "10px 12px" }}>
           <Link2 size={15} color="var(--ink-soft)" style={{ flexShrink: 0 }} />
-          <span style={{ flex: 1, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ flex: 1, fontFamily: FUENTE_MONO, fontSize: 12, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {url}
           </span>
           <button
             onClick={copiarEnlace}
-            style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--green-dark)" }}
+            style={{ flexShrink: 0, background: "none", border: "none", cursor: "pointer", fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--green-dark)" }}
           >
             {copiado ? t(idioma, "compartir.copiado") : t(idioma, "compartir.copiar")}
           </button>
@@ -57,7 +58,7 @@ export function CompartirView({ idioma }) {
             onClick={compartir}
             style={{
               width: "100%", marginTop: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+              fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700,
               color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "11px 18px", cursor: "pointer",
             }}
           >
@@ -107,14 +108,14 @@ export function FeedbackView({ idioma }) {
               }}
             >
               <Icon size={19} color={cat.color} style={{ flexShrink: 0 }} />
-              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>
+              <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 600, color: "var(--ink)" }}>
                 {t(idioma, `feedback.${cat.key}`)}
               </span>
             </button>
           );
         })}
       </div>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 14, maxWidth: 480 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginTop: 14, maxWidth: 480 }}>
         {t(idioma, "feedback.correoVisible", { correo: "draftedfood@gmail.com" })}
       </div>
     </>
@@ -142,10 +143,10 @@ export function DocumentosView({ idioma }) {
           }}
         >
           <FileText size={26} color="var(--ink-soft)" style={{ marginBottom: 10 }} />
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700, color: "var(--ink)", marginBottom: 6 }}>
             {t(idioma, "documentos.sinDocumentos")}
           </div>
-          <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
+          <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.6, margin: 0 }}>
             {t(idioma, "documentos.sinDocumentos.desc")}
           </p>
         </div>
@@ -164,11 +165,11 @@ export function DocumentosView({ idioma }) {
             >
               <FileText size={20} color="var(--olive)" style={{ flexShrink: 0, marginTop: 2 }} />
               <div>
-                <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
+                <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700, color: "var(--ink)" }}>
                   {doc.titulo}
                 </div>
                 {doc.descripcion && (
-                  <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
+                  <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginTop: 2 }}>
                     {doc.descripcion}
                   </div>
                 )}

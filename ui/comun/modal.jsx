@@ -3,6 +3,7 @@
 // con etiqueta, los botones y el estilo común de los <input>.
 import React from "react";
 import { X } from "lucide-react";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 export function IconBtn({ children, onClick }) {
   return (
@@ -65,7 +66,7 @@ export function ModalShell({ children, onClose, title }) {
 export function Field({ label, children }) {
   return (
     <div style={{ marginBottom: 12 }}>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700, color: "var(--ink-soft)", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700, color: "var(--ink-soft)", marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.5 }}>
         {label}
       </div>
       {children}
@@ -94,7 +95,7 @@ export function ModalBtn({ children, onClick, variant, disabled }) {
       onClick={onClick}
       disabled={disabled}
       style={{
-        fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        fontFamily: FUENTE_TEXTO,
         fontSize: 13,
         fontWeight: 600,
         padding: "9px 16px",

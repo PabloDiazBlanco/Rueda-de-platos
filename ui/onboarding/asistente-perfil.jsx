@@ -5,6 +5,7 @@ import { PRESETS_COMIDAS, repartoUniforme } from "objetivos";
 import { t, leerIdiomaGuardado } from "i18n";
 import { DatosPersonalesFields, EstiloVidaFields, EntrenamientosFields, ObjetivoFields } from "../perfil/campos.jsx";
 import { RepartoComidasFields } from "../perfil/reparto-comidas.jsx";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Asistente de alta por pasos (Bloque 2 del rediseño, Tanda 3): antes era un único formulario
 // larguísimo con todos los campos de golpe — ahora son 5 pasos cortos con "Siguiente"/"Atrás",
@@ -73,10 +74,10 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "28px 20px 60px" }}>
       <div style={{ textAlign: "center", marginBottom: 18 }}>
         <div style={{ fontSize: 34, marginBottom: 8 }}>🍽️</div>
-        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 24, color: "var(--green-dark)", margin: "0 0 6px 0" }}>
+        <h1 style={{ fontFamily: FUENTE_TITULOS, fontSize: 24, color: "var(--green-dark)", margin: "0 0 6px 0" }}>
           {t(idioma, "onboarding.titulo")}
         </h1>
-        <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)", margin: 0 }}>
+        <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", margin: 0 }}>
           {t(idioma, "onboarding.subtitulo")}
         </p>
       </div>
@@ -115,7 +116,7 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
             <button
               onClick={() => setPaso((p) => p - 1)}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+                fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
                 color: "var(--ink)", background: "#fff", border: "1px solid var(--line)",
                 borderRadius: 9, padding: "12px 16px", cursor: "pointer",
               }}
@@ -127,7 +128,7 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
             onClick={siguiente}
             disabled={!puedeAvanzar}
             style={{
-              flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+              flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
               color: "#fff", background: puedeAvanzar ? "var(--green)" : "var(--line)", border: "none",
               borderRadius: 9, padding: "12px", cursor: puedeAvanzar ? "pointer" : "default",
             }}
@@ -138,7 +139,7 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
         <button
           onClick={onSkip}
           style={{
-            width: "100%", marginTop: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)",
+            width: "100%", marginTop: 8, fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)",
             background: "transparent", border: "none", padding: "6px",
           }}
         >
@@ -167,7 +168,7 @@ export function PasosIndicador({ pasoActual, pasos, idioma, labelPrefix }) {
           />
         ))}
       </div>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)" }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)" }}>
         {t(idioma, "onboarding.pasoXdeN", { actual: pasoActual + 1, total: pasos.length })} · {t(idioma, `${labelPrefix}.${pasos[pasoActual]}`)}
       </div>
     </div>

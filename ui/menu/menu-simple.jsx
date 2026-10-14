@@ -8,6 +8,7 @@ import { SectionIntro } from "../comun/tarjetas.jsx";
 import { ListaCompraModal } from "./lista-compra.jsx";
 import { PrintExport } from "./imprimir.jsx";
 import { HistoryPanel } from "./historial.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Menú simple (Tanda 3 del rediseño): la misma idea de "organizar la semana" que Menú completo,
 // pero deliberadamente sin nada de calorías, macros ni gramos — solo el borrador de combinaciones.
@@ -27,7 +28,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
         <button
           onClick={onGenerate}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
             fontSize: 13.5,
             fontWeight: 700,
             color: "#fff",
@@ -47,7 +48,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
           <button
             onClick={onUndo}
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              fontFamily: FUENTE_TEXTO,
               fontSize: 12.5,
               fontWeight: 700,
               color: "var(--ink-soft)",
@@ -74,7 +75,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
             padding: "40px 20px",
             textAlign: "center",
             color: "var(--ink-soft)",
-            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontFamily: FUENTE_TEXTO,
             fontSize: 13,
           }}
         >
@@ -90,7 +91,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
                 key={w}
                 onClick={() => setMenuWeek(w)}
                 style={{
-                  fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                  fontFamily: FUENTE_TEXTO,
                   fontSize: 12.5,
                   fontWeight: 700,
                   padding: "7px 14px",
@@ -106,7 +107,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
             <button
               onClick={() => window.print()}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
                 color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
                 borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
               }}
@@ -116,7 +117,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
             <button
               onClick={() => setShowListaCompra(true)}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
                 color: "var(--coffee)", background: "var(--coffee-soft)", border: "none",
                 borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
               }}
@@ -143,7 +144,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
                           key={m.id}
                           style={{
                             display: "flex", alignItems: "baseline", gap: 10,
-                            fontFamily: "'Helvetica Neue', Arial, sans-serif", padding: "4px 6px",
+                            fontFamily: FUENTE_TEXTO, padding: "4px 6px",
                           }}
                         >
                           <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>

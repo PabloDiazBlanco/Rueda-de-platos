@@ -3,6 +3,7 @@
 import React from "react";
 import { fechaISO, formatFechaCorta } from "peso";
 import { t } from "i18n";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Gráfica de líneas hecha a mano en SVG (mismo criterio que el resto de la app: sin librerías).
 // Dibuja todas las pesadas (las atípicas en un color distinto) y la recta de tendencia calculada
@@ -36,7 +37,7 @@ export function PesoLineChart({ entradas, tendencia, idioma }) {
       {yTicks.map((v, i) => (
         <g key={`y${i}`}>
           <line x1={PAD_L} y1={sy(v)} x2={W - PAD_R} y2={sy(v)} stroke="var(--line)" strokeWidth="1" strokeDasharray="2 3" />
-          <text x={PAD_L - 5} y={sy(v) + 3} textAnchor="end" fontSize="8" fill="var(--ink-soft)" fontFamily="'Helvetica Neue', Arial, sans-serif">
+          <text x={PAD_L - 5} y={sy(v) + 3} textAnchor="end" fontSize="8" fill="var(--ink-soft)" fontFamily={FUENTE_TEXTO}>
             {Math.round(v * 10) / 10}
           </text>
         </g>
@@ -60,7 +61,7 @@ export function PesoLineChart({ entradas, tendencia, idioma }) {
         <text
           key={`x${i}`} x={sx(x)} y={H - 5}
           textAnchor={i === 0 ? "start" : i === xTicks.length - 1 ? "end" : "middle"}
-          fontSize="8" fill="var(--ink-soft)" fontFamily="'Helvetica Neue', Arial, sans-serif"
+          fontSize="8" fill="var(--ink-soft)" fontFamily={FUENTE_TEXTO}
         >
           {formatFechaCorta(fechaEnX(x), idioma)}
         </text>
@@ -87,13 +88,13 @@ export function PrintSeguimiento({ entradas, tendencia, titulo, idioma }) {
           #print-seguimiento { display: none; }
         }
       `}</style>
-      <div style={{ padding: 24, fontFamily: "Georgia, 'Times New Roman', serif", color: "#2b2b26" }}>
+      <div style={{ padding: 24, fontFamily: FUENTE_TITULOS, color: "#2b2b26" }}>
         <div style={{ marginBottom: 6 }}>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
             FoodDraft
           </div>
           <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>{t(idioma, "printSeguimiento.titulo")}</h1>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
             {t(idioma, "printSeguimiento.exportadoEl", { titulo, fecha: formatFechaCorta(fechaISO(new Date()), idioma) })}
           </div>
         </div>
@@ -103,12 +104,12 @@ export function PrintSeguimiento({ entradas, tendencia, titulo, idioma }) {
         </div>
 
         {tendencia && (
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "#1f4d38", fontWeight: 700, marginTop: 8 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "#1f4d38", fontWeight: 700, marginTop: 8 }}>
             {t(idioma, "printSeguimiento.tendencia", { signo: tendencia.pctSemana > 0 ? "+" : "", pct: tendencia.pctSemana.toFixed(2) })}
           </div>
         )}
 
-        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 18, fontFamily: FUENTE_TEXTO, fontSize: 11 }}>
           <thead>
             <tr>
               <th style={{ textAlign: "left", borderBottom: "2px solid #d9a441", padding: "4px 6px" }}>{t(idioma, "printSeguimiento.fecha")}</th>
@@ -129,7 +130,7 @@ export function PrintSeguimiento({ entradas, tendencia, titulo, idioma }) {
           </tbody>
         </table>
 
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 24 }}>
           {t(idioma, "printSeguimiento.pie")}
         </div>
       </div>

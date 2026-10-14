@@ -6,6 +6,7 @@ import { t } from "i18n";
 import { FOODS_SEED, CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 import { CUESTIONARIO_PROTEINAS, CUESTIONARIO_CARBOS, CUESTIONARIO_VERDURAS, CUESTIONARIO_GRASAS, EXCLUSIONES_DISPONIBLES, pasosCuestionario, NIVELES_FRECUENCIA, NIVELES_PESO, ARQUETIPOS_COMIDA_LIGERA, construirIngredientesDesdeCuestionario } from "cuestionario";
 import { PasosIndicador } from "./asistente-perfil.jsx";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // ---------- Cuestionario de catálogo (Bloque 3 del rediseño, Tanda 3) ----------
 // Se muestra justo después del asistente de perfil, solo la primera vez y solo si no se saltó el
@@ -89,16 +90,16 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
     return (
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 60px", textAlign: "center" }}>
         <div style={{ fontSize: 34, marginBottom: 12 }}>🥗</div>
-        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 22, color: "var(--green-dark)", margin: "0 0 12px" }}>
+        <h1 style={{ fontFamily: FUENTE_TITULOS, fontSize: 22, color: "var(--green-dark)", margin: "0 0 12px" }}>
           {t(idioma, "cuestionario.intro.titulo")}
         </h1>
-        <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6, margin: "0 0 26px" }}>
+        <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6, margin: "0 0 26px" }}>
           {t(idioma, "cuestionario.intro.texto", { n: pasos.length })}
         </p>
         <button
           onClick={() => setFase("paso")}
           style={{
-            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            width: "100%", fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
             color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "12px", cursor: "pointer",
           }}
         >
@@ -107,7 +108,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
         <button
           onClick={onSkipAll}
           style={{
-            width: "100%", marginTop: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)",
+            width: "100%", marginTop: 8, fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)",
             background: "transparent", border: "none", padding: "6px",
           }}
         >
@@ -121,16 +122,16 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
     return (
       <div style={{ maxWidth: 480, margin: "0 auto", padding: "40px 20px 60px", textAlign: "center" }}>
         <div style={{ fontSize: 34, marginBottom: 12 }}>✅</div>
-        <h1 style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 22, color: "var(--green-dark)", margin: "0 0 12px" }}>
+        <h1 style={{ fontFamily: FUENTE_TITULOS, fontSize: 22, color: "var(--green-dark)", margin: "0 0 12px" }}>
           {t(idioma, "cuestionario.cierre.titulo")}
         </h1>
-        <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6, margin: "0 0 26px" }}>
+        <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, color: "var(--ink)", lineHeight: 1.6, margin: "0 0 26px" }}>
           {t(idioma, "cuestionario.cierre.texto")}
         </p>
         <button
           onClick={confirmarCierre}
           style={{
-            width: "100%", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            width: "100%", fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
             color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "12px", cursor: "pointer",
           }}
         >
@@ -152,7 +153,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px" }}>
         {paso === 0 && (
           <>
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 12 }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 12 }}>
               {t(idioma, "cuestionario.exclusiones.titulo")}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
@@ -163,7 +164,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
                     key={ex.key}
                     onClick={() => alternarExclusion(ex.key)}
                     style={{
-                      fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 600,
+                      fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 600,
                       padding: "8px 13px", borderRadius: 20, border: "1px solid var(--line)",
                       background: activo ? "var(--rust-soft)" : "#fff", color: activo ? "var(--rust)" : "var(--ink)",
                       cursor: "pointer",
@@ -259,7 +260,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
             <button
               onClick={() => setPaso((p) => p - 1)}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+                fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
                 color: "var(--ink)", background: "#fff", border: "1px solid var(--line)",
                 borderRadius: 9, padding: "12px 16px", cursor: "pointer",
               }}
@@ -270,7 +271,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
           <button
             onClick={siguiente}
             style={{
-              flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+              flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
               color: "#fff", background: "var(--green)", border: "none", borderRadius: 9, padding: "12px", cursor: "pointer",
             }}
           >
@@ -280,7 +281,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
         <button
           onClick={onSkipAll}
           style={{
-            width: "100%", marginTop: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)",
+            width: "100%", marginTop: 8, fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)",
             background: "transparent", border: "none", padding: "6px",
           }}
         >
@@ -297,7 +298,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
 function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, onToggle, onCiclarNivel, idioma }) {
   return (
     <>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 12 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 12 }}>
         {t(idioma, tituloKey)}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
@@ -309,7 +310,7 @@ function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, o
               <button
                 onClick={() => onToggle(opt.foodId)}
                 style={{
-                  flex: 1, textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: activo ? 700 : 500,
+                  flex: 1, textAlign: "left", fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: activo ? 700 : 500,
                   padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line)",
                   background: activo ? "var(--green-soft)" : "#fff", color: activo ? "var(--green-dark)" : "var(--ink)",
                   cursor: "pointer",
@@ -321,7 +322,7 @@ function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, o
                 <button
                   onClick={() => onCiclarNivel(opt.foodId)}
                   style={{
-                    flexShrink: 0, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                    flexShrink: 0, fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700,
                     padding: "9px 10px", borderRadius: 8, border: "1px solid var(--green)", background: "#fff",
                     color: "var(--green-dark)", cursor: "pointer", minWidth: 60,
                   }}
@@ -349,12 +350,12 @@ function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, o
 function SeleccionComidaLigeraStep({ tituloKey, seleccion, onToggleArquetipo, onCiclarNivel, onToggleFood, estaExcluido, idioma }) {
   return (
     <>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 8 }}>
         {t(idioma, tituloKey)}
       </div>
       <div
         style={{
-          display: "flex", alignItems: "flex-start", gap: 8, fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          display: "flex", alignItems: "flex-start", gap: 8, fontFamily: FUENTE_TEXTO,
           fontSize: 11.5, color: "var(--mustard-dark)", background: "var(--mustard-soft)", borderRadius: 8,
           padding: "9px 11px", marginBottom: 14, lineHeight: 1.5,
         }}
@@ -386,7 +387,7 @@ function SeleccionComidaLigeraStep({ tituloKey, seleccion, onToggleArquetipo, on
                   <span style={{ fontSize: 19 }}>{arq.emoji}</span>
                   <span
                     style={{
-                      fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5,
+                      fontFamily: FUENTE_TEXTO, fontSize: 13.5,
                       fontWeight: activo ? 700 : 500, color: activo ? "var(--green-dark)" : "var(--ink)",
                     }}
                   >
@@ -397,7 +398,7 @@ function SeleccionComidaLigeraStep({ tituloKey, seleccion, onToggleArquetipo, on
                   <button
                     onClick={() => onCiclarNivel(arq.key)}
                     style={{
-                      flexShrink: 0, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, fontWeight: 700,
+                      flexShrink: 0, fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700,
                       padding: "8px 10px", borderRadius: 8, border: "1px solid var(--green)", background: "#fff",
                       color: "var(--green-dark)", cursor: "pointer", minWidth: 60,
                     }}
@@ -417,7 +418,7 @@ function SeleccionComidaLigeraStep({ tituloKey, seleccion, onToggleArquetipo, on
                       <div key={gi}>
                         <div
                           style={{
-                            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, fontWeight: 700,
+                            fontFamily: FUENTE_TEXTO, fontSize: 10.5, fontWeight: 700,
                             color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6,
                           }}
                         >
@@ -432,7 +433,7 @@ function SeleccionComidaLigeraStep({ tituloKey, seleccion, onToggleArquetipo, on
                                 key={food.id}
                                 onClick={() => onToggleFood(arq.key, gi, food.id, grupo.multiSelect)}
                                 style={{
-                                  fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 600,
+                                  fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 600,
                                   padding: "6px 10px", borderRadius: 20, border: "1px solid var(--line)",
                                   background: marcado ? "var(--green-dark)" : "#fff",
                                   color: marcado ? "#fff" : "var(--ink)", cursor: "pointer",

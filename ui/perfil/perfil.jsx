@@ -6,6 +6,7 @@ import { uid } from "comun";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { DatosPersonalesFields, ActividadDiariaFields } from "./campos.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Pestaña "Perfil": desde la Tanda 2 del rediseño de navegación, solo datos personales — actividad
 // diaria (ActividadDiariaView) y reparto de comidas (RepartoComidasView) son destinos propios en
@@ -55,7 +56,7 @@ export function PerfilView({ perfil, onSave, idioma }) {
           onClick={handleSave}
           disabled={!valid}
           style={{
-            width: "100%", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            width: "100%", marginTop: 18, fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
             color: "#fff", background: valid ? "var(--green)" : "var(--line)", border: "none",
             borderRadius: 9, padding: "12px", cursor: valid ? "pointer" : "default",
           }}
@@ -66,7 +67,7 @@ export function PerfilView({ perfil, onSave, idioma }) {
         {saved && (
           <div
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--green-dark)",
+              fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--green-dark)",
               background: "var(--green-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10,
             }}
           >
@@ -120,7 +121,7 @@ export function ActividadDiariaView({ perfil, onSave, idioma }) {
         <button
           onClick={handleSave}
           style={{
-            width: "100%", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            width: "100%", marginTop: 18, fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
             color: "#fff", background: "var(--green)", border: "none",
             borderRadius: 9, padding: "12px", cursor: "pointer",
           }}
@@ -131,7 +132,7 @@ export function ActividadDiariaView({ perfil, onSave, idioma }) {
         {saved && (
           <div
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--green-dark)",
+              fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--green-dark)",
               background: "var(--green-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10,
             }}
           >

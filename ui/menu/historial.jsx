@@ -2,13 +2,14 @@
 // Historial de ciclos de menú generados (compartido por Menú completo y Menú simple).
 import React from "react";
 import { t } from "i18n";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 export function HistoryPanel({ history, idioma }) {
   if (!history || history.length === 0) return null;
   return (
     <div style={{ marginTop: 30 }}>
       <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "menu.historial.titulo")}</div>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 10 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 10 }}>
         {t(idioma, "menu.historial.explicacion")}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -20,7 +21,7 @@ export function HistoryPanel({ history, idioma }) {
             <div
               key={h.id}
               style={{
-                fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                fontFamily: FUENTE_TEXTO,
                 fontSize: 12,
                 color: "var(--ink-soft)",
                 background: "var(--card)",

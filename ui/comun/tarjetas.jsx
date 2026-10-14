@@ -4,6 +4,7 @@
 import React from "react";
 import { Plus, AlertCircle } from "lucide-react";
 import { t } from "i18n";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Rejilla de tarjetas grandes: se reutiliza tanto para el nivel 2 (Macros / Comidas especiales /
 // Combinaciones / Alimentos) como para el nivel 3 (las categorías dentro de cada grupo).
@@ -18,7 +19,7 @@ export function BigCardGrid({ cards, onSelect }) {
             onClick={() => onSelect(c.key)}
             style={{
               cursor: "pointer", background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12,
-              padding: "18px 12px", textAlign: "center", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              padding: "18px 12px", textAlign: "center", fontFamily: FUENTE_TEXTO,
             }}
           >
             <Icon size={24} color={c.color} style={{ marginBottom: 6 }} />
@@ -37,7 +38,7 @@ export function BackLink({ label, onClick }) {
       onClick={onClick}
       style={{
         background: "none", border: "none", cursor: "pointer", padding: 0, marginBottom: 14,
-        fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)",
+        fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)",
         display: "flex", alignItems: "center", gap: 4,
       }}
     >
@@ -50,7 +51,7 @@ export function MacroPill({ label, value, color, bg }) {
   return (
     <span
       style={{
-        fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        fontFamily: FUENTE_TEXTO,
         fontSize: 11, fontWeight: 700, color, background: bg,
         padding: "3px 9px", borderRadius: 20, whiteSpace: "nowrap",
       }}
@@ -64,7 +65,7 @@ export function SectionIntro({ text }) {
   return (
     <p
       style={{
-        fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        fontFamily: FUENTE_TEXTO,
         fontSize: 13,
         color: "var(--ink-soft)",
         maxWidth: 640,
@@ -85,7 +86,7 @@ export function ProbabilitySumBadge({ total, idioma }) {
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        fontFamily: FUENTE_TEXTO,
         fontSize: 12,
         fontWeight: 600,
         padding: "6px 12px",
@@ -130,7 +131,7 @@ export function AddCard({ label, onClick }) {
         justifyContent: "center",
         gap: 6,
         color: "var(--ink-soft)",
-        fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        fontFamily: FUENTE_TEXTO,
         fontSize: 12.5,
         minHeight: 78,
       }}

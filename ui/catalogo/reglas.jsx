@@ -7,6 +7,7 @@ import { uid } from "comun";
 import { t } from "i18n";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Elementos que pueden participar en una regla de combinación: proteínas (incluidos los miembros
 // de bloque, como carne picada o hamburguesas), carbos, verduras y el especial (garbanzos).
@@ -28,7 +29,7 @@ export function RulesView({ rules, ingredients, onEdit, onNew, onDelete, idioma 
       <button
         onClick={onNew}
         style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700,
+          fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700,
           color: "#fff", background: "var(--green)", border: "none", borderRadius: 9,
           padding: "10px 16px", display: "flex", alignItems: "center", gap: 8, marginBottom: 16,
         }}
@@ -40,7 +41,7 @@ export function RulesView({ rules, ingredients, onEdit, onNew, onDelete, idioma 
         <div style={{
           border: "1.5px dashed var(--line)", borderRadius: 12, padding: "34px 18px",
           textAlign: "center", color: "var(--ink-soft)",
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13,
+          fontFamily: FUENTE_TEXTO, fontSize: 13,
         }}>
           {t(idioma, "rulesView.sinReglas")}
         </div>
@@ -59,7 +60,7 @@ export function RulesView({ rules, ingredients, onEdit, onNew, onDelete, idioma 
                 </div>
                 <div
                   style={{
-                    fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700,
+                    fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700,
                     display: "inline-block", padding: "3px 9px", borderRadius: 20, marginTop: 8,
                     background: rule.level === "maxima" ? "var(--green-dark)" : rule.level === "nula" ? "var(--rust-soft)" : rule.level === "alta" ? "var(--green-soft)" : "var(--mustard-soft)",
                     color: rule.level === "maxima" ? "#fff" : rule.level === "nula" ? "var(--rust)" : rule.level === "alta" ? "var(--green-dark)" : "var(--mustard-dark)",
@@ -128,7 +129,7 @@ export function RuleEditModal({ state, ingredients, onClose, onSave, idioma }) {
         </select>
       </Field>
 
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: -4 }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginTop: -4 }}>
         {level === "nula" && t(idioma, "ruleEditModal.explicacionNula")}
         {level === "baja" && t(idioma, "ruleEditModal.explicacionBaja")}
         {level === "alta" && t(idioma, "ruleEditModal.explicacionAlta")}
@@ -136,7 +137,7 @@ export function RuleEditModal({ state, ingredients, onClose, onSave, idioma }) {
       </p>
 
       {!valid && (id1 || id2) && (
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
           {t(idioma, "ruleEditModal.eligeAlMenos2")}
         </div>
       )}
@@ -153,7 +154,7 @@ export function ConfirmRuleDeleteModal({ rule, ingredients, onCancel, onConfirm,
   const names = rule.itemIds.map((id) => ruleItemLabel(ingredients, id, idioma));
   return (
     <ModalShell onClose={onCancel} title={t(idioma, "confirmRuleDelete.titulo")}>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
         {t(idioma, "confirmRuleDelete.textoPre")}<strong>{names.join(" + ")}</strong>{t(idioma, "confirmRuleDelete.textoPost")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>

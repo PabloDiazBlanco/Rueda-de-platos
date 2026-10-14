@@ -4,6 +4,7 @@
 import React from "react";
 import { Check, Menu } from "lucide-react";
 import { t } from "i18n";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 export function Shell({ children }) {
   return (
@@ -32,7 +33,7 @@ export function Shell({ children }) {
         "--citrus-soft": "#f5e2d3",
         background: "var(--paper)",
         minHeight: "100%",
-        fontFamily: "Georgia, 'Times New Roman', serif",
+        fontFamily: FUENTE_TITULOS,
         color: "var(--ink)",
       }}
     >
@@ -88,7 +89,7 @@ export function Header({ saveState, idioma, onOpenMenu }) {
       </button>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", position: "relative", paddingLeft: 42 }}>
         <div>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65, marginBottom: 4 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65, marginBottom: 4 }}>
             FoodDraft
           </div>
           <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400, letterSpacing: 0.3 }}>{t(idioma, "header.tuRecetario")}</h1>
@@ -105,7 +106,7 @@ function SaveIndicator({ state, idioma }) {
   return (
     <div
       style={{
-        fontFamily: "'Helvetica Neue', Arial, sans-serif",
+        fontFamily: FUENTE_TEXTO,
         fontSize: 11,
         opacity: 0.75,
         display: "flex",

@@ -15,6 +15,7 @@
   "ui/estado/menu.js",
   "ui/estado/perfil.js",
   "ui/estado/peso.js",
+  "ui/estilos.js",
   "ui/marco/cabecera.jsx",
   "ui/marco/menu-lateral.jsx",
   "ui/menu/detalle-comida.jsx",

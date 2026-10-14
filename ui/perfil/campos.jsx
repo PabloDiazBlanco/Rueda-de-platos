@@ -7,6 +7,7 @@ import { PAL_BASE_NIVELES, TIPOS_ENTRENAMIENTO, OBJETIVO_ETAPAS, calcularObjetiv
 import { uid } from "comun";
 import { t } from "i18n";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Pantalla de bienvenida: se muestra una única vez (o hasta que se rellene o se salte explícitamente).
 // A partir de aquí, estos datos solo se tocan desde la pestaña "Perfil".
@@ -31,7 +32,7 @@ export function DatosPersonalesFields({ nombre, setNombre, sexo, setSexo, anioNa
               key={key}
               onClick={() => setSexo(key)}
               style={{
-                flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+                flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700,
                 padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
                 background: sexo === key ? "var(--green-dark)" : "#fff",
                 color: sexo === key ? "#fff" : "var(--ink)",
@@ -92,7 +93,7 @@ export function EstiloVidaFields({ palBase, setPalBase, idioma }) {
             key={n.key}
             onClick={() => setPalBase(n.key)}
             style={{
-              textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              textAlign: "left", fontFamily: FUENTE_TEXTO,
               padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
               background: palBase === n.key ? "var(--green-soft)" : "#fff",
               cursor: "pointer",
@@ -137,7 +138,7 @@ export function EntrenamientosFields({ entrenamientos, setEntrenamientos, idioma
             </div>
             <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 2, fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+                <div style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 2, fontFamily: FUENTE_TEXTO }}>
                   {t(idioma, "campo.horasPorSesion")}
                 </div>
                 <input
@@ -147,7 +148,7 @@ export function EntrenamientosFields({ entrenamientos, setEntrenamientos, idioma
                 />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 2, fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+                <div style={{ fontSize: 10, color: "var(--ink-soft)", marginBottom: 2, fontFamily: FUENTE_TEXTO }}>
                   {t(idioma, "campo.vecesPorSemana")}
                 </div>
                 <input
@@ -165,7 +166,7 @@ export function EntrenamientosFields({ entrenamientos, setEntrenamientos, idioma
         style={{
           display: "flex", alignItems: "center", gap: 6, border: "1px dashed var(--line)",
           background: "transparent", borderRadius: 7, padding: "7px 10px", fontSize: 12.5,
-          color: "var(--ink-soft)", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          color: "var(--ink-soft)", fontFamily: FUENTE_TEXTO,
         }}
       >
         <Plus size={12} /> {t(idioma, "campo.anadirEntrenamiento")}
@@ -192,7 +193,7 @@ export function ObjetivoFields({ objetivo, setObjetivo, sexo, anioNacimiento, al
                 key={key}
                 onClick={() => setObjetivo(key)}
                 style={{
-                  textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                  textAlign: "left", fontFamily: FUENTE_TEXTO,
                   padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
                   background: objetivo === key ? "var(--green-soft)" : "#fff",
                   cursor: "pointer",
@@ -208,7 +209,7 @@ export function ObjetivoFields({ objetivo, setObjetivo, sexo, anioNacimiento, al
 
       <div
         style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)",
+          fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)",
           background: "var(--paper)", borderRadius: 8, padding: "10px 12px", marginTop: 4, lineHeight: 1.5,
         }}
       >
@@ -222,7 +223,7 @@ export function ObjetivoFields({ objetivo, setObjetivo, sexo, anioNacimiento, al
           display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 8,
           width: "100%", border: "1px solid var(--line)", background: "#fff", borderRadius: 8,
           padding: "9px 10px", fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)",
-          fontFamily: "'Helvetica Neue', Arial, sans-serif",
+          fontFamily: FUENTE_TEXTO,
           cursor: datosCompletos ? "pointer" : "default", opacity: datosCompletos ? 1 : 0.5,
         }}
       >
@@ -263,7 +264,7 @@ function DesgloseCaloriasModal({ perfil, onClose, idioma }) {
   return (
     <ModalShell title={t(idioma, "desglose.titulo")} onClose={onClose}>
       {!r ? (
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink-soft)" }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)" }}>
           {t(idioma, "desglose.faltaDatos")}
         </div>
       ) : (
@@ -298,10 +299,10 @@ function DesgloseFila({ label, valor, fuerte }) {
         paddingTop: fuerte ? 8 : 0, borderTop: fuerte ? "1px solid var(--line)" : "none",
       }}
     >
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, color: "var(--ink-soft)" }}>{label}</div>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)" }}>{label}</div>
       <div
         style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, whiteSpace: "nowrap",
+          fontFamily: FUENTE_TEXTO, fontSize: 13.5, whiteSpace: "nowrap",
           fontWeight: fuerte ? 700 : 600, color: fuerte ? "var(--green-dark)" : "var(--ink)",
         }}
       >

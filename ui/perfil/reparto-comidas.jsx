@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { PRESETS_COMIDAS, repartoUniforme } from "objetivos";
 import { t } from "i18n";
 import { inputStyle } from "../comun/modal.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Reparto de comidas: destino propio en el menú lateral desde la Tanda 2, dentro de "Configuración
 // de comidas" — antes vivía al final de Perfil. Mismo contenido y misma lógica de siempre (Fase 4),
@@ -52,7 +53,7 @@ export function RepartoComidasView({ perfil, onSave, idioma }) {
           onClick={handleSave}
           disabled={!repartoValido}
           style={{
-            width: "100%", marginTop: 18, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 14, fontWeight: 700,
+            width: "100%", marginTop: 18, fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
             color: "#fff", background: repartoValido ? "var(--green)" : "var(--line)", border: "none",
             borderRadius: 9, padding: "12px", cursor: repartoValido ? "pointer" : "default",
           }}
@@ -63,7 +64,7 @@ export function RepartoComidasView({ perfil, onSave, idioma }) {
         {saved && (
           <div
             style={{
-              fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--green-dark)",
+              fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--green-dark)",
               background: "var(--green-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10,
             }}
           >
@@ -81,10 +82,10 @@ export function RepartoComidasView({ perfil, onSave, idioma }) {
 export function RepartoComidasFields({ presetId, presetActual, pesos, setPesos, onSelectPreset, sumaPesos, repartoValido, idioma }) {
   return (
     <>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
         {t(idioma, "perfilView.repartoComidas.titulo")}
       </div>
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 14, lineHeight: 1.5 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginBottom: 14, lineHeight: 1.5 }}>
         {t(idioma, "perfilView.repartoComidas.intro")}
       </div>
 
@@ -96,7 +97,7 @@ export function RepartoComidasFields({ presetId, presetActual, pesos, setPesos, 
               key={preset.id}
               onClick={() => onSelectPreset(preset)}
               style={{
-                textAlign: "left", fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                textAlign: "left", fontFamily: FUENTE_TEXTO,
                 padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)",
                 background: elegido ? "var(--green-soft)" : "#fff",
                 cursor: "pointer",
@@ -123,14 +124,14 @@ export function RepartoComidasFields({ presetId, presetActual, pesos, setPesos, 
         })}
       </div>
 
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>
         {t(idioma, "perfilView.pesoDeCadaComida")}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {presetActual.meals.map((mealType) => (
           <React.Fragment key={mealType}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, color: "var(--ink)" }}>
+              <span style={{ flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink)" }}>
                 {t(idioma, "mealType." + mealType)}
               </span>
               <input
@@ -139,10 +140,10 @@ export function RepartoComidasFields({ presetId, presetActual, pesos, setPesos, 
                 onChange={(e) => setPesos((p) => ({ ...p, [mealType]: e.target.value }))}
                 style={{ ...inputStyle, width: 64, textAlign: "right" }}
               />
-              <span style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)" }}>%</span>
+              <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)" }}>%</span>
             </div>
             {mealType === "Cena" && (
-              <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 10.5, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: -2 }}>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", lineHeight: 1.5, marginTop: -2 }}>
                 {t(idioma, "avisoCena")}
               </div>
             )}
@@ -152,7 +153,7 @@ export function RepartoComidasFields({ presetId, presetActual, pesos, setPesos, 
 
       <div
         style={{
-          fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, marginTop: 12,
+          fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, marginTop: 12,
           color: repartoValido ? "var(--green-dark)" : "var(--rust)",
         }}
       >

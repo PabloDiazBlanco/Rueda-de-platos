@@ -7,6 +7,7 @@ import { t, guardarIdiomaLocal } from "i18n";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { LanguageDropdown } from "../comun/idioma.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 // Requiere reautenticación (contraseña, o pop-up de Google si la cuenta usa ese login) antes de
 // borrar nada — así window.deleteAccount (auth-bootstrap.jsx) nunca se encuentra a mitad de
@@ -50,7 +51,7 @@ function DeleteAccountModal({ onClose, idioma }) {
 
   return (
     <ModalShell onClose={onClose} title={t(idioma, "perfilView.eliminarCuenta.titulo")}>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: "0 0 14px" }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, color: "var(--ink)", margin: "0 0 14px" }}>
         {t(idioma, "deleteAccount.desc")}
       </p>
 
@@ -64,13 +65,13 @@ function DeleteAccountModal({ onClose, idioma }) {
         />
       )}
 
-      <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 5 }}>
         {t(idioma, "deleteAccount.escribePara", { palabra: palabraConfirmacion })}
       </div>
       <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} style={inputStyle} />
 
       {error && (
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", color: "var(--rust)", fontSize: 12, marginTop: 8 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, color: "var(--rust)", fontSize: 12, marginTop: 8 }}>
           {error}
         </div>
       )}
@@ -134,7 +135,7 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
         <Field label={t(idioma, "perfil.idioma.label")}>
           <LanguageDropdown idioma={idioma} onChange={cambiarIdioma} />
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
             {t(idioma, "perfil.idioma.ayuda")}
           </div>
         </Field>
@@ -150,7 +151,7 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
                 onClick={() => handleToggleNotificaciones(op.value)}
                 disabled={notifEstado === "pidiendo"}
                 style={{
-                  flex: 1, fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, fontWeight: 700,
+                  flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700,
                   padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
                   background: notifPush === op.value ? "var(--green-dark)" : "#fff",
                   color: notifPush === op.value ? "#fff" : "var(--ink)",
@@ -161,16 +162,16 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
               </button>
             ))}
           </div>
-          <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
             {t(idioma, "perfil.notificaciones.ayuda")}
           </div>
           {notifEstado === "pidiendo" && (
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>
               {t(idioma, "perfil.notificaciones.pidiendoPermiso")}
             </div>
           )}
           {notifEstado === "error" && (
-            <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
               {notifError}
             </div>
           )}
@@ -181,7 +182,7 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
           style={{
             display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
             cursor: "pointer", padding: 0, marginTop: 4,
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
+            fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
           }}
         >
           <Download size={13} /> {t(idioma, "perfilRoot.descargarDatos")}
@@ -189,16 +190,16 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
       </div>
 
       <div style={{ border: "1px solid var(--mustard-dark)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--mustard-dark)", marginBottom: 4 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--mustard-dark)", marginBottom: 4 }}>
           {t(idioma, "ajustes.repetirCuestionario.titulo")}
         </div>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
           {t(idioma, "ajustes.repetirCuestionario.desc")}
         </div>
         <button
           onClick={() => setShowRepetirCuestionario(true)}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700,
+            fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700,
             color: "var(--mustard-dark)", background: "var(--mustard-soft)", border: "none", borderRadius: 7,
             padding: "8px 12px", cursor: "pointer",
           }}
@@ -208,16 +209,16 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
       </div>
 
       <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 16, maxWidth: 480 }}>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
           {t(idioma, "perfilView.eliminarCuenta.titulo")}
         </div>
-        <div style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginBottom: 10 }}>
           {t(idioma, "perfilView.eliminarCuenta.desc")}
         </div>
         <button
           onClick={() => setShowDeleteAccount(true)}
           style={{
-            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12.5, fontWeight: 700,
+            fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700,
             color: "var(--rust)", background: "var(--rust-soft)", border: "none", borderRadius: 7,
             padding: "8px 12px", cursor: "pointer",
           }}
@@ -248,7 +249,7 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
 function ConfirmRepetirCuestionarioModal({ onCancel, onConfirm, idioma }) {
   return (
     <ModalShell onClose={onCancel} title={t(idioma, "ajustes.repetirCuestionario.titulo")}>
-      <p style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
+      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13.5, color: "var(--ink)", margin: 0 }}>
         {t(idioma, "ajustes.repetirCuestionario.confirmTexto")}
       </p>
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
