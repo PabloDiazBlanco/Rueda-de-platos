@@ -4,7 +4,7 @@ import { getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt } from 
 import { weightedPick, allocateCounts, shuffle, clamp, RULE_LEVELS, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 import { mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra } from "comida-calculo";
 export { calcularListaCompra };
-import { PAL_BASE_NIVELES, TIPOS_ENTRENAMIENTO, NIVELES_ACTIVIDAD_LEGACY, OBJETIVO_ETAPAS, REPARTO_COMIDAS, PRESETS_COMIDAS, AVISO_CENA_REPARTO, repartoUniforme, calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
+import { PAL_BASE_NIVELES, TIPOS_ENTRENAMIENTO, NIVELES_ACTIVIDAD_LEGACY, OBJETIVO_ETAPAS, PRESETS_COMIDAS, AVISO_CENA_REPARTO, repartoUniforme, calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
 export { calcularObjetivosPerfil };
 import { uid, DAYS } from "comun";
 import { generateMenu, lastPicksFromHistory } from "menu-generador";
@@ -18,173 +18,10 @@ import { resumenNutrientesSemana } from "salud-publica";
 export { resumenNutrientesSemana };
 import { calcularResumenMensual, pesoEnMes } from "resumen-mensual";
 export { calcularResumenMensual, pesoEnMes };
-import { t, IDIOMAS_DISPONIBLES, DEFAULT_IDIOMA, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
-
-// ---------- Datos iniciales (todo lo acordado hasta ahora) ----------
-
-// ---------- Base de datos de alimentos (macros por 100 g) ----------
-// Ids fijos (no aleatorios) para que las migraciones puedan reconocerlos entre versiones.
-// "fuente" indica de dónde sale el dato: etiqueta real de producto o valor estándar contrastado.
-const FOODS_SEED = [
-  // Proteínas
-  { id: "f_pechuga_pollo", name: "Pechuga de pollo (cruda)", categoria: "proteinas", kcal: 165, prot: 31, fat: 3.6, carb: 0, sal: 0.1, azucares: 0, fibra: 0, grasaSaturada: 1, fuente: "Estándar" },
-  { id: "f_hamb_pollo", name: "Hamburguesa de pollo (Hacendado)", categoria: "proteinas", kcal: 144, prot: 17, fat: 7, carb: 3, fuente: "Etiqueta" },
-  { id: "f_picada_pollo", name: "Carne picada de pollo (Hacendado)", categoria: "proteinas", kcal: 124, prot: 16.6, fat: 5.3, carb: 1, fuente: "Etiqueta" },
-  { id: "f_picada_mixta", name: "Carne picada ternera/cerdo", categoria: "proteinas", kcal: 163, prot: 17, fat: 9.5, carb: 1, fuente: "Etiqueta (media)" },
-  { id: "f_hamb_mixta", name: "Hamburguesa ternera/cerdo (Hacendado)", categoria: "proteinas", kcal: 226, prot: 18, fat: 17, carb: 2, fuente: "Etiqueta" },
-  { id: "f_salmon", name: "Salmón (crudo)", categoria: "proteinas", kcal: 144, prot: 20, fat: 12, carb: 0, sal: 0.1, azucares: 0, fibra: 0, fuente: "Estándar" },
-  { id: "f_merluza", name: "Merluza / pescada (Hacendado)", categoria: "proteinas", kcal: 82, prot: 18, fat: 1.5, carb: 0.5, sal: 0.24, azucares: 0.5, fibra: 0, grasaSaturada: 0.3, fuente: "Etiqueta" },
-  { id: "f_atun", name: "Atún al natural (escurrido)", categoria: "proteinas", kcal: 105, prot: 22.5, fat: 1.2, carb: 0, fuente: "Etiqueta" },
-  { id: "f_sardinas", name: "Sardinas en aceite de oliva (escurridas)", categoria: "proteinas", kcal: 207, prot: 24, fat: 14, carb: 0, fuente: "Etiqueta" },
-  { id: "f_huevo", name: "Huevo entero (crudo)", categoria: "proteinas", kcal: 140, prot: 12.7, fat: 9.5, carb: 0.3, sal: 0, azucares: 0.27, fibra: 0, grasaSaturada: 2.64, fuente: "Etiqueta" },
-
-  // Embutido / fiambre — antes mezclados con Proteínas; carpeta propia porque se comen de otra
-  // forma (acompañamiento/topping) y llevan bastante más sal.
-  { id: "f_pavo", name: "Pechuga de pavo fiambre (El Pozo)", categoria: "embutido_fiambre", kcal: 90, prot: 20.3, fat: 1.5, carb: 0, sal: 1.8, azucares: 0, fibra: 0, grasaSaturada: 0.3, fuente: "Etiqueta" },
-  { id: "f_jamon", name: "Jamón curado (Navidul)", categoria: "embutido_fiambre", kcal: 212, prot: 30, fat: 10, carb: 0.5, sal: 5, azucares: 0.5, fibra: 0, grasaSaturada: 3.8, fuente: "Etiqueta" },
-  { id: "f_lomo", name: "Lomo embuchado (Boadas)", categoria: "embutido_fiambre", kcal: 203, prot: 35, fat: 7, carb: 0.7, sal: 3.5, azucares: 0.7, fibra: 0, grasaSaturada: 2.2, fuente: "Etiqueta" },
-
-  // Carbohidratos (almidones "de plato principal" — pan, cereales y legumbres se separan abajo)
-  { id: "f_pasta", name: "Pasta / macarrón (cruda, Hacendado)", categoria: "carbohidratos", kcal: 357, prot: 11, fat: 1.5, carb: 70, sal: 0.1, azucares: 3.5, fibra: 4, grasaSaturada: 0.3, fuente: "Etiqueta" },
-  { id: "f_arroz_basmati", name: "Arroz basmati (crudo, Hacendado)", categoria: "carbohidratos", kcal: 353, prot: 8.06, fat: 1, carb: 78, sal: 0, azucares: 0.17, fibra: 0.92, grasaSaturada: 0.19, fuente: "Etiqueta" },
-  { id: "f_patata", name: "Patata (cruda)", categoria: "carbohidratos", kcal: 77, prot: 2, fat: 0.1, carb: 17, sal: 0.01, azucares: 1, fibra: 2, fuente: "Estándar" },
-  { id: "f_gnocchi", name: "Gnocchi (fresco, Ifa Eliges)", categoria: "carbohidratos", kcal: 156, prot: 3, fat: 0.5, carb: 30, sal: 0.63, azucares: 0.5, fibra: 1.9, grasaSaturada: 0.1, fuente: "Etiqueta" },
-
-  // Legumbres — antes dentro de Carbohidratos "a la fuerza"
-  { id: "f_garbanzos_cocidos", name: "Garbanzos cocidos (bote)", categoria: "legumbres", kcal: 119, prot: 6.5, fat: 2.6, carb: 16, fibra: 5, fuente: "Estándar" },
-
-  // Panes — carpeta propia, no dentro de Carbohidratos
-  { id: "f_pan_molde", name: "Pan de molde natural (Hacendado)", categoria: "panes", kcal: 265, prot: 9.1, fat: 3.5, carb: 48, sal: 1.1, azucares: 3.8, fibra: 1.2, grasaSaturada: 0.6, fuente: "Etiqueta" },
-  { id: "f_pan_brioche", name: "Pan hamburguesa brioche (Hacendado)", categoria: "panes", kcal: 340, prot: 11, fat: 8, carb: 55, sal: 0.86, azucares: 11, fibra: 2, grasaSaturada: 2.2, fuente: "Etiqueta" },
-
-  // Cereales (de desayuno) — carpeta propia
-  { id: "f_cereales_cacao", name: "Cereales de cacao (Hacendado)", categoria: "cereales", kcal: 389, prot: 13, fat: 5, carb: 70, sal: 0.6, azucares: 9, fibra: 9.5, grasaSaturada: 1.5, fuente: "Etiqueta" },
-
-  // Vegetales
-  { id: "f_ensalada", name: "Ensalada variada (hoja, tomate, etc.)", categoria: "vegetales", kcal: 25, prot: 1.5, fat: 0.3, carb: 3.5, fibra: 1.5, fuente: "Estándar" },
-  { id: "f_tomate", name: "Tomate (crudo)", categoria: "vegetales", kcal: 18, prot: 0.9, fat: 0.2, carb: 3.9, azucares: 2.6, fibra: 1.2, fuente: "Estándar" },
-  { id: "f_pimiento", name: "Pimiento (crudo)", categoria: "vegetales", kcal: 27, prot: 1, fat: 0.3, carb: 6, azucares: 4.2, fibra: 2.1, fuente: "Estándar" },
-  { id: "f_cebolla", name: "Cebolla (cruda)", categoria: "vegetales", kcal: 40, prot: 1.1, fat: 0.1, carb: 9.3, azucares: 4.2, fibra: 1.7, fuente: "Estándar" },
-  { id: "f_pure_verduras", name: "Puré de verduras", categoria: "vegetales", kcal: 55, prot: 1.5, fat: 1.5, carb: 8, fuente: "Estándar" },
-
-  // Frutas — catálogo nuevo, no existía ninguna fruta antes de esta tanda. Selección inicial de
-  // las más comunes; se amplía/cambia más adelante sin ningún problema.
-  { id: "f_manzana", name: "Manzana (cruda)", categoria: "frutas", kcal: 52, prot: 0.3, fat: 0.2, carb: 14, azucares: 10, fibra: 2.4, fuente: "Estándar" },
-  { id: "f_platano", name: "Plátano (crudo)", categoria: "frutas", kcal: 89, prot: 1.1, fat: 0.3, carb: 23, azucares: 12, fibra: 2.6, fuente: "Estándar" },
-  { id: "f_naranja", name: "Naranja (cruda)", categoria: "frutas", kcal: 47, prot: 0.9, fat: 0.1, carb: 12, azucares: 9, fibra: 2.4, fuente: "Estándar" },
-  { id: "f_pera", name: "Pera (cruda)", categoria: "frutas", kcal: 57, prot: 0.4, fat: 0.1, carb: 15, azucares: 10, fibra: 3.1, fuente: "Estándar" },
-  { id: "f_fresas", name: "Fresas (crudas)", categoria: "frutas", kcal: 32, prot: 0.7, fat: 0.3, carb: 7.7, azucares: 4.9, fibra: 2, fuente: "Estándar" },
-  { id: "f_uvas", name: "Uvas (crudas)", categoria: "frutas", kcal: 69, prot: 0.7, fat: 0.2, carb: 18, azucares: 16, fibra: 0.9, fuente: "Estándar" },
-
-  // Lácteos (incluye el café con leche: no encaja mejor en ninguna otra carpeta y lleva leche de verdad)
-  { id: "f_queso_cottage", name: "Queso cottage (Ifa Eliges)", categoria: "lacteos", kcal: 66, prot: 12, fat: 1.5, carb: 2, sal: 0.6, azucares: 2, fibra: 0, grasaSaturada: 0.1, fuente: "Etiqueta" },
-  { id: "f_yogur_prot", name: "Yogur proteínas (Hacendado)", categoria: "lacteos", kcal: 52, prot: 10, fat: 0.3, carb: 3.1, sal: 0.1, azucares: 3.1, fibra: 0, grasaSaturada: 0.1, fuente: "Etiqueta" },
-  { id: "f_mozzarella", name: "Queso rallado mozzarella (Ifa Eliges)", categoria: "lacteos", kcal: 285, prot: 21, fat: 21, carb: 0.8, sal: 1, azucares: 0.8, fibra: 0, grasaSaturada: 14, fuente: "Etiqueta" },
-  { id: "f_cafe_leche", name: "Café con leche (taza 200 ml)", categoria: "lacteos", kcal: 33, prot: 1.5, fat: 1.2, carb: 2.5, fuente: "Estándar (por 100 ml)" },
-
-  // Grasas — antes mezclado en "Lácteos y otros", sin pintar nada ahí
-  { id: "f_aove", name: "Aceite de oliva virgen extra", categoria: "grasas", kcal: 900, prot: 0, fat: 100, carb: 0, sal: 0, azucares: 0, fibra: 0, grasaSaturada: 14, fuente: "Estándar" },
-
-  // Frutos secos — separados de los snacks procesados (antes en el mismo cajón de sastre)
-  { id: "f_anacardos", name: "Anacardos naturales sin sal", categoria: "frutos_secos", kcal: 589, prot: 17.5, fat: 45, carb: 31, sal: 0, azucares: 6, fibra: 3.3, grasaSaturada: 8, fuente: "Estándar" },
-  { id: "f_pistachos", name: "Pistachos naturales sin sal", categoria: "frutos_secos", kcal: 580, prot: 19, fat: 48, carb: 21, sal: 0, azucares: 8, fibra: 10, grasaSaturada: 6, fuente: "Estándar" },
-  { id: "f_cacahuete_polvo", name: "Cacahuete en polvo desgrasado (Eroski)", categoria: "frutos_secos", kcal: 470, prot: 47, fat: 8, carb: 24, sal: 0, azucares: 8.8, fibra: 14, grasaSaturada: 2, fuente: "Etiqueta" },
-
-  // Snacks procesados
-  { id: "f_choco85", name: "Chocolate negro 85%", categoria: "snacks_procesados", kcal: 600, prot: 9, fat: 46, carb: 20, azucares: 16, grasaSaturada: 26, fuente: "Estándar" },
-  { id: "f_nachos", name: "Nachos (Ifa Eliges)", categoria: "snacks_procesados", kcal: 486, prot: 5.1, fat: 22, carb: 65, azucares: 1.2, fibra: 4.8, grasaSaturada: 2.5, fuente: "Etiqueta" },
-  { id: "f_guacamole", name: "Guacamole fresco (Ifa Eliges)", categoria: "snacks_procesados", kcal: 182, prot: 1.8, fat: 16, carb: 8, sal: 1.3, azucares: 1.4, fibra: 3.2, grasaSaturada: 2.4, fuente: "Etiqueta" },
-];
-
-// Carpetas de la base de datos de alimentos (distinto de CATEGORY_META más abajo, que clasifica
-// reglas de ingrediente, no alimentos crudos). Cada carpeta agrupa foods[] por categoria y da un
-// gramaje de partida — por categoría, no por alimento — para cuando el cuestionario de catálogo
-// (Tanda 2) construya combinaciones sin pedir una cantidad curada para cada alimento nuevo.
-const CATEGORIAS_ALIMENTOS = [
-  { key: "proteinas", labelKey: "categoriaAlimento.proteinas", emoji: "🍗", gramosDefecto: 150 },
-  { key: "embutido_fiambre", labelKey: "categoriaAlimento.embutidoFiambre", emoji: "🥓", gramosDefecto: 30 },
-  { key: "carbohidratos", labelKey: "categoriaAlimento.carbohidratos", emoji: "🍝", gramosDefecto: 80 },
-  { key: "panes", labelKey: "categoriaAlimento.panes", emoji: "🍞", gramosDefecto: 60 },
-  { key: "cereales", labelKey: "categoriaAlimento.cereales", emoji: "🥣", gramosDefecto: 40 },
-  { key: "legumbres", labelKey: "categoriaAlimento.legumbres", emoji: "🫘", gramosDefecto: 150 },
-  { key: "vegetales", labelKey: "categoriaAlimento.vegetales", emoji: "🥗", gramosDefecto: 150 },
-  { key: "frutas", labelKey: "categoriaAlimento.frutas", emoji: "🍎", gramosDefecto: 150 },
-  { key: "lacteos", labelKey: "categoriaAlimento.lacteos", emoji: "🥛", gramosDefecto: 125 },
-  { key: "grasas", labelKey: "categoriaAlimento.grasas", emoji: "🫒", gramosDefecto: 10 },
-  { key: "frutos_secos", labelKey: "categoriaAlimento.frutosSecos", emoji: "🥜", gramosDefecto: 30 },
-  { key: "snacks_procesados", labelKey: "categoriaAlimento.snacksProcesados", emoji: "🍫", gramosDefecto: 30 },
-];
-
-// ---------- Cuestionario de catálogo (Bloque 3 del rediseño, Tanda 3) ----------
-// Opciones curadas que se ofrecen en el cuestionario de alta, agrupadas por categoría — no es todo
-// FOODS_SEED, es un subconjunto de alimentos "típicos" pensado para elegir con un toque, sin tener
-// que escribir nada. Los gramos por defecto son los mismos que ya usaba la configuración personal
-// de Pablo cuando existía como semilla fija (antes de esta tanda) — valores ya pensados con
-// criterio, reaprovechados aquí en vez de inventar otros desde cero.
-// nombreEs es el "name" que llevará el ingredient de verdad — en español fijo, igual que el resto
-// del modelo de datos (mealType, DAYS...: ver CLAUDE.md, "cambiarlos ahí tocaría el motor"), ya
-// que el motor y las reglas de combinación enlazan por nombre. labelKey es solo para mostrar la
-// tarjeta traducida en el propio cuestionario, nunca se guarda.
-const CUESTIONARIO_PROTEINAS = [
-  { foodId: "f_pechuga_pollo", nombreEs: "Pollo", labelKey: "cuestionario.alimento.pollo", gramos: 150 },
-  { foodId: "f_salmon", nombreEs: "Salmón", labelKey: "cuestionario.alimento.salmon", gramos: 150 },
-  { foodId: "f_merluza", nombreEs: "Merluza", labelKey: "cuestionario.alimento.merluza", gramos: 150 },
-  { foodId: "f_atun", nombreEs: "Atún", labelKey: "cuestionario.alimento.atun", gramos: 100 },
-  { foodId: "f_sardinas", nombreEs: "Sardinas", labelKey: "cuestionario.alimento.sardinas", gramos: 90 },
-  { foodId: "f_huevo", nombreEs: "Huevo", labelKey: "cuestionario.alimento.huevo", gramos: 120 },
-  { foodId: "f_jamon", nombreEs: "Jamón", labelKey: "cuestionario.alimento.jamon", gramos: 80 },
-  { foodId: "f_picada_mixta", nombreEs: "Carne picada", labelKey: "cuestionario.alimento.carnePicada", gramos: 150 },
-];
-const CUESTIONARIO_CARBOS = [
-  { foodId: "f_pasta", nombreEs: "Pasta", labelKey: "cuestionario.alimento.pasta", gramos: 80 },
-  { foodId: "f_arroz_basmati", nombreEs: "Arroz", labelKey: "cuestionario.alimento.arroz", gramos: 80 },
-  { foodId: "f_patata", nombreEs: "Patata", labelKey: "cuestionario.alimento.patata", gramos: 250 },
-  { foodId: "f_gnocchi", nombreEs: "Gnocchi", labelKey: "cuestionario.alimento.gnocchi", gramos: 200 },
-  { foodId: "f_pan_molde", nombreEs: "Pan de molde", labelKey: "cuestionario.alimento.pan", gramos: 80 },
-];
-const CUESTIONARIO_VERDURAS = [
-  { foodId: "f_ensalada", nombreEs: "Ensalada", labelKey: "cuestionario.alimento.ensalada", gramos: 150 },
-  { foodId: "f_tomate", nombreEs: "Tomate", labelKey: "cuestionario.alimento.tomate", gramos: 150 },
-  { foodId: "f_pimiento", nombreEs: "Pimiento y cebolla", labelKey: "cuestionario.alimento.pimiento", gramos: 150 },
-  { foodId: "f_pure_verduras", nombreEs: "Puré de verduras", labelKey: "cuestionario.alimento.pure", gramos: 200 },
-];
-const CUESTIONARIO_GRASAS = [
-  { foodId: "f_aove", nombreEs: "Aceite de oliva", labelKey: "cuestionario.alimento.aove", gramos: 10 },
-  { foodId: "f_anacardos", nombreEs: "Frutos secos", labelKey: "cuestionario.alimento.frutosSecos", gramos: 30 },
-  { foodId: "f_mozzarella", nombreEs: "Queso", labelKey: "cuestionario.alimento.queso", gramos: 30 },
-];
-// Exclusiones por gusto (Pantalla 1): cada chip filtra, de todas las listas de arriba a la vez,
-// los alimentos que llevan eso — deliberadamente solo las que el catálogo puede filtrar de verdad
-// con los datos que tiene hoy (no hay ningún alimento marcado como "picante", por ejemplo, así que
-// esa opción no está: prometer un filtro que no filtra nada sería peor que no ofrecerlo).
-const EXCLUSIONES_DISPONIBLES = [
-  { key: "pescado", labelKey: "cuestionario.exclusion.pescado", foodIds: ["f_salmon", "f_merluza", "f_atun", "f_sardinas"] },
-  { key: "frutosSecos", labelKey: "cuestionario.exclusion.frutosSecos", foodIds: ["f_anacardos", "f_pistachos", "f_cacahuete_polvo"] },
-  { key: "lacteos", labelKey: "cuestionario.exclusion.lacteos", foodIds: ["f_queso_cottage", "f_yogur_prot", "f_mozzarella"] },
-  { key: "cerdo", labelKey: "cuestionario.exclusion.cerdo", foodIds: ["f_jamon", "f_lomo", "f_picada_mixta", "f_hamb_mixta"] },
-];
-
-// Datos con los que arranca una cuenta que no tiene nada guardado todavía. Hasta la Tanda 3 del
-// rediseño de navegación, esto sembraba también los ingredients/blocks con la configuración
-// personal de Pablo (qué proteínas, con qué frecuencia, los bloques de carne roja/pollo
-// picado...) — cualquier cuenta nueva heredaba literalmente su dieta. Ahora eso se decide en el
-// cuestionario de catálogo del propio alta (ver CatalogoOnboarding) o se deja vacío si el usuario
-// prefiere partir de cero y configurarlo él mismo más tarde desde Configuración de comidas — un
-// menú sin ingredientes activos simplemente sale vacío, no es un error (ver generateMenu).
-// foods (el catálogo nutricional en sí) SÍ se mantiene compartido para todo el mundo, igual que
-// antes: es la base de datos de la que tira el cuestionario, y se sigue actualizando sola con
-// alimentos nuevos vía migrateData, sin tocar nada de esto.
-const initialData = () => {
-  return {
-    foods: FOODS_SEED.map((f) => ({ ...f })),
-    rules: [],
-    ingredients: [],
-    blocks: [],
-    pesoTracking: defaultPesoTracking(),
-    listaCompra: { marcados: {}, generadoEn: null },
-    listaCompraSimple: { marcados: {}, generadoEn: null },
-  };
-};
+import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
+import { FOODS_SEED, CATEGORIAS_ALIMENTOS, initialData } from "datos-iniciales";
+import { CUESTIONARIO_PROTEINAS, CUESTIONARIO_CARBOS, CUESTIONARIO_VERDURAS, CUESTIONARIO_GRASAS, EXCLUSIONES_DISPONIBLES, pasosCuestionario, NIVELES_FRECUENCIA, NIVELES_PESO, ARQUETIPOS_COMIDA_LIGERA, construirIngredientesDesdeCuestionario } from "cuestionario";
+import { migrateData } from "migraciones";
 
 const CATEGORY_META = {
   proteina: { labelKey: "categoria.proteina", icon: Utensils, color: "var(--green)", bg: "var(--green-soft)" },
@@ -206,145 +43,6 @@ const HISTORY_STORAGE_KEY = "rueda-de-platos:history-v1";
 const MENU_SIMPLE_STORAGE_KEY = "rueda-de-platos:menu-simple-v1";
 const HISTORY_SIMPLE_STORAGE_KEY = "rueda-de-platos:history-simple-v1";
 const HISTORY_MAX = 8;
-
-// Parchea datos ya guardados que se crearon con una versión anterior del código,
-// para que se beneficien de mejoras estructurales sin perder tus ediciones ni tener que rehacer nada a mano.
-function migrateData(rawData) {
-  let changed = false;
-  const data = {
-    ...rawData,
-    blocks: (rawData.blocks || []).map((b) => ({ ...b })),
-    ingredients: (rawData.ingredients || []).map((i) => ({ ...i })),
-  };
-
-  const polloBlock = data.blocks.find((b) => b.name === "Pollo picado / hamburguesa de pollo");
-  if (polloBlock && !polloBlock.weeklyPattern) {
-    polloBlock.weeklyPattern = [{ counts: [2, 0] }, { counts: [1, 1] }];
-    polloBlock.distribucion = "Cada ciclo, una semana (al azar) lleva 2x carne picada de pollo, y la otra semana lleva 1x carne picada + 1x hamburguesa de pollo.";
-    changed = true;
-  }
-
-  // Base de datos de alimentos: se añade si no existía, y se completan los alimentos nuevos
-  // del catálogo sin pisar los que el usuario haya editado o creado por su cuenta.
-  if (!Array.isArray(data.foods)) {
-    data.foods = FOODS_SEED.map((f) => ({ ...f }));
-    changed = true;
-  } else {
-    const existingIds = new Set(data.foods.map((f) => f.id));
-    const missing = FOODS_SEED.filter((f) => !existingIds.has(f.id));
-    if (missing.length) {
-      data.foods = [...data.foods, ...missing.map((f) => ({ ...f }))];
-      changed = true;
-    }
-
-    // Alimentos que ya existían antes de añadir sal/azúcares/fibra/grasa saturada (y, en esta
-    // tanda, categoria) al catálogo: se completan solo esos campos nuevos si faltan, sin tocar
-    // kcal/proteína/grasa/carbohidratos por si el usuario ya los había editado a mano.
-    const seedById = {};
-    FOODS_SEED.forEach((f) => { seedById[f.id] = f; });
-    const EXTRA_FIELDS = ["sal", "azucares", "fibra", "grasaSaturada", "categoria"];
-    data.foods.forEach((food) => {
-      const seed = seedById[food.id];
-      if (!seed) return;
-      EXTRA_FIELDS.forEach((field) => {
-        if (food[field] === undefined && seed[field] !== undefined) {
-          food[field] = seed[field];
-          changed = true;
-        }
-      });
-    });
-  }
-
-  // Vínculo automático por nombre para ingredientes creados antes de existir la base de datos.
-  const AUTO_LINK = {
-    "Salmón": ["f_salmon", 150], "Merluza": ["f_merluza", 150], "Atún": ["f_atun", 100],
-    "Sardinas": ["f_sardinas", 90], "Pollo (carne)": ["f_pechuga_pollo", 150],
-    "Carne picada de cerdo/vacuno": ["f_picada_mixta", 150], "Hamburguesa de ternera/cerdo": ["f_hamb_mixta", 150],
-    "Carne picada de pollo": ["f_picada_pollo", 150], "Hamburguesa de pollo": ["f_hamb_pollo", 150],
-    "Pasta": ["f_pasta", 80], "Arroz": ["f_arroz_basmati", 80], "Gnocchi": ["f_gnocchi", 200], "Patatas": ["f_patata", 250],
-    "Ensalada completa": ["f_ensalada", 150], "Ensalada de tomate": ["f_tomate", 150],
-    "Pimiento y cebolla sofritos": ["f_pimiento", 150], "Purés variados": ["f_pure_verduras", 200],
-    "Garbanzos": ["f_garbanzos_cocidos", 120],
-  };
-  data.ingredients.forEach((ing) => {
-    if (!ing.foodId && AUTO_LINK[ing.name]) {
-      const [foodId, gramos] = AUTO_LINK[ing.name];
-      ing.foodId = foodId;
-      ing.gramos = gramos;
-      changed = true;
-    }
-  });
-
-  if (!Array.isArray(data.rules)) {
-    data.rules = [];
-    changed = true;
-  }
-
-  // Seguimiento de peso: perfiles guardados antes de esta función no tienen este campo.
-  if (!data.pesoTracking) {
-    data.pesoTracking = defaultPesoTracking();
-    changed = true;
-  } else {
-    if (!Array.isArray(data.pesoTracking.historial)) {
-      // Perfiles que ya tenían seguimiento de peso antes de que el historial fuera permanente.
-      data.pesoTracking.historial = [];
-      changed = true;
-    }
-    if (!Array.isArray(data.pesoTracking.pausas)) {
-      // Perfiles guardados antes de que existiera el modo pausa del ciclo.
-      data.pesoTracking.pausas = [];
-      changed = true;
-    }
-  }
-
-  // Lista de la compra: guarda qué se ha ido marcando, ligado al último menú generado.
-  if (!data.listaCompra) {
-    data.listaCompra = { marcados: {}, generadoEn: null };
-    changed = true;
-  }
-
-  // Lista de la compra de Menú simple (Tanda 3 del rediseño): independiente de la de arriba, porque
-  // Menú simple genera sus propios ciclos, separados de los de Menú completo — marcar algo comprado
-  // en uno no debería afectar al otro.
-  if (!data.listaCompraSimple) {
-    data.listaCompraSimple = { marcados: {}, generadoEn: null };
-    changed = true;
-  }
-
-  // Comidas completadas (resumen mensual): registro por fecha real, aparte del menú en sí.
-  if (!data.comidasCompletadas) {
-    data.comidasCompletadas = {};
-    changed = true;
-  }
-
-  // Reparto de comidas (Fase 4, reparto de comidas configurable): antes era la constante global
-  // REPARTO_COMIDAS; ahora vive en el perfil, para poder tener otros presets (3, 2 o 5 comidas)
-  // además del clásico de 4. Perfiles ya existentes migran al reparto de siempre, sin cambiar
-  // nada de lo que ya tenían calculado.
-  if (data.perfil && data.perfil.repartoComidas === undefined) {
-    data.perfil.repartoComidas = { ...REPARTO_COMIDAS };
-    data.perfil.presetComidas = "clasico-4";
-    changed = true;
-  }
-
-  // Idioma de la interfaz (Fase 5, internacionalización): perfiles ya existentes se quedan en
-  // español siempre — nunca les cambiamos el idioma solos por detectar el navegador, sería un
-  // cambio de comportamiento sorpresa. Los perfiles nuevos ya llegan con su idioma puesto desde
-  // el onboarding (ver ProfileOnboarding más abajo), así que este bloque no les toca nada.
-  if (data.perfil && data.perfil.idioma === undefined) {
-    data.perfil.idioma = DEFAULT_IDIOMA;
-    changed = true;
-  }
-
-  // Notificaciones push (Fase 6): perfiles ya existentes empiezan desactivados — activarlas pide
-  // permiso al navegador, así que nunca puede hacerse sola sin que el usuario lo pulse él mismo.
-  if (data.perfil && data.perfil.notificacionesPush === undefined) {
-    data.perfil.notificacionesPush = false;
-    changed = true;
-  }
-
-  return { data, changed };
-}
 
 // Cálculo de macros (getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt) vive en
 // macros.js; el cálculo de comidas (mealComponents, mealTotals, dayTotals, mealExportParts,
@@ -379,7 +77,7 @@ export default function RuedaDePlatos() {
   const saveTimer = useRef(null);
 
   // Idioma de la interfaz: mientras no haya perfil cargado (o si nunca se completó el onboarding),
-  // se usa el que se eligió/detectó en la pantalla de bienvenida (ver Logica/i18n.js); en cuanto
+  // se usa el que se eligió/detectó en la pantalla de bienvenida (ver logica/i18n.js); en cuanto
   // hay un perfil real con idioma propio, ese manda. `idiomaFallback` se calcula una sola vez al
   // montar, no en cada render, para no releer localStorage sin necesidad.
   const [idiomaFallback] = useState(() => leerIdiomaGuardado());
@@ -1865,140 +1563,6 @@ function PasosIndicador({ pasoActual, pasos, idioma, labelPrefix }) {
 // asistente de perfil (ver el porqué en RuedaDePlatos, junto a guardarPerfilInicial). Construye
 // ingredients a partir de tarjetas elegidas con un toque — nunca hay que escribir nada ni meter un
 // número a mano. "Saltar todo" está disponible en cualquier pantalla, no solo en la intro.
-// Pasos base, siempre presentes. Los tres pasos de "comida ligera" (desayuno, media mañana,
-// merienda — Tanda 2 piloto de desayuno, Tanda 3 extiende el mismo mecanismo a los otros dos) se
-// añaden condicionalmente al final, según qué comidas tenga el reparto elegido en el perfil — ver
-// pasosCuestionario() más abajo. Un preset como "3 comidas · sin desayuno" no añade el paso
-// "desayuno"; uno como "5 comidas · con media mañana" añade también "media_manana".
-const CUESTIONARIO_PASOS_BASE = ["exclusiones", "proteinas", "carbohidratos", "verduras", "grasas"];
-function pasosCuestionario(repartoComidas) {
-  const pasos = [...CUESTIONARIO_PASOS_BASE];
-  if (repartoComidas && repartoComidas.Desayuno !== undefined) pasos.push("desayuno");
-  if (repartoComidas && repartoComidas["Media mañana"] !== undefined) pasos.push("media_manana");
-  if (repartoComidas && repartoComidas.Merienda !== undefined) pasos.push("merienda");
-  return pasos;
-}
-// Frecuencia semanal para proteínas (1/2/3), peso relativo Poco/Normal/Mucho para el resto —
-// mismas claves de i18n reutilizadas en las 4 pantallas de selección vía SeleccionAlimentosStep,
-// y también por los arquetipos de Desayuno (su "nivel" pesa igual que Poco/Normal/Mucho).
-const NIVELES_FRECUENCIA = ["cuestionario.nivel.freq1", "cuestionario.nivel.freq2", "cuestionario.nivel.freq3"];
-const NIVELES_PESO = ["cuestionario.nivel.poco", "cuestionario.nivel.normal", "cuestionario.nivel.mucho"];
-
-// Arquetipos de comida ligera (Tanda 2, piloto solo para Desayuno; Tanda 3 reutiliza exactamente
-// las mismas 3 plantillas, sin cambiar nada de ellas, también para Media mañana y Merienda — están
-// pensadas para "montar un plato" a partir de pan/cereal/lácteo/fruta, algo que no es exclusivo del
-// desayuno). Cada una señala qué carpeta(s) de CATEGORIAS_ALIMENTOS abrir para completarla: "grupos"
-// con más de un elemento implica una sub-selección guiada, en orden (p.ej. pan, luego
-// acompañamiento); un solo grupo con multiSelect implica elegir libremente entre varias carpetas a
-// la vez, sin guiar. "nombreEs" es el nombre fijo del ingrediente resultante (en español, como el
-// resto del modelo de datos — ver CLAUDE.md), independiente del idioma de la interfaz.
-// Deliberadamente compartidas entre las tres comidas por ahora: cuando haga falta diferenciar las
-// opciones por comida (pendiente, ver conversación), esto se separará en tres arrays propios.
-const ARQUETIPOS_COMIDA_LIGERA = [
-  {
-    key: "tostadas", nombreEs: "Tostadas", labelKey: "arquetipo.desayuno.tostadas", emoji: "🍞",
-    grupos: [
-      { categorias: ["panes"], multiSelect: false, labelKey: "arquetipo.grupo.pan" },
-      { categorias: ["embutido_fiambre", "lacteos", "grasas", "snacks_procesados"], multiSelect: true, labelKey: "arquetipo.grupo.acompanamiento" },
-    ],
-  },
-  {
-    key: "cereales_lacteo", nombreEs: "Cereales con lácteo", labelKey: "arquetipo.desayuno.cerealesLacteo", emoji: "🥣",
-    grupos: [
-      { categorias: ["cereales"], multiSelect: false, labelKey: "arquetipo.grupo.cereal" },
-      { categorias: ["lacteos"], multiSelect: false, labelKey: "arquetipo.grupo.lacteo" },
-    ],
-  },
-  {
-    key: "combinado", nombreEs: "Plato combinado", labelKey: "arquetipo.desayuno.combinado", emoji: "🍽️",
-    grupos: [
-      { categorias: ["proteinas", "embutido_fiambre", "panes", "lacteos", "vegetales", "frutas"], multiSelect: true, labelKey: "arquetipo.grupo.libre" },
-    ],
-  },
-];
-
-// A partir de las respuestas, construye la lista de ingredients que arrancará el catálogo de la
-// cuenta nueva. Proteínas -> regla de frecuencia semanal directa (el nivel elegido, 1-3). Carbo/
-// verdura/grasa -> regla de probabilidad, normalizando los pesos relativos (1-3) de lo elegido en
-// cada categoría para que sumen exactamente 100 (el último ajusta el redondeo, mismo método que
-// ya usa RepartoComidasFields con el reparto de comidas).
-function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, comidasLigeras }) {
-  const ingredients = [];
-
-  Object.entries(frecuencias).forEach(([foodId, nivel]) => {
-    const opt = CUESTIONARIO_PROTEINAS.find((o) => o.foodId === foodId);
-    if (!opt) return;
-    ingredients.push({
-      id: uid(), name: opt.nombreEs, category: "proteina", ruleType: "frecuencia",
-      freqCantidad: nivel, freqPeriodo: "semana", active: true, foodId, gramos: opt.gramos,
-    });
-  });
-
-  function agregarPorProbabilidad(mapaPesos, opciones, category) {
-    const entradas = Object.entries(mapaPesos);
-    const sumaPesos = entradas.reduce((s, [, w]) => s + w, 0);
-    if (sumaPesos <= 0) return;
-    let acumulado = 0;
-    entradas.forEach(([foodId, w], i) => {
-      const opt = opciones.find((o) => o.foodId === foodId);
-      if (!opt) return;
-      const probabilidad = i === entradas.length - 1 ? 100 - acumulado : Math.round((w / sumaPesos) * 100);
-      acumulado += probabilidad;
-      ingredients.push({
-        id: uid(), name: opt.nombreEs, category, ruleType: "probabilidad",
-        probabilidad, active: true, foodId, gramos: opt.gramos,
-      });
-    });
-  }
-  agregarPorProbabilidad(pesosCarbo, CUESTIONARIO_CARBOS, "carbo");
-  agregarPorProbabilidad(pesosVerdura, CUESTIONARIO_VERDURAS, "verdura");
-  agregarPorProbabilidad(pesosGrasa, CUESTIONARIO_GRASAS, "grasa");
-
-  // Comidas ligeras (desayuno: Tanda 2 piloto; media mañana y merienda: Tanda 3, mismo mecanismo):
-  // cada arquetipo elegido se convierte en un ingrediente de la categoría correspondiente
-  // ("desayuno"/"media_manana"/"merienda") con su propia composición — la misma mecánica que ya usa
-  // la app para desayunos y platos cerrados creados a mano (ver EditModal). Los gramos de cada fila
-  // de la composición son el valor por defecto de la categoría del alimento (CATEGORIAS_ALIMENTOS),
-  // no uno curado a mano por alimento — deliberadamente aproximados, para eso está el aviso en el
-  // propio paso. Las tres comidas se resuelven por separado (una selección no afecta a la otra),
-  // aunque compartan el mismo catálogo de arquetipos.
-  function agregarComidaLigera(seleccion, category) {
-    if (!seleccion) return;
-    const entradas = Object.entries(seleccion);
-    const sumaNiveles = entradas.reduce((s, [, v]) => s + v.nivel, 0);
-    if (sumaNiveles <= 0) return;
-    let acumulado = 0;
-    entradas.forEach(([arqKey, v], i) => {
-      const arquetipo = ARQUETIPOS_COMIDA_LIGERA.find((a) => a.key === arqKey);
-      if (!arquetipo) return;
-      const composicion = [];
-      arquetipo.grupos.forEach((grupo, gi) => {
-        (v.grupos[gi] || []).forEach((foodId) => {
-          const food = FOODS_SEED.find((f) => f.id === foodId);
-          const cat = food && CATEGORIAS_ALIMENTOS.find((c) => c.key === food.categoria);
-          composicion.push({ id: uid(), foodId, gramos: cat ? cat.gramosDefecto : 50 });
-        });
-      });
-      // Arquetipo marcado pero sin ningún alimento elegido dentro: no genera nada, para no dejar
-      // un "plato" vacío sin composición real.
-      if (!composicion.length) return;
-      const probabilidad = i === entradas.length - 1 ? 100 - acumulado : Math.round((v.nivel / sumaNiveles) * 100);
-      acumulado += probabilidad;
-      ingredients.push({
-        id: uid(), name: arquetipo.nombreEs, category, ruleType: "probabilidad",
-        probabilidad, active: true, composicion,
-      });
-    });
-  }
-  if (comidasLigeras) {
-    agregarComidaLigera(comidasLigeras.desayuno, "desayuno");
-    agregarComidaLigera(comidasLigeras.media_manana, "media_manana");
-    agregarComidaLigera(comidasLigeras.merienda, "merienda");
-  }
-
-  return ingredients;
-}
-
 function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipAll }) {
   const [fase, setFase] = useState("intro"); // "intro" | "paso" | "cierre"
   const [paso, setPaso] = useState(0);
@@ -3570,7 +3134,7 @@ function DocumentosView({ idioma }) {
   );
 }
 
-// DIAS_SEMANA_CORTO (Logica/peso.js) ya viene abreviado en español ("Dom","Lun"...) — para
+// DIAS_SEMANA_CORTO (logica/peso.js) ya viene abreviado en español ("Dom","Lun"...) — para
 // traducirlo reusamos las claves "dia.X" (nombre completo) ya existentes: primero se pasa a
 // nombre completo con este mapa, se traduce, y se vuelve a recortar a 3 letras.
 const DIA_CORTO_A_COMPLETO = {
@@ -4895,7 +4459,7 @@ function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, da
 // Menú simple (Tanda 3 del rediseño): la misma idea de "organizar la semana" que Menú completo,
 // pero deliberadamente sin nada de calorías, macros ni gramos — solo el borrador de combinaciones.
 // Reutiliza el mismo generateMenu de siempre (la selección de qué toca cada día ya es independiente
-// del ajuste de raciones a objetivos, ver Logica/menu-generador.js), así que no hace falta ningún
+// del ajuste de raciones a objetivos, ver logica/menu-generador.js), así que no hace falta ningún
 // motor nuevo: aquí sencillamente no se pide ni se muestra la parte de cantidades. Lleva su propio
 // ciclo, su propio historial y su propia lista de la compra, separados de Menú completo — las dos
 // pantallas conviven sin pisarse.
@@ -5380,7 +4944,7 @@ function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
 }
 
 // Media diaria de sal, azúcares y fibra de la semana del menú actual, comparada contra los
-// umbrales de la OMS (ver Logica/salud-publica.js). El umbral de azúcar se ajusta a tu objetivo de
+// umbrales de la OMS (ver logica/salud-publica.js). El umbral de azúcar se ajusta a tu objetivo de
 // kcal si lo tienes calculado; si no, usa la dieta de referencia de 2000 kcal del propio estudio.
 function ResumenSaludPublica({ data, menu, week, objetivos, idioma }) {
   const resumen = resumenNutrientesSemana(data, menu, week, objetivos?.kcal);

@@ -2,14 +2,14 @@
 // Primera Cloud Function programada del proyecto (onSchedule) — hasta ahora todas se disparaban
 // por petición (el webhook de Stripe, las funciones callable del cliente). Cada día, a la hora
 // fijada, revisa qué cuentas tienen activadas las notificaciones push y, de esas, a quién le toca
-// hoy pesarse (misma regla que ya usa la app, ver Logica/peso.js → esDiaSugeridoPeso) y todavía no
+// hoy pesarse (misma regla que ya usa la app, ver logica/peso.js → esDiaSugeridoPeso) y todavía no
 // lo ha hecho — y les manda el recordatorio por FCM.
 //
-// Por qué esDiaSugeridoPeso se repite aquí en vez de importarse: Logica/peso.js es un módulo ESM
+// Por qué esDiaSugeridoPeso se repite aquí en vez de importarse: logica/peso.js es un módulo ESM
 // pensado para el navegador (usa bare-specifiers como "i18n" que solo resuelve el importmap de
 // index.html) y esta carpeta es un proyecto Node CommonJS aparte, sin bundler ni paso de
 // transformación entre los dos mundos (ver CLAUDE.md, "no hay build"). Si cambia la regla de días
-// sugeridos en Logica/peso.js, hay que replicar el cambio aquí también — son solo dos líneas.
+// sugeridos en logica/peso.js, hay que replicar el cambio aquí también — son solo dos líneas.
 const { onSchedule } = require("firebase-functions/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
@@ -17,7 +17,7 @@ const admin = require("firebase-admin");
 const STORAGE_KEY = "rueda-de-platos:data-v1";
 const PUSH_TOKEN_KEY = "rueda-de-platos:push-token-v1";
 
-// Copia exacta de Logica/peso.js — ver el porqué arriba.
+// Copia exacta de logica/peso.js — ver el porqué arriba.
 const DIAS_SUGERIDOS_PESO = { 2: [1, 4], 3: [1, 3, 5] };
 function esDiaSugeridoPeso(vecesSemana, fecha) {
   const dias = DIAS_SUGERIDOS_PESO[vecesSemana] || DIAS_SUGERIDOS_PESO[3];
@@ -31,7 +31,7 @@ function fechaISO(d) {
 }
 
 // Mensaje del push en el idioma del perfil de cada cuenta. Son solo dos textos fijos y muy
-// puntuales — no compensa tirar de todo Logica/i18n.js (pensado para el navegador, con 500+
+// puntuales — no compensa tirar de todo logica/i18n.js (pensado para el navegador, con 500+
 // claves) por esto.
 const TEXTOS_PUSH = {
   es: { titulo: "Toca pesarse", cuerpo: "Hoy es uno de tus días de seguimiento de peso en FoodDraft." },

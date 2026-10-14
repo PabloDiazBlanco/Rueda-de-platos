@@ -5,6 +5,9 @@
 // antes de guardarlos como referencia (agosto de 2026).
 import { DAYS } from "comun";
 import { objetivosPorComida } from "objetivos";
+import { migrateData } from "migraciones";
+import { FOODS_SEED } from "datos-iniciales";
+import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario } from "cuestionario";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -381,6 +384,207 @@ export function crearGrupos(mod) {
             const data = { perfil: {}, comidasCompletadas: {} };
             const r = calcularResumenMensual(data, "2026-09", new Date(2026, 8, 10));
             return comparar(r, { comidasPorDia: 4, esperadas: 40 });
+          },
+        },
+      ],
+    },
+    {
+      // Añadido en octubre de 2026, al sacar migrateData de app.jsx a logica/migraciones.js. Los
+      // valores esperados salen de leer migrateData bloque a bloque (ver sus comentarios): cada caso
+      // prueba un parche concreto y, sobre todo, que nunca se pisa lo que el usuario ya tenía.
+      grupo: "migrateData (datos guardados de versiones anteriores)",
+      casos: [
+        {
+          nombre: "Cuenta sin nada guardado: completa catálogo, reglas, peso, listas y comidas completadas",
+          ejecutar: () => {
+            const { data, changed } = migrateData({});
+            const idsSemilla = FOODS_SEED.map((f) => f.id).sort().join(",");
+            return comparar(
+              {
+                changed,
+                catalogoCompleto: data.foods.map((f) => f.id).sort().join(",") === idsSemilla,
+                reglas: JSON.stringify(data.rules),
+                pesadas: data.pesoTracking.entradas.length,
+                vecesSemana: data.pesoTracking.vecesSemana,
+                listaCompra: JSON.stringify(data.listaCompra),
+                listaCompraSimple: JSON.stringify(data.listaCompraSimple),
+                comidasCompletadas: JSON.stringify(data.comidasCompletadas),
+                sinPerfilInventado: data.perfil === undefined,
+              },
+              {
+                changed: true, catalogoCompleto: true, reglas: "[]", pesadas: 0, vecesSemana: 3,
+                listaCompra: JSON.stringify({ marcados: {}, generadoEn: null }),
+                listaCompraSimple: JSON.stringify({ marcados: {}, generadoEn: null }),
+                comidasCompletadas: "{}", sinPerfilInventado: true,
+              }
+            );
+          },
+        },
+        {
+          nombre: "Perfil antiguo: recibe el reparto clásico, idioma español y notificaciones desactivadas",
+          ejecutar: () => {
+            const { data } = migrateData({ perfil: { nombre: "Antiguo" } });
+            return comparar(
+              { reparto: JSON.stringify(data.perfil.repartoComidas), preset: data.perfil.presetComidas, idioma: data.perfil.idioma, push: data.perfil.notificacionesPush, nombre: data.perfil.nombre },
+              { reparto: JSON.stringify({ Desayuno: 0.2, Comida: 0.35, Merienda: 0.15, Cena: 0.3 }), preset: "clasico-4", idioma: "es", push: false, nombre: "Antiguo" }
+            );
+          },
+        },
+        {
+          nombre: "Perfil ya configurado: no se toca el reparto, el idioma ni las notificaciones elegidas",
+          ejecutar: () => {
+            const perfil = { repartoComidas: { Comida: 0.5, Cena: 0.5 }, presetComidas: "intermitente-2", idioma: "en", notificacionesPush: true };
+            const { data } = migrateData({ perfil });
+            return comparar(
+              { reparto: JSON.stringify(data.perfil.repartoComidas), preset: data.perfil.presetComidas, idioma: data.perfil.idioma, push: data.perfil.notificacionesPush },
+              { reparto: JSON.stringify({ Comida: 0.5, Cena: 0.5 }), preset: "intermitente-2", idioma: "en", push: true }
+            );
+          },
+        },
+        {
+          nombre: "Alimento del catálogo editado a mano: conserva nombre y macros, solo completa los campos nuevos",
+          ejecutar: () => {
+            const { data } = migrateData({ foods: [{ id: "f_pasta", name: "Mi pasta", kcal: 999, prot: 1, fat: 1, carb: 1 }] });
+            const pasta = data.foods.find((f) => f.id === "f_pasta");
+            return comparar(
+              { ...pasta, totalAlimentos: data.foods.length },
+              { name: "Mi pasta", kcal: 999, prot: 1, carb: 1, sal: 0.1, azucares: 3.5, fibra: 4, grasaSaturada: 0.3, categoria: "carbohidratos", totalAlimentos: FOODS_SEED.length }
+            );
+          },
+        },
+        {
+          nombre: "Alimento creado por el usuario: se conserva y se añade el resto del catálogo",
+          ejecutar: () => {
+            const { data } = migrateData({ foods: [{ id: "f_mio", name: "Mi alimento", kcal: 50, prot: 2, fat: 1, carb: 8 }] });
+            return comparar(
+              { existe: data.foods.some((f) => f.id === "f_mio" && f.name === "Mi alimento"), total: data.foods.length },
+              { existe: true, total: FOODS_SEED.length + 1 }
+            );
+          },
+        },
+        {
+          nombre: "Ingredientes antiguos sin alimento vinculado: se vinculan por nombre, sin pisar los ya vinculados",
+          ejecutar: () => {
+            const { data } = migrateData({
+              ingredients: [
+                { id: "a", name: "Pasta" },
+                { id: "b", name: "Garbanzos" },
+                { id: "c", name: "Arroz", foodId: "f_otro", gramos: 50 },
+                { id: "d", name: "Inventado" },
+              ],
+            });
+            const [a, b, c, d] = data.ingredients;
+            return comparar(
+              { aFood: a.foodId, aG: a.gramos, bFood: b.foodId, bG: b.gramos, cFood: c.foodId, cG: c.gramos, dFood: d.foodId },
+              { aFood: "f_pasta", aG: 80, bFood: "f_garbanzos_cocidos", bG: 120, cFood: "f_otro", cG: 50, dFood: undefined }
+            );
+          },
+        },
+        {
+          nombre: "Bloque antiguo de pollo picado: recibe su patrón semanal (2+0 / 1+1); otros bloques no",
+          ejecutar: () => {
+            const { data } = migrateData({ blocks: [{ id: "b1", name: "Pollo picado / hamburguesa de pollo" }, { id: "b2", name: "Otro bloque" }] });
+            return comparar(
+              { pollo: JSON.stringify(data.blocks[0].weeklyPattern), otro: data.blocks[1].weeklyPattern },
+              { pollo: JSON.stringify([{ counts: [2, 0] }, { counts: [1, 1] }]), otro: undefined }
+            );
+          },
+        },
+        {
+          nombre: "Seguimiento de peso antiguo: añade historial y pausas sin tocar pesadas ni configuración",
+          ejecutar: () => {
+            const { data } = migrateData({ pesoTracking: { vecesSemana: 2, entradas: [{ fecha: "2026-01-01", peso: 70 }] } });
+            const pt = data.pesoTracking;
+            return comparar(
+              { historial: JSON.stringify(pt.historial), pausas: JSON.stringify(pt.pausas), pesadas: pt.entradas.length, peso: pt.entradas[0].peso, vecesSemana: pt.vecesSemana },
+              { historial: "[]", pausas: "[]", pesadas: 1, peso: 70, vecesSemana: 2 }
+            );
+          },
+        },
+        {
+          nombre: "Migrar dos veces da lo mismo: la segunda pasada no detecta nada que cambiar",
+          ejecutar: () => {
+            const primera = migrateData({ perfil: { nombre: "X" }, ingredients: [{ id: "a", name: "Pasta" }], pesoTracking: { entradas: [] } });
+            const antes = JSON.stringify(primera.data);
+            const segunda = migrateData(JSON.parse(antes));
+            return comparar({ changed: segunda.changed, igual: JSON.stringify(segunda.data) === antes }, { changed: false, igual: true });
+          },
+        },
+      ],
+    },
+    {
+      // Añadido en octubre de 2026, al sacar el cuestionario de catálogo de app.jsx a
+      // logica/cuestionario.js. Probabilidades calculadas a mano con el mismo método que el código:
+      // cada elección pesa su nivel sobre la suma, redondeado, y la última se queda con el resto
+      // hasta 100 (así siempre suman exactamente 100).
+      grupo: "Cuestionario de catálogo (alta de cuenta nueva)",
+      casos: [
+        {
+          nombre: "Pasos con el reparto clásico de 4 comidas: los 5 base + desayuno y merienda",
+          ejecutar: () => {
+            const p = pasosCuestionario({ Desayuno: 0.2, Comida: 0.35, Merienda: 0.15, Cena: 0.3 });
+            return comparar({ pasos: p.join(",") }, { pasos: [...CUESTIONARIO_PASOS_BASE, "desayuno", "merienda"].join(",") });
+          },
+        },
+        {
+          nombre: "Pasos con 5 comidas: añade también media mañana, en el orden del día",
+          ejecutar: () => {
+            const p = pasosCuestionario({ Desayuno: 0.2, "Media mañana": 0.1, Comida: 0.3, Merienda: 0.1, Cena: 0.3 });
+            return comparar({ extra: p.slice(CUESTIONARIO_PASOS_BASE.length).join(",") }, { extra: "desayuno,media_manana,merienda" });
+          },
+        },
+        {
+          nombre: "Pasos sin desayuno (3 comidas): no pregunta por el desayuno",
+          ejecutar: () => {
+            const p = pasosCuestionario({ Comida: 0.4, Merienda: 0.2, Cena: 0.4 });
+            return comparar({ extra: p.slice(CUESTIONARIO_PASOS_BASE.length).join(",") }, { extra: "merienda" });
+          },
+        },
+        {
+          nombre: "Proteína elegida: regla de frecuencia semanal con el nivel elegido y sus gramos de partida",
+          ejecutar: () => {
+            const [salmon] = construirIngredientesDesdeCuestionario({ frecuencias: { f_salmon: 2 }, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {} });
+            return comparar(salmon, { name: "Salmón", category: "proteina", ruleType: "frecuencia", freqCantidad: 2, freqPeriodo: "semana", foodId: "f_salmon", gramos: 150, active: true });
+          },
+        },
+        {
+          nombre: "Dos carbohidratos con pesos 2 y 1: 67% y 33% (el último ajusta el redondeo)",
+          ejecutar: () => {
+            const r = construirIngredientesDesdeCuestionario({ frecuencias: {}, pesosCarbo: { f_pasta: 2, f_arroz_basmati: 1 }, pesosVerdura: {}, pesosGrasa: {} });
+            return comparar(
+              { n: r.length, pasta: r[0].probabilidad, arroz: r[1].probabilidad, nombres: r.map((i) => i.name).join(","), gramos: r.map((i) => i.gramos).join(",") },
+              { n: 2, pasta: 67, arroz: 33, nombres: "Pasta,Arroz", gramos: "80,80" }
+            );
+          },
+        },
+        {
+          nombre: "Tres verduras con el mismo peso: 33%, 33% y 34% (suman 100)",
+          ejecutar: () => {
+            const r = construirIngredientesDesdeCuestionario({ frecuencias: {}, pesosCarbo: {}, pesosVerdura: { f_ensalada: 1, f_tomate: 1, f_pimiento: 1 }, pesosGrasa: {} });
+            return comparar({ probs: r.map((i) => i.probabilidad).join(","), categoria: r[0].category }, { probs: "33,33,34", categoria: "verdura" });
+          },
+        },
+        {
+          nombre: "Tostadas elegidas en desayuno: un plato con composición y gramos por defecto de cada carpeta",
+          ejecutar: () => {
+            const r = construirIngredientesDesdeCuestionario({
+              frecuencias: {}, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {},
+              comidasLigeras: { desayuno: { tostadas: { nivel: 1, grupos: [["f_pan_molde"], ["f_pavo", "f_mozzarella"]] } } },
+            });
+            return comparar(
+              { n: r.length, nombre: r[0].name, categoria: r[0].category, prob: r[0].probabilidad, alimentos: r[0].composicion.map((c) => c.foodId).join(","), gramos: r[0].composicion.map((c) => c.gramos).join(",") },
+              { n: 1, nombre: "Tostadas", categoria: "desayuno", prob: 100, alimentos: "f_pan_molde,f_pavo,f_mozzarella", gramos: "60,30,125" }
+            );
+          },
+        },
+        {
+          nombre: "Arquetipo marcado sin ningún alimento dentro: no genera plato (solo el que sí tiene composición)",
+          ejecutar: () => {
+            const r = construirIngredientesDesdeCuestionario({
+              frecuencias: {}, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {},
+              comidasLigeras: { merienda: { tostadas: { nivel: 2, grupos: [[], []] }, cereales_lacteo: { nivel: 1, grupos: [["f_cereales_cacao"], ["f_yogur_prot"]] } } },
+            });
+            return comparar({ n: r.length, nombre: r[0] && r[0].name, prob: r[0] && r[0].probabilidad }, { n: 1, nombre: "Cereales con lácteo", prob: 100 });
           },
         },
       ],

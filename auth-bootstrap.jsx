@@ -327,7 +327,7 @@ function removeLogoutButton() {
 
 // ---------- Bandera de un idioma, dibujada a mano en SVG ----------
 // Copia exacta de la de app.jsx — no se comparte entre los dos archivos porque no hay ninguna capa
-// de componentes UI compartida entre auth-bootstrap.jsx y app.jsx (Logica/ es solo lógica sin JSX,
+// de componentes UI compartida entre auth-bootstrap.jsx y app.jsx (logica/ es solo lógica sin JSX,
 // ver CLAUDE.md), y son cinco SVG pequeños, no compensa montar nada para evitar esta duplicación.
 // No se usan emoji de bandera a propósito: catalán, gallego y euskera no tienen código de país
 // ISO, así que su emoji de bandera no existe de forma fiable en la mayoría de sistemas.
@@ -392,7 +392,7 @@ function FlagIcon({ lang, size = 20 }) {
 
 // ---------- Selector de idioma (bienvenida/login) ----------
 // Solo cambia el idioma de estas pantallas de antes de iniciar sesión (y se recuerda en
-// localStorage vía guardarIdiomaLocal, ver Logica/i18n.js) — una vez dentro de la app con sesión
+// localStorage vía guardarIdiomaLocal, ver logica/i18n.js) — una vez dentro de la app con sesión
 // iniciada, manda perfil.idioma, elegible también desde Perfil (Ajustes, en el menú lateral).
 function IdiomaSwitch({ idioma, onChange }) {
   return (
@@ -680,7 +680,7 @@ function LoginScreen({ idioma, onChangeIdioma }) {
 }
 
 // privacidad.html/terminos.html ya tienen su propio selector ES/EN y leen/guardan el idioma con el
-// mismo Logica/i18n.js (ver su <script type="module">) — no heredan el idioma de esta pantalla vía
+// mismo logica/i18n.js (ver su <script type="module">) — no heredan el idioma de esta pantalla vía
 // props porque son páginas HTML sueltas, no parte de esta SPA, así que abren siempre con el idioma
 // que ya estuviera guardado en localStorage.
 function LoadingScreen() {
