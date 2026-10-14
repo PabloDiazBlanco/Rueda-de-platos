@@ -5,7 +5,7 @@
 // de kcal calculado se ajusta a él en vez de usar la dieta de referencia de 2000 kcal del estudio.
 //
 // Fuente: resumen elaborado a partir de la ficha de datos de la OMS "Alimentación saludable"
-// (26 de enero de 2026) — ver Estudios de apoyo de la aplicación/Sal, azucar y fibra/.
+// (26 de enero de 2026) — ver local/referencias/sal-azucar-fibra/ (fuera del repositorio).
 // Cifras citadas tal cual en ese resumen:
 //   - Fibra: adultos, al menos 25 g/día (mínimo, sin techo indicado).
 //   - Azúcares libres: no superar el 10% de las kcal diarias (~50 g/12 cucharillas a 2000 kcal);

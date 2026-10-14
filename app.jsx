@@ -3510,10 +3510,12 @@ function MedidasPlaceholderView({ idioma }) {
   );
 }
 
-// Documentos de apoyo: PDFs que viven como archivos estáticos en la carpeta "PDFs explicativos"
-// del propio repositorio (se sirven solos junto al resto de la app, sin ningún sistema de subida).
-// Se deja vacío a propósito hasta tener listo el conjunto completo — cuando se rellene, cada entrada
-// solo necesita { titulo, descripcion, archivo } con la ruta relativa al PDF.
+// Documentos de apoyo: los PDFs divulgativos de la app. Desde octubre de 2026 viven en
+// local/divulgacion/, fuera del repositorio a propósito (el repo es público y GitHub Pages publica
+// todo lo versionado; ver CLAUDE.md, "Carpeta local/"), así que ya no se pueden servir como archivo
+// estático junto a la app. Cómo publicarlos para esta pantalla está por decidir (p. ej. Firebase
+// Storage, o el futuro cambio de hosting). Se deja vacío hasta entonces — cada entrada solo necesita
+// { titulo, descripcion, archivo } con la URL del PDF.
 const DOCUMENTOS_ADJUNTOS = [];
 
 function DocumentosView({ idioma }) {

@@ -31,7 +31,7 @@ export const TIPOS_ENTRENAMIENTO = [
 // Proteína recalibrada el 18/09/2026: los tramos de 3-5 y 6-7 sesiones comparten ahora 1,6 g/kg en
 // vez de escalar hasta 2,0. Tres meta-análisis independientes (Morton et al. 2018, BJSM; Tagawa et
 // al. 2021, Nutrition Reviews; Nunes et al. 2022, J Cachexia Sarcopenia Muscle — los tres archivados
-// en Estudios de apoyo de la aplicación/g-kg proteina/) convergen en que el punto de rendimientos
+// en local/referencias/g-kg-proteina/, fuera del repositorio — ver CLAUDE.md) convergen en que el punto de rendimientos
 // decrecientes para maximizar la síntesis de proteína muscular está en ~1,6 g/kg/día,
 // independientemente de cuánto se entrene por encima de ese umbral — por eso los dos tramos altos
 // comparten valor en vez de seguir subiendo. Ver Evidencia científica, sección 4.
@@ -120,7 +120,7 @@ export const CARGA_ENTRENAMIENTO_NIVELES = [
 // valor plano. La evidencia general de entrenamiento (Kerksick 2017, Amawi 2024 — la que respalda
 // CARGA_ENTRENAMIENTO_NIVELES) no tiene en cuenta el déficit; la evidencia específica de restricción
 // calórica (Helms, Aragon & Fitschen 2014; Roberts, Helms, Trexler & Fitschen 2020; Ruiz-Castellano
-// et al. 2021 — ver Estudios de apoyo de la aplicación/g-kg carbohidrato/) trata el carbohidrato en
+// et al. 2021 — ver local/referencias/g-kg-carbohidrato/) trata el carbohidrato en
 // déficit como variable residual del presupuesto calórico, no como objetivo de rendimiento, y da un
 // rango de referencia de 2-5 g/kg para la fase de pérdida de grasa — sin que ningún ensayo controlado
 // haya demostrado experimentalmente un umbral exacto (ver Evidencia científica, sección 5). Se fija
@@ -248,7 +248,7 @@ export const REPARTO_COMIDAS = { Desayuno: 0.20, Comida: 0.35, Merienda: 0.15, C
 // sumen 100% (salvo el clásico, que mantiene el reparto de siempre como punto de partida — el resto
 // no tiene un peso "recomendado", por diseño). Los textos son educativos, con la evidencia que los
 // respalda resumida en la memoria del proyecto (estudios en
-// "Estudios de apoyo de la aplicación/Split de comidas/").
+// local/referencias/split-de-comidas/, fuera del repositorio).
 export const PRESETS_COMIDAS = [
   {
     id: "clasico-4",
