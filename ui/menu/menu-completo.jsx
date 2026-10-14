@@ -1,0 +1,269 @@
+// ---------- ui/menu/menu-completo.jsx ----------
+// Pantalla de Menú completo: el ciclo de dos semanas con kcal, macros, raciones y comparación con
+// los objetivos del día.
+import React, { useState } from "react";
+import { Shuffle, Download, Undo2 } from "lucide-react";
+import { mealTotals } from "comida-calculo";
+import { DAYS } from "comun";
+import { fechaISO } from "peso";
+import { t } from "i18n";
+import { SectionIntro } from "../comun/tarjetas.jsx";
+import { MealDetailModal } from "./detalle-comida.jsx";
+import { DayStatsPanel, ResumenSaludPublica, ObjetivosModal } from "./estadisticas.jsx";
+import { ListaCompraModal } from "./lista-compra.jsx";
+import { PrintExport } from "./imprimir.jsx";
+import { HistoryPanel } from "./historial.jsx";
+
+export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada, idioma }) {
+  const [selectedMealId, setSelectedMealId] = useState(null);
+  const [editingObjetivos, setEditingObjetivos] = useState(false);
+  const [showStats, setShowStats] = useState(true);
+  const [showListaCompra, setShowListaCompra] = useState(false);
+  // Se busca la comida por id en cada render en vez de guardar una copia en el estado:
+  // así, al cambiar las raciones, el modal refleja el valor nuevo inmediatamente.
+  const selectedMeal = selectedMealId && menu ? menu.find((s) => s.id === selectedMealId) : null;
+  return (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 6 }}>
+        <SectionIntro text={t(idioma, "menu.intro")} />
+        <button
+          onClick={() => setEditingObjetivos(true)}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+            color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
+            borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
+            flexShrink: 0, whiteSpace: "nowrap",
+          }}
+        >
+          {t(idioma, "menu.verObjetivos")}
+        </button>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
+        <button
+          onClick={onGenerate}
+          style={{
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontSize: 13.5,
+            fontWeight: 700,
+            color: "#fff",
+            background: "var(--green)",
+            border: "none",
+            borderRadius: 9,
+            padding: "11px 18px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <Shuffle size={15} />
+          {menu ? t(idioma, "menu.generarOtro") : t(idioma, "menu.generarPrimero")}
+        </button>
+        {history && history.length >= 2 && (
+          <button
+            onClick={onUndo}
+            style={{
+              fontFamily: "'Helvetica Neue', Arial, sans-serif",
+              fontSize: 12.5,
+              fontWeight: 700,
+              color: "var(--ink-soft)",
+              background: "transparent",
+              border: "1px solid var(--line)",
+              borderRadius: 9,
+              padding: "10px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <Undo2 size={14} />
+            {t(idioma, "menu.deshacer")}
+          </button>
+        )}
+      </div>
+
+      {!menu && (
+        <div
+          style={{
+            border: "1.5px dashed var(--line)",
+            borderRadius: 12,
+            padding: "40px 20px",
+            textAlign: "center",
+            color: "var(--ink-soft)",
+            fontFamily: "'Helvetica Neue', Arial, sans-serif",
+            fontSize: 13,
+          }}
+        >
+          {t(idioma, "menu.sinMenuTodavia")}
+        </div>
+      )}
+
+      {menu && (
+        <>
+          <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
+            {[1, 2].map((w) => (
+              <button
+                key={w}
+                onClick={() => setMenuWeek(w)}
+                style={{
+                  fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  padding: "7px 14px",
+                  borderRadius: 20,
+                  border: "1px solid var(--line)",
+                  background: menuWeek === w ? "var(--green-dark)" : "var(--card)",
+                  color: menuWeek === w ? "#fff" : "var(--ink)",
+                }}
+              >
+                {t(idioma, "menu.semana", { n: w })}
+              </button>
+            ))}
+            <button
+              onClick={() => window.print()}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
+                borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              <Download size={13} /> {t(idioma, "menu.exportarPdf")}
+            </button>
+            <button
+              onClick={() => setShowListaCompra(true)}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 700,
+                color: "var(--coffee)", background: "var(--coffee-soft)", border: "none",
+                borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
+              }}
+            >
+              {t(idioma, "menu.listaCompra")}
+            </button>
+            <button
+              onClick={() => setShowStats((s) => !s)}
+              style={{
+                fontFamily: "'Helvetica Neue', Arial, sans-serif", fontSize: 12, fontWeight: 600,
+                color: "var(--ink-soft)", background: "transparent", border: "none",
+                padding: "7px 4px", marginLeft: "auto",
+              }}
+            >
+              {showStats ? t(idioma, "menu.ocultarEstadisticas") : t(idioma, "menu.verEstadisticas")}
+            </button>
+          </div>
+
+          {showStats && <DayStatsPanel data={data} menu={menu} week={menuWeek} objetivos={objetivos} idioma={idioma} />}
+          {showStats && <ResumenSaludPublica data={data} menu={menu} week={menuWeek} objetivos={objetivos} idioma={idioma} />}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {DAYS.map((day) => {
+              const dayMeals = menu.filter((s) => s.week === menuWeek && s.day === day);
+              return (
+                <div key={day} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
+                  <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {dayMeals.map((m) => {
+                      const totales = mealTotals(data, m);
+                      const ajustada = m.raciones && Object.values(m.raciones).some((v) => Number(v) !== 1);
+                      return (
+                      <div
+                        key={m.id}
+                        onClick={() => setSelectedMealId(m.id)}
+                        style={{
+                          display: "flex",
+                          alignItems: "baseline",
+                          gap: 10,
+                          fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                          cursor: "pointer",
+                          padding: "4px 6px",
+                          marginLeft: -6,
+                          marginRight: -6,
+                          borderRadius: 7,
+                        }}
+                      >
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>{t(idioma, "mealType." + m.mealType)}</span>
+                        {m.closedDish ? (
+                          <span style={{ fontSize: 13, color: "var(--rust)", fontWeight: 600 }}>{m.closedDish}</span>
+                        ) : m.item ? (
+                          <span style={{ fontSize: 13, color: "var(--ink)" }}>{m.item}</span>
+                        ) : (
+                          <span style={{ fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                            {m.protein} + {m.carbo} + {m.verdura}
+                            {m.garbanzos && (
+                              <span
+                                style={{
+                                  fontFamily: "'Helvetica Neue', Arial, sans-serif",
+                                  fontSize: 10.5,
+                                  fontWeight: 700,
+                                  color: "var(--mustard-dark)",
+                                  background: "var(--mustard-soft)",
+                                  padding: "2px 7px",
+                                  borderRadius: 20,
+                                }}
+                              >
+                                {t(idioma, "menu.garbanzos5050")}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                          {ajustada && (
+                            <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-soft)", padding: "2px 6px", borderRadius: 20 }}>
+                              {t(idioma, "menu.ajustada")}
+                            </span>
+                          )}
+                          {totales.kcal > 0 && (
+                            <span style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 700 }}>
+                              {t(idioma, "menu.kcal", { n: Math.round(totales.kcal) })}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      <HistoryPanel history={history} idioma={idioma} />
+
+      <PrintExport data={data} menu={menu} idioma={idioma} />
+
+      {selectedMeal && (
+        <MealDetailModal
+          meal={selectedMeal}
+          data={data}
+          onUpdateMeal={onUpdateMeal}
+          onUpsertRule={onUpsertRule}
+          onClose={() => setSelectedMealId(null)}
+          completadaHoy={!!(((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType])}
+          onToggleCompletada={() => onToggleComidaCompletada(selectedMeal.mealType)}
+          idioma={idioma}
+        />
+      )}
+
+      {editingObjetivos && (
+        <ObjetivosModal
+          objetivos={objetivos}
+          perfil={data.perfil}
+          onClose={() => setEditingObjetivos(false)}
+          idioma={idioma}
+        />
+      )}
+
+      {showListaCompra && (
+        <ListaCompraModal
+          data={data}
+          menu={menu}
+          menuWeek={menuWeek}
+          listaCompra={data.listaCompra || { marcados: {}, generadoEn: null }}
+          onToggle={onToggleMarcadoCompra}
+          onClose={() => setShowListaCompra(false)}
+          idioma={idioma}
+        />
+      )}
+    </>
+  );
+}

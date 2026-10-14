@@ -31,7 +31,8 @@
     "i18n": "../logica/i18n.js",
     "datos-iniciales": "../logica/datos-iniciales.js",
     "cuestionario": "../logica/cuestionario.js",
-    "migraciones": "../logica/migraciones.js"
+    "migraciones": "../logica/migraciones.js",
+    "cargador-ui": "../cargador-ui.js"
   }
 }
 </script>
@@ -117,12 +118,12 @@
 
 <script type="module">
   import { crearGrupos } from "./tests.js";
+  import { cargarApp, archivosCargados } from "cargador-ui";
 
+  // Mismo cargador que la app real (cargador-ui.js), así que se prueba la interfaz tal cual se
+  // sirve: app.jsx y todos los archivos de ui/, nunca una copia.
   async function cargarAppJsx() {
-    const code = await fetch("../app.jsx").then((r) => r.text());
-    const transformado = Babel.transform(code, { presets: ["react"], sourceType: "module" }).code;
-    const blob = new Blob([transformado], { type: "text/javascript" });
-    return import(URL.createObjectURL(blob));
+    return cargarApp({ base: "../" });
   }
 
   function renderResultados(grupos) {
@@ -196,7 +197,8 @@
   (async () => {
     try {
       const mod = await cargarAppJsx();
-      const grupos = crearGrupos(mod);
+      const lista = await fetch("../ui/archivos.json").then((r) => r.json());
+      const grupos = crearGrupos(mod, { archivosCargados: archivosCargados(), archivosLista: lista });
       document.getElementById("estado-carga").style.display = "none";
       renderResultados(grupos);
     } catch (err) {

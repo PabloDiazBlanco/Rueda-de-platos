@@ -37,13 +37,38 @@ function perfilBase(overrides = {}) {
   };
 }
 
-export function crearGrupos(mod) {
+// `carga` (opcional) lo pasa validacion/index.html tras cargar la interfaz con cargador-ui.js: qué
+// archivos de ui/ se cargaron de verdad y qué lista ui/archivos.json.
+export function crearGrupos(mod, carga) {
   const {
     calcularObjetivosPerfil, calcularTendenciaPeso, evaluarTendencia, esCambioRadical,
     esDiaSugeridoPeso, calcularListaCompra, fechaISO, resumenNutrientesSemana, calcularResumenMensual,
   } = mod;
 
   return [
+    ...(carga ? [{
+      // Desde octubre de 2026 la interfaz está repartida en ui/ y la carga cargador-ui.js. La lista
+      // ui/archivos.json la usa también sw.js para el modo sin conexión: un archivo que se carga
+      // pero no está en la lista funcionaría con conexión y fallaría sin ella; uno que está en la
+      // lista pero ya no se usa haría fallar la instalación del service worker si se borra.
+      grupo: "Carga de la interfaz (ui/archivos.json)",
+      casos: [
+        {
+          nombre: "Todo archivo de ui/ que carga la app está en ui/archivos.json",
+          ejecutar: () => {
+            const faltan = carga.archivosCargados.filter((f) => !carga.archivosLista.includes(f));
+            return comparar({ faltanEnLaLista: faltan.join(", ") }, { faltanEnLaLista: "" });
+          },
+        },
+        {
+          nombre: "Todo archivo de ui/archivos.json se usa de verdad",
+          ejecutar: () => {
+            const sobran = carga.archivosLista.filter((f) => !carga.archivosCargados.includes(f));
+            return comparar({ sobranEnLaLista: sobran.join(", ") }, { sobranEnLaLista: "" });
+          },
+        },
+      ],
+    }] : []),
     {
       grupo: "calcularObjetivosPerfil",
       casos: [

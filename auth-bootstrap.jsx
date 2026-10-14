@@ -28,6 +28,7 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
+import { cargarApp } from "cargador-ui";
 
 // Identificador público de tu proyecto de Firebase (no es una clave secreta, es normal que
 // se vea en el código fuente de cualquier web que use Firebase).
@@ -698,18 +699,12 @@ function LoadingScreen() {
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(React.createElement(LoadingScreen));
 
-// app.jsx (el componente de la app en sí) se descarga y se prepara una sola vez,
-// y solo se ejecuta cuando window.storage ya está listo (tras iniciar sesión).
+// La interfaz (app.jsx y los archivos de ui/) se descarga y se prepara una sola vez, con
+// cargador-ui.js, y solo se ejecuta cuando window.storage ya está listo (tras iniciar sesión).
 let mainAppModulePromise = null;
 function loadMainApp() {
   if (!mainAppModulePromise) {
-    mainAppModulePromise = fetch("app.jsx")
-      .then((r) => r.text())
-      .then((code) => Babel.transform(code, { presets: ["react"], sourceType: "module" }).code)
-      .then((transformed) => {
-        const blob = new Blob([transformed], { type: "text/javascript" });
-        return import(URL.createObjectURL(blob));
-      });
+    mainAppModulePromise = cargarApp({ base: "./" });
   }
   return mainAppModulePromise;
 }

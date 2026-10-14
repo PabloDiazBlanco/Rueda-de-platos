@@ -1,6 +1,7 @@
-const CACHE_NAME = "fooddraft-v4";
+const CACHE_NAME = "fooddraft-v5";
 const FILES_TO_CACHE = [
-  "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./manifest.json", "./icon.svg",
+  "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./cargador-ui.js", "./ui/archivos.json",
+  "./manifest.json", "./icon.svg",
   "./logica/comun.js", "./logica/macros.js", "./logica/seleccion.js", "./logica/comida-calculo.js",
   "./logica/objetivos.js", "./logica/menu-generador.js", "./logica/peso.js", "./logica/salud-publica.js",
   "./logica/resumen-mensual.js", "./logica/i18n.js", "./logica/datos-iniciales.js", "./logica/cuestionario.js",
@@ -44,9 +45,17 @@ try {
   // No pasa nada: el resto del service worker (caché offline) sigue funcionando sin notificaciones.
 }
 
+// Los archivos de la interfaz (ui/) no se listan aquí a mano: se leen de ui/archivos.json, la misma
+// lista que usa cargador-ui.js, para que no se pueda olvidar ninguno (ver CLAUDE.md). Si algún
+// archivo de la lista no existe, la instalación falla entera y se queda la versión anterior del
+// service worker — mejor eso que una versión nueva que no funcione sin conexión.
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await cache.addAll(FILES_TO_CACHE);
+      const lista = await (await fetch("./ui/archivos.json", { cache: "no-store" })).json();
+      await cache.addAll(lista.map((ruta) => "./" + ruta));
+    })
   );
   self.skipWaiting();
 });
