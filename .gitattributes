@@ -1,0 +1,12 @@
+# Finales de línea: el repositorio guarda LF y los archivos de texto se escriben con LF en cualquier
+# equipo (sin esto, Git en Windows convierte a CRLF según la configuración de cada máquina y los
+# commits pueden arrastrar cambios invisibles de saltos de línea).
+* text=auto eol=lf
+
+# Binarios: Git no debe intentar convertirlos ni mostrar diferencias de texto.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.docx binary
+*.zip binary

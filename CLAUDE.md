@@ -5,7 +5,9 @@ nutricionales y seguimiento de peso. Nació como app de uso personal (un solo us
 desarrollador); desde septiembre de 2026 está en proceso de abrirse a más usuarios y publicarse en
 Google Play, con una capa de suscripción premium (ver `functions/`, y la hoja de ruta de
 publicación si la tienes a mano). El contexto completo (por qué existe, la ciencia detrás) está en
-`PDFs explicativos/` — léelos antes de tocar cualquier fórmula nutricional.
+los PDFs de `local/divulgacion/` — léelos antes de tocar cualquier fórmula nutricional. Ojo: esa
+carpeta **no está en el repositorio** (ver "Carpeta `local/`" más abajo); si no la tienes en tu
+copia, pídesela al usuario en vez de suponer su contenido.
 
 **Nota sobre el nombre**: la app se llama "FoodDraft" de cara al usuario (así aparece en la
 interfaz, el manifest, las páginas legales...). Por debajo, el proyecto de Firebase, el
@@ -201,7 +203,8 @@ haber mirado la consola (ver "Cómo verificar un cambio").
 Todo el código (identificadores de dominio, comentarios, texto de interfaz) está en español,
 salvo las palabras clave del propio lenguaje. Los comentarios explican el *porqué* (una decisión
 de diseño, una referencia científica, un caso límite) con bastante más detalle del que sería
-habitual en otro proyecto — es intencionado, este código va de la mano de los PDFs explicativos y
+habitual en otro proyecto — es intencionado, este código va de la mano de los PDFs explicativos
+(`local/divulgacion/`) y
 se espera que se entienda sin tener que releerlos. Mantén ese tono al añadir código nuevo, no lo
 recortes a comentarios mínimos por costumbre.
 
@@ -265,30 +268,36 @@ formato habitual es `rueda-de-platos:push-token-v1`, que guarda el token de noti
 
 ## Higiene de commits
 
-Un commit de código no lleva contenido (PDFs, imágenes, documentación) y viceversa. Si un cambio
-toca ambas cosas, son dos commits separados.
+Un commit de código no lleva contenido (documentación, imágenes) y viceversa. Si un cambio
+toca ambas cosas, son dos commits separados. (Desde octubre de 2026 casi todo el contenido vive en
+`local/` y no se versiona, pero la regla sigue valiendo para `README.md`, `CLAUDE.md` e iconos.)
 
-## Carpetas de contenido
+## Carpeta `local/`: contenido que nunca se sube
 
-- `PDFs explicativos/` — documentación de fundamentos nutricionales y evidencia científica.
-  Fuente de verdad sobre el porqué de cada fórmula.
-- `Estudios de apoyo de la aplicacion/` — papers académicos originales (con DOI) que respaldan
-  esos PDFs, organizados por carpeta temática. Se mantienen versionados a propósito (no son
-  redundantes con los PDFs — son la fuente primaria). Si algún día se añade contenido claramente
-  no académico (volcados de páginas web con trackers, etc.), se elimina en vez de mantenerlo.
-- `reports/` y `research_notes/` — investigaciones a fondo que respaldan una decisión de cálculo
-  concreta (hoy, el suelo de carbohidrato en déficit calórico): el informe final en `reports/` y
-  las notas de trabajo por subtema en `research_notes/`. Los PDFs de Evidencia Científica y de
-  Fundamentos remiten al informe de `reports/` para el detalle completo.
-- `Traducciones/` y `Traducciones corregidas/` — material de trabajo de la internacionalización
-  (PDFs de solo texto para revisar cada idioma y las correcciones que se aplicaron a catalán,
-  gallego y euskera). No los lee la app: la fuente real de las traducciones es `Logica/i18n.js`.
-- `Ideas futuras.md` — apuntes de mejoras sin diseñar ni priorizar. No es una hoja de ruta cerrada;
-  al retomar una idea, relee su sección entera en vez de fiarte de un resumen.
-- `Ideas para la aplicación.docx` — documento de ideas original del que salió el rediseño de
-  navegación y onboarding de septiembre de 2026.
-- `Validacion/` — herramienta de mantenimiento, no parte de la app (no se enlaza desde
-  `index.html` ni se registra en el service worker).
+El repositorio es **público**, y GitHub Pages publica cualquier archivo versionado (no solo la app:
+también se podían descargar los papers y este mismo archivo). Por eso, desde octubre de 2026, todo
+lo que no es código de la app vive en `local/`, que está entero en `.gitignore`. Existe solo en la
+copia del usuario (dentro de OneDrive, que hace de copia de seguridad), nunca en GitHub.
+
+Convención de nombres dentro de `local/` (y para carpetas nuevas en general): español, minúsculas,
+guiones, sin espacios ni tildes.
+
+| Carpeta | Contenido |
+|---|---|
+| `local/divulgacion/` | PDFs explicativos (Documentación, Fundamentos nutricionales, Evidencia científica, Idea general, Valores nutricionales, Frecuencias y probabilidades) y `mockups/`. Fuente de verdad sobre el porqué de cada fórmula. Más adelante se publicarán dentro de la propia app (pantalla «Documentos»), pero no en el repositorio |
+| `local/referencias/` | Papers académicos originales (con DOI) que respaldan esos PDFs, por tema (`g-kg-proteina/`, `g-kg-carbohidrato/`, `split-de-comidas/`...). Son la fuente primaria, no redundantes con los PDFs. Si algún día se añade contenido claramente no académico (volcados de páginas web con trackers, etc.), se elimina |
+| `local/investigacion/` | Investigaciones a fondo que respaldan una decisión de cálculo concreta, una carpeta por tema con `informe.md` y `notas/` (hoy: `carbohidrato-minimo-deficit/`). Los PDFs de Evidencia científica y de Fundamentos remiten a ese informe |
+| `local/ideas/` | `ideas-futuras.md` (ideas agrupadas por letras A-G, sin diseñar ni priorizar; al retomar una, relee su sección entera) e `investigacion-entrenamiento.md` (estudio previo de la idea de gimnasio) |
+| `local/archivo/` | Material ya cerrado: `ideas-originales.docx` (del que salió el rediseño de navegación de septiembre de 2026) y `traducciones/` (revisión de la Fase 5; la fuente real de las traducciones es `Logica/i18n.js`) |
+
+Lo que **sí** está en el repositorio y no es la app: `functions/` (backend), `Validacion/`
+(herramienta de mantenimiento, no se enlaza desde `index.html` ni se registra en el service worker),
+`README.md` y este archivo.
+
+**Historial**: hasta octubre de 2026 los papers, PDFs, traducciones e ideas estuvieron versionados, y
+siguen en el historial de git (y por tanto se pueden recuperar desde commits antiguos del repositorio
+público). Se decidió no reescribir el historial por ahora; si se retoma, es una operación destructiva
+(reescritura + push forzado) que solo se hace con permiso explícito.
 
 ## Qué no hacer
 
@@ -299,4 +308,9 @@ toca ambas cosas, son dos commits separados.
 - No dividir los componentes React de `app.jsx` en más archivos sin releer antes la sección
   "Por qué la UI no está dividida".
 - No hacer commit de nada sin que se pida explícitamente.
+- No sacar nada de `local/` al repositorio ni quitar `local/` del `.gitignore`: el repositorio es
+  público y GitHub Pages lo publicaría todo.
+- No cambiar la licencia (`LICENSE`: todos los derechos reservados) sin actualizar a la vez la sección
+  «Propiedad intelectual» de los términos de uso (`terminos.propiedadTexto` en los cinco idiomas de
+  `Logica/i18n.js`), y viceversa. Son dos mitades del mismo compromiso.
 - No dar un cambio en la lógica por terminado sin pasar por `Validacion/` primero.

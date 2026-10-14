@@ -1,0 +1,13 @@
+# Ajustes de editor compartidos (VS Code, JetBrains... con el plugin de EditorConfig).
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 2
+
+[*.md]
+# En Markdown los espacios al final de línea pueden ser un salto de línea intencionado.
+trim_trailing_whitespace = false

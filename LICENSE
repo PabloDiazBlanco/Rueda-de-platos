@@ -1,0 +1,29 @@
+Copyright (c) 2026 Pablo Díaz Blanco. All rights reserved.
+
+This repository is made publicly visible so that the FoodDraft web app can be served from it
+(GitHub Pages). Public visibility does not grant any licence. No part of this source code,
+design, text or other content may be copied, modified, redistributed, sublicensed, sold, or
+used to build or operate another product or service, in whole or in part, without the prior
+written permission of the copyright holder.
+
+Viewing the code, and forking it within GitHub as allowed by GitHub's Terms of Service, are the
+only uses permitted without that permission.
+
+Third-party components (for example React, Firebase, lucide-react or Babel) remain under their
+own licences and are not covered by this notice.
+
+---
+
+Copyright (c) 2026 Pablo Díaz Blanco. Todos los derechos reservados.
+
+Este repositorio es visible públicamente para poder servir la aplicación web FoodDraft
+(GitHub Pages). La visibilidad pública no concede ninguna licencia. Ninguna parte de este código
+fuente, diseño, texto u otro contenido puede copiarse, modificarse, redistribuirse,
+sublicenciarse, venderse ni usarse para crear o explotar otro producto o servicio, en todo o en
+parte, sin el permiso previo y por escrito del titular de los derechos.
+
+Ver el código y hacer un *fork* dentro de GitHub, tal como permiten las Condiciones del Servicio
+de GitHub, son los únicos usos permitidos sin ese permiso.
+
+Los componentes de terceros (por ejemplo React, Firebase, lucide-react o Babel) siguen bajo sus
+propias licencias y no están cubiertos por este aviso.

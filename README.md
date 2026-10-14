@@ -31,7 +31,8 @@ coste de servidor o valor claramente extra: seguimiento de peso, lector de etiqu
 en español, inglés, catalán, gallego y euskera.
 
 La idea de fondo — por qué existe, qué papel juega la ciencia en cada decisión de diseño — está
-desarrollada en `PDFs explicativos/`, no aquí. Este documento es solo el mapa técnico del repo.
+desarrollada en los documentos explicativos del proyecto, que no se publican en este repositorio
+(se incorporarán a la propia app). Este documento es solo el mapa técnico del repo.
 
 ## Arquitectura: cero build, a propósito
 
@@ -94,15 +95,13 @@ Rueda-de-platos/
 │   ├── index.html
 │   └── tests.js
 │
-├── PDFs explicativos/               fundamentos nutricionales y evidencia científica
-├── Estudios de apoyo de la aplicacion/   papers académicos originales (con DOI)
-├── reports/, research_notes/        investigaciones a fondo tras decisiones de cálculo concretas
-├── Traducciones/, Traducciones corregidas/   material de revisión de la internacionalización
-├── Ideas futuras.md                 apuntes de mejoras pendientes, sin priorizar
-│
 ├── CLAUDE.md                        convenciones del proyecto
 └── README.md                        este archivo
 ```
+
+La documentación de trabajo (fundamentos nutricionales, papers de referencia, investigaciones,
+ideas) vive en una carpeta `local/` que está en `.gitignore`: GitHub Pages publica todo lo que esté
+versionado, así que en el repositorio solo está el código.
 
 ## Previsualizar en local
 
@@ -141,14 +140,16 @@ nada. Las Cloud Functions, en cambio, se despliegan a mano.
 | **GitHub Pages** | hosting de la app |
 | **lucide-react** | iconos |
 
+## Licencia
+
+Todos los derechos reservados — ver [`LICENSE`](./LICENSE). El repositorio es público para poder servir
+la app desde GitHub Pages, pero eso no concede ninguna licencia de uso del código. Los términos de uso
+de la app lo recogen en su sección «Propiedad intelectual».
+
 ## Documentación relacionada
 
 - [`CLAUDE.md`](./CLAUDE.md) — convenciones técnicas del proyecto (qué hacer, qué no, y por qué)
-- [`PDFs explicativos/Idea general.pdf`](<./PDFs explicativos/Idea general.pdf>) — el concepto de la app, para quien no es técnico
-- [`PDFs explicativos/Rueda_de_Platos_Documentacion.pdf`](<./PDFs explicativos/Rueda_de_Platos_Documentacion.pdf>) — documentación técnica y funcional completa
-- [`Ideas futuras.md`](<./Ideas futuras.md>) — mejoras pendientes
-- [`PDFs explicativos/Rueda_de_Platos_Fundamentos_Nutricionales.pdf`](<./PDFs explicativos/Rueda_de_Platos_Fundamentos_Nutricionales.pdf>) — la ciencia detrás de cada fórmula
-- [`PDFs explicativos/Rueda_de_Platos_Evidencia_Cientifica.pdf`](<./PDFs explicativos/Rueda_de_Platos_Evidencia_Cientifica.pdf>) — qué estudio concreto respalda cada decisión
+- [Política de privacidad](./privacidad.html) y [términos de uso](./terminos.html)
 
 <div align="center">
 
