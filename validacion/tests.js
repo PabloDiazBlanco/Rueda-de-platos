@@ -8,6 +8,11 @@ import { objetivosPorComida } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
 import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario } from "cuestionario";
+import {
+  despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
+  quitarConfirmacion, descontarComida, devolverComida, marcarComprado, desmarcarComprado,
+} from "despensa";
+import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -614,7 +619,314 @@ export function crearGrupos(mod, carga) {
         },
       ],
     },
+    {
+      // Añadido en octubre de 2026 con la Fase A de la despensa (logica/despensa.js y
+      // logica/lista-compra-neta.js). Todos usan escenarioDespensa() (más abajo, con las necesidades
+      // de cada comida calculadas a mano en su comentario). Lo que más importa proteger: que la
+      // lista neta nunca cuente dos veces lo ya cocinado, y que desmarcar una comida o destachar una
+      // compra deje la despensa exactamente como estaba.
+      grupo: "Despensa y lista de la compra neta",
+      casos: [
+        {
+          nombre: "Sin nada en casa: una fila por alimento y «comprar» = «necesitas»",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const filas = calcularListaNeta(data, menu, 1, despensaVacia());
+            const pollo = filas.find((f) => f.foodId === "f_pollo");
+            const arroz = filas.find((f) => f.foodId === "f_arroz");
+            // Semana 1: Arroz, Lechuga, Manzana, Pan, Pechuga de pollo, Queso y Tomate (7 filas).
+            return comparar(
+              { filas: filas.length, polloNecesito: pollo?.necesito, polloTengo: pollo?.tengo, polloComprar: pollo?.comprar, arrozComprar: arroz?.comprar, categoria: pollo?.categoria },
+              { filas: 7, polloNecesito: 600, polloTengo: 0, polloComprar: 600, arrozComprar: 120, categoria: "proteinas" }
+            );
+          },
+        },
+        {
+          nombre: "El mismo alimento desde ingredientes distintos (y con raciones) se suma en una sola fila",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const filas = calcularListaNeta(data, menu, 1, despensaVacia());
+            const pan = filas.filter((f) => f.foodId === "f_pan");
+            const pollo = filas.filter((f) => f.foodId === "f_pollo");
+            // Pan: 80 × 1,5 (bocadillo) + 60 (tostada) = 180.
+            return comparar({ filasPan: pan.length, pan: pan[0]?.necesito, filasPollo: pollo.length }, { filasPan: 1, pan: 180, filasPollo: 1 });
+          },
+        },
+        {
+          nombre: "Lo que hay en casa se resta: de sobra (comprar 0), repartido en dos zonas y a cero",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const despensa = conItems([
+              { id: "a", foodId: "f_arroz", zona: "despensa", gramos: 1000 },
+              { id: "b", foodId: "f_pollo", zona: "nevera", gramos: 200 },
+              { id: "c", foodId: "f_pollo", zona: "congelador", gramos: 300 },
+              { id: "d", foodId: "f_queso", zona: "nevera", gramos: 0 },
+            ]);
+            const filas = calcularListaNeta(data, menu, 1, despensa);
+            const fila = (id) => filas.find((f) => f.foodId === id) || {};
+            return comparar(
+              { arrozTengo: fila("f_arroz").tengo, arrozComprar: fila("f_arroz").comprar, polloTengo: fila("f_pollo").tengo, polloComprar: fila("f_pollo").comprar, quesoTengo: fila("f_queso").tengo, quesoComprar: fila("f_queso").comprar },
+              { arrozTengo: 1000, arrozComprar: 0, polloTengo: 500, polloComprar: 100, quesoTengo: 0, quesoComprar: 30 }
+            );
+          },
+        },
+        {
+          nombre: "Verdura y fruta sin cantidad: salen si no las tienes; la verdura sin alimento vinculado, siempre",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const despensa = conItems([{ id: "t", foodId: "f_tomate", zona: "nevera", tengo: true }]);
+            const filas = calcularListaNeta(data, menu, 1, despensa);
+            const tomate = filas.find((f) => f.foodId === "f_tomate") || {};
+            const manzana = filas.find((f) => f.foodId === "f_manzana") || {};
+            const lechuga = filas.find((f) => f.key === "nombre:Lechuga") || {};
+            return comparar(
+              { tomateTengo: tomate.tengo, tomateComprar: tomate.comprar, manzanaSinCantidad: manzana.sinCantidad, manzanaComprar: manzana.comprar, lechugaFood: lechuga.foodId, lechugaComprar: lechuga.comprar, lechugaCategoria: lechuga.categoria },
+              { tomateTengo: true, tomateComprar: false, manzanaSinCantidad: true, manzanaComprar: true, lechugaFood: null, lechugaComprar: true, lechugaCategoria: "vegetales" }
+            );
+          },
+        },
+        {
+          nombre: "Coherencia con calcularListaCompra: los mismos gramos de cada alimento para el mismo menú",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const neta = Object.fromEntries(calcularListaNeta(data, menu, "todo", despensaVacia()).filter((f) => !f.sinCantidad).map((f) => [f.nombre, f.necesito]));
+            // La lista de siempre puede sacar el mismo alimento en dos filas (por ingrediente): se suman.
+            const clasica = {};
+            calcularListaCompra(data, menu, "todo").forEach((i) => { clasica[i.nombre] = (clasica[i.nombre] || 0) + i.gramos; });
+            const distintos = Object.keys(neta).filter((n) => Math.round(clasica[n]) !== neta[n]);
+            // Ciclo completo: pollo 600 + 150 (semana 2) = 750; arroz 120 + 80 = 200; pan 180; queso 30.
+            return comparar(
+              { distintos: distintos.join(", "), pollo: neta["Pechuga de pollo"], arroz: neta["Arroz"], pan: neta["Pan"], queso: neta["Queso"] },
+              { distintos: "", pollo: 750, arroz: 200, pan: 180, queso: 30 }
+            );
+          },
+        },
+        {
+          nombre: "Cocinar no cuenta dos veces: sale de la despensa y deja de hacer falta a la vez",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const antes = confirmarMenu(conItems([
+              { id: "p", foodId: "f_pollo", zona: "nevera", gramos: 200 },
+              { id: "a", foodId: "f_arroz", zona: "despensa", gramos: 1000 },
+            ]), menu, HOY);
+            const lunes = menu[0];
+            const despues = descontarComida(antes, { fecha: HOY, mealType: lunes.mealType, slotId: lunes.id, necesidades: necesidadesComida(data, lunes) });
+            const pAntes = calcularListaNeta(data, menu, 1, antes).find((f) => f.foodId === "f_pollo");
+            const filas = calcularListaNeta(data, menu, 1, despues);
+            const pollo = filas.find((f) => f.foodId === "f_pollo");
+            const arroz = filas.find((f) => f.foodId === "f_arroz");
+            // Lunes: 150 de pollo y 80 de arroz. Pollo: necesitas 600 → 450, tienes 200 → 50,
+            // comprar 400 antes y después. Arroz: necesitas 40, tienes 920.
+            return comparar(
+              { comprarAntes: pAntes.comprar, necesito: pollo.necesito, tengo: pollo.tengo, comprar: pollo.comprar, arrozNecesito: arroz.necesito, arrozTengo: arroz.tengo },
+              { comprarAntes: 400, necesito: 450, tengo: 50, comprar: 400, arrozNecesito: 40, arrozTengo: 920 }
+            );
+          },
+        },
+        {
+          nombre: "Descontar nunca baja de cero, y desmarcar devuelve exactamente lo descontado",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const inicial = conItems([
+              { id: "a", foodId: "f_pollo", zona: "nevera", gramos: 100 },
+              { id: "b", foodId: "f_pollo", zona: "congelador", gramos: 20 },
+            ]);
+            const martes = menu[3]; // pide 300 g de pollo (ración 2) y 40 de arroz, que no hay
+            const hecha = descontarComida(inicial, { fecha: HOY, mealType: martes.mealType, slotId: martes.id, necesidades: necesidadesComida(data, martes) });
+            const consumo = hecha.consumos[HOY][martes.mealType];
+            const vuelta = devolverComida(hecha, { fecha: HOY, mealType: martes.mealType });
+            return comparar(
+              {
+                nevera: hecha.items[0].gramos, congelador: hecha.items[1].gramos,
+                descontado: consumo.items.map((x) => `${x.itemId}:${x.gramos}`).join(","),
+                igualQueAntes: JSON.stringify(vuelta.items) === JSON.stringify(inicial.items), consumos: JSON.stringify(vuelta.consumos),
+              },
+              { nevera: 0, congelador: 0, descontado: "a:100,b:20", igualQueAntes: true, consumos: "{}" }
+            );
+          },
+        },
+        {
+          nombre: "Tachar un alimento que no tenías lo crea en su zona; destachar lo borra",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const d0 = confirmarMenu(despensaVacia(), menu, HOY);
+            const fila = calcularListaNeta(data, menu, 1, d0).find((f) => f.foodId === "f_pollo");
+            const d1 = marcarComprado(d0, fila, data.foods.find((f) => f.id === "f_pollo"));
+            const tachada = calcularListaNeta(data, menu, 1, d1).find((f) => f.foodId === "f_pollo");
+            const d2 = desmarcarComprado(d1, tachada);
+            // La fila tachada no desaparece: sigue diciendo comprar 600, ahora como comprada.
+            return comparar(
+              { zona: d1.items[0]?.zona, gramos: d1.items[0]?.gramos, comprar: tachada.comprar, comprado: tachada.comprado, itemsAlDestachar: d2.items.length, compras: JSON.stringify(d2.compras) },
+              { zona: "nevera", gramos: 600, comprar: 600, comprado: true, itemsAlDestachar: 0, compras: "{}" }
+            );
+          },
+        },
+        {
+          nombre: "Tachar un alimento que ya tenías le suma lo comprado; destachar se lo quita",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const d0 = confirmarMenu(conItems([{ id: "a", foodId: "f_pollo", zona: "nevera", gramos: 200 }]), menu, HOY);
+            const fila = calcularListaNeta(data, menu, 1, d0).find((f) => f.foodId === "f_pollo");
+            const d1 = marcarComprado(d0, fila, data.foods.find((f) => f.id === "f_pollo"));
+            const tachada = calcularListaNeta(data, menu, 1, d1).find((f) => f.foodId === "f_pollo");
+            const d2 = desmarcarComprado(d1, tachada);
+            return comparar(
+              { tras: d1.items[0].gramos, delta: d1.compras.f_pollo.delta, tengo: tachada.tengo, comprar: tachada.comprar, alDestachar: d2.items.map((i) => `${i.id}:${i.gramos}`).join(",") },
+              { tras: 600, delta: 400, tengo: 200, comprar: 400, alDestachar: "a:200" }
+            );
+          },
+        },
+        {
+          nombre: "Tachar fruta la pone como «tengo» sin cantidad; destachar la quita",
+          ejecutar: () => {
+            const { data, menu } = escenarioDespensa();
+            const d0 = confirmarMenu(despensaVacia(), menu, HOY);
+            const fila = calcularListaNeta(data, menu, 1, d0).find((f) => f.foodId === "f_manzana");
+            const d1 = marcarComprado(d0, fila, data.foods.find((f) => f.id === "f_manzana"));
+            const tachada = calcularListaNeta(data, menu, 1, d1).find((f) => f.foodId === "f_manzana");
+            const d2 = desmarcarComprado(d1, tachada);
+            return comparar(
+              { tengoGuardado: d1.items[0]?.tengo, sinGramos: d1.items[0]?.gramos === undefined, comprado: tachada.comprado, itemsAlDestachar: d2.items.length },
+              { tengoGuardado: true, sinGramos: true, comprado: true, itemsAlDestachar: 0 }
+            );
+          },
+        },
+        {
+          nombre: "Confirmar guarda el menú; generar otro lo deja en borrador y «Deshacer» lo recupera",
+          ejecutar: () => {
+            const { menu } = escenarioDespensa();
+            const d = confirmarMenu(despensaVacia(), menu, HOY);
+            const otro = menu.map((s) => ({ ...s, id: "n_" + s.id }));
+            const sinConfirmar = quitarConfirmacion({ ...d, compras: { f_pollo: { itemId: "x", delta: 1, creado: false } } });
+            return comparar(
+              { guardado: d.menuConfirmadoId, confirmado: menuEstaConfirmado(d, menu), conOtro: menuEstaConfirmado(d, otro), alDeshacer: menuEstaConfirmado(d, menu), quitado: menuEstaConfirmado(sinConfirmar, menu), compras: JSON.stringify(sinConfirmar.compras) },
+              { guardado: menu[0].id, confirmado: true, conOtro: false, alDeshacer: true, quitado: false, compras: "{}" }
+            );
+          },
+        },
+        {
+          nombre: "Confirmar otro menú solo conserva los consumos de hoy y los de ese menú, y empieza la lista de cero",
+          ejecutar: () => {
+            const { menu } = escenarioDespensa();
+            const d = confirmarMenu({
+              ...despensaVacia(),
+              consumos: {
+                "2026-10-01": { Comida: { slotId: "de-otro-menu", items: [] } },
+                "2026-10-10": { Comida: { slotId: menu[0].id, items: [] } },
+                [HOY]: { Cena: { slotId: "de-otro-menu", items: [] } },
+              },
+              compras: { f_pollo: { itemId: "x", delta: 100, creado: false } },
+            }, menu, HOY);
+            return comparar({ fechas: Object.keys(d.consumos).sort().join(","), compras: JSON.stringify(d.compras) }, { fechas: `2026-10-10,${HOY}`, compras: "{}" });
+          },
+        },
+        {
+          nombre: "Borrar un alimento del catálogo lo quita de la despensa, de las compras y de los consumos",
+          ejecutar: () => {
+            const d = quitarAlimento({
+              ...despensaVacia(),
+              items: [{ id: "p", foodId: "f_pollo", zona: "nevera", gramos: 100 }, { id: "a", foodId: "f_arroz", zona: "despensa", gramos: 500 }],
+              compras: { f_pollo: { itemId: "p", delta: 100, creado: false } },
+              consumos: { [HOY]: { Comida: { slotId: "s", items: [{ itemId: "p", foodId: "f_pollo", zona: "nevera", gramos: 50 }, { itemId: "a", foodId: "f_arroz", zona: "despensa", gramos: 80 }] } } },
+            }, "f_pollo");
+            return comparar(
+              { items: d.items.map((i) => i.foodId).join(","), compras: JSON.stringify(d.compras), consumo: d.consumos[HOY].Comida.items.map((x) => x.foodId).join(",") },
+              { items: "f_arroz", compras: "{}", consumo: "f_arroz" }
+            );
+          },
+        },
+        {
+          nombre: "Añadir: zona por defecto según la carpeta, se suma en la misma zona y se junta al mover",
+          ejecutar: () => {
+            const { data } = escenarioDespensa();
+            const food = (id) => data.foods.find((f) => f.id === id);
+            let d = anadirItem(despensaVacia(), food("f_pollo"), { gramos: 200 });
+            d = anadirItem(d, food("f_pollo"), { gramos: 300 });
+            d = anadirItem(d, food("f_arroz"), { gramos: 1000 });
+            d = anadirItem(d, food("f_manzana"));
+            d = anadirItem(d, food("f_pollo"), { zona: "congelador", gramos: 100 });
+            const enCongelador = d.items.find((i) => i.zona === "congelador").id;
+            const movido = editarItem(d, enCongelador, { zona: "nevera" });
+            return comparar(
+              {
+                resumen: d.items.map((i) => `${i.foodId}@${i.zona}:${i.gramos ?? (i.tengo ? "tengo" : "no")}`).join(","),
+                trasMover: movido.items.filter((i) => i.foodId === "f_pollo").map((i) => `${i.zona}:${i.gramos}`).join(","),
+              },
+              { resumen: "f_pollo@nevera:500,f_arroz@despensa:1000,f_manzana@nevera:tengo,f_pollo@congelador:100", trasMover: "nevera:600" }
+            );
+          },
+        },
+        {
+          nombre: "Migración de despensa-v1: sin nada guardado, con campos que faltan, y dos pasadas",
+          ejecutar: () => {
+            const vacia = migrarDespensa(null);
+            const { despensa: d, changed } = migrarDespensa({ items: [{ foodId: "f_x", gramos: "150" }, { gramos: 3 }], menuConfirmadoId: "m1" });
+            const segunda = migrarDespensa(JSON.parse(JSON.stringify(d)));
+            return comparar(
+              {
+                vacia: JSON.stringify(vacia.despensa), vaciaCambia: vacia.changed, changed, version: d.version, items: d.items.length,
+                gramos: d.items[0].gramos, zona: d.items[0].zona, conId: !!d.items[0].id, menu: d.menuConfirmadoId,
+                consumos: JSON.stringify(d.consumos), compras: JSON.stringify(d.compras), segundaCambia: segunda.changed,
+              },
+              {
+                vacia: JSON.stringify(despensaVacia()), vaciaCambia: true, changed: true, version: 1, items: 1,
+                gramos: 150, zona: "despensa", conId: true, menu: "m1", consumos: "{}", compras: "{}", segundaCambia: false,
+              }
+            );
+          },
+        },
+      ],
+    },
   ];
+}
+
+// Fecha fija para los casos de la despensa (los consumos se guardan por fecha).
+const HOY = "2026-10-15";
+
+function conItems(items) {
+  return { ...despensaVacia(), items };
+}
+
+// Escenario de la despensa. Necesidades de cada comida (gramos ya con sus raciones):
+// - m0 · S1 lunes Comida: Pollo 150 + Arroz 80 + Tomate (verdura con alimento, sin cantidad).
+// - m1 · S1 lunes Cena: Bocadillo de pollo × 1,5 → Pan 120 + Pollo 150.
+// - m2 · S1 martes Desayuno: Tostada con queso → Pan 60 + Queso 30 + Manzana (fruta, sin cantidad).
+// - m3 · S1 martes Comida: Pollo × 2 = 300 + Arroz × 0,5 = 40 + Lechuga (verdura sin alimento).
+// - m4 · S2 lunes Comida: Pollo 150 + Arroz 80 + Tomate.
+// Semana 1: pollo 600, arroz 120, pan 180, queso 30. Ciclo completo: pollo 750, arroz 200.
+function escenarioDespensa() {
+  const data = {
+    foods: [
+      { id: "f_pollo", name: "Pechuga de pollo", categoria: "proteinas", kcal: 165, prot: 31, fat: 3.6, carb: 0 },
+      { id: "f_arroz", name: "Arroz", categoria: "carbohidratos", kcal: 353, prot: 8, fat: 1, carb: 78 },
+      { id: "f_pan", name: "Pan", categoria: "panes", kcal: 265, prot: 9, fat: 3.5, carb: 48 },
+      { id: "f_queso", name: "Queso", categoria: "lacteos", kcal: 285, prot: 21, fat: 21, carb: 1 },
+      { id: "f_tomate", name: "Tomate", categoria: "vegetales", kcal: 18, prot: 0.9, fat: 0.2, carb: 3.9 },
+      { id: "f_manzana", name: "Manzana", categoria: "frutas", kcal: 52, prot: 0.3, fat: 0.2, carb: 14 },
+    ],
+    ingredients: [
+      { id: "ing_pollo", name: "Pollo", category: "proteina", foodId: "f_pollo", gramos: 150 },
+      { id: "ing_arroz", name: "Arroz", category: "carbo", foodId: "f_arroz", gramos: 80 },
+      { id: "ing_tomate", name: "Tomate", category: "verdura", foodId: "f_tomate", gramos: 150 },
+      { id: "ing_lechuga", name: "Lechuga", category: "verdura" },
+      {
+        id: "ing_tostada", name: "Tostada con queso", category: "desayuno",
+        composicion: [{ id: "c1", foodId: "f_pan", gramos: 60 }, { id: "c2", foodId: "f_queso", gramos: 30 }, { id: "c3", foodId: "f_manzana", gramos: 150 }],
+      },
+      {
+        id: "ing_bocadillo", name: "Bocadillo de pollo", category: "cerrado",
+        composicion: [{ id: "c4", foodId: "f_pan", gramos: 80 }, { id: "c5", foodId: "f_pollo", gramos: 100 }],
+      },
+    ],
+  };
+  const menu = [
+    { id: "m0", week: 1, day: "Lunes", mealType: "Comida", protein: "Pollo", carbo: "Arroz", verdura: "Tomate", raciones: {} },
+    { id: "m1", week: 1, day: "Lunes", mealType: "Cena", closedDish: "Bocadillo de pollo", raciones: { closedDish: 1.5 } },
+    { id: "m2", week: 1, day: "Martes", mealType: "Desayuno", item: "Tostada con queso", raciones: {} },
+    { id: "m3", week: 1, day: "Martes", mealType: "Comida", protein: "Pollo", carbo: "Arroz", verdura: "Lechuga", raciones: { protein: 2, carbo: 0.5 } },
+    { id: "m4", week: 2, day: "Lunes", mealType: "Comida", protein: "Pollo", carbo: "Arroz", verdura: "Tomate", raciones: {} },
+  ];
+  return { data, menu };
 }
 
 // Datos + menú de ejemplo mínimos y fijos, reutilizados por los casos de la lista de la compra.
