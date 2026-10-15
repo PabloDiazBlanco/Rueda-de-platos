@@ -180,5 +180,5 @@ exports.suggestMeals = onCall({ secrets: [geminiApiKey], enforceAppCheck: true }
     }))
     .filter((s) => s.composicion.length > 0);
 
-  return { sugerencias };
+  return { sugerencias: limpio };
 });
