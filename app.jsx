@@ -16,6 +16,7 @@ import { useMenu, useComidasCompletadas, MENU_COMPLETO, MENU_SIMPLE } from "./ui
 import { useCatalogo } from "./ui/estado/catalogo.js";
 import { usePerfil } from "./ui/estado/perfil.js";
 import { usePeso } from "./ui/estado/peso.js";
+import { useDespensa } from "./ui/estado/despensa.js";
 import { Shell, Header } from "./ui/marco/cabecera.jsx";
 import { DrawerMenu } from "./ui/marco/menu-lateral.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
@@ -34,8 +35,8 @@ export { calcularResumenMensual, pesoEnMes };
 export default function RuedaDePlatos() {
   const [tab, setTab] = useState("menu");
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // Abarca toda la carga inicial (datos y los dos menús): mientras dura se enseña "Cargando…" y no
-  // se dispara el guardado automático (ver useDatos).
+  // Abarca toda la carga inicial (datos, los dos menús y la despensa): mientras dura se enseña
+  // "Cargando…" y no se dispara el guardado automático (ver useDatos).
   const [loading, setLoading] = useState(true);
 
   const premium = usePremium();
@@ -43,10 +44,11 @@ export default function RuedaDePlatos() {
   const menuCompleto = useMenu(MENU_COMPLETO, data, setData);
   const menuSimple = useMenu(MENU_SIMPLE, data, setData);
   const toggleComidaCompletada = useComidasCompletadas(setData);
-  const catalogo = useCatalogo(setData);
+  const despensa = useDespensa(data, menuCompleto.menu);
+  const catalogo = useCatalogo(setData, { alBorrarAlimento: despensa.alBorrarAlimento });
   const perfil = usePerfil(setData);
   const peso = usePeso(setData);
-  useCargaInicial([cargarDatos, menuCompleto.cargar, menuSimple.cargar], () => setLoading(false));
+  useCargaInicial([cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar], () => setLoading(false));
 
   if (loading || !data) {
     return (
@@ -83,7 +85,7 @@ export default function RuedaDePlatos() {
     );
   }
 
-  const ctx = { data, idioma, premium, setTab, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso };
+  const ctx = { data, idioma, premium, setTab, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa };
 
   return (
     <Shell>

@@ -77,8 +77,8 @@ export function usePremium() {
 }
 
 // Carga inicial de todo lo guardado, una sola vez al montar y en orden (datos, menú completo y su
-// historial, menú simple y su historial): cada cargador ya captura sus propios errores, así que
-// un fallo en uno (por ejemplo, no hay menú generado todavía) no impide cargar los demás.
+// historial, menú simple y su historial, despensa): cada cargador ya captura sus propios errores,
+// así que un fallo en uno (por ejemplo, no hay menú generado todavía) no impide cargar los demás.
 export function useCargaInicial(cargadores, alTerminar) {
   useEffect(() => {
     (async () => {

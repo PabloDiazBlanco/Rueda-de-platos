@@ -2,9 +2,13 @@
 // Hook de la configuración de comidas: crear, editar y borrar ingredientes, alimentos, reglas de
 // combinación y bloques, más el estado de los modales que lo hacen (qué se está editando o a punto
 // de borrarse). Los modales en sí están en ui/catalogo/modales.jsx.
+// `alBorrarAlimento` (opcional) avisa de que un alimento ha salido del catálogo, para que otras
+// partes de la app que lo guardan por su cuenta lo quiten también (hoy, la despensa). Se recibe como
+// aviso en vez de importar el otro hook: los hooks de ui/estado/ no se importan entre sí, los conecta
+// app.jsx.
 import { useState } from "react";
 
-export function useCatalogo(setData) {
+export function useCatalogo(setData, { alBorrarAlimento } = {}) {
   const [editing, setEditing] = useState(null); // { mode: 'new'|'edit', category, ingredient }
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [editingFrequency, setEditingFrequency] = useState(null);
@@ -46,6 +50,7 @@ export function useCatalogo(setData) {
       foods: (prev.foods || []).filter((f) => f.id !== id),
       ingredients: prev.ingredients.map((i) => (i.foodId === id ? { ...i, foodId: undefined } : i)),
     }));
+    if (alBorrarAlimento) alBorrarAlimento(id);
     setConfirmDeleteFood(null);
   }
 
