@@ -1,7 +1,7 @@
 // ---------- ui/marco/menu-lateral.jsx ----------
 // Menú lateral (drawer) con todos los destinos de la app.
 import React, { useState } from "react";
-import { X, Utensils, Package, Sparkles, CalendarDays, Shuffle, Database, Layers, Camera, User, Scale, Ruler, FileText, Share2, Mail, Settings, TrendingUp, ChevronDown, Activity, PieChart, ListChecks } from "lucide-react";
+import { X, Utensils, Package, Sparkles, CalendarDays, Shuffle, Database, Layers, Camera, User, Scale, Ruler, FileText, Share2, Mail, Settings, TrendingUp, ChevronDown, Activity, PieChart, ListChecks, Refrigerator } from "lucide-react";
 import { t } from "i18n";
 import { FUENTE_TEXTO } from "../estilos.js";
 
@@ -32,6 +32,9 @@ export function DrawerMenu({ open, onClose, tab, setTab, idioma, premium }) {
         { key: "menu-simple", label: t(idioma, "drawer.menuSimple"), icon: ListChecks },
       ],
     },
+    // La despensa (Fase A): justo después de Menús, porque se usa sobre todo con ellos (la lista de
+    // la compra y las comidas hechas la actualizan).
+    { key: "despensa", label: t(idioma, "drawer.queTengo"), icon: Refrigerator },
     {
       key: "config-root", label: t(idioma, "drawer.configuracionComidas"), icon: Layers,
       children: [

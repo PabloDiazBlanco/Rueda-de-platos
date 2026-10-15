@@ -11,6 +11,7 @@ import { CATEGORY_META, MACRO_CATS, ESPECIALES_CATS } from "./comun/categorias.j
 import { BigCardGrid, BackLink } from "./comun/tarjetas.jsx";
 import { MenuView } from "./menu/menu-completo.jsx";
 import { MenuSimpleView } from "./menu/menu-simple.jsx";
+import { DespensaView } from "./despensa/despensa.jsx";
 import { FoodsView } from "./catalogo/alimentos.jsx";
 import { RulesView } from "./catalogo/reglas.jsx";
 import { PantallaCategoria, PANTALLAS_CATEGORIA } from "./catalogo/categoria.jsx";
@@ -67,6 +68,9 @@ const PANTALLAS = {
       idioma={idioma}
     />
   ),
+
+  // «¿Qué tengo?»: la despensa (Fase A). Va directa desde el menú lateral, justo después de Menús.
+  despensa: ({ data, idioma, despensa }) => <DespensaView data={data} despensa={despensa} idioma={idioma} />,
 
   "config-root": ({ idioma, setTab, premium }) => (
     <BigCardGrid
