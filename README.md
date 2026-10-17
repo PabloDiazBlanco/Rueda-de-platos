@@ -46,10 +46,10 @@ index.html
 auth-bootstrap.jsx   (login, Firestore, App Check, puente con las Cloud Functions)
   │  cargador-ui.js: descarga, pasa por Babel y enlaza app.jsx + ui/ (import/export normales)
   ▼
-app.jsx + ui/        (componente principal + 38 archivos de interfaz, por pantalla)
+app.jsx + ui/        (componente principal + 40 archivos de interfaz, por pantalla)
   │  import { ... } from "nombre-corto"     ← resuelto por el importmap
   ▼
-logica/*.js          (13 módulos de lógica pura, sin JSX, sin React)
+logica/*.js          (15 módulos de lógica pura, sin JSX, sin React)
 ```
 
 La única pieza de servidor es `functions/` (Cloud Functions de Firebase: pagos con Stripe, Gemini
@@ -75,9 +75,9 @@ Rueda-de-platos/
 ├── ui/                              la interfaz (React), un archivo por pantalla o pieza
 │   ├── archivos.json                  lista de archivos de ui/ (cargador + modo sin conexión)
 │   ├── estilos.js, pantallas.jsx      tipografías; tabla destino → pantalla
-│   ├── estado/                        hooks: datos, menú, catálogo, perfil, peso
+│   ├── estado/                        hooks: datos, menú, catálogo, perfil, peso, despensa
 │   ├── comun/, marco/                 piezas reutilizadas; Shell, cabecera y menú lateral
-│   └── menu/, catalogo/, perfil/, onboarding/, peso/, premium/, ajustes/
+│   └── menu/, catalogo/, perfil/, onboarding/, peso/, premium/, ajustes/, despensa/
 │
 ├── logica/                          lógica de negocio, sin JSX ni React
 │   ├── comun.js                       uid(), DAYS
@@ -92,6 +92,8 @@ Rueda-de-platos/
 │   ├── datos-iniciales.js             catálogo base de alimentos y datos de una cuenta nueva
 │   ├── cuestionario.js                cuestionario de catálogo del alta
 │   ├── migraciones.js                 migrateData (datos guardados de versiones anteriores)
+│   ├── despensa.js                    lo que hay en casa: zonas, consumos y compras
+│   ├── lista-compra-neta.js           lista de la compra menos lo que ya tienes
 │   └── i18n.js                        diccionario de textos ES/EN/CA/GL/EU
 │
 ├── functions/                       Cloud Functions de Firebase (Node 22, proyecto aparte)

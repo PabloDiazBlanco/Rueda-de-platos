@@ -48,10 +48,11 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   estilos.js            tipografías (FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO)
   pantallas.jsx         tabla destino del menú lateral (`tab`) → pantalla
   estado/               hooks: datos.js (useDatos, usePremium, useCargaInicial), menu.js (useMenu,
-                          el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js
+                          el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js,
+                          despensa.js (useDespensa)
   comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores)
   marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral
-  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/   una carpeta por área de la app
+  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/   una carpeta por área
 
 logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
 logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
@@ -67,13 +68,17 @@ logica/i18n.js                 → diccionario de textos por idioma (ES/EN/CA/GL
 logica/datos-iniciales.js      → FOODS_SEED, CATEGORIAS_ALIMENTOS, initialData (cuenta nueva)
 logica/cuestionario.js         → opciones del cuestionario de alta y construirIngredientesDesdeCuestionario
 logica/migraciones.js          → migrateData
+logica/despensa.js             → stock de la despensa: zonas, menú confirmado, descontar/devolver comidas,
+                                  tachar/destachar compras, migrarDespensa
+logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
 de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (mensaje de
 `evaluarTendencia` y meses de `formatFechaCorta`), `datos-iniciales.js` → `peso.js`,
-`cuestionario.js` → `comun.js` y `datos-iniciales.js`, y `migraciones.js` → `datos-iniciales.js`,
-`objetivos.js`, `peso.js` e `i18n.js`. La interfaz importa `logica/` por **nombre corto** y otros
+`cuestionario.js` → `comun.js` y `datos-iniciales.js`, `migraciones.js` → `datos-iniciales.js`,
+`objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js`, y `lista-compra-neta.js` →
+`macros.js`, `comida-calculo.js` y `despensa.js`. La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
 arranque se quedan en la raíz (`index.html`, `auth-bootstrap.jsx`, `cargador-ui.js`, `sw.js`,
 `manifest.json`, `icon.svg`): `sw.js` en concreto necesita estar ahí para que su "scope" cubra toda
@@ -166,6 +171,29 @@ lista de la compra) — así es imposible que una mejora llegue a uno y se olvid
 
 Todas las claves de almacenamiento (`STORAGE_KEY` en `ui/estado/datos.js`; las de los menús en
 `MENU_COMPLETO`/`MENU_SIMPLE`, `ui/estado/menu.js`) empiezan por `rueda-de-platos:` — ver la nota sobre el nombre al principio de este archivo.
+
+## Despensa («¿Qué tengo?»)
+
+Lo que hay en casa, por zonas (despensa, nevera, congelador), en gramos aproximados; la verdura y la
+fruta solo como «tengo / no tengo». Vive en su propia clave, `rueda-de-platos:despensa-v1`, con su
+propia versión y su propia migración (`migrarDespensa`, en `logica/despensa.js`): **no pasa por
+`migrateData`**. Si cambia su forma, el parche va en `migrarDespensa` y su caso en `validacion/tests.js`
+(grupo «Despensa y lista de la compra neta»). La lleva `useDespensa` (`ui/estado/despensa.js`) y la
+pantalla es `ui/despensa/despensa.jsx`.
+
+Cómo se relaciona con el Menú completo (el Menú simple queda fuera):
+- **Un menú recién generado es un borrador** hasta que se confirma. Se guarda el id de `menu[0]`
+  (`menuConfirmadoId`): sobrevive a ajustar raciones y vuelve a coincidir con «Deshacer».
+- **La lista de la compra es neta** (`calcularListaNeta`): necesidad de las comidas *pendientes* menos
+  lo que hay, agrupada por alimento. Antes de confirmar es provisional y sin casillas; después, tachar
+  mete lo comprado en la despensa (`despensa.compras`) y destachar lo saca.
+- **Completar una comida descuenta** lo que lleva (sin bajar de cero) y desmarcarla devuelve
+  exactamente lo descontado (`despensa.consumos`, por fecha y tipo de comida). Una comida con consumo
+  ya no cuenta como pendiente, así que nada se cuenta dos veces.
+- `calcularListaCompra` (`comida-calculo.js`) sigue intacta para el Menú simple, que conserva sus
+  casillas de siempre en `data.listaCompraSimple`.
+- Borrar un alimento del catálogo lo quita también de la despensa: `useCatalogo` recibe el aviso
+  `alBorrarAlimento` y `app.jsx` lo conecta con `useDespensa` (los hooks no se importan entre sí).
 
 ## Internacionalización
 
