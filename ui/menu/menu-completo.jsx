@@ -1,8 +1,10 @@
 // ---------- ui/menu/menu-completo.jsx ----------
 // Pantalla de Menú completo: el ciclo de dos semanas con kcal, macros, raciones y comparación con
-// los objetivos del día.
+// los objetivos del día. Desde la Fase A de la despensa, un menú recién generado es un borrador
+// hasta que se confirma: solo entonces su lista de la compra se puede tachar (y llena la despensa) y
+// las comidas completadas descuentan de la despensa (ver useDespensa, ui/estado/despensa.js).
 import React, { useState } from "react";
-import { Shuffle, Download, Undo2 } from "lucide-react";
+import { Shuffle, Download, Undo2, Check } from "lucide-react";
 import { mealTotals } from "comida-calculo";
 import { DAYS } from "comun";
 import { fechaISO } from "peso";
@@ -10,12 +12,12 @@ import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { MealDetailModal } from "./detalle-comida.jsx";
 import { DayStatsPanel, ResumenSaludPublica, ObjetivosModal } from "./estadisticas.jsx";
-import { ListaCompraModal } from "./lista-compra.jsx";
+import { ListaCompraNetaModal } from "./lista-compra.jsx";
 import { PrintExport } from "./imprimir.jsx";
 import { HistoryPanel } from "./historial.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
-export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onToggleMarcadoCompra, onUpsertRule, onToggleComidaCompletada, idioma }) {
+export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onUpsertRule, onToggleComidaCompletada, despensa, idioma }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
@@ -23,6 +25,19 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
   // Se busca la comida por id en cada render en vez de guardar una copia en el estado:
   // así, al cambiar las raciones, el modal refleja el valor nuevo inmediatamente.
   const selectedMeal = selectedMealId && menu ? menu.find((s) => s.id === selectedMealId) : null;
+  const completadaHoy = !!selectedMeal && !!(((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType]);
+
+  // La línea que explica, en el detalle de la comida, qué pasa con la despensa al marcarla.
+  function avisoDespensa() {
+    if (!selectedMeal) return null;
+    if (completadaHoy) {
+      const consumo = despensa.consumoDeHoy(selectedMeal.mealType);
+      if (!consumo) return null;
+      return t(idioma, consumo.items.length ? "mealDetail.despensa.descontado" : "mealDetail.despensa.nadaQueDescontar");
+    }
+    return t(idioma, despensa.confirmado ? "mealDetail.despensa.seDescontara" : "mealDetail.despensa.sinConfirmar");
+  }
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12, marginBottom: 6 }}>
@@ -100,6 +115,8 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
 
       {menu && (
         <>
+          <AvisoConfirmacion despensa={despensa} idioma={idioma} />
+
           <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
             {[1, 2].map((w) => (
               <button
@@ -239,8 +256,12 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
           onUpdateMeal={onUpdateMeal}
           onUpsertRule={onUpsertRule}
           onClose={() => setSelectedMealId(null)}
-          completadaHoy={!!(((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType])}
-          onToggleCompletada={() => onToggleComidaCompletada(selectedMeal.mealType)}
+          completadaHoy={completadaHoy}
+          onToggleCompletada={() => {
+            onToggleComidaCompletada(selectedMeal.mealType);
+            despensa.alMarcarComida(selectedMeal, !completadaHoy);
+          }}
+          avisoDespensa={avisoDespensa()}
           idioma={idioma}
         />
       )}
@@ -255,16 +276,62 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
       )}
 
       {showListaCompra && (
-        <ListaCompraModal
-          data={data}
+        <ListaCompraNetaModal
           menu={menu}
           menuWeek={menuWeek}
-          listaCompra={data.listaCompra || { marcados: {}, generadoEn: null }}
-          onToggle={onToggleMarcadoCompra}
+          despensa={despensa}
           onClose={() => setShowListaCompra(false)}
           idioma={idioma}
         />
       )}
     </>
+  );
+}
+
+// Encima del menú: si es un borrador, el aviso con el botón para confirmarlo; si ya está confirmado,
+// una línea discreta que lo recuerda, con la opción de volver a dejarlo como borrador.
+function AvisoConfirmacion({ despensa, idioma }) {
+  if (!despensa.confirmado) {
+    return (
+      <div
+        style={{
+          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 14,
+          background: "var(--mustard-soft)", borderRadius: 10, padding: "10px 12px", fontFamily: FUENTE_TEXTO,
+        }}
+      >
+        <span style={{ flex: "1 1 200px", fontSize: 12.5, color: "var(--ink)", lineHeight: 1.45 }}>{t(idioma, "menu.confirmar.borrador")}</span>
+        <button
+          onClick={despensa.confirmar}
+          style={{
+            fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700, color: "#fff", background: "var(--green)",
+            border: "none", borderRadius: 8, padding: "8px 13px", display: "flex", alignItems: "center", gap: 6, cursor: "pointer",
+          }}
+        >
+          <Check size={14} /> {t(idioma, "menu.confirmar.boton")}
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div
+      style={{
+        display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 14,
+        background: "var(--green-soft)", borderRadius: 10, padding: "8px 12px", fontFamily: FUENTE_TEXTO,
+      }}
+    >
+      <span style={{ flex: "1 1 200px", fontSize: 12, color: "var(--green-dark)", lineHeight: 1.45 }}>
+        <Check size={13} style={{ verticalAlign: "-2px", marginRight: 5 }} />
+        {t(idioma, "menu.confirmar.confirmado")}
+      </span>
+      <button
+        onClick={despensa.quitarConfirmacion}
+        style={{
+          background: "none", border: "none", padding: 0, cursor: "pointer",
+          fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 600, color: "var(--ink-soft)", textDecoration: "underline",
+        }}
+      >
+        {t(idioma, "menu.confirmar.quitar")}
+      </button>
+    </div>
   );
 }

@@ -119,7 +119,10 @@ function ComboAfinidad({ meal, data, onUpsertRule, idioma }) {
   );
 }
 
-export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, completadaHoy, onToggleCompletada, idioma }) {
+// `avisoDespensa` (opcional): una línea bajo el botón de completada que explica qué pasa con la
+// despensa al marcarla (se descuenta, ya se descontó, o no se toca porque el menú no está
+// confirmado). La decide quien abre el modal (MenuView), que es quien conoce la despensa.
+export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, completadaHoy, onToggleCompletada, avisoDespensa, idioma }) {
   const components = mealComponents(data, meal);
   const totals = mealTotals(data, meal);
 
@@ -247,6 +250,11 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
       >
         <Check size={15} /> {completadaHoy ? t(idioma, "mealDetail.completadaHoy") : t(idioma, "mealDetail.marcarCompletada")}
       </button>
+      {avisoDespensa && (
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", textAlign: "center", marginTop: 7, lineHeight: 1.4 }}>
+          {avisoDespensa}
+        </div>
+      )}
     </ModalShell>
   );
 }

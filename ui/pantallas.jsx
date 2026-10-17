@@ -36,7 +36,7 @@ const PANTALLAS = {
     />
   ),
 
-  menu: ({ data, idioma, menuCompleto, perfil, catalogo, toggleComidaCompletada }) => (
+  menu: ({ data, idioma, menuCompleto, perfil, catalogo, toggleComidaCompletada, despensa }) => (
     <MenuView
       menu={menuCompleto.menu}
       onGenerate={menuCompleto.generar}
@@ -48,9 +48,9 @@ const PANTALLAS = {
       onUpdateMeal={menuCompleto.updateMeal}
       objetivos={data.objetivos}
       onUpdateObjetivos={perfil.updateObjetivos}
-      onToggleMarcadoCompra={menuCompleto.toggleMarcadoCompra}
       onUpsertRule={catalogo.upsertRule}
       onToggleComidaCompletada={toggleComidaCompletada}
+      despensa={despensa}
       idioma={idioma}
     />
   ),
