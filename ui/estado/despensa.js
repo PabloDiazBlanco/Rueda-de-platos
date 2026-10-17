@@ -2,8 +2,8 @@
 // Hook de la despensa (Fase A de la idea F1, ver logica/despensa.js): lo que hay en casa, guardado
 // en su propia clave, y las acciones que lo cambian. Lo usan la pantalla «¿Qué tengo?»
 // (ui/despensa/despensa.jsx) y el Menú completo (confirmar el menú, lista de la compra neta y
-// descontar al marcar una comida como hecha). La nevera dibujada de la Fase B se apoyará solo en
-// lo que devuelve este hook, sin tocar la lógica.
+// descontar al marcar una comida como hecha). La nevera dibujada de la Fase B (ui/despensa/cocina.jsx
+// y panel.jsx) se apoya solo en lo que devuelve este hook, sin tocar la lógica.
 // Como el resto de hooks de ui/estado/, no importa ningún otro: los datos y el menú le llegan desde
 // app.jsx, que es quien los combina (por ejemplo, el aviso de useCatalogo al borrar un alimento).
 import { useState, useEffect, useRef } from "react";
@@ -14,6 +14,7 @@ import {
   quitarConfirmacion, descontarComida, devolverComida, consumoDe, marcarComprado, desmarcarComprado,
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
+import { repartirEnHuecos } from "nevera";
 
 // Documento aparte de los datos principales (STORAGE_KEY en datos.js), con su propia versión: ver
 // la cabecera de logica/despensa.js.
@@ -88,6 +89,9 @@ export function useDespensa(data, menu) {
     },
     editar: (itemId, cambios) => cambiar((d) => editarItem(d, itemId, cambios)),
     quitar: (itemId) => cambiar((d) => quitarItem(d, itemId)),
+    // Lo de una zona repartido en sus huecos (baldas, puerta, cajón...), con el dibujo de cada cosa ya
+    // decidido: ver repartirEnHuecos (logica/nevera.js). Es lo que pinta la nevera dibujada.
+    huecos: (zona) => repartirEnHuecos(items, data && data.foods, zona),
     // Lista de la compra neta de una semana (1, 2) o del ciclo entero ("todo"): ver calcularListaNeta.
     listaNeta: (alcance) => calcularListaNeta(data, menu, alcance, despensa),
     comprar: (fila) => cambiar((d) => marcarComprado(d, fila, getFood(data, fila.foodId))),
