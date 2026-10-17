@@ -37,7 +37,7 @@ function guardarVista(vista) {
   }
 }
 
-export function DespensaView({ data, despensa, idioma }) {
+export function DespensaView({ data, despensa, idioma, onIrACocinar }) {
   const [vista, setVista] = useState(leerVista);
   const [anadiendo, setAnadiendo] = useState(false);
   const total = ZONAS.reduce((s, z) => s + despensa.porZona[z].length, 0);
@@ -99,7 +99,7 @@ export function DespensaView({ data, despensa, idioma }) {
       )}
 
       {vista === "dibujo" ? (
-        <VistaDibujo data={data} despensa={despensa} tema={tema} idioma={idioma} />
+        <VistaDibujo data={data} despensa={despensa} tema={tema} idioma={idioma} onIrACocinar={onIrACocinar} />
       ) : (
         total > 0 && <VistaLista data={data} despensa={despensa} idioma={idioma} />
       )}

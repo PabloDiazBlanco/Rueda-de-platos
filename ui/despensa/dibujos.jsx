@@ -1,7 +1,8 @@
 // ---------- ui/despensa/dibujos.jsx ----------
 // Los dibujos de la Fase B de la despensa, en SVG y sin imágenes externas (funcionan sin conexión y
 // pesan muy poco): la comida, el cuerpo de la nevera con su interior, las puertas (por delante y por
-// dentro) y el estante de la despensa. Salen de las propuestas de local/ideas/diseno-nevera/
+// dentro), el estante de la despensa y la cocina de alrededor (pared, encimera, fregadero, grifo,
+// vitrocerámica). Salen de las propuestas de local/ideas/diseno-nevera/
 // (generar.py), en el estilo retro que eligió el usuario. Los colores de la nevera vienen siempre del
 // tema (ui/despensa/tema.js); los de la comida son fijos, porque una manzana es roja en cualquier
 // estilo.
@@ -492,6 +493,102 @@ export function Estante({ tema, huecos }) {
           <rect x="4" y={y + 6} width="192" height="3" fill={tema.maderaOscura} opacity="0.6" />
         </g>
       ))}
+    </svg>
+  );
+}
+
+// ---------- La cocina de alrededor (capas 2 y 3) ----------
+// Medidas de la escena completa (unidades del viewBox). La nevera y el estante no se dibujan aquí: son
+// piezas aparte que se tocan y se animan (ui/despensa/cocina.jsx las coloca encima, en estas mismas
+// unidades); esto es el fondo: pared, azulejos, encimera con sus muebles, suelo, lámpara y planta, más
+// el fregadero con su grifo y la vitrocerámica, que también se pueden tocar.
+export const ESCENA_ANCHO = 360;
+export const ESCENA_ALTO = 470;
+export const SUELO_Y = 440;
+const ENCIMERA_Y = 280;
+const ENCIMERA_ANCHO = 180;
+// Dónde cae la gota del grifo: sale del caño y acaba dentro del fregadero.
+const GOTA = { x: 40, y: 250, caida: 34 };
+
+// `fuegoEncendido`: el fuego de delante se enciende un momento al tocar la vitrocerámica, justo antes de
+// ir a «¿Qué cocino?». `gota`: null, "arriba" (recién salida del grifo) o "abajo" (cayendo).
+export function FondoCocina({ tema, fuegoEncendido, gota, reducido }) {
+  const transicion = reducido ? "none" : "opacity 200ms ease, stroke 200ms ease";
+  const azulejos = [];
+  for (let fila = 0; fila < 5; fila++) {
+    const y = 212 + fila * 13.6;
+    azulejos.push(<rect key={`h${fila}`} x="0" y={y} width={ENCIMERA_ANCHO} height="1.2" fill={tema.juntas} />);
+    for (let x = fila % 2 ? 9 : 18; x < ENCIMERA_ANCHO; x += 18) {
+      azulejos.push(<rect key={`v${fila}-${x}`} x={x} y={y} width="1.2" height="13.6" fill={tema.juntas} />);
+    }
+  }
+  return (
+    <svg viewBox={`0 0 ${ESCENA_ANCHO} ${ESCENA_ALTO}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }} aria-hidden="true">
+      <defs>
+        <clipPath id="cocina-recorte">
+          <rect x="0" y="0" width={ESCENA_ANCHO} height={ESCENA_ALTO} rx="18" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#cocina-recorte)">
+        <rect x="0" y="0" width={ESCENA_ANCHO} height={ESCENA_ALTO} fill={tema.pared} />
+
+        {/* azulejos detrás de la encimera */}
+        <rect x="0" y="212" width={ENCIMERA_ANCHO} height={ENCIMERA_Y - 212} fill={tema.azulejo} />
+        {azulejos}
+
+        {/* suelo, y la sombra de la nevera sobre él */}
+        <rect x="0" y={SUELO_Y} width={ESCENA_ANCHO} height={ESCENA_ALTO - SUELO_Y} fill={tema.suelo} />
+        <rect x="0" y={SUELO_Y} width={ESCENA_ANCHO} height="2" fill="#000000" opacity="0.06" />
+        <ellipse cx="267" cy={SUELO_Y + 6} rx="82" ry="5" fill="#000000" opacity="0.12" />
+
+        {/* muebles bajos */}
+        <rect x="0" y={ENCIMERA_Y + 22} width={ENCIMERA_ANCHO - 2} height={SUELO_Y - ENCIMERA_Y - 22} fill={tema.mueble} />
+        {[8, 94].map((x) => (
+          <g key={x}>
+            <rect x={x} y={ENCIMERA_Y + 32} width="78" height="112" rx="6" fill={tema.mueble} stroke={tema.muebleOscuro} strokeWidth="2" />
+            <rect x={x + 62} y={ENCIMERA_Y + 44} width="6" height="26" rx="3" fill={tema.metalClaro} />
+          </g>
+        ))}
+        <rect x="0" y={SUELO_Y - 8} width={ENCIMERA_ANCHO - 2} height="8" fill={tema.muebleOscuro} />
+
+        {/* encimera: la superficie (vista un poco desde arriba) y el canto */}
+        <rect x="0" y={ENCIMERA_Y} width={ENCIMERA_ANCHO} height="16" fill={tema.encimera} />
+        <rect x="0" y={ENCIMERA_Y} width={ENCIMERA_ANCHO} height="2" fill="#ffffff" opacity="0.5" />
+        <rect x="0" y={ENCIMERA_Y + 16} width={ENCIMERA_ANCHO} height="8" fill={tema.encimeraCanto} />
+
+        {/* fregadero y grifo */}
+        <ellipse cx="44" cy={ENCIMERA_Y + 8} rx="30" ry="5.5" fill={tema.metalClaro} />
+        <ellipse cx="44" cy={ENCIMERA_Y + 8.5} rx="25" ry="4" fill={tema.metal} opacity="0.55" />
+        <path d={`M64,${ENCIMERA_Y + 4} L64,248 Q64,238 54,238 L46,238 Q40,238 40,244 L40,246`} fill="none" stroke={tema.metal} strokeWidth="5" strokeLinecap="round" />
+        <rect x="66" y="258" width="10" height="5" rx="2.5" fill={tema.metal} />
+        {gota && (
+          <circle
+            cx={GOTA.x} cy={GOTA.y} r="2.6" fill={tema.agua}
+            style={{
+              transform: gota === "abajo" ? `translateY(${GOTA.caida}px)` : "none",
+              opacity: gota === "abajo" ? 0 : 1,
+              transition: gota === "abajo" ? "transform 480ms cubic-bezier(.55,0,.9,.55), opacity 200ms ease-in 300ms" : "none",
+            }}
+          />
+        )}
+
+        {/* vitrocerámica, con una sartén en el fuego de atrás */}
+        <rect x="92" y={ENCIMERA_Y + 1} width="80" height="13" rx="3" fill={tema.vitro} />
+        <ellipse cx="114" cy={ENCIMERA_Y + 8} rx="13" ry="3.4" fill={tema.fuego} style={{ opacity: fuegoEncendido ? 0.9 : 0, transition: transicion }} />
+        <ellipse cx="114" cy={ENCIMERA_Y + 8} rx="13" ry="3.4" fill="none" stroke={fuegoEncendido ? tema.fuego : "#77756c"} strokeWidth="1.4" style={{ transition: transicion }} />
+        <ellipse cx="152" cy={ENCIMERA_Y + 7.5} rx="15" ry="3.8" fill="none" stroke="#77756c" strokeWidth="1.4" />
+        <ellipse cx="152" cy={ENCIMERA_Y + 4} rx="15" ry="4.2" fill="#55554f" />
+        <rect x="164" y={ENCIMERA_Y + 1.5} width="14" height="3.4" rx="1.7" fill="#55554f" />
+
+        {/* lámpara colgando del techo, sobre la nevera */}
+        <rect x="299" y="0" width="2" height="34" fill="#8a7a5c" />
+        <path d="M282,52 Q282,34 300,34 Q318,34 318,52 Z" fill={tema.cuerpo} />
+        <ellipse cx="300" cy="54" rx="8" ry="3" fill={tema.luz} />
+
+        {/* planta encima de la nevera (que empieza en y ≈ 98) */}
+        <path d="M232,82 Q220,62 228,52 M238,82 Q240,58 252,50 M244,82 Q258,68 266,66" stroke={tema.planta} strokeWidth="5" fill="none" strokeLinecap="round" />
+        <path d="M222,80 L258,80 L253,98 L227,98 Z" fill={tema.maceta} />
+      </g>
     </svg>
   );
 }

@@ -69,8 +69,11 @@ const PANTALLAS = {
     />
   ),
 
-  // «¿Qué tengo?»: la despensa (Fase A). Va directa desde el menú lateral, justo después de Menús.
-  despensa: ({ data, idioma, despensa }) => <DespensaView data={data} despensa={despensa} idioma={idioma} />,
+  // «¿Qué tengo?»: la despensa. Va directa desde el menú lateral, justo después de Menús. La
+  // vitrocerámica de su cocina dibujada lleva a «¿Qué cocino?» (la misma pantalla de siempre).
+  despensa: ({ data, idioma, despensa, setTab }) => (
+    <DespensaView data={data} despensa={despensa} idioma={idioma} onIrACocinar={() => setTab("cocinar-desde-cocina")} />
+  ),
 
   "config-root": ({ idioma, setTab, premium }) => (
     <BigCardGrid
@@ -131,34 +134,12 @@ const PANTALLAS = {
     </div>
   ),
 
-  cocinar: ({ data, idioma, setTab, premium, catalogo }) => (
-    <div>
-      <BackLink label={t(idioma, "tab.configuracion")} onClick={() => setTab("config-root")} />
-      {premium.active ? (
-        <SuggestMealsView
-          data={data}
-          onGuardarComoCerrado={(sugerencia) => {
-            const bloqueCerrado = (data.blocks || []).find((b) => b.category === "cerrado");
-            if (!bloqueCerrado) return; // no debería pasar: siempre hay un bloque de cerrados por defecto
-            catalogo.setEditing({
-              mode: "new",
-              category: "cerrado",
-              blockId: bloqueCerrado.id,
-              ingredient: { name: sugerencia.nombre, composicion: sugerencia.composicion },
-            });
-          }}
-          idioma={idioma}
-        />
-      ) : (
-        <PremiumRequiredNotice
-          titulo={t(idioma, "premiumNotice.cocinar.titulo")}
-          texto={t(idioma, "premiumNotice.cocinar.texto")}
-          onGoPremium={() => setTab("perfil-premium")}
-          idioma={idioma}
-        />
-      )}
-    </div>
-  ),
+  cocinar: (ctx) => <PantallaCocinar {...ctx} volverA="config-root" etiquetaVolver={t(ctx.idioma, "tab.configuracion")} />,
+
+  // La misma pantalla, pero llegando desde la vitrocerámica de la cocina dibujada: el enlace de vuelta
+  // lleva a «¿Qué tengo?» en vez de a Configuración. Es un destino aparte (y no un estado de «de dónde
+  // vengo») para que la navegación siga siendo solo elegir un `tab`.
+  "cocinar-desde-cocina": (ctx) => <PantallaCocinar {...ctx} volverA="despensa" etiquetaVolver={t(ctx.idioma, "drawer.queTengo")} />,
 
   combos: ({ data, idioma, setTab, catalogo }) => (
     <div>
@@ -253,6 +234,40 @@ Object.keys(PANTALLAS_CATEGORIA).forEach((categoria) => {
     <PantallaCategoria categoria={categoria} data={data} catalogo={catalogo} setTab={setTab} idioma={idioma} />
   );
 });
+
+// «¿Qué cocino?»: la pantalla premium de sugerencias (o su aviso para quien no tiene premium), con un
+// enlace de vuelta que depende de desde dónde se llega (ver los destinos "cocinar" y
+// "cocinar-desde-cocina" en PANTALLAS).
+function PantallaCocinar({ data, idioma, setTab, premium, catalogo, volverA, etiquetaVolver }) {
+  return (
+    <div>
+      <BackLink label={etiquetaVolver} onClick={() => setTab(volverA)} />
+      {premium.active ? (
+        <SuggestMealsView
+          data={data}
+          onGuardarComoCerrado={(sugerencia) => {
+            const bloqueCerrado = (data.blocks || []).find((b) => b.category === "cerrado");
+            if (!bloqueCerrado) return; // no debería pasar: siempre hay un bloque de cerrados por defecto
+            catalogo.setEditing({
+              mode: "new",
+              category: "cerrado",
+              blockId: bloqueCerrado.id,
+              ingredient: { name: sugerencia.nombre, composicion: sugerencia.composicion },
+            });
+          }}
+          idioma={idioma}
+        />
+      ) : (
+        <PremiumRequiredNotice
+          titulo={t(idioma, "premiumNotice.cocinar.titulo")}
+          texto={t(idioma, "premiumNotice.cocinar.texto")}
+          onGoPremium={() => setTab("perfil-premium")}
+          idioma={idioma}
+        />
+      )}
+    </div>
+  );
+}
 
 // Destino desconocido: no se pinta nada (igual que antes, cuando ningún `tab === ...` coincidía).
 export function Pantalla({ tab, ctx }) {

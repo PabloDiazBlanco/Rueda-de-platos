@@ -28,6 +28,23 @@ export const TEMAS_NEVERA = {
     texto: "#1f4d38",           // títulos y etiquetas dentro del dibujo
     textoSuave: "#4f7f73",
     radio: 34,                  // esquinas de la nevera (en unidades del dibujo, 200 de ancho)
+    // La cocina de alrededor (capas 2 y 3): pared, azulejos, encimera y muebles, suelo, y lo que hay
+    // encima de la encimera (fregadero con su grifo y vitrocerámica).
+    pared: "#f9f3e6",           // algo más cálida que el fondo de la app, para que la cocina se distinga
+    azulejo: "#e3f1ec",
+    juntas: "#cfe5de",
+    encimera: "#d9cdb4",
+    encimeraCanto: "#c8b996",
+    mueble: "#9ad4c6",
+    muebleOscuro: "#6fb5a6",
+    suelo: "#d8c8a8",
+    metal: "#aab5ba",           // grifo y fregadero
+    metalClaro: "#d5dadd",
+    vitro: "#2f302c",
+    fuego: "#e05a3f",
+    agua: "#8fc9e8",
+    planta: "#5aa35a",
+    maceta: "#c9773b",
   },
 };
 
