@@ -10,12 +10,20 @@
 // Las tres capas acordadas con el usuario (idea F1 de local/ideas/ideas-futuras.md): 1) nevera y
 // estante, lo que guarda de verdad la despensa; 2) pared, azulejos, encimera y muebles, solo decorado;
 // 3) la vitrocerámica, que enciende un fuego y lleva a «¿Qué cocino?» (solo navegando: esa pantalla es
-// la de siempre, premium o con su aviso), y el grifo, decorativo, que suelta una gota al tocarlo.
+// la de siempre, premium o con su aviso), y el grifo, que suelta una gota al tocarlo.
 // Además, el mueble de debajo del fregadero se abre como la nevera y guarda la lista de limpieza y cosas
 // de casa (ui/despensa/fregadero.jsx).
 //
+// El juego del grifo (idea del usuario, octubre de 2026): debajo del fregadero, el sifón baja recto hasta
+// una botella de detergente vacía, y cada gota la llena una parte fija (GOTAS_PARA_LLENAR). Con la última,
+// se desborda: la puerta del mueble se abre (o se queda abierta), la botella cae al suelo con los botes
+// de limpieza que haya y se forma un charco de agua sucia. Tocar el charco lo recoge todo y la botella
+// vuelve vacía a su sitio. Es solo un juego: lo lleno que está se recuerda en este dispositivo
+// (localStorage), no en la cuenta, y si se sale con el charco en el suelo, al volver ya está recogido.
+//
 // Con «reducir movimiento» activado en el sistema (una opción de accesibilidad) no hay giros ni
-// fundidos: el interior se abre al instante y la vitrocerámica navega sin esperar al fuego.
+// fundidos: el interior se abre al instante, la vitrocerámica navega sin esperar al fuego, y el grifo
+// llena la botella sin gota que caiga (y si se desborda, todo aparece ya en el suelo).
 import React, { useState, useEffect, useRef } from "react";
 import { t } from "i18n";
 import { FUENTE_TEXTO } from "../estilos.js";
@@ -37,6 +45,15 @@ const ANGULO_ABIERTA = -112;
 // El fuego de la vitrocerámica se ve encendido este rato antes de cambiar de pantalla.
 const FUEGO_ANTES_DE_IR = 420;
 const DURACION_GOTA = 650;
+// La gota llega al fregadero a este tiempo (su caída dura 480 ms, ver FondoCocina): entonces sube el agua.
+const LLEGA_GOTA = 520;
+// Cuántas gotas llenan la botella (cada una, la misma cantidad: una octava parte).
+const GOTAS_PARA_LLENAR = 8;
+// Al desbordarse: lo que tarda la puerta en abrirse antes de que caiga la botella, y lo que tarda todo en
+// volver a su sitio al recoger el charco antes de cerrar la puerta.
+const VUELCO_TRAS_ABRIR = 320;
+const RECOGER = 460;
+const CLAVE_AGUA = "fooddraft:agua-fregadero";
 
 // Dónde va cada pieza de la escena, en unidades del dibujo de la cocina (ESCENA_ANCHO × ESCENA_ALTO,
 // ver FondoCocina). La nevera, a la derecha y de pie sobre el suelo: su puerta gira sobre la bisagra de
@@ -62,6 +79,26 @@ function en(x, y, w, h) {
 
 const botonInvisible = { padding: 0, border: "none", background: "none", cursor: "pointer" };
 
+// Lo llena que está la botella (en gotas), guardado en el dispositivo. Siempre con try/catch: en una
+// ventana privada o con los datos del sitio bloqueados, localStorage puede fallar, y entonces la botella
+// simplemente empieza vacía.
+function leerAgua() {
+  try {
+    const n = parseInt(localStorage.getItem(CLAVE_AGUA), 10);
+    return n > 0 && n < GOTAS_PARA_LLENAR ? n : 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
+function guardarAgua(n) {
+  try {
+    localStorage.setItem(CLAVE_AGUA, String(n));
+  } catch (e) {
+    // sin almacenamiento, el nivel solo dura mientras la pantalla está abierta
+  }
+}
+
 function prefiereMenosMovimiento() {
   try {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -77,6 +114,12 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
   const [panel, setPanel] = useState(null);
   const [fuego, setFuego] = useState(false);
   const [gota, setGota] = useState(null); // null | "arriba" | "abajo"
+  const [agua, setAgua] = useState(leerAgua);
+  const [derrame, setDerrame] = useState(null); // null | "lleno" | "charco" | "recogiendo"
+  // Copias en refs para los temporizadores (que ven el estado del render en que se crearon) y para que
+  // varios toques seguidos no se pisen.
+  const aguaRef = useRef(agua);
+  const derrameRef = useRef(null);
   const temporizadores = useRef([]);
 
   useEffect(() => () => temporizadores.current.forEach(clearTimeout), []);
@@ -96,13 +139,53 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
     luego(onIrACocinar, FUEGO_ANTES_DE_IR);
   }
 
+  function cambiarDerrame(fase) {
+    derrameRef.current = fase;
+    setDerrame(fase);
+  }
+
   // La gota aparece en el caño y, un instante después, empieza a caer (así la transición tiene un punto
-  // de partida ya pintado). Sin movimiento no hay gota: el grifo es solo decorado.
+  // de partida ya pintado); al llegar al fregadero, sube el agua de la botella. Sin movimiento no hay
+  // gota: el agua sube nada más tocar. Con el charco en el suelo, el grifo no hace nada.
   function abrirGrifo() {
-    if (panel || reducido || gota) return;
+    if (panel || derrameRef.current) return;
+    if (reducido) { sumarAgua(); return; }
+    if (gota) return;
     setGota("arriba");
     temporizar(() => setGota("abajo"), 40);
+    temporizar(sumarAgua, LLEGA_GOTA);
     temporizar(() => setGota(null), DURACION_GOTA);
+  }
+
+  function sumarAgua() {
+    if (derrameRef.current) return;
+    const n = aguaRef.current + 1;
+    if (n >= GOTAS_PARA_LLENAR) { derramar(); return; }
+    aguaRef.current = n;
+    setAgua(n);
+    guardarAgua(n);
+  }
+
+  // La botella, ya llena, se ve un momento mientras se abre la puerta; luego cae. El nivel guardado vuelve
+  // a cero desde ya: si se cierra la app con el charco, al volver está recogido y la botella vacía.
+  function derramar() {
+    aguaRef.current = 0;
+    setAgua(0);
+    guardarAgua(0);
+    setPuertas((p) => ({ ...p, fregadero: true }));
+    if (reducido) { cambiarDerrame("charco"); return; }
+    cambiarDerrame("lleno");
+    temporizar(() => cambiarDerrame("charco"), VUELCO_TRAS_ABRIR);
+  }
+
+  // Tocar el charco: se seca, la botella (vacía) y los botes vuelven a su sitio y se cierra la puerta.
+  function recogerCharco() {
+    if (derrameRef.current !== "charco") return;
+    cambiarDerrame("recogiendo");
+    luego(() => {
+      cambiarDerrame(null);
+      setPuertas((p) => ({ ...p, fregadero: false }));
+    }, RECOGER);
   }
 
   function abrir(zona) {
@@ -117,10 +200,11 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
   }
 
   // Lo llama el panel cuando ya se ha desvanecido: entonces se cierran las puertas (y vuelve el estante).
+  // Con el charco en el suelo, la del fregadero se queda abierta hasta recogerlo.
   function alCerrarPanel() {
     setPanel(null);
     luego(() => {
-      setPuertas({ nevera: false, congelador: false, fregadero: false });
+      setPuertas({ nevera: false, congelador: false, fregadero: !!derrameRef.current });
       setEstantePulsado(false);
     }, 40);
   }
@@ -144,7 +228,10 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
           borderRadius: 18, boxShadow: "0 0 0 1px var(--line)",
         }}
       >
-        <FondoCocina tema={tema} fuegoEncendido={fuego} gota={gota} reducido={reducido} cosasFregadero={limpiezaPendiente} />
+        <FondoCocina
+          tema={tema} fuegoEncendido={fuego} gota={gota} reducido={reducido} cosasFregadero={limpiezaPendiente}
+          nivelAgua={agua / GOTAS_PARA_LLENAR} derrame={derrame}
+        />
 
         <button onClick={abrirGrifo} aria-label={t(idioma, "despensa.grifo")} style={{ ...botonInvisible, ...en(GRIFO.x, GRIFO.y, GRIFO.w, GRIFO.h) }} />
         <button onClick={irACocinar} aria-label={t(idioma, "despensa.abrir.cocinar")} style={{ ...botonInvisible, ...en(VITRO.x, VITRO.y, VITRO.w, VITRO.h) }} />
@@ -171,6 +258,12 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
             dorso={<PuertaMuebleDorso tema={tema} />}
           />
         </div>
+
+        {/* El charco se recoge tocándolo: la zona que se toca es todo el suelo de delante de los muebles,
+            más grande que el dibujo, para acertar fácil. */}
+        {derrame === "charco" && (
+          <button onClick={recogerCharco} aria-label={t(idioma, "despensa.charco")} style={{ ...botonInvisible, ...en(8, SUELO_Y, 172, ESCENA_ALTO - SUELO_Y) }} />
+        )}
 
         {/* Nevera: el cuerpo con su interior, y las dos puertas encima. Su caja tiene la proporción del
             dibujo de la nevera, así que las puertas, en porcentaje, siempre encajan con el cuerpo. Va la
@@ -223,12 +316,19 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
           </button>
         ))}
       </div>
-      <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", textAlign: "center", margin: "10px 0 0" }}>
-        {t(idioma, "despensa.tocaParaAbrir")}
+      <p
+        style={{
+          fontFamily: FUENTE_TEXTO, fontSize: 12, textAlign: "center", margin: "10px 0 0",
+          color: derrame === "charco" ? "var(--ink)" : "var(--ink-soft)", fontWeight: derrame === "charco" ? 700 : 400,
+        }}
+      >
+        {derrame === "charco" ? t(idioma, "despensa.charco.ayuda") : t(idioma, "despensa.tocaParaAbrir")}
       </p>
 
       {panel === "fregadero" && (
-        <PanelFregadero despensa={despensa} tema={tema} reducido={reducido} onCerrar={alCerrarPanel} idioma={idioma} />
+        <PanelFregadero
+          despensa={despensa} tema={tema} reducido={reducido} nivelAgua={agua / GOTAS_PARA_LLENAR} onCerrar={alCerrarPanel} idioma={idioma}
+        />
       )}
       {panel && panel !== "fregadero" && (
         <PanelZona zona={panel} despensa={despensa} data={data} tema={tema} reducido={reducido} onCerrar={alCerrarPanel} idioma={idioma} />

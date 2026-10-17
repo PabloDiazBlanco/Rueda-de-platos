@@ -46,6 +46,13 @@ export const TEMAS_NEVERA = {
     planta: "#5aa35a",
     maceta: "#c9773b",
     interiorMueble: "#5f9a8d",  // dentro del mueble de debajo del fregadero (con sus cañerías)
+    tuberia: "#f7f6f0",         // el sifón de plástico blanco
+    tuberiaSombra: "#d6d5ca",
+    botella: "#b5dc8a",         // la botella de detergente que recoge el agua del grifo
+    botellaOscura: "#7fb24f",   // la rosca de su boca
+    charco: "#968e5e",          // agua sucia (la de la botella y la del charco): a propósito, de color feo
+    charcoOscuro: "#77703f",
+    charcoBrillo: "#c9c095",
     alerta: "#c2452d",          // cantidades de lo que se está acabando
   },
 };

@@ -11,6 +11,7 @@ import { t } from "i18n";
 import { inputStyle, IconBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 import { MarcoPanel } from "./panel.jsx";
+import { TuberiaFregadero, BotellaFregadero, BOCA_BOTELLA } from "./dibujos.jsx";
 
 // Sugerencias de un toque. Al añadirse se guardan con el texto en el idioma de cada uno (a partir de ese
 // momento son datos del usuario, como cualquier cosa que escriba él).
@@ -112,9 +113,10 @@ export function ListaLimpieza({ despensa, idioma }) {
   );
 }
 
-// El panel a pantalla completa que se abre desde el mueble: arriba, las cañerías (el dibujo de lo que se
-// ve al abrir la puerta) y debajo, la lista sobre una tarjeta clara para que se lea bien.
-export function PanelFregadero({ despensa, tema, reducido, onCerrar, idioma }) {
+// El panel a pantalla completa que se abre desde el mueble: arriba, el sifón y la botella que recoge el
+// agua del grifo, con lo llena que esté (el dibujo de lo que se ve al abrir la puerta, ver cocina.jsx), y
+// debajo, la lista sobre una tarjeta clara para que se lea bien.
+export function PanelFregadero({ despensa, tema, reducido, nivelAgua = 0, onCerrar, idioma }) {
   return (
     <MarcoPanel
       titulo={t(idioma, "despensa.fregadero.titulo")}
@@ -130,11 +132,11 @@ export function PanelFregadero({ despensa, tema, reducido, onCerrar, idioma }) {
           border: `5px solid ${tema.muebleOscuro}`, padding: "0 10px 12px",
         }}
       >
-        <svg viewBox="0 0 300 70" width="100%" style={{ display: "block", maxHeight: 90 }} aria-hidden="true">
-          {/* desagüe, sifón en U y salida hacia la pared */}
-          <path d="M150,0 L150,32 Q150,56 128,56 Q106,56 106,32 L106,26 Q106,18 98,18 L0,18" fill="none" stroke={tema.metal} strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-          <rect x="140" y="0" width="20" height="8" rx="3" fill={tema.metalClaro} />
-          <path d="M232,0 L232,40 L300,40" fill="none" stroke={tema.metalClaro} strokeWidth="5" strokeLinecap="round" opacity="0.7" />
+        <svg viewBox="0 0 300 102" width="100%" style={{ display: "block", maxHeight: 120, margin: "0 auto 8px" }} aria-hidden="true">
+          <TuberiaFregadero tema={tema} x={150} desde={0} hasta={98 + BOCA_BOTELLA} />
+          <g transform="translate(150 98)">
+            <BotellaFregadero tema={tema} nivel={nivelAgua} reducido={reducido} />
+          </g>
         </svg>
         <div style={{ background: "var(--card)", borderRadius: 12, padding: "12px 12px 14px" }}>
           <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", lineHeight: 1.45, margin: "0 0 10px" }}>

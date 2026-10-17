@@ -510,17 +510,44 @@ const ENCIMERA_ANCHO = 180;
 // Dónde cae la gota del grifo: sale del caño y acaba dentro del fregadero.
 const GOTA = { x: 40, y: 250, caida: 34 };
 // El mueble de debajo del fregadero: su puerta es una pieza aparte (se abre, ver cocina.jsx) y aquí se
-// dibuja lo que hay detrás, las cañerías y la limpieza.
+// dibuja lo que hay detrás: el sifón, que baja recto hasta una botella de detergente vacía que recoge el
+// agua del grifo, y hasta dos botes de limpieza.
 export const MUEBLE_FREGADERO = { x: 8, y: ENCIMERA_Y + 32, w: 78, h: 112 };
-const COLORES_BOTES = ["#6aa6d9", "#f2c84b", "#e47a9a"];
+const COLORES_BOTES = ["#6aa6d9", "#e47a9a"];
+// Dónde está cada cosa de dentro del mueble: de pie, y caída en el suelo cuando la botella se desborda.
+// Cada dibujo tiene el origen en el centro de su base, así que se coloca con un translate y un giro, y
+// la caída es la transición entre las dos posiciones. La botella cae hacia la derecha y se queda tumbada
+// delante del mueble, sin llegar a la puerta abierta (que, al ser HTML, se pintaría por encima); los
+// botes, un poco más allá, sobre el charco.
+const BASE_MUEBLE = MUEBLE_FREGADERO.y + MUEBLE_FREGADERO.h - 6;
+const BOTELLA_DE_PIE = { x: 44, y: BASE_MUEBLE, giro: 0 };
+const BOTELLA_CAIDA = { x: 24, y: SUELO_Y - 6, giro: 90 };
+const BOTES_DE_PIE = [{ x: 20, y: BASE_MUEBLE, giro: 0 }, { x: 73, y: BASE_MUEBLE, giro: 0 }];
+const BOTES_CAIDOS = [{ x: 100, y: SUELO_Y + 8, giro: 84 }, { x: 168, y: SUELO_Y + 15, giro: -82 }];
+// El charco crece desde la boca de la botella tumbada y se extiende por delante de todo lo caído (más
+// cerca de quien mira), para que se vea bien aunque la botella y los botes estén encima. Es un óvalo
+// grande con dos lóbulos a los lados, para que no parezca una alfombra.
+const CHARCO = { cx: 100, cy: SUELO_Y + 18, rx: 86, ry: 10, origen: `86px ${SUELO_Y + 14}px` };
 
 // `fuegoEncendido`: el fuego de delante se enciende un momento al tocar la vitrocerámica, justo antes de
 // ir a «¿Qué cocino?». `gota`: null, "arriba" (recién salida del grifo) o "abajo" (cayendo).
 // `cosasFregadero`: cuántas cosas hay pendientes en la lista de limpieza; se ven tantos botes (hasta
-// tres) al abrir el mueble de debajo del fregadero.
-export function FondoCocina({ tema, fuegoEncendido, gota, reducido, cosasFregadero = 0 }) {
+// dos) al abrir el mueble de debajo del fregadero. `nivelAgua` (0 a 1): lo llena que está la botella.
+// `derrame`: null, "lleno" (la botella acaba de llenarse y la puerta se está abriendo), "charco" (la
+// botella y los botes, en el suelo, con el charco) o "recogiendo" (todo vuelve a su sitio); ver
+// VistaDibujo en cocina.jsx.
+export function FondoCocina({ tema, fuegoEncendido, gota, reducido, cosasFregadero = 0, nivelAgua = 0, derrame = null }) {
   const m = MUEBLE_FREGADERO;
   const transicion = reducido ? "none" : "opacity 200ms ease, stroke 200ms ease";
+  const caida = derrame === "charco";
+  // Al caer, el agua se vacía en el charco; justo antes, la botella se ve llena del todo.
+  const nivel = derrame === "lleno" ? 1 : caida ? 0 : nivelAgua;
+  // Al caer, cada cosa acelera (como si cayera de verdad) y con un pequeño retraso distinto; al recoger,
+  // vuelven todas a la vez y frenando.
+  const colocar = (p, retraso) => ({
+    transform: `translate(${p.x}px, ${p.y}px) rotate(${p.giro}deg)`,
+    transition: reducido ? "none" : caida ? `transform 520ms cubic-bezier(.5,0,.85,.6) ${retraso}ms` : "transform 420ms ease-out",
+  });
   const azulejos = [];
   for (let fila = 0; fila < 5; fila++) {
     const y = 212 + fila * 13.6;
@@ -556,23 +583,32 @@ export function FondoCocina({ tema, fuegoEncendido, gota, reducido, cosasFregade
         {/* dentro del mueble de debajo del fregadero: se ve al abrir su puerta */}
         <rect x={m.x} y={m.y} width={m.w} height={m.h} rx="6" fill={tema.interiorMueble} />
         <rect x={m.x + 4} y={m.y + 4} width={m.w - 8} height={m.h - 8} rx="4" fill="#000000" opacity="0.12" />
-        <path
-          d={`M44,${m.y} L44,${m.y + 24} Q44,${m.y + 38} 34,${m.y + 38} Q24,${m.y + 38} 24,${m.y + 24} L24,${m.y + 20} Q24,${m.y + 14} 18,${m.y + 14} L${m.x + 4},${m.y + 14}`}
-          fill="none" stroke={tema.metal} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
-        />
-        {COLORES_BOTES.slice(0, Math.min(3, cosasFregadero)).map((color, i) => {
-          const x = m.x + 18 + i * 20;
-          const base = m.y + m.h - 8;
-          return (
-            <g key={color}>
-              <rect x={x} y={base - 24} width="12" height="24" rx="3" fill={color} />
-              <rect x={x + 3} y={base - 31} width="6" height="8" rx="1.5" fill="#f5f0e1" />
-              <rect x={x + 8} y={base - 31} width="6" height="3" rx="1.5" fill="#f5f0e1" />
-              <rect x={x + 2} y={base - 16} width="8" height="7" rx="1" fill="#ffffff" opacity="0.6" />
-            </g>
-          );
-        })}
+        <TuberiaFregadero tema={tema} x={BOTELLA_DE_PIE.x} desde={m.y} hasta={BOTELLA_DE_PIE.y + BOCA_BOTELLA} />
         <rect x="0" y={SUELO_Y - 8} width={ENCIMERA_ANCHO - 2} height="8" fill={tema.muebleOscuro} />
+
+        {/* El charco, la botella y los botes van después del zócalo: tumbados en el suelo quedan por
+            delante de él. De pie, dentro del mueble, la puerta cerrada los tapa. */}
+        <g
+          style={{
+            transformOrigin: CHARCO.origen, transform: caida ? "scale(1)" : "scale(0.05)", opacity: caida ? 1 : 0,
+            transition: reducido ? "none" : caida ? "transform 600ms ease-out 320ms, opacity 200ms ease 320ms" : "transform 420ms ease-in, opacity 420ms ease-in",
+          }}
+        >
+          <ellipse cx={CHARCO.cx} cy={CHARCO.cy} rx={CHARCO.rx} ry={CHARCO.ry} fill={tema.charco} />
+          <ellipse cx={CHARCO.cx - 66} cy={CHARCO.cy + 4} rx="26" ry="7" fill={tema.charco} />
+          <ellipse cx={CHARCO.cx + 70} cy={CHARCO.cy + 3} rx="24" ry="7" fill={tema.charco} />
+          <ellipse cx={CHARCO.cx - 40} cy={CHARCO.cy + 6} rx="22" ry="2.6" fill={tema.charcoOscuro} opacity="0.7" />
+          <ellipse cx={CHARCO.cx + 46} cy={CHARCO.cy + 6} rx="16" ry="2.2" fill={tema.charcoOscuro} opacity="0.6" />
+          <ellipse cx={CHARCO.cx + 4} cy={CHARCO.cy + 5} rx="24" ry="1.8" fill={tema.charcoBrillo} opacity="0.8" />
+        </g>
+        <g style={colocar(caida ? BOTELLA_CAIDA : BOTELLA_DE_PIE, 0)}>
+          <BotellaFregadero tema={tema} nivel={nivel} reducido={reducido} />
+        </g>
+        {COLORES_BOTES.slice(0, Math.min(2, cosasFregadero)).map((color, i) => (
+          <g key={color} style={colocar(caida ? BOTES_CAIDOS[i] : BOTES_DE_PIE[i], 120 + i * 100)}>
+            <BoteLimpieza color={color} />
+          </g>
+        ))}
 
         {/* encimera: la superficie (vista un poco desde arriba) y el canto */}
         <rect x="0" y={ENCIMERA_Y} width={ENCIMERA_ANCHO} height="16" fill={tema.encimera} />
@@ -613,6 +649,69 @@ export function FondoCocina({ tema, fuegoEncendido, gota, reducido, cosasFregade
         <path d="M222,80 L258,80 L253,98 L227,98 Z" fill={tema.maceta} />
       </g>
     </svg>
+  );
+}
+
+// ---------- Debajo del fregadero ----------
+// El sifón de plástico blanco, que baja recto desde el desagüe hasta la boca de la botella (idea del
+// usuario: nada de cañerías hacia un lado o hacia la pared). `desde` es donde empieza (arriba del todo
+// del mueble) y `hasta`, la boca de la botella; necesita al menos 36 unidades para el vaso del sifón.
+export function TuberiaFregadero({ tema, x, desde, hasta }) {
+  const vaso = desde + 14;
+  return (
+    <g>
+      {/* la cola del desagüe, de metal, y la tuerca donde empieza el plástico */}
+      <rect x={x - 4} y={desde} width="8" height="6" fill={tema.metal} />
+      <rect x={x - 6} y={desde + 5} width="12" height="5" rx="1.5" fill={tema.tuberia} stroke={tema.tuberiaSombra} strokeWidth="1" />
+      {/* el tubo recto, con su sombra a un lado */}
+      <rect x={x - 3.5} y={desde + 9} width="7" height={hasta - desde - 9} fill={tema.tuberia} />
+      <rect x={x + 1.5} y={desde + 9} width="2" height={hasta - desde - 9} fill={tema.tuberiaSombra} />
+      {/* el vaso del sifón, más ancho, con la tuerca de abajo */}
+      <rect x={x - 7} y={vaso} width="14" height="18" rx="4" fill={tema.tuberia} stroke={tema.tuberiaSombra} strokeWidth="1" />
+      <rect x={x + 2} y={vaso + 2} width="3" height="12" rx="1.5" fill={tema.tuberiaSombra} />
+      <rect x={x - 8} y={vaso + 14} width="16" height="4" rx="1.5" fill={tema.tuberiaSombra} />
+    </g>
+  );
+}
+
+// La boca de la botella está a esta altura sobre su base: ahí acaba el sifón.
+export const BOCA_BOTELLA = -58;
+
+// Botella de detergente vacía que recoge el agua del grifo (idea del usuario: verde, con el asa a la
+// derecha y sin etiqueta). Origen en la base, justo debajo de la boca: el cuerpo va de x −14 a 20 y de
+// y −61 a 0. El asa es un hueco del propio contorno (fillRule evenodd). `nivel`, de 0 a 1: el agua es un
+// rectángulo dentro de un <svg> anidado, que recorta lo que se sale de él, y sube o baja con un
+// translate (así la transición es solo de transform, que va fluida en cualquier navegador). El agua no
+// pasa de la altura del asa, para no pintarse en su hueco.
+export function BotellaFregadero({ tema, nivel, reducido }) {
+  const alto = 32;
+  return (
+    <>
+      <path
+        d="M-8,0 L14,0 Q20,0 20,-6 L20,-48 Q20,-55 13,-55 L5,-55 L5,-58 L-5,-58 L-5,-52 Q-14,-48 -14,-38 L-14,-6 Q-14,0 -8,0 Z M9,-50 L13,-50 Q15,-50 15,-48 L15,-40 Q15,-38 13,-38 L9,-38 Q7,-38 7,-40 L7,-48 Q7,-50 9,-50 Z"
+        fill={tema.botella} fillRule="evenodd"
+      />
+      <svg x="-11" y={-4 - alto} width="28" height={alto} overflow="hidden">
+        <rect
+          x="0" y="0" width="28" height={alto} fill={tema.charco} opacity="0.8"
+          style={{ transform: `translateY(${(1 - nivel) * alto}px)`, transition: reducido ? "none" : "transform 420ms ease-out" }}
+        />
+      </svg>
+      <rect x="-11" y="-34" width="3" height="26" rx="1.5" fill="#ffffff" opacity="0.4" />
+      <rect x="-6.5" y="-61" width="13" height="6" rx="2" fill={tema.botellaOscura} />
+    </>
+  );
+}
+
+// Un bote de limpieza (spray), con el origen en el centro de su base.
+function BoteLimpieza({ color }) {
+  return (
+    <>
+      <rect x="-6" y="-24" width="12" height="24" rx="3" fill={color} />
+      <rect x="-3" y="-31" width="6" height="8" rx="1.5" fill="#f5f0e1" />
+      <rect x="2" y="-31" width="6" height="3" rx="1.5" fill="#f5f0e1" />
+      <rect x="-4" y="-16" width="8" height="7" rx="1" fill="#ffffff" opacity="0.6" />
+    </>
   );
 }
 
