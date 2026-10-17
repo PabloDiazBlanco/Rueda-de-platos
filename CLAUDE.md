@@ -171,6 +171,17 @@ El estado de los dos lo lleva el mismo hook, `useMenu` (`ui/estado/menu.js`), co
 distinta para cada uno (`MENU_COMPLETO` y `MENU_SIMPLE`: claves de almacenamiento y campo de la
 lista de la compra) — así es imposible que una mejora llegue a uno y se olvide en el otro.
 
+**Compartir** (`BotonCompartir`, `ui/comun/compartir.jsx`): el menú de la semana elegida y las dos
+listas de la compra se comparten como texto o como imagen (un PNG dibujado en un `<canvas>`, sin
+librerías), con `navigator.share` y, donde no se puede, copiando el texto al portapapeles o
+descargando la imagen. Cada pantalla arma un «documento» (título, secciones y líneas) y la pieza común
+lo pasa a texto o lo dibuja; el del menú lo arma `documentoMenu` (`ui/menu/exportar.js`): en texto,
+cada comida con sus ingredientes (y gramos en el Menú completo); en imagen, solo los platos (y las kcal
+en el completo), para que se lea en un móvil. La imagen se prepara al abrir las opciones y no al
+elegir «Imagen», porque Safari solo deja abrir el menú de compartir justo después de un toque. Sustituye
+al antiguo «Exportar PDF» del menú (`window.print`), que se quitó en octubre de 2026 porque en el móvil
+iba mal; el seguimiento de peso y el catálogo de alimentos conservan su versión imprimible.
+
 Todas las claves de almacenamiento (`STORAGE_KEY` en `ui/estado/datos.js`; las de los menús en
 `MENU_COMPLETO`/`MENU_SIMPLE`, `ui/estado/menu.js`) empiezan por `rueda-de-platos:` — ver la nota sobre el nombre al principio de este archivo.
 
@@ -196,8 +207,8 @@ Cómo se relaciona con el Menú completo (el Menú simple queda fuera):
   casillas de siempre en `data.listaCompraSimple`.
 - Borrar un alimento del catálogo lo quita también de la despensa: `useCatalogo` recibe el aviso
   `alBorrarAlimento` y `app.jsx` lo conecta con `useDespensa` (los hooks no se importan entre sí).
-- Las dos listas de la compra tienen un botón **Compartir** que manda lo pendiente como texto
-  (`navigator.share`, o al portapapeles donde no existe). Se descartó el PDF a propósito.
+- Las dos listas de la compra tienen el botón **Compartir**, que manda lo pendiente como texto o como
+  imagen (ver «Menú completo y Menú simple»).
 
 Además, dentro de la misma clave:
 - **Queda poco** (`alertasStock`): lo acabado o con menos de una ración media (la media de los gramos con
@@ -220,8 +231,18 @@ con un pequeño rebote, se enciende la luz y el interior se abre a pantalla comp
 (`ui/despensa/panel.jsx`), con fichas que se tocan para cambiar cada cosa (`editar.jsx`). La
 vitrocerámica enciende un fuego y lleva a «¿Qué cocino?» solo navegando, al destino
 `cocinar-desde-cocina` de `ui/pantallas.jsx` (la misma pantalla que `cocinar`, pero volviendo a «¿Qué
-tengo?»); el grifo es decorativo, y el mueble de debajo del fregadero se abre como la nevera y guarda la
-lista de limpieza. Los paneles a pantalla completa comparten marco (`MarcoPanel`, en `panel.jsx`).
+tengo?»); el mueble de debajo del fregadero se abre como la nevera y guarda la lista de limpieza. Los
+paneles a pantalla completa comparten marco (`MarcoPanel`, en `panel.jsx`).
+
+El grifo es un pequeño juego (idea del usuario): cada toque suelta una gota que llena una octava parte
+(`GOTAS_PARA_LLENAR`, en `cocina.jsx`) de una botella de detergente verde a la que baja recto el sifón,
+debajo del fregadero. Con la octava se desborda (`derrame`: `"lleno"` → `"charco"`): la puerta del
+mueble se abre, la botella cae al suelo con hasta dos botes de limpieza (uno por cosa pendiente de la
+lista) y queda un charco de agua sucia; tocar el charco (`"recogiendo"`) lo devuelve todo a su sitio, la
+botella vacía y la puerta cerrada. El nivel se guarda en `localStorage` (`fooddraft:agua-fregadero`),
+como comodidad del dispositivo y no como dato de la cuenta, y vuelve a cero en cuanto se desborda: si se
+sale con el charco en el suelo, al volver ya está recogido.
+
 Reglas de esta parte:
 - **Qué va en cada hueco** (puerta, baldas, cajón, cesta...) **y con qué dibujo** lo decide
   `logica/nevera.js`, con sus casos en `validacion/tests.js` (grupo «Colocación en la nevera»); la
@@ -232,7 +253,8 @@ Reglas de esta parte:
   `ui/despensa/dibujos.jsx` (SVG, sin imágenes externas); las propuestas originales, en
   `local/ideas/diseno-nevera/`.
 - Con «reducir movimiento» activado en el sistema no hay animaciones: el interior se abre al instante,
-  la vitrocerámica navega sin esperar al fuego y el grifo no suelta gota.
+  la vitrocerámica navega sin esperar al fuego y el grifo llena la botella sin gota que caiga (si se
+  desborda, todo aparece ya en el suelo, y al recogerlo vuelve de golpe).
 - Todo se coloca en unidades del dibujo de la cocina (`ESCENA_ANCHO` × `ESCENA_ALTO`) sobre un
   contenedor con esa misma proporción, así que la escena se escala entera con el ancho de la pantalla.
 - El panel deja libre la esquina de arriba a la derecha, donde flota el botón de cerrar sesión que añade
