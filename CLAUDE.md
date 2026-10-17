@@ -71,6 +71,7 @@ logica/migraciones.js          → migrateData
 logica/despensa.js             → stock de la despensa: zonas, menú confirmado, descontar/devolver comidas,
                                   tachar/destachar compras, migrarDespensa
 logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
+logica/nevera.js               → colocación de la nevera dibujada: huecoDe, formaDe, esBebida, repartirEnHuecos
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
@@ -78,7 +79,7 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 `evaluarTendencia` y meses de `formatFechaCorta`), `datos-iniciales.js` → `peso.js`,
 `cuestionario.js` → `comun.js` y `datos-iniciales.js`, `migraciones.js` → `datos-iniciales.js`,
 `objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js`, y `lista-compra-neta.js` →
-`macros.js`, `comida-calculo.js` y `despensa.js`. La interfaz importa `logica/` por **nombre corto** y otros
+`macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
 arranque se quedan en la raíz (`index.html`, `auth-bootstrap.jsx`, `cargador-ui.js`, `sw.js`,
 `manifest.json`, `icon.svg`): `sw.js` en concreto necesita estar ahí para que su "scope" cubra toda
@@ -179,7 +180,7 @@ fruta solo como «tengo / no tengo». Vive en su propia clave, `rueda-de-platos:
 propia versión y su propia migración (`migrarDespensa`, en `logica/despensa.js`): **no pasa por
 `migrateData`**. Si cambia su forma, el parche va en `migrarDespensa` y su caso en `validacion/tests.js`
 (grupo «Despensa y lista de la compra neta»). La lleva `useDespensa` (`ui/estado/despensa.js`) y la
-pantalla es `ui/despensa/despensa.jsx`.
+pantalla es `ui/despensa/despensa.jsx`, con dos vistas del mismo contenido: **Dibujo** y **Lista**.
 
 Cómo se relaciona con el Menú completo (el Menú simple queda fuera):
 - **Un menú recién generado es un borrador** hasta que se confirma. Se guarda el id de `menu[0]`
@@ -194,6 +195,24 @@ Cómo se relaciona con el Menú completo (el Menú simple queda fuera):
   casillas de siempre en `data.listaCompraSimple`.
 - Borrar un alimento del catálogo lo quita también de la despensa: `useCatalogo` recibe el aviso
   `alBorrarAlimento` y `app.jsx` lo conecta con `useDespensa` (los hooks no se importan entre sí).
+
+La vista **Dibujo** (Fase B, octubre de 2026) es la nevera retro con su congelador y el estante de la
+despensa (`ui/despensa/cocina.jsx`): cada puerta gira sobre su bisagra con un pequeño rebote, se enciende
+la luz y el interior se abre a pantalla completa (`ui/despensa/panel.jsx`), con fichas que se tocan para
+cambiar cada cosa (`editar.jsx`). Reglas de esta parte:
+- **Qué va en cada hueco** (puerta, baldas, cajón, cesta...) **y con qué dibujo** lo decide
+  `logica/nevera.js`, con sus casos en `validacion/tests.js` (grupo «Colocación en la nevera»); la
+  interfaz solo pinta lo que le llega de `useDespensa().huecos(zona)`. Si algo es una bebida (va a la
+  puerta) se deduce del nombre, porque el catálogo no tiene carpeta de bebidas.
+- **Los colores salen de un tema** (`ui/despensa/tema.js`, hoy solo «retro»), nunca escritos a mano en
+  los componentes: así otro estilo sería una entrada nueva ahí. Los dibujos están en
+  `ui/despensa/dibujos.jsx` (SVG, sin imágenes externas); las propuestas originales, en
+  `local/ideas/diseno-nevera/`.
+- Con «reducir movimiento» activado en el sistema no hay animaciones: el interior se abre al instante.
+- El panel deja libre la esquina de arriba a la derecha, donde flota el botón de cerrar sesión que añade
+  `auth-bootstrap.jsx` fuera de React.
+- La vista elegida (Dibujo o Lista) se recuerda en `localStorage` (`fooddraft:vista-despensa`), como
+  comodidad del dispositivo, no como dato de la cuenta.
 
 ## Internacionalización
 

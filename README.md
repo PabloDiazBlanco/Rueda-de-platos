@@ -46,10 +46,10 @@ index.html
 auth-bootstrap.jsx   (login, Firestore, App Check, puente con las Cloud Functions)
   │  cargador-ui.js: descarga, pasa por Babel y enlaza app.jsx + ui/ (import/export normales)
   ▼
-app.jsx + ui/        (componente principal + 40 archivos de interfaz, por pantalla)
+app.jsx + ui/        (componente principal + 48 archivos de interfaz, por pantalla)
   │  import { ... } from "nombre-corto"     ← resuelto por el importmap
   ▼
-logica/*.js          (15 módulos de lógica pura, sin JSX, sin React)
+logica/*.js          (16 módulos de lógica pura, sin JSX, sin React)
 ```
 
 La única pieza de servidor es `functions/` (Cloud Functions de Firebase: pagos con Stripe, Gemini
@@ -94,6 +94,7 @@ Rueda-de-platos/
 │   ├── migraciones.js                 migrateData (datos guardados de versiones anteriores)
 │   ├── despensa.js                    lo que hay en casa: zonas, consumos y compras
 │   ├── lista-compra-neta.js           lista de la compra menos lo que ya tienes
+│   ├── nevera.js                      dónde va cada cosa en la nevera dibujada y con qué dibujo
 │   └── i18n.js                        diccionario de textos ES/EN/CA/GL/EU
 │
 ├── functions/                       Cloud Functions de Firebase (Node 22, proyecto aparte)
