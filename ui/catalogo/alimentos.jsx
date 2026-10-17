@@ -228,8 +228,8 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
   );
 }
 
-// Ficha imprimible del catálogo de alimentos completo — mismo mecanismo que PrintExport y
-// PrintSeguimiento (oculto en pantalla, visible solo al imprimir vía window.print()).
+// Ficha imprimible del catálogo de alimentos completo — mismo mecanismo que PrintSeguimiento
+// (ui/peso/grafica.jsx): oculto en pantalla, visible solo al imprimir vía window.print().
 function PrintFoods({ foods, idioma }) {
   const ordenados = [...foods].sort((a, b) => a.name.localeCompare(b.name, "es"));
   return (

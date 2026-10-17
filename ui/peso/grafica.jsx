@@ -70,9 +70,10 @@ export function PesoLineChart({ entradas, tendencia, idioma }) {
   );
 }
 
-// Vista de impresión del seguimiento de peso — mismo patrón que PrintExport para el menú: un bloque
-// oculto en pantalla (@media screen) que solo se muestra al imprimir (@media print), para que
-// "Guardar como PDF" del propio navegador lo capture sin necesidad de ninguna librería.
+// Vista de impresión del seguimiento de peso: un bloque oculto en pantalla (@media screen) que solo se
+// muestra al imprimir (@media print), para que "Guardar como PDF" del propio navegador lo capture sin
+// necesidad de ninguna librería. (El menú usaba el mismo patrón hasta octubre de 2026; ahora se comparte
+// como texto o imagen, ver ui/comun/compartir.jsx.)
 export function PrintSeguimiento({ entradas, tendencia, titulo, idioma }) {
   if (!entradas || entradas.length === 0) return null;
   const ordenadas = [...entradas].sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
