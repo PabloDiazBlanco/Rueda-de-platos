@@ -4,7 +4,7 @@
 // hasta que se confirma: solo entonces su lista de la compra se puede tachar (y llena la despensa) y
 // las comidas completadas descuentan de la despensa (ver useDespensa, ui/estado/despensa.js).
 import React, { useState } from "react";
-import { Shuffle, Download, Undo2, Check } from "lucide-react";
+import { Shuffle, Undo2, Check } from "lucide-react";
 import { mealTotals } from "comida-calculo";
 import { DAYS } from "comun";
 import { fechaISO } from "peso";
@@ -13,7 +13,8 @@ import { SectionIntro } from "../comun/tarjetas.jsx";
 import { MealDetailModal } from "./detalle-comida.jsx";
 import { DayStatsPanel, ResumenSaludPublica, ObjetivosModal } from "./estadisticas.jsx";
 import { ListaCompraNetaModal } from "./lista-compra.jsx";
-import { PrintExport } from "./imprimir.jsx";
+import { documentoMenu } from "./exportar.js";
+import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
@@ -136,16 +137,12 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
                 {t(idioma, "menu.semana", { n: w })}
               </button>
             ))}
-            <button
-              onClick={() => window.print()}
-              style={{
-                fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
-                color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
-                borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
-              }}
-            >
-              <Download size={13} /> {t(idioma, "menu.exportarPdf")}
-            </button>
+            <BotonCompartir
+              aspecto="pastilla"
+              construirDocumento={(formato) => documentoMenu(data, menu, menuWeek, idioma, { conCantidades: true, formato })}
+              nombreArchivo={`menu-semana-${menuWeek}.png`}
+              idioma={idioma}
+            />
             <button
               onClick={() => setShowListaCompra(true)}
               style={{
@@ -246,8 +243,6 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
       )}
 
       <HistoryPanel history={history} idioma={idioma} />
-
-      <PrintExport data={data} menu={menu} idioma={idioma} />
 
       {selectedMeal && (
         <MealDetailModal

@@ -1,12 +1,13 @@
 // ---------- ui/menu/menu-simple.jsx ----------
 // Pantalla de Menú simple: el mismo generador, sin calorías ni cantidades.
 import React, { useState } from "react";
-import { Shuffle, Download, Undo2 } from "lucide-react";
+import { Shuffle, Undo2 } from "lucide-react";
 import { DAYS } from "comun";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { ListaCompraModal } from "./lista-compra.jsx";
-import { PrintExport } from "./imprimir.jsx";
+import { documentoMenu } from "./exportar.js";
+import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
@@ -104,16 +105,12 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
                 {t(idioma, "menu.semana", { n: w })}
               </button>
             ))}
-            <button
-              onClick={() => window.print()}
-              style={{
-                fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
-                color: "var(--green-dark)", background: "var(--green-soft)", border: "none",
-                borderRadius: 8, padding: "7px 12px", display: "flex", alignItems: "center", gap: 6,
-              }}
-            >
-              <Download size={13} /> {t(idioma, "menu.exportarPdf")}
-            </button>
+            <BotonCompartir
+              aspecto="pastilla"
+              construirDocumento={(formato) => documentoMenu(data, menu, menuWeek, idioma, { conCantidades: false, formato })}
+              nombreArchivo={`menu-semana-${menuWeek}.png`}
+              idioma={idioma}
+            />
             <button
               onClick={() => setShowListaCompra(true)}
               style={{
@@ -165,8 +162,6 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
       )}
 
       <HistoryPanel history={history} idioma={idioma} />
-
-      <PrintExport data={data} menu={menu} idioma={idioma} conCantidades={false} />
 
       {showListaCompra && (
         <ListaCompraModal
