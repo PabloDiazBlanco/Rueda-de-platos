@@ -4,7 +4,8 @@
 //   tengo" guardadas en data.listaCompraSimple. Hoy solo la usa el Menú simple.
 // - ListaCompraNetaModal: la del Menú completo desde la Fase A de la despensa. Resta lo que ya hay en
 //   casa (logica/lista-compra-neta.js) y, con el menú confirmado, tachar una fila mete lo comprado
-//   en la despensa; destacharla lo saca.
+//   en la despensa; destacharla lo saca. Al final lleva también la lista de limpieza y cosas de casa
+//   (la de debajo del fregadero de «¿Qué tengo?»), para tenerlo todo junto en el súper.
 import React, { useState } from "react";
 import { Check } from "lucide-react";
 import { calcularListaCompra } from "comida-calculo";
@@ -149,6 +150,7 @@ export function ListaCompraNetaModal({ menu, menuWeek, despensa, onClose, idioma
     .filter((g) => g.filas.length);
 
   const textoCantidades = (f) => (f.sinCantidad ? null : t(idioma, "listaCompra.necesitasTienes", { necesito: formatoCantidad(f.necesito), tengo: formatoCantidad(f.tengo) }));
+  const limpieza = despensa.limpieza;
 
   return (
     <ModalShell onClose={onClose} title={t(idioma, "listaCompra.titulo")}>
@@ -169,7 +171,7 @@ export function ListaCompraNetaModal({ menu, menuWeek, despensa, onClose, idioma
         </div>
       )}
 
-      {!menu || filas.length === 0 ? (
+      {!menu || (filas.length === 0 && limpieza.length === 0) ? (
         <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)" }}>
           {t(idioma, menu ? "listaCompra.todoEnCasa" : "listaCompra.sinMenu")}
         </p>
@@ -198,6 +200,35 @@ export function ListaCompraNetaModal({ menu, menuWeek, despensa, onClose, idioma
                 </div>
               </div>
             ))}
+
+            {/* Limpieza y casa: no depende del menú, así que se puede tachar aunque no esté confirmado.
+                Tachar aquí es lo mismo que tacharlo debajo del fregadero. */}
+            {limpieza.length > 0 && (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13 }}>🧽</span>
+                  <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    {t(idioma, "listaCompra.limpieza")}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {limpieza.map((c) => (
+                    <label
+                      key={c.id}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 9, padding: "6px 8px", borderRadius: 7, cursor: "pointer",
+                        fontFamily: FUENTE_TEXTO, background: c.comprado ? "var(--paper)" : "transparent",
+                      }}
+                    >
+                      <input type="checkbox" checked={c.comprado} onChange={() => despensa.alternarLimpieza(c.id)} />
+                      <span style={{ fontSize: 13, color: c.comprado ? "var(--ink-soft)" : "var(--ink)", textDecoration: c.comprado ? "line-through" : "none" }}>
+                        {c.nombre}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {enCasa.length > 0 && (
               <div>

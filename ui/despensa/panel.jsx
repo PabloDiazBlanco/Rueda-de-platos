@@ -26,13 +26,13 @@ const ETIQUETA_HUECO = {
 
 const DURACION_SALIDA = 200;
 
-export function PanelZona({ zona, despensa, data, tema, reducido, onCerrar, idioma }) {
+// Marco común de los paneles a pantalla completa (el interior de la nevera, del congelador, del
+// estante y del mueble del fregadero): el fundido de entrada y salida, Escape para cerrar, que la
+// pantalla de debajo no se desplace, la barra con «Volver» y el título, y un pie opcional. `escapeActivo`
+// lo apaga mientras hay un modal abierto encima, para que Escape cierre el modal y no el panel.
+export function MarcoPanel({ titulo, fondo, tema, reducido, onCerrar, escapeActivo = true, pie, encima, idioma, children }) {
   const [visible, setVisible] = useState(reducido);
-  const [editando, setEditando] = useState(null);
-  const [anadiendo, setAnadiendo] = useState(false);
   const cerrando = useRef(false);
-  const huecos = despensa.huecos(zona);
-  const vacio = huecos.every((h) => h.entradas.length === 0);
 
   // Entrada suave: se monta transparente y un poco más pequeño, y en el siguiente fotograma pasa a su
   // tamaño. Con «reducir movimiento» activado en el sistema aparece directamente.
@@ -59,27 +59,19 @@ export function PanelZona({ zona, despensa, data, tema, reducido, onCerrar, idio
 
   useEffect(() => {
     function alPulsar(e) {
-      if (e.key === "Escape" && !editando && !anadiendo) cerrar();
+      if (e.key === "Escape" && escapeActivo) cerrar();
     }
     window.addEventListener("keydown", alPulsar);
     return () => window.removeEventListener("keydown", alPulsar);
-  }, [editando, anadiendo]);
-
-  const comun = { tema, idioma, onTocar: setEditando };
-  const aviso = vacio && (
-    <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: tema.textoSuave, textAlign: "center", lineHeight: 1.45, margin: "4px 8px 10px" }}>
-      {t(idioma, "despensa.panelVacio")}
-    </p>
-  );
+  }, [escapeActivo]);
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={t(idioma, "despensa.zona." + zona)}
+      aria-label={titulo}
       style={{
-        position: "fixed", inset: 0, zIndex: 45, boxSizing: "border-box",
-        background: zona === "despensa" ? tema.fondoEstante : tema.cuerpo,
+        position: "fixed", inset: 0, zIndex: 45, boxSizing: "border-box", background: fondo,
         padding: "12px 12px calc(12px + env(safe-area-inset-bottom))",
         opacity: visible ? 1 : 0, transform: visible ? "none" : "scale(0.97)",
         transition: reducido ? "none" : `opacity ${DURACION_SALIDA}ms ease, transform ${DURACION_SALIDA}ms ease`,
@@ -99,16 +91,43 @@ export function PanelZona({ zona, despensa, data, tema, reducido, onCerrar, idio
             <ArrowLeft size={15} /> {t(idioma, "despensa.volver")}
           </button>
           <h2 style={{ fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 21, color: tema.texto, margin: 0 }}>
-            {t(idioma, "despensa.zona." + zona)}
+            {titulo}
           </h2>
         </div>
 
-        <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 8 }}>
-          {zona === "nevera" && <InteriorNevera huecos={huecos} aviso={aviso} {...comun} />}
-          {zona === "congelador" && <InteriorCongelador huecos={huecos} aviso={aviso} {...comun} />}
-          {zona === "despensa" && <InteriorDespensa huecos={huecos} aviso={aviso} {...comun} />}
-        </div>
+        <div style={{ flex: 1, minHeight: 0, display: "flex", gap: 8 }}>{children}</div>
 
+        {pie}
+      </div>
+
+      {encima}
+    </div>
+  );
+}
+
+export function PanelZona({ zona, despensa, data, tema, reducido, onCerrar, idioma }) {
+  const [editando, setEditando] = useState(null);
+  const [anadiendo, setAnadiendo] = useState(false);
+  const huecos = despensa.huecos(zona);
+  const vacio = huecos.every((h) => h.entradas.length === 0);
+
+  const comun = { tema, idioma, onTocar: setEditando, alertaDe: despensa.alertaDe };
+  const aviso = vacio && (
+    <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: tema.textoSuave, textAlign: "center", lineHeight: 1.45, margin: "4px 8px 10px" }}>
+      {t(idioma, "despensa.panelVacio")}
+    </p>
+  );
+
+  return (
+    <MarcoPanel
+      titulo={t(idioma, "despensa.zona." + zona)}
+      fondo={zona === "despensa" ? tema.fondoEstante : tema.cuerpo}
+      tema={tema}
+      reducido={reducido}
+      onCerrar={onCerrar}
+      escapeActivo={!editando && !anadiendo}
+      idioma={idioma}
+      pie={
         <button
           onClick={() => setAnadiendo(true)}
           style={{
@@ -119,17 +138,24 @@ export function PanelZona({ zona, despensa, data, tema, reducido, onCerrar, idio
         >
           <Plus size={15} /> {t(idioma, "despensa.anadir")}
         </button>
-      </div>
-
-      {editando && <EditarEntradaModal entrada={editando} despensa={despensa} onClose={() => setEditando(null)} idioma={idioma} />}
-      {anadiendo && <AnadirAlimentoModal data={data} despensa={despensa} zonaInicial={zona} onClose={() => setAnadiendo(false)} idioma={idioma} />}
-    </div>
+      }
+      encima={
+        <>
+          {editando && <EditarEntradaModal entrada={editando} despensa={despensa} onClose={() => setEditando(null)} idioma={idioma} />}
+          {anadiendo && <AnadirAlimentoModal data={data} despensa={despensa} zonaInicial={zona} onClose={() => setAnadiendo(false)} idioma={idioma} />}
+        </>
+      }
+    >
+      {zona === "nevera" && <InteriorNevera huecos={huecos} aviso={aviso} {...comun} />}
+      {zona === "congelador" && <InteriorCongelador huecos={huecos} aviso={aviso} {...comun} />}
+      {zona === "despensa" && <InteriorDespensa huecos={huecos} aviso={aviso} {...comun} />}
+    </MarcoPanel>
   );
 }
 
 // ---------- Interiores ----------
 
-function InteriorNevera({ huecos, aviso, tema, idioma, onTocar }) {
+function InteriorNevera({ huecos, aviso, tema, idioma, onTocar, alertaDe }) {
   const puerta = huecos.find((h) => h.clave === "puerta");
   const dentro = huecos.filter((h) => h.clave !== "puerta");
   // Baldas de la puerta: dos cosas por balda (la puerta es estrecha), y al menos tres baldas aunque
@@ -148,9 +174,9 @@ function InteriorNevera({ huecos, aviso, tema, idioma, onTocar }) {
         {aviso}
         {dentro.map((h) =>
           h.clave === "frutaVerdura" ? (
-            <Cajon key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} />
+            <Cajon key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} alertaDe={alertaDe} />
           ) : (
-            <Balda key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} />
+            <Balda key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} alertaDe={alertaDe} />
           )
         )}
       </div>
@@ -164,7 +190,7 @@ function InteriorNevera({ huecos, aviso, tema, idioma, onTocar }) {
         {baldasPuerta.map((entradas, i) => (
           <div key={i} style={{ marginBottom: 8 }}>
             <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: 2, minHeight: 64 }}>
-              {entradas.map((e) => <Ficha key={e.item.id} entrada={e} onTocar={onTocar} idioma={idioma} tema={tema} pequena />)}
+              {entradas.map((e) => <Ficha key={e.item.id} entrada={e} onTocar={onTocar} idioma={idioma} tema={tema} alertaDe={alertaDe} pequena />)}
             </div>
             <div style={{ height: 13, borderRadius: 4, background: tema.balda, opacity: 0.92, boxShadow: "inset 0 2px 0 rgba(255,255,255,0.7)" }} />
           </div>
@@ -174,7 +200,7 @@ function InteriorNevera({ huecos, aviso, tema, idioma, onTocar }) {
   );
 }
 
-function InteriorCongelador({ huecos, aviso, tema, idioma, onTocar }) {
+function InteriorCongelador({ huecos, aviso, tema, idioma, onTocar, alertaDe }) {
   return (
     <div
       style={{
@@ -183,12 +209,12 @@ function InteriorCongelador({ huecos, aviso, tema, idioma, onTocar }) {
       }}
     >
       {aviso}
-      {huecos.map((h) => <Cajon key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} />)}
+      {huecos.map((h) => <Cajon key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} alertaDe={alertaDe} />)}
     </div>
   );
 }
 
-function InteriorDespensa({ huecos, aviso, tema, idioma, onTocar }) {
+function InteriorDespensa({ huecos, aviso, tema, idioma, onTocar, alertaDe }) {
   const tabla = { height: 10, borderRadius: 3, background: tema.madera, borderBottom: `3px solid ${tema.maderaOscura}` };
   return (
     <div
@@ -198,7 +224,7 @@ function InteriorDespensa({ huecos, aviso, tema, idioma, onTocar }) {
       }}
     >
       {aviso}
-      {huecos.map((h) => <Balda key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} tabla={tabla} />)}
+      {huecos.map((h) => <Balda key={h.clave} hueco={h} tema={tema} idioma={idioma} onTocar={onTocar} alertaDe={alertaDe} tabla={tabla} />)}
     </div>
   );
 }
@@ -215,12 +241,12 @@ function EtiquetaHueco({ clave, tema, idioma }) {
 
 // Una balda: su etiqueta, lo que hay encima y la tabla (de cristal en la nevera, de madera en la
 // despensa). Si hay mucho, las fichas pasan a la línea siguiente y la balda crece.
-function Balda({ hueco, tema, idioma, onTocar, tabla }) {
+function Balda({ hueco, tema, idioma, onTocar, tabla, alertaDe }) {
   return (
     <div style={{ marginBottom: 10 }}>
       <EtiquetaHueco clave={hueco.clave} tema={tema} idioma={idioma} />
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "6px 4px", minHeight: 66, padding: "0 2px" }}>
-        {hueco.entradas.map((e) => <Ficha key={e.item.id} entrada={e} onTocar={onTocar} idioma={idioma} tema={tema} />)}
+        {hueco.entradas.map((e) => <Ficha key={e.item.id} entrada={e} onTocar={onTocar} idioma={idioma} tema={tema} alertaDe={alertaDe} />)}
       </div>
       <div style={tabla || { height: 5, borderRadius: 3, background: tema.balda, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.85)" }} />
     </div>
@@ -229,13 +255,13 @@ function Balda({ hueco, tema, idioma, onTocar, tabla }) {
 
 // Un cajón: la fruta y la verdura de la nevera o cada cajón del congelador. Lo de dentro asoma por
 // encima del frente, que lleva su tirador.
-function Cajon({ hueco, tema, idioma, onTocar }) {
+function Cajon({ hueco, tema, idioma, onTocar, alertaDe }) {
   return (
     <div style={{ marginTop: 4, marginBottom: 10, borderRadius: 14, border: `2px solid ${tema.balda}`, background: "rgba(255,255,255,0.45)", overflow: "hidden" }}>
       <div style={{ padding: "6px 6px 0" }}>
         <EtiquetaHueco clave={hueco.clave} tema={tema} idioma={idioma} />
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "6px 4px", minHeight: 66 }}>
-          {hueco.entradas.map((e) => <Ficha key={e.item.id} entrada={e} onTocar={onTocar} idioma={idioma} tema={tema} />)}
+          {hueco.entradas.map((e) => <Ficha key={e.item.id} entrada={e} onTocar={onTocar} idioma={idioma} tema={tema} alertaDe={alertaDe} />)}
         </div>
       </div>
       <div style={{ height: 18, background: tema.balda, opacity: 0.92, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -246,11 +272,13 @@ function Cajon({ hueco, tema, idioma, onTocar }) {
 }
 
 // Una cosa de la despensa: su dibujo, su nombre (corto) y lo que queda. Lo que se ha acabado se ve
-// apagado, pero sigue ahí para volver a marcarlo cuando se compre.
-function Ficha({ entrada, onTocar, idioma, tema, pequena }) {
+// apagado, pero sigue ahí para volver a marcarlo cuando se compre. Si se está acabando (queda menos de
+// una ración, o nada: alertasStock en logica/despensa.js), la cantidad sale en rojo.
+function Ficha({ entrada, onTocar, idioma, tema, pequena, alertaDe }) {
   const { item, food } = entrada;
   const conGramos = typeof item.gramos === "number";
   const agotado = conGramos ? item.gramos <= 0 : !item.tengo;
+  const alerta = alertaDe ? alertaDe(item.foodId) : null;
   const nombre = food ? food.name : item.foodId;
   return (
     <button
@@ -271,7 +299,7 @@ function Ficha({ entrada, onTocar, idioma, tema, pequena }) {
       >
         {nombreCorto(nombre)}
       </span>
-      <span style={{ fontSize: 10, fontWeight: 700, color: tema.texto, display: "flex", alignItems: "center", gap: 2 }}>
+      <span style={{ fontSize: 10, fontWeight: 700, color: alerta ? tema.alerta : tema.texto, display: "flex", alignItems: "center", gap: 2 }}>
         {agotado ? t(idioma, "despensa.seAcabo") : conGramos ? formatoGramos(item.gramos) : <Check size={11} />}
       </span>
     </button>

@@ -15,6 +15,7 @@
   "ui/despensa/despensa.jsx",
   "ui/despensa/dibujos.jsx",
   "ui/despensa/editar.jsx",
+  "ui/despensa/fregadero.jsx",
   "ui/despensa/lista.jsx",
   "ui/despensa/panel.jsx",
   "ui/despensa/piezas.jsx",

@@ -6,17 +6,20 @@
 // - Lista (Fase A): las tres zonas con cada cosa editable en su fila (ui/despensa/lista.jsx), más
 //   rápida para cambiar muchas cosas seguidas.
 // Se añade buscando en el propio catálogo de alimentos (ui/despensa/anadir.jsx), porque la despensa
-// solo puede compararse con el menú por alimento.
+// solo puede compararse con el menú por alimento. Arriba, un aviso de lo que se está acabando
+// (alertasStock, logica/despensa.js), que se puede cerrar hasta el día siguiente.
 import React, { useState } from "react";
-import { Plus, Refrigerator, List } from "lucide-react";
+import { Plus, Refrigerator, List, AlertTriangle, X } from "lucide-react";
 import { t } from "i18n";
 import { ZONAS } from "despensa";
+import { fechaISO } from "peso";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 import { VistaDibujo } from "./cocina.jsx";
 import { VistaLista } from "./lista.jsx";
 import { AnadirAlimentoModal } from "./anadir.jsx";
 import { temaNevera, TEMA_NEVERA_POR_DEFECTO } from "./tema.js";
+import { nombreCorto } from "./piezas.jsx";
 
 // La vista elegida se recuerda en este dispositivo (como el idioma antes de iniciar sesión): es una
 // comodidad de cada pantalla, no un dato de la cuenta. Si el navegador no deja guardar, se empieza
@@ -35,6 +38,55 @@ function guardarVista(vista) {
   } catch (e) {
     // sin almacenamiento local: la elección solo dura mientras la pantalla está abierta
   }
+}
+
+// El aviso de «queda poco» se cierra hasta el día siguiente (mismo criterio que el recordatorio de
+// pesaje): sale cada vez que se entra, pero si ya lo has visto hoy y lo cierras, no insiste más. Se
+// recuerda en este dispositivo, como la vista elegida.
+const CLAVE_AVISO_CERRADO = "fooddraft:aviso-stock-cerrado";
+function avisoCerradoHoy() {
+  try {
+    return localStorage.getItem(CLAVE_AVISO_CERRADO) === fechaISO(new Date());
+  } catch (e) {
+    return false;
+  }
+}
+
+function AvisoStock({ alertas, idioma }) {
+  const [cerrado, setCerrado] = useState(avisoCerradoHoy);
+  if (!alertas.length || cerrado) return null;
+  const MAX = 4;
+  const nombres = alertas.slice(0, MAX).map((a) => nombreCorto(a.nombre)).join(", ");
+  const resto = alertas.length > MAX ? t(idioma, "despensa.stock.yMas", { n: alertas.length - MAX }) : "";
+  function cerrar() {
+    setCerrado(true);
+    try {
+      localStorage.setItem(CLAVE_AVISO_CERRADO, fechaISO(new Date()));
+    } catch (e) {
+      // sin almacenamiento local: solo se cierra mientras la pantalla está abierta
+    }
+  }
+  return (
+    <div
+      role="status"
+      style={{
+        display: "flex", alignItems: "flex-start", gap: 9, marginBottom: 14, padding: "10px 10px 10px 12px",
+        background: "var(--rust-soft)", borderRadius: 10, fontFamily: FUENTE_TEXTO,
+      }}
+    >
+      <AlertTriangle size={16} color="var(--rust)" style={{ flexShrink: 0, marginTop: 1 }} />
+      <span style={{ flex: 1, fontSize: 12.5, color: "var(--ink)", lineHeight: 1.45 }}>
+        <strong style={{ color: "var(--rust)" }}>{t(idioma, "despensa.stock.titulo")}</strong> {nombres}{resto}
+      </span>
+      <button
+        onClick={cerrar}
+        aria-label={t(idioma, "common.cerrar")}
+        style={{ background: "none", border: "none", padding: 2, cursor: "pointer", display: "flex", flexShrink: 0 }}
+      >
+        <X size={15} color="var(--ink-soft)" />
+      </button>
+    </div>
+  );
 }
 
 export function DespensaView({ data, despensa, idioma, onIrACocinar }) {
@@ -87,6 +139,8 @@ export function DespensaView({ data, despensa, idioma, onIrACocinar }) {
         </button>
       </div>
 
+      <AvisoStock alertas={despensa.alertas} idioma={idioma} />
+
       {total === 0 && (
         <div
           style={{
@@ -101,7 +155,7 @@ export function DespensaView({ data, despensa, idioma, onIrACocinar }) {
       {vista === "dibujo" ? (
         <VistaDibujo data={data} despensa={despensa} tema={tema} idioma={idioma} onIrACocinar={onIrACocinar} />
       ) : (
-        total > 0 && <VistaLista data={data} despensa={despensa} idioma={idioma} />
+        <VistaLista data={data} despensa={despensa} idioma={idioma} />
       )}
 
       {anadiendo && <AnadirAlimentoModal data={data} despensa={despensa} onClose={() => setAnadiendo(false)} idioma={idioma} />}

@@ -11,6 +11,8 @@
 // estante, lo que guarda de verdad la despensa; 2) pared, azulejos, encimera y muebles, solo decorado;
 // 3) la vitrocerámica, que enciende un fuego y lleva a «¿Qué cocino?» (solo navegando: esa pantalla es
 // la de siempre, premium o con su aviso), y el grifo, decorativo, que suelta una gota al tocarlo.
+// Además, el mueble de debajo del fregadero se abre como la nevera y guarda la lista de limpieza y cosas
+// de casa (ui/despensa/fregadero.jsx).
 //
 // Con «reducir movimiento» activado en el sistema (una opción de accesibilidad) no hay giros ni
 // fundidos: el interior se abre al instante y la vitrocerámica navega sin esperar al fuego.
@@ -18,10 +20,11 @@ import React, { useState, useEffect, useRef } from "react";
 import { t } from "i18n";
 import { FUENTE_TEXTO } from "../estilos.js";
 import {
-  NeveraCuerpo, PuertaFrente, PuertaDorso, Estante, FondoCocina,
+  NeveraCuerpo, PuertaFrente, PuertaDorso, Estante, FondoCocina, PuertaMuebleFrente, PuertaMuebleDorso, MUEBLE_FREGADERO,
   NEVERA_ANCHO, NEVERA_ALTO, CORTE, CUERPO_ALTO, ESTANTE_ANCHO, ESTANTE_ALTO, ESCENA_ANCHO, ESCENA_ALTO, SUELO_Y,
 } from "./dibujos.jsx";
 import { PanelZona } from "./panel.jsx";
+import { PanelFregadero } from "./fregadero.jsx";
 
 // Tiempos de la animación (ms). La puerta tarda en abrirse ABRIR_PUERTA y el panel aparece poco antes
 // de que termine el rebote, para que no se note una espera; el estante solo «late» un momento.
@@ -69,7 +72,7 @@ function prefiereMenosMovimiento() {
 
 export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
   const [reducido] = useState(prefiereMenosMovimiento);
-  const [puertas, setPuertas] = useState({ nevera: false, congelador: false });
+  const [puertas, setPuertas] = useState({ nevera: false, congelador: false, fregadero: false });
   const [estantePulsado, setEstantePulsado] = useState(false);
   const [panel, setPanel] = useState(null);
   const [fuego, setFuego] = useState(false);
@@ -117,7 +120,7 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
   function alCerrarPanel() {
     setPanel(null);
     luego(() => {
-      setPuertas({ nevera: false, congelador: false });
+      setPuertas({ nevera: false, congelador: false, fregadero: false });
       setEstantePulsado(false);
     }, 40);
   }
@@ -127,6 +130,11 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
   const huecosDespensa = despensa.huecos("despensa");
   const puertaNevera = huecosNevera.find((h) => h.clave === "puerta");
   const cuenta = (zona) => despensa.porZona[zona].length;
+  // Si algo de una zona se está acabando, su botón de abajo lleva un punto rojo (el detalle, en el aviso
+  // de arriba de la pantalla y en rojo dentro de la nevera).
+  const conAlerta = (zona) => despensa.alertas.some((a) => a.zonas.includes(zona));
+  const limpiezaPendiente = despensa.limpieza.filter((c) => !c.comprado).length;
+  const m = MUEBLE_FREGADERO;
 
   return (
     <>
@@ -136,7 +144,7 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
           borderRadius: 18, boxShadow: "0 0 0 1px var(--line)",
         }}
       >
-        <FondoCocina tema={tema} fuegoEncendido={fuego} gota={gota} reducido={reducido} />
+        <FondoCocina tema={tema} fuegoEncendido={fuego} gota={gota} reducido={reducido} cosasFregadero={limpiezaPendiente} />
 
         <button onClick={abrirGrifo} aria-label={t(idioma, "despensa.grifo")} style={{ ...botonInvisible, ...en(GRIFO.x, GRIFO.y, GRIFO.w, GRIFO.h) }} />
         <button onClick={irACocinar} aria-label={t(idioma, "despensa.abrir.cocinar")} style={{ ...botonInvisible, ...en(VITRO.x, VITRO.y, VITRO.w, VITRO.h) }} />
@@ -152,6 +160,17 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
         >
           <Estante tema={tema} huecos={huecosDespensa} />
         </button>
+
+        {/* El mueble de debajo del fregadero: su puerta se abre como las de la nevera, pero con la
+            bisagra a la derecha (se abre hacia el otro mueble, no fuera de la escena). */}
+        <div style={{ ...en(m.x, m.y, m.w, m.h), perspective: 500 }}>
+          <Puerta
+            abierta={puertas.fregadero} reducido={reducido} onClick={() => abrir("fregadero")} bisagra="derecha"
+            arriba={0} alto={1} etiqueta={t(idioma, "despensa.abrir.fregadero")}
+            frente={<PuertaMuebleFrente tema={tema} />}
+            dorso={<PuertaMuebleDorso tema={tema} />}
+          />
+        </div>
 
         {/* Nevera: el cuerpo con su interior, y las dos puertas encima. Su caja tiene la proporción del
             dibujo de la nevera, así que las puertas, en porcentaje, siempre encajan con el cuerpo. Va la
@@ -185,16 +204,22 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
       {/* Lo mismo con botones normales: a la vista cuánto hay en cada sitio, y abrir sin tener que
           atinar con una puerta (también con teclado o lector de pantalla). */}
       <div style={{ display: "flex", justifyContent: "center", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
-        {["nevera", "congelador", "despensa"].map((zona) => (
+        {["nevera", "congelador", "despensa", "fregadero"].map((zona) => (
           <button
             key={zona}
             onClick={() => abrir(zona)}
             style={{
               fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--green-dark)", cursor: "pointer",
               background: "var(--green-soft)", border: "none", borderRadius: 20, padding: "7px 12px",
+              display: "flex", alignItems: "center", gap: 5,
             }}
           >
-            {t(idioma, "despensa.zonaConCuenta", { zona: t(idioma, "despensa.zona." + zona), n: cuenta(zona) })}
+            {zona === "fregadero"
+              ? t(idioma, "despensa.zonaConCuenta", { zona: t(idioma, "despensa.fregadero.titulo"), n: limpiezaPendiente })
+              : t(idioma, "despensa.zonaConCuenta", { zona: t(idioma, "despensa.zona." + zona), n: cuenta(zona) })}
+            {zona !== "fregadero" && conAlerta(zona) && (
+              <span style={{ width: 7, height: 7, borderRadius: "50%", background: tema.alerta, flexShrink: 0 }} />
+            )}
           </button>
         ))}
       </div>
@@ -202,17 +227,21 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
         {t(idioma, "despensa.tocaParaAbrir")}
       </p>
 
-      {panel && (
+      {panel === "fregadero" && (
+        <PanelFregadero despensa={despensa} tema={tema} reducido={reducido} onCerrar={alCerrarPanel} idioma={idioma} />
+      )}
+      {panel && panel !== "fregadero" && (
         <PanelZona zona={panel} despensa={despensa} data={data} tema={tema} reducido={reducido} onCerrar={alCerrarPanel} idioma={idioma} />
       )}
     </>
   );
 }
 
-// Una puerta que gira sobre su bisagra (a la izquierda: los tiradores están a la derecha). Tiene dos
-// caras, la de fuera y la de dentro, y cada una se oculta cuando queda de espaldas. Al abrir, la curva
-// se pasa un poco del ángulo final y vuelve: ese es el rebote al llegar al tope.
-function Puerta({ abierta, reducido, onClick, arriba, alto, etiqueta, frente, dorso }) {
+// Una puerta que gira sobre su bisagra: a la izquierda en la nevera (los tiradores están a la derecha) y
+// a la derecha en el mueble del fregadero. Tiene dos caras, la de fuera y la de dentro, y cada una se
+// oculta cuando queda de espaldas. Al abrir, la curva se pasa un poco del ángulo final y vuelve: ese es
+// el rebote al llegar al tope.
+function Puerta({ abierta, reducido, onClick, arriba, alto, etiqueta, frente, dorso, bisagra = "izquierda" }) {
   const cara = { position: "absolute", inset: 0, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" };
   return (
     <button
@@ -221,8 +250,8 @@ function Puerta({ abierta, reducido, onClick, arriba, alto, etiqueta, frente, do
       style={{
         position: "absolute", left: 0, top: `${arriba * 100}%`, width: "100%", height: `${alto * 100}%`,
         padding: 0, border: "none", background: "none", cursor: "pointer",
-        transformOrigin: "left center", transformStyle: "preserve-3d",
-        transform: `rotateY(${abierta ? ANGULO_ABIERTA : 0}deg)`,
+        transformOrigin: bisagra === "derecha" ? "right center" : "left center", transformStyle: "preserve-3d",
+        transform: `rotateY(${abierta ? (bisagra === "derecha" ? -ANGULO_ABIERTA : ANGULO_ABIERTA) : 0}deg)`,
         transition: reducido
           ? "none"
           : abierta

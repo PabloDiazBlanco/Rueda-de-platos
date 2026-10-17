@@ -509,10 +509,17 @@ const ENCIMERA_Y = 280;
 const ENCIMERA_ANCHO = 180;
 // Dónde cae la gota del grifo: sale del caño y acaba dentro del fregadero.
 const GOTA = { x: 40, y: 250, caida: 34 };
+// El mueble de debajo del fregadero: su puerta es una pieza aparte (se abre, ver cocina.jsx) y aquí se
+// dibuja lo que hay detrás, las cañerías y la limpieza.
+export const MUEBLE_FREGADERO = { x: 8, y: ENCIMERA_Y + 32, w: 78, h: 112 };
+const COLORES_BOTES = ["#6aa6d9", "#f2c84b", "#e47a9a"];
 
 // `fuegoEncendido`: el fuego de delante se enciende un momento al tocar la vitrocerámica, justo antes de
 // ir a «¿Qué cocino?». `gota`: null, "arriba" (recién salida del grifo) o "abajo" (cayendo).
-export function FondoCocina({ tema, fuegoEncendido, gota, reducido }) {
+// `cosasFregadero`: cuántas cosas hay pendientes en la lista de limpieza; se ven tantos botes (hasta
+// tres) al abrir el mueble de debajo del fregadero.
+export function FondoCocina({ tema, fuegoEncendido, gota, reducido, cosasFregadero = 0 }) {
+  const m = MUEBLE_FREGADERO;
   const transicion = reducido ? "none" : "opacity 200ms ease, stroke 200ms ease";
   const azulejos = [];
   for (let fila = 0; fila < 5; fila++) {
@@ -543,12 +550,28 @@ export function FondoCocina({ tema, fuegoEncendido, gota, reducido }) {
 
         {/* muebles bajos */}
         <rect x="0" y={ENCIMERA_Y + 22} width={ENCIMERA_ANCHO - 2} height={SUELO_Y - ENCIMERA_Y - 22} fill={tema.mueble} />
-        {[8, 94].map((x) => (
-          <g key={x}>
-            <rect x={x} y={ENCIMERA_Y + 32} width="78" height="112" rx="6" fill={tema.mueble} stroke={tema.muebleOscuro} strokeWidth="2" />
-            <rect x={x + 62} y={ENCIMERA_Y + 44} width="6" height="26" rx="3" fill={tema.metalClaro} />
-          </g>
-        ))}
+        <rect x="94" y={ENCIMERA_Y + 32} width="78" height="112" rx="6" fill={tema.mueble} stroke={tema.muebleOscuro} strokeWidth="2" />
+        <rect x={94 + 62} y={ENCIMERA_Y + 44} width="6" height="26" rx="3" fill={tema.metalClaro} />
+
+        {/* dentro del mueble de debajo del fregadero: se ve al abrir su puerta */}
+        <rect x={m.x} y={m.y} width={m.w} height={m.h} rx="6" fill={tema.interiorMueble} />
+        <rect x={m.x + 4} y={m.y + 4} width={m.w - 8} height={m.h - 8} rx="4" fill="#000000" opacity="0.12" />
+        <path
+          d={`M44,${m.y} L44,${m.y + 24} Q44,${m.y + 38} 34,${m.y + 38} Q24,${m.y + 38} 24,${m.y + 24} L24,${m.y + 20} Q24,${m.y + 14} 18,${m.y + 14} L${m.x + 4},${m.y + 14}`}
+          fill="none" stroke={tema.metal} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
+        />
+        {COLORES_BOTES.slice(0, Math.min(3, cosasFregadero)).map((color, i) => {
+          const x = m.x + 18 + i * 20;
+          const base = m.y + m.h - 8;
+          return (
+            <g key={color}>
+              <rect x={x} y={base - 24} width="12" height="24" rx="3" fill={color} />
+              <rect x={x + 3} y={base - 31} width="6" height="8" rx="1.5" fill="#f5f0e1" />
+              <rect x={x + 8} y={base - 31} width="6" height="3" rx="1.5" fill="#f5f0e1" />
+              <rect x={x + 2} y={base - 16} width="8" height="7" rx="1" fill="#ffffff" opacity="0.6" />
+            </g>
+          );
+        })}
         <rect x="0" y={SUELO_Y - 8} width={ENCIMERA_ANCHO - 2} height="8" fill={tema.muebleOscuro} />
 
         {/* encimera: la superficie (vista un poco desde arriba) y el canto */}
@@ -589,6 +612,28 @@ export function FondoCocina({ tema, fuegoEncendido, gota, reducido }) {
         <path d="M232,82 Q220,62 228,52 M238,82 Q240,58 252,50 M244,82 Q258,68 266,66" stroke={tema.planta} strokeWidth="5" fill="none" strokeLinecap="round" />
         <path d="M222,80 L258,80 L253,98 L227,98 Z" fill={tema.maceta} />
       </g>
+    </svg>
+  );
+}
+
+// Cara de fuera de la puerta del mueble de debajo del fregadero (la bisagra está a la derecha, así que el
+// tirador va a la izquierda) y su cara de dentro, que se ve al abrirla.
+export function PuertaMuebleFrente({ tema }) {
+  const m = MUEBLE_FREGADERO;
+  return (
+    <svg viewBox={`0 0 ${m.w} ${m.h}`} width="100%" height="100%" style={{ display: "block" }} aria-hidden="true">
+      <rect x="1" y="1" width={m.w - 2} height={m.h - 2} rx="6" fill={tema.mueble} stroke={tema.muebleOscuro} strokeWidth="2" />
+      <rect x="10" y="12" width="6" height="26" rx="3" fill={tema.metalClaro} />
+    </svg>
+  );
+}
+
+export function PuertaMuebleDorso({ tema }) {
+  const m = MUEBLE_FREGADERO;
+  return (
+    <svg viewBox={`0 0 ${m.w} ${m.h}`} width="100%" height="100%" style={{ display: "block" }} aria-hidden="true">
+      <rect x="0" y="0" width={m.w} height={m.h} rx="6" fill={tema.muebleOscuro} />
+      <rect x="6" y="6" width={m.w - 12} height={m.h - 12} rx="4" fill={tema.mueble} opacity="0.6" />
     </svg>
   );
 }

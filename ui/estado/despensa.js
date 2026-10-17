@@ -12,6 +12,7 @@ import { fechaISO } from "peso";
 import {
   ZONAS, migrarDespensa, anadirItem, editarItem, quitarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
   quitarConfirmacion, descontarComida, devolverComida, consumoDe, marcarComprado, desmarcarComprado,
+  sellarCambios, alertasStock, anadirLimpieza, alternarLimpieza, quitarLimpieza, quitarLimpiezaComprada,
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 import { repartirEnHuecos } from "nevera";
@@ -38,7 +39,7 @@ export function useDespensa(data, menu) {
     } catch (e) {
       // sin despensa guardada todavía (o ilegible): se empieza vacía, igual que useDatos
     }
-    const { despensa: migrada, changed } = migrarDespensa(guardado);
+    const { despensa: migrada, changed } = migrarDespensa(guardado, hoy());
     ultimoGuardado.current = guardado && changed ? null : JSON.stringify(migrada);
     setDespensa(migrada);
   }
@@ -57,13 +58,18 @@ export function useDespensa(data, menu) {
   }, [despensa]);
 
   const hoy = () => fechaISO(new Date());
+  // Todos los cambios pasan por aquí, y aquí se apunta qué entradas han cambiado hoy (sellarCambios):
+  // así ninguna operación tiene que acordarse de poner la fecha.
   function cambiar(fn) {
-    setDespensa((prev) => (prev ? fn(prev) : prev));
+    setDespensa((prev) => (prev ? sellarCambios(prev, fn(prev), hoy()) : prev));
   }
 
   const confirmado = menuEstaConfirmado(despensa, menu);
   const items = (despensa && despensa.items) || [];
   const porZona = Object.fromEntries(ZONAS.map((z) => [z, items.filter((i) => i.zona === z)]));
+  // Lo que se ha acabado o del que queda menos de una ración (alertasStock, logica/despensa.js).
+  const alertas = alertasStock(despensa, data);
+  const alertaPorAlimento = Object.fromEntries(alertas.map((a) => [a.foodId, a.estado]));
 
   // Se llama junto con toggleComidaCompletada (ui/estado/menu.js) al marcar o desmarcar una comida
   // del Menú completo como hecha hoy. Descontar, solo con el menú confirmado (un borrador no toca la
@@ -80,7 +86,9 @@ export function useDespensa(data, menu) {
   }
 
   return {
-    despensa, cargar, porZona, confirmado,
+    despensa, cargar, porZona, confirmado, alertas,
+    // "poco", "acabado" o null: para pintar en rojo la cantidad de lo que se está acabando.
+    alertaDe: (foodId) => alertaPorAlimento[foodId] || null,
     confirmar: () => cambiar((d) => confirmarMenu(d, menu, hoy())),
     quitarConfirmacion: () => cambiar(quitarConfirmacion),
     anadir(foodId, opciones) {
@@ -100,5 +108,11 @@ export function useDespensa(data, menu) {
     consumoDeHoy: (mealType) => consumoDe(despensa, hoy(), mealType),
     // Lo conecta app.jsx con useCatalogo: un alimento borrado del catálogo sale también de aquí.
     alBorrarAlimento: (foodId) => cambiar((d) => quitarAlimento(d, foodId)),
+    // Limpieza y cosas de casa (el mueble de debajo del fregadero): ver anadirLimpieza y compañía.
+    limpieza: (despensa && despensa.limpieza) || [],
+    anadirLimpieza: (nombre) => cambiar((d) => anadirLimpieza(d, nombre)),
+    alternarLimpieza: (id) => cambiar((d) => alternarLimpieza(d, id)),
+    quitarLimpieza: (id) => cambiar((d) => quitarLimpieza(d, id)),
+    vaciarLimpiezaComprada: () => cambiar(quitarLimpiezaComprada),
   };
 }

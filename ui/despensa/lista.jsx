@@ -2,15 +2,16 @@
 // Vista de lista de la despensa: las tres zonas una debajo de otra, con cada entrada editable en su
 // misma fila (gramos o «tengo / se acabó», zona y quitar). Es la vista de la Fase A y sigue disponible
 // siempre junto a la nevera dibujada (ui/despensa/cocina.jsx): para cambiar muchas cosas seguidas es
-// más rápida que ir abriendo puertas.
+// más rápida que ir abriendo puertas. Al final, la lista de limpieza de debajo del fregadero.
 import React from "react";
-import { Trash2, Check } from "lucide-react";
+import { Trash2, Check, Droplets } from "lucide-react";
 import { getFood } from "macros";
 import { t } from "i18n";
 import { ZONAS } from "despensa";
 import { inputStyle, IconBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 import { ICONO_ZONA, emojiDe } from "./piezas.jsx";
+import { ListaLimpieza } from "./fregadero.jsx";
 
 export function VistaLista({ data, despensa, idioma }) {
   return (
@@ -18,6 +19,15 @@ export function VistaLista({ data, despensa, idioma }) {
       {ZONAS.map((zona) => (
         <ZonaDespensa key={zona} zona={zona} items={despensa.porZona[zona]} data={data} despensa={despensa} idioma={idioma} />
       ))}
+      <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <Droplets size={16} color="var(--green-dark)" />
+          <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+            {t(idioma, "despensa.fregadero.titulo")}
+          </span>
+        </div>
+        <ListaLimpieza despensa={despensa} idioma={idioma} />
+      </div>
     </div>
   );
 }
@@ -40,7 +50,7 @@ function ZonaDespensa({ zona, items, data, despensa, idioma }) {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {ordenados.map((item) => (
-            <FilaDespensa key={item.id} item={item} food={getFood(data, item.foodId)} nombre={nombreDe(item)} despensa={despensa} idioma={idioma} />
+            <FilaDespensa key={item.id} item={item} food={getFood(data, item.foodId)} nombre={nombreDe(item)} despensa={despensa} alerta={despensa.alertaDe(item.foodId)} idioma={idioma} />
           ))}
         </div>
       )}
@@ -51,8 +61,9 @@ function ZonaDespensa({ zona, items, data, despensa, idioma }) {
 // Una entrada de la despensa. Los gramos se escriben en un campo que solo guarda al salir de él (o
 // con Intro), para poder borrar y teclear un número nuevo sin que se guarde cada pulsación; la
 // `key` con los gramos hace que el campo se rehaga si cambian desde fuera (al descontar una comida
-// o al tachar la lista de la compra).
-function FilaDespensa({ item, food, nombre, despensa, idioma }) {
+// o al tachar la lista de la compra). Si se está acabando (`alerta`: "poco" o "acabado", ver
+// alertasStock), la cantidad sale en rojo.
+function FilaDespensa({ item, food, nombre, despensa, alerta, idioma }) {
   const conGramos = typeof item.gramos === "number";
   const agotado = conGramos ? item.gramos <= 0 : !item.tengo;
   return (
@@ -82,7 +93,7 @@ function FilaDespensa({ item, food, nombre, despensa, idioma }) {
                 if (g !== item.gramos) despensa.editar(item.id, { gramos: g });
               }}
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
-              style={{ ...inputStyle, width: 70, padding: "5px 6px", textAlign: "right", fontSize: 13, fontWeight: 700 }}
+              style={{ ...inputStyle, width: 70, padding: "5px 6px", textAlign: "right", fontSize: 13, fontWeight: 700, color: alerta ? "var(--rust)" : "var(--ink)" }}
             />
             <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)" }}>g</span>
           </span>
@@ -94,7 +105,7 @@ function FilaDespensa({ item, food, nombre, despensa, idioma }) {
               display: "flex", alignItems: "center", gap: 4, cursor: "pointer",
               border: item.tengo ? "1px solid var(--green)" : "1px solid var(--line)",
               background: item.tengo ? "var(--green-soft)" : "transparent",
-              color: item.tengo ? "var(--green-dark)" : "var(--ink-soft)",
+              color: item.tengo ? "var(--green-dark)" : alerta ? "var(--rust)" : "var(--ink-soft)",
             }}
           >
             {item.tengo && <Check size={12} />}

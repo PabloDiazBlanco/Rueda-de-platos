@@ -45,6 +45,8 @@ export const TEMAS_NEVERA = {
     agua: "#8fc9e8",
     planta: "#5aa35a",
     maceta: "#c9773b",
+    interiorMueble: "#5f9a8d",  // dentro del mueble de debajo del fregadero (con sus cañerías)
+    alerta: "#c2452d",          // cantidades de lo que se está acabando
   },
 };
 
