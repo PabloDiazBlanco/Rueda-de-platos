@@ -6,8 +6,9 @@
 //   casa (logica/lista-compra-neta.js) y, con el menú confirmado, tachar una fila mete lo comprado
 //   en la despensa; destacharla lo saca. Al final lleva también la lista de limpieza y cosas de casa
 //   (la de debajo del fregadero de «¿Qué tengo?»), para tenerlo todo junto en el súper.
+// Las dos llevan un botón «Compartir» que manda lo pendiente como texto (ver BotonCompartir).
 import React, { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Share2 } from "lucide-react";
 import { calcularListaCompra } from "comida-calculo";
 import { t } from "i18n";
 import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
@@ -22,6 +23,60 @@ const LISTA_COMPRA_ORDEN_CATS = [...MACRO_CATS, ...ESPECIALES_CATS];
 function formatoCantidad(gramos) {
   const kg = gramos / 1000;
   return kg >= 1 ? `${Math.round(kg * 10) / 10} kg` : `${Math.round(gramos)} g`;
+}
+
+// ---------- Compartir la lista como texto ----------
+// Petición del usuario (octubre de 2026): poder llevarse la lista al móvil. Se descartó el PDF (más
+// pesado y peor de usar en el súper) a favor de texto plano: en el móvil se abre el menú de compartir
+// del propio sistema (Notas, Keep, WhatsApp...) con navigator.share, y donde no existe (algunos
+// navegadores de escritorio) se copia al portapapeles. Solo va lo que queda por comprar.
+
+function etiquetaAlcance(alcance, idioma) {
+  return alcance === "todo" ? t(idioma, "listaCompra.cicloCompleto") : t(idioma, "menu.semana", { n: alcance });
+}
+
+// Une los apartados en un solo texto: el título, y cada apartado con su nombre en mayúsculas y una
+// línea por cosa. `apartados`: [{ titulo, lineas: [texto] }]; los vacíos no salen.
+function componerTexto(titulo, apartados, idioma) {
+  const conAlgo = apartados.filter((a) => a.lineas.length);
+  if (!conAlgo.length) return `${titulo}\n\n${t(idioma, "listaCompra.todoEnCasa")}`;
+  return [titulo, ...conAlgo.map((a) => `${a.titulo.toUpperCase()}\n${a.lineas.map((l) => `- ${l}`).join("\n")}`)].join("\n\n");
+}
+
+async function compartirTexto(titulo, texto) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: titulo, text: texto });
+      return "compartido";
+    } catch (e) {
+      if (e && e.name === "AbortError") return "cancelado"; // lo cerró el usuario: no es un error
+      // si compartir no está permitido aquí, se intenta copiar
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(texto);
+    return "copiado";
+  } catch (e) {
+    return "error";
+  }
+}
+
+function BotonCompartir({ titulo, construirTexto, idioma }) {
+  const [aviso, setAviso] = useState(null);
+  async function alPulsar() {
+    const resultado = await compartirTexto(titulo, construirTexto());
+    if (resultado === "copiado" || resultado === "error") {
+      setAviso(resultado === "copiado" ? t(idioma, "listaCompra.copiada") : t(idioma, "listaCompra.errorCompartir"));
+      setTimeout(() => setAviso(null), 2200);
+    }
+  }
+  return (
+    <ModalBtn variant="ghost" onClick={alPulsar}>
+      <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+        {aviso ? <Check size={14} /> : <Share2 size={14} />} {aviso || t(idioma, "listaCompra.compartir")}
+      </span>
+    </ModalBtn>
+  );
 }
 
 // Selector de alcance compartido por las dos listas: una semana del ciclo o el ciclo entero.
@@ -61,6 +116,17 @@ export function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, 
   });
   const categoriasOrdenadas = LISTA_COMPRA_ORDEN_CATS.filter((c) => grupos[c]);
   const marcadosCount = items.filter((it) => marcados[it.key]).length;
+
+  // Lo que no está marcado como «ya lo tengo», por categoría y con su cantidad si la lista la lleva.
+  const textoParaCompartir = () =>
+    componerTexto(
+      `${t(idioma, "listaCompra.titulo")} · ${etiquetaAlcance(alcance, idioma)}`,
+      categoriasOrdenadas.map((cat) => ({
+        titulo: CATEGORY_META[cat] ? t(idioma, CATEGORY_META[cat].labelKey) : cat,
+        lineas: grupos[cat].filter((it) => !marcados[it.key]).map((it) => (conCantidades ? `${it.nombre}: ${formatoCantidad(it.gramos)}` : it.nombre)),
+      })),
+      idioma
+    );
 
   return (
     <ModalShell onClose={onClose} title={t(idioma, "listaCompra.titulo")}>
@@ -121,7 +187,8 @@ export function ListaCompraModal({ data, menu, menuWeek, listaCompra, onToggle, 
         </>
       )}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 16 }}>
+        {items.length > 0 ? <BotonCompartir titulo={t(idioma, "listaCompra.titulo")} construirTexto={textoParaCompartir} idioma={idioma} /> : <span />}
         <ModalBtn variant="solid" onClick={onClose}>{t(idioma, "common.cerrar")}</ModalBtn>
       </div>
     </ModalShell>
@@ -151,6 +218,21 @@ export function ListaCompraNetaModal({ menu, menuWeek, despensa, onClose, idioma
 
   const textoCantidades = (f) => (f.sinCantidad ? null : t(idioma, "listaCompra.necesitasTienes", { necesito: formatoCantidad(f.necesito), tengo: formatoCantidad(f.tengo) }));
   const limpieza = despensa.limpieza;
+
+  // Lo que queda por comprar (sin lo ya tachado): comida por carpeta, con lo que hay que comprar, y al
+  // final la limpieza pendiente.
+  const textoParaCompartir = () =>
+    componerTexto(
+      `${t(idioma, "listaCompra.titulo")} · ${etiquetaAlcance(alcance, idioma)}`,
+      [
+        ...grupos.map(({ cat, filas: delGrupo }) => ({
+          titulo: t(idioma, cat.labelKey),
+          lineas: delGrupo.filter((f) => !f.comprado).map((f) => (f.sinCantidad ? f.nombre : `${f.nombre}: ${formatoCantidad(f.comprar)}`)),
+        })),
+        { titulo: t(idioma, "listaCompra.limpieza"), lineas: limpieza.filter((c) => !c.comprado).map((c) => c.nombre) },
+      ],
+      idioma
+    );
 
   return (
     <ModalShell onClose={onClose} title={t(idioma, "listaCompra.titulo")}>
@@ -260,7 +342,8 @@ export function ListaCompraNetaModal({ menu, menuWeek, despensa, onClose, idioma
         </>
       )}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 16 }}>
+        {menu ? <BotonCompartir titulo={t(idioma, "listaCompra.titulo")} construirTexto={textoParaCompartir} idioma={idioma} /> : <span />}
         <ModalBtn variant="solid" onClick={onClose}>{t(idioma, "common.cerrar")}</ModalBtn>
       </div>
     </ModalShell>
