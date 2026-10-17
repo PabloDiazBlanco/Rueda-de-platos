@@ -13,6 +13,7 @@ import {
   quitarConfirmacion, descontarComida, devolverComida, marcarComprado, desmarcarComprado,
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
+import { esBebida, huecoDe, formaDe, repartirEnHuecos } from "nevera";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -871,6 +872,92 @@ export function crearGrupos(mod, carga) {
               {
                 vacia: JSON.stringify(despensaVacia()), vaciaCambia: true, changed: true, version: 1, items: 1,
                 gramos: 150, zona: "despensa", conId: true, menu: "m1", consumos: "{}", compras: "{}", segundaCambia: false,
+              }
+            );
+          },
+        },
+      ],
+    },
+    {
+      // Añadido en octubre de 2026 con la Fase B de la despensa (la nevera dibujada, logica/nevera.js):
+      // dónde va cada alimento y con qué dibujo. Los nombres son los del catálogo base (FOODS_SEED) o
+      // casos típicos escritos a mano; lo esperado es lo que haría cualquiera al guardar la compra.
+      grupo: "Colocación en la nevera",
+      casos: [
+        {
+          nombre: "Bebidas por el nombre: la leche y el gazpacho sí; un queso de leche o el tomate frito, no",
+          ejecutar: () => comparar(
+            { leche: esBebida("Leche entera"), gazpacho: esBebida("Gazpacho"), cafe: esBebida("Café con leche (taza 200 ml)"), queso: esBebida("Queso de leche cruda"), tomateFrito: esBebida("Tomate frito") },
+            { leche: true, gazpacho: true, cafe: true, queso: false, tomateFrito: false }
+          ),
+        },
+        {
+          nombre: "Nevera: bebidas y huevos a la puerta, lácteos, carne y embutido en sus baldas, fruta y verdura al cajón",
+          ejecutar: () => {
+            const f = (id) => FOODS_SEED.find((x) => x.id === id);
+            const leche = { id: "x", name: "Leche semidesnatada", categoria: "lacteos" };
+            return comparar(
+              {
+                leche: huecoDe(leche, "nevera"), huevo: huecoDe(f("f_huevo"), "nevera"), yogur: huecoDe(f("f_yogur_prot"), "nevera"),
+                pollo: huecoDe(f("f_pechuga_pollo"), "nevera"), salmon: huecoDe(f("f_salmon"), "nevera"), pavo: huecoDe(f("f_pavo"), "nevera"),
+                tomate: huecoDe(f("f_tomate"), "nevera"), manzana: huecoDe(f("f_manzana"), "nevera"), gnocchi: huecoDe(f("f_gnocchi"), "nevera"),
+              },
+              { leche: "puerta", huevo: "puerta", yogur: "lacteos", pollo: "carne", salmon: "carne", pavo: "embutido", tomate: "frutaVerdura", manzana: "frutaVerdura", gnocchi: "otros" }
+            );
+          },
+        },
+        {
+          nombre: "Despensa y congelador: cada cosa en su estante o cajón",
+          ejecutar: () => {
+            const f = (id) => FOODS_SEED.find((x) => x.id === id);
+            return comparar(
+              {
+                arroz: huecoDe(f("f_arroz_basmati"), "despensa"), garbanzos: huecoDe(f("f_garbanzos_cocidos"), "despensa"), atun: huecoDe(f("f_atun"), "despensa"),
+                aceite: huecoDe(f("f_aove"), "despensa"), pan: huecoDe(f("f_pan_molde"), "despensa"), patata: huecoDe(f("f_patata"), "despensa"),
+                polloCongelado: huecoDe(f("f_pechuga_pollo"), "congelador"), fresas: huecoDe(f("f_fresas"), "congelador"), panCongelado: huecoDe(f("f_pan_molde"), "congelador"),
+                sinAlimento: huecoDe(null, "nevera"),
+              },
+              { arroz: "cereales", garbanzos: "conservas", atun: "conservas", aceite: "aceites", pan: "pan", patata: "pan", polloCongelado: "carne", fresas: "frutaVerdura", panCongelado: "otros", sinAlimento: "otros" }
+            );
+          },
+        },
+        {
+          nombre: "Dibujo de cada alimento: por el nombre (con o sin tildes) y, si no dice nada, por su carpeta",
+          ejecutar: () => {
+            const f = (id) => FOODS_SEED.find((x) => x.id === id);
+            return comparar(
+              {
+                platano: formaDe(f("f_platano")), sinTilde: formaDe({ name: "platano maduro", categoria: "frutas" }), sardinas: formaDe(f("f_sardinas")),
+                panBrioche: formaDe(f("f_pan_brioche")), ensalada: formaDe(f("f_ensalada")), pera: formaDe(f("f_pera")), pavo: formaDe(f("f_pavo")),
+                patatasFritas: formaDe({ name: "Patatas fritas", categoria: "snacks_procesados" }), raro: formaDe({ name: "Cosa rara", categoria: "nada" }), sinAlimento: formaDe(null),
+              },
+              { platano: "platano", sinTilde: "platano", sardinas: "lata", panBrioche: "pan", ensalada: "lechuga", pera: "fruta", pavo: "fiambre", patatasFritas: "snack", raro: "generico", sinAlimento: "generico" }
+            );
+          },
+        },
+        {
+          nombre: "Repartir en huecos: en orden, con las baldas vacías que siempre se pintan y «otros» solo si hace falta",
+          ejecutar: () => {
+            const foods = FOODS_SEED;
+            const items = [
+              { id: "1", foodId: "f_yogur_prot", zona: "nevera", gramos: 500 },
+              { id: "2", foodId: "f_huevo", zona: "nevera", gramos: 360 },
+              { id: "3", foodId: "f_queso_cottage", zona: "nevera", gramos: 200 },
+              { id: "4", foodId: "f_arroz_basmati", zona: "despensa", gramos: 1000 },
+            ];
+            const nevera = repartirEnHuecos(items, foods, "nevera");
+            const conOtros = repartirEnHuecos([...items, { id: "5", foodId: "f_gnocchi", zona: "nevera", gramos: 400 }], foods, "nevera");
+            return comparar(
+              {
+                huecos: nevera.map((h) => h.clave).join(","),
+                lacteos: nevera.find((h) => h.clave === "lacteos").entradas.map((e) => e.item.id).join(","),
+                puerta: nevera.find((h) => h.clave === "puerta").entradas.map((e) => e.forma).join(","),
+                conOtros: conOtros.map((h) => h.clave).join(","),
+                despensa: repartirEnHuecos(items, foods, "despensa").map((h) => `${h.clave}:${h.entradas.length}`).join(","),
+              },
+              {
+                huecos: "puerta,lacteos,carne,embutido,frutaVerdura", lacteos: "3,1", puerta: "huevos",
+                conOtros: "puerta,lacteos,carne,embutido,otros,frutaVerdura", despensa: "cereales:1,conservas:0,aceites:0,pan:0",
               }
             );
           },
