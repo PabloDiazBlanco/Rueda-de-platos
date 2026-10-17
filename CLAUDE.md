@@ -196,10 +196,14 @@ Cómo se relaciona con el Menú completo (el Menú simple queda fuera):
 - Borrar un alimento del catálogo lo quita también de la despensa: `useCatalogo` recibe el aviso
   `alBorrarAlimento` y `app.jsx` lo conecta con `useDespensa` (los hooks no se importan entre sí).
 
-La vista **Dibujo** (Fase B, octubre de 2026) es la nevera retro con su congelador y el estante de la
-despensa (`ui/despensa/cocina.jsx`): cada puerta gira sobre su bisagra con un pequeño rebote, se enciende
-la luz y el interior se abre a pantalla completa (`ui/despensa/panel.jsx`), con fichas que se tocan para
-cambiar cada cosa (`editar.jsx`). Reglas de esta parte:
+La vista **Dibujo** (Fase B, octubre de 2026) es una cocina (`ui/despensa/cocina.jsx`) en tres capas: la
+nevera retro con su congelador y el estante de la despensa (lo que guarda de verdad); la pared, la
+encimera y los muebles (solo decorado); y la vitrocerámica y el grifo. Cada puerta gira sobre su bisagra
+con un pequeño rebote, se enciende la luz y el interior se abre a pantalla completa
+(`ui/despensa/panel.jsx`), con fichas que se tocan para cambiar cada cosa (`editar.jsx`). La
+vitrocerámica enciende un fuego y lleva a «¿Qué cocino?» solo navegando, al destino
+`cocinar-desde-cocina` de `ui/pantallas.jsx` (la misma pantalla que `cocinar`, pero volviendo a «¿Qué
+tengo?»); el grifo es decorativo. Reglas de esta parte:
 - **Qué va en cada hueco** (puerta, baldas, cajón, cesta...) **y con qué dibujo** lo decide
   `logica/nevera.js`, con sus casos en `validacion/tests.js` (grupo «Colocación en la nevera»); la
   interfaz solo pinta lo que le llega de `useDespensa().huecos(zona)`. Si algo es una bebida (va a la
@@ -208,7 +212,10 @@ cambiar cada cosa (`editar.jsx`). Reglas de esta parte:
   los componentes: así otro estilo sería una entrada nueva ahí. Los dibujos están en
   `ui/despensa/dibujos.jsx` (SVG, sin imágenes externas); las propuestas originales, en
   `local/ideas/diseno-nevera/`.
-- Con «reducir movimiento» activado en el sistema no hay animaciones: el interior se abre al instante.
+- Con «reducir movimiento» activado en el sistema no hay animaciones: el interior se abre al instante,
+  la vitrocerámica navega sin esperar al fuego y el grifo no suelta gota.
+- Todo se coloca en unidades del dibujo de la cocina (`ESCENA_ANCHO` × `ESCENA_ALTO`) sobre un
+  contenedor con esa misma proporción, así que la escena se escala entera con el ancho de la pantalla.
 - El panel deja libre la esquina de arriba a la derecha, donde flota el botón de cerrar sesión que añade
   `auth-bootstrap.jsx` fuera de React.
 - La vista elegida (Dibujo o Lista) se recuerda en `localStorage` (`fooddraft:vista-despensa`), como
