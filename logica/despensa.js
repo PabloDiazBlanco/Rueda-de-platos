@@ -7,16 +7,24 @@
 //
 // Forma de lo guardado:
 //   { version: 1,
-//     items: [ { id, foodId, zona: "despensa"|"nevera"|"congelador", gramos } |
-//              { id, foodId, zona, tengo: true|false } ],
+//     items: [ { id, foodId, zona: "despensa"|"nevera"|"congelador", gramos, actualizado } |
+//              { id, foodId, zona, tengo: true|false, actualizado } ],
 //     menuConfirmadoId: <id de menu[0]> | null,
 //     consumos: { "2026-10-15": { Comida: { slotId, items: [{ itemId, foodId, zona, gramos }] } } },
-//     compras:  { <clave de fila de la lista>: { itemId, delta, creado } } }
+//     compras:  { <clave de fila de la lista>: { itemId, delta, creado } },
+//     limpieza: [ { id, nombre, comprado } ] }
+//
+// `actualizado` (fecha "AAAA-MM-DD") es el último día en que cambió esa entrada; lo pone sellarCambios,
+// nunca cada operación por su cuenta. Hoy no lo usa nada: se guarda desde octubre de 2026 para que el
+// aviso de «lleva mucho sin tocarse» (idea F2 de local/ideas/ideas-futuras.md) tenga fechas reales el
+// día que se haga. `limpieza` es la lista de la compra de lo que no es comida (el mueble de debajo del
+// fregadero de la cocina dibujada): texto libre, sin catálogo, sin gramos y fuera del menú.
 //
 // Las cantidades son gramos aproximados (sin paquetes ni unidades: decisión del usuario). Verdura y
 // fruta se apuntan solo como "tengo / no tengo": nadie pesa la lechuga que le queda, y a efectos de
 // la lista de la compra basta con saber si hay o no.
 import { uid } from "comun";
+import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 
 export const DESPENSA_VERSION = 1;
 
@@ -41,7 +49,7 @@ const ZONA_POR_CATEGORIA = {
 const CATEGORIAS_SIN_CANTIDAD = ["vegetales", "frutas"];
 
 export function despensaVacia() {
-  return { version: DESPENSA_VERSION, items: [], menuConfirmadoId: null, consumos: {}, compras: {} };
+  return { version: DESPENSA_VERSION, items: [], menuConfirmadoId: null, consumos: {}, compras: {}, limpieza: [] };
 }
 
 export function zonaPorDefecto(food) {
@@ -72,7 +80,11 @@ export function stockAlimento(despensa, foodId) {
 // Igual que migrateData con los datos principales: completa lo que falte sin pisar nada de lo que
 // el usuario ya tenía. Con `version: 1` desde el principio, el día que la forma cambie se añade aquí
 // el parche (y su caso en validacion/tests.js) en función de la versión guardada.
-export function migrarDespensa(guardado) {
+// Parches que lleva (todos añadidos sin cambiar de versión, porque solo completan):
+// - octubre de 2026: `limpieza` (lista vacía si falta) y `actualizado` en cada entrada. A lo que ya
+//   estaba apuntado sin fecha se le pone `hoy` (el día en que se carga por primera vez con esta
+//   versión): no se sabe cuándo se tocó de verdad, y empezar a contar desde ahí es lo más honesto.
+export function migrarDespensa(guardado, hoy) {
   if (!guardado || typeof guardado !== "object" || Array.isArray(guardado)) {
     return { despensa: despensaVacia(), changed: true };
   }
@@ -83,8 +95,12 @@ export function migrarDespensa(guardado) {
       if (!item.id) item.id = uid();
       if (!ZONAS.includes(item.zona)) item.zona = "despensa";
       if (!tieneGramos(item) && typeof item.tengo !== "boolean") item.gramos = redondear(item.gramos);
+      if (!item.actualizado && hoy) item.actualizado = hoy;
       return item;
     });
+  const limpieza = (Array.isArray(guardado.limpieza) ? guardado.limpieza : [])
+    .filter((c) => c && typeof c.nombre === "string" && c.nombre.trim())
+    .map((c) => ({ ...c, id: c.id || uid(), comprado: !!c.comprado }));
   const despensa = {
     ...guardado,
     version: DESPENSA_VERSION,
@@ -92,6 +108,7 @@ export function migrarDespensa(guardado) {
     menuConfirmadoId: guardado.menuConfirmadoId || null,
     consumos: guardado.consumos && typeof guardado.consumos === "object" ? guardado.consumos : {},
     compras: guardado.compras && typeof guardado.compras === "object" ? guardado.compras : {},
+    limpieza,
   };
   return { despensa, changed: JSON.stringify(despensa) !== JSON.stringify(guardado) };
 }
@@ -319,4 +336,102 @@ export function desmarcarComprado(despensa, fila) {
     ? despensa.items.filter((i) => i.id !== item.id)
     : despensa.items.map((i) => (i.id === item.id ? { ...i, gramos } : i));
   return { ...despensa, items, compras };
+}
+
+// ---------- Fecha de la última vez que se tocó cada cosa ----------
+// Compara la despensa de antes y la de después de una operación cualquiera (añadir, editar, comprar,
+// descontar una comida...) y pone `fecha` en `actualizado` a cada entrada nueva o que haya cambiado de
+// cantidad, de «tengo» o de zona. Así ninguna operación tiene que acordarse de hacerlo: lo hace
+// useDespensa al guardar cada cambio. Gastar algo al completar una comida también cuenta como tocarlo.
+export function sellarCambios(antes, despues, fecha) {
+  if (!despues || !fecha) return despues;
+  const previos = new Map(((antes && antes.items) || []).map((i) => [i.id, i]));
+  let cambio = false;
+  const items = despues.items.map((i) => {
+    const p = previos.get(i.id);
+    const igual = p && p.gramos === i.gramos && p.tengo === i.tengo && p.zona === i.zona && p.foodId === i.foodId;
+    if (igual) return i.actualizado || !p.actualizado ? i : { ...i, actualizado: p.actualizado };
+    if (i.actualizado === fecha) return i;
+    cambio = true;
+    return { ...i, actualizado: fecha };
+  });
+  return cambio ? { ...despues, items } : despues;
+}
+
+// ---------- Queda poco ----------
+// Aviso de que algo se está acabando (decisión del usuario, octubre de 2026: solo automático, sin
+// mínimos puestos a mano). El mínimo es la ración media de ese alimento en los platos del propio
+// usuario: lo que suele echar de él en una comida. Si con lo que queda no da para una vez, queda poco.
+
+// Ración media de un alimento: la media de los gramos con los que aparece en los ingredientes del
+// catálogo (como alimento directo de un ingrediente, o dentro de la composición de un desayuno, una
+// merienda o un plato cerrado). Se usan las raciones base del catálogo, no las ajustadas de cada menú:
+// así el mínimo no cambia de una semana a otra. Si ningún plato lo usa, vale la cantidad por defecto
+// de su carpeta (CATEGORIAS_ALIMENTOS); sin carpeta, no hay mínimo (null).
+export function racionMedia(foodId, data) {
+  const gramos = [];
+  ((data && data.ingredients) || []).forEach((ing) => {
+    if (ing.foodId === foodId && Number(ing.gramos) > 0) gramos.push(Number(ing.gramos));
+    (Array.isArray(ing.composicion) ? ing.composicion : []).forEach((c) => {
+      if (c.foodId === foodId && Number(c.gramos) > 0) gramos.push(Number(c.gramos));
+    });
+  });
+  if (gramos.length) return Math.round(gramos.reduce((a, b) => a + b, 0) / gramos.length);
+  const food = ((data && data.foods) || []).find((f) => f.id === foodId);
+  const carpeta = food && CATEGORIAS_ALIMENTOS.find((c) => c.key === food.categoria);
+  return carpeta ? carpeta.gramosDefecto : null;
+}
+
+// Lo que se está acabando, por alimento (sumando todas sus zonas: el pollo de la nevera y el del
+// congelador son el mismo pollo). Dos estados: "acabado" (no queda nada, o la verdura y la fruta
+// marcadas como «se acabó») y "poco" (queda algo, pero menos de una ración). Ordenado por nombre.
+//   [{ foodId, nombre, estado, gramos, racion, zonas }]
+export function alertasStock(despensa, data) {
+  const porAlimento = {};
+  ((despensa && despensa.items) || []).forEach((i) => {
+    (porAlimento[i.foodId] = porAlimento[i.foodId] || []).push(i);
+  });
+  const foods = (data && data.foods) || [];
+  const alertas = [];
+  Object.entries(porAlimento).forEach(([foodId, items]) => {
+    const food = foods.find((f) => f.id === foodId);
+    const zonas = [...new Set(items.map((i) => i.zona))];
+    const nombre = food ? food.name : foodId;
+    const conGramos = items.filter(tieneGramos);
+    if (!conGramos.length) {
+      if (!items.some((i) => i.tengo)) alertas.push({ foodId, nombre, estado: "acabado", gramos: null, racion: null, zonas });
+      return;
+    }
+    const gramos = conGramos.reduce((s, i) => s + i.gramos, 0);
+    const racion = racionMedia(foodId, data);
+    if (gramos <= 0) alertas.push({ foodId, nombre, estado: "acabado", gramos: 0, racion, zonas });
+    else if (racion && gramos < racion) alertas.push({ foodId, nombre, estado: "poco", gramos, racion, zonas });
+  });
+  return alertas.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+}
+
+// ---------- Limpieza y cosas de casa («bajo el fregadero») ----------
+// Una lista de la compra sencilla de lo que no es comida. Apuntar algo que ya está en la lista (sin
+// distinguir mayúsculas) no lo repite: si ya estaba comprado, vuelve a quedar pendiente.
+export function anadirLimpieza(despensa, nombre) {
+  const limpio = String(nombre || "").replace(/\s+/g, " ").trim();
+  if (!limpio) return despensa;
+  const lista = despensa.limpieza || [];
+  const existente = lista.find((c) => c.nombre.toLowerCase() === limpio.toLowerCase());
+  if (existente) {
+    return existente.comprado ? { ...despensa, limpieza: lista.map((c) => (c.id === existente.id ? { ...c, comprado: false } : c)) } : despensa;
+  }
+  return { ...despensa, limpieza: [...lista, { id: uid(), nombre: limpio, comprado: false }] };
+}
+
+export function alternarLimpieza(despensa, id) {
+  return { ...despensa, limpieza: (despensa.limpieza || []).map((c) => (c.id === id ? { ...c, comprado: !c.comprado } : c)) };
+}
+
+export function quitarLimpieza(despensa, id) {
+  return { ...despensa, limpieza: (despensa.limpieza || []).filter((c) => c.id !== id) };
+}
+
+export function quitarLimpiezaComprada(despensa) {
+  return { ...despensa, limpieza: (despensa.limpieza || []).filter((c) => !c.comprado) };
 }

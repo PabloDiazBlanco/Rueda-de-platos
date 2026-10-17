@@ -11,6 +11,7 @@ import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeC
 import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
   quitarConfirmacion, descontarComida, devolverComida, marcarComprado, desmarcarComprado,
+  sellarCambios, racionMedia, alertasStock, anadirLimpieza, alternarLimpieza, quitarLimpieza, quitarLimpiezaComprada,
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 import { esBebida, huecoDe, formaDe, repartirEnHuecos } from "nevera";
@@ -873,6 +874,108 @@ export function crearGrupos(mod, carga) {
                 vacia: JSON.stringify(despensaVacia()), vaciaCambia: true, changed: true, version: 1, items: 1,
                 gramos: 150, zona: "despensa", conId: true, menu: "m1", consumos: "{}", compras: "{}", segundaCambia: false,
               }
+            );
+          },
+        },
+      ],
+    },
+    {
+      // Añadido en octubre de 2026 con tres mejoras de la despensa (logica/despensa.js): la fecha de la
+      // última vez que se tocó cada cosa (para el futuro aviso F2), el aviso de «queda poco» con la
+      // ración media de los platos del usuario, y la lista de limpieza de debajo del fregadero. Usa el
+      // mismo escenarioDespensa() que el grupo anterior (pollo: 150 g en «Pollo» y 100 g en el bocadillo;
+      // pan: 60 g en la tostada y 80 g en el bocadillo).
+      grupo: "Despensa: queda poco, limpieza y fechas",
+      casos: [
+        {
+          nombre: "Fecha de cambio: se pone a lo nuevo y a lo que cambió; lo que no cambió conserva la suya",
+          ejecutar: () => {
+            const antes = conItems([
+              { id: "a", foodId: "f_pollo", zona: "nevera", gramos: 100, actualizado: "2026-10-01" },
+              { id: "b", foodId: "f_arroz", zona: "despensa", gramos: 200, actualizado: "2026-10-01" },
+            ]);
+            const despues = conItems([
+              { id: "a", foodId: "f_pollo", zona: "nevera", gramos: 50, actualizado: "2026-10-01" },
+              { id: "b", foodId: "f_arroz", zona: "despensa", gramos: 200, actualizado: "2026-10-01" },
+              { id: "c", foodId: "f_pan", zona: "despensa", gramos: 300 },
+            ]);
+            const sellada = sellarCambios(antes, despues, HOY);
+            const movido = sellarCambios(despues, editarItem(despues, "b", { zona: "congelador" }), HOY);
+            return comparar(
+              { fechas: sellada.items.map((i) => `${i.id}:${i.actualizado}`).join(","), alMover: movido.items.find((i) => i.id === "b").actualizado },
+              { fechas: `a:${HOY},b:2026-10-01,c:${HOY}`, alMover: HOY }
+            );
+          },
+        },
+        {
+          nombre: "Migración: lista de limpieza vacía y la fecha de hoy a lo que no tenía; una segunda pasada no cambia nada",
+          ejecutar: () => {
+            const { despensa: d, changed } = migrarDespensa({
+              items: [
+                { id: "a", foodId: "f_x", zona: "nevera", gramos: 100 },
+                { id: "b", foodId: "f_y", zona: "nevera", gramos: 50, actualizado: "2026-10-01" },
+              ],
+            }, HOY);
+            const segunda = migrarDespensa(JSON.parse(JSON.stringify(d)), "2026-12-31");
+            return comparar(
+              { changed, a: d.items[0].actualizado, b: d.items[1].actualizado, limpieza: JSON.stringify(d.limpieza), segundaCambia: segunda.changed },
+              { changed: true, a: HOY, b: "2026-10-01", limpieza: "[]", segundaCambia: false }
+            );
+          },
+        },
+        {
+          nombre: "Ración media: la de los platos del usuario y, si no la usa ninguno, la de su carpeta",
+          ejecutar: () => {
+            const { data } = escenarioDespensa();
+            const conExtra = { ...data, foods: [...data.foods, { id: "f_nueces", name: "Nueces", categoria: "frutos_secos" }, { id: "f_raro", name: "Raro" }] };
+            // Pollo: (150 + 100) / 2 = 125. Pan: (60 + 80) / 2 = 70. Arroz: 80. Nueces: sin platos,
+            // 30 g de su carpeta. Raro: sin platos ni carpeta, sin mínimo.
+            return comparar(
+              { pollo: racionMedia("f_pollo", conExtra), pan: racionMedia("f_pan", conExtra), arroz: racionMedia("f_arroz", conExtra), nueces: racionMedia("f_nueces", conExtra), raro: racionMedia("f_raro", conExtra) },
+              { pollo: 125, pan: 70, arroz: 80, nueces: 30, raro: null }
+            );
+          },
+        },
+        {
+          nombre: "Queda poco: menos de una ración es «poco», nada es «acabado» y las zonas se suman",
+          ejecutar: () => {
+            const { data } = escenarioDespensa();
+            const d = conItems([
+              { id: "1", foodId: "f_pollo", zona: "nevera", gramos: 60 },
+              { id: "2", foodId: "f_pollo", zona: "congelador", gramos: 40 },
+              { id: "3", foodId: "f_arroz", zona: "despensa", gramos: 200 },
+              { id: "4", foodId: "f_pan", zona: "despensa", gramos: 0 },
+              { id: "5", foodId: "f_tomate", zona: "nevera", tengo: false },
+              { id: "6", foodId: "f_manzana", zona: "nevera", tengo: true },
+              { id: "7", foodId: "f_queso", zona: "nevera", gramos: 30 },
+            ]);
+            // Pollo: 60 + 40 = 100 < 125 → poco. Arroz: 200 ≥ 80. Pan: 0 → acabado. Tomate: se acabó.
+            // Manzana: queda. Queso: 30, justo una ración, da para una vez.
+            const alertas = alertasStock(d, data);
+            const pollo = alertas.find((a) => a.foodId === "f_pollo") || {};
+            return comparar(
+              { lista: alertas.map((a) => `${a.nombre}:${a.estado}`).join(","), polloGramos: pollo.gramos, polloRacion: pollo.racion, polloZonas: (pollo.zonas || []).join(",") },
+              { lista: "Pan:acabado,Pechuga de pollo:poco,Tomate:acabado", polloGramos: 100, polloRacion: 125, polloZonas: "nevera,congelador" }
+            );
+          },
+        },
+        {
+          nombre: "Limpieza: añadir sin repetir, tachar, volver a apuntar lo comprado, quitar y vaciar lo comprado",
+          ejecutar: () => {
+            let d = anadirLimpieza(despensaVacia(), "  Lavavajillas ");
+            d = anadirLimpieza(d, "lavavajillas");
+            d = anadirLimpieza(d, "Lejía");
+            const lavavajillas = d.limpieza[0].id;
+            d = alternarLimpieza(d, lavavajillas);
+            const tachado = d.limpieza[0].comprado;
+            d = anadirLimpieza(d, "LAVAVAJILLAS");
+            const otraVezPendiente = !d.limpieza[0].comprado;
+            d = alternarLimpieza(d, lavavajillas);
+            const sinComprado = quitarLimpiezaComprada(d);
+            const vacia = quitarLimpieza(sinComprado, sinComprado.limpieza[0].id);
+            return comparar(
+              { nombres: d.limpieza.map((c) => c.nombre).join(","), tachado, otraVezPendiente, trasVaciar: sinComprado.limpieza.map((c) => c.nombre).join(","), alFinal: vacia.limpieza.length, enBlanco: anadirLimpieza(despensaVacia(), "   ").limpieza.length },
+              { nombres: "Lavavajillas,Lejía", tachado: true, otraVezPendiente: true, trasVaciar: "Lejía", alFinal: 0, enBlanco: 0 }
             );
           },
         },
