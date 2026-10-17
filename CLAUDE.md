@@ -69,7 +69,8 @@ logica/datos-iniciales.js      → FOODS_SEED, CATEGORIAS_ALIMENTOS, initialData
 logica/cuestionario.js         → opciones del cuestionario de alta y construirIngredientesDesdeCuestionario
 logica/migraciones.js          → migrateData
 logica/despensa.js             → stock de la despensa: zonas, menú confirmado, descontar/devolver comidas,
-                                  tachar/destachar compras, migrarDespensa
+                                  tachar/destachar compras, queda poco (alertasStock), limpieza,
+                                  fecha de cambio (sellarCambios), migrarDespensa
 logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
 logica/nevera.js               → colocación de la nevera dibujada: huecoDe, formaDe, esBebida, repartirEnHuecos
 ```
@@ -78,7 +79,7 @@ Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan e
 de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (mensaje de
 `evaluarTendencia` y meses de `formatFechaCorta`), `datos-iniciales.js` → `peso.js`,
 `cuestionario.js` → `comun.js` y `datos-iniciales.js`, `migraciones.js` → `datos-iniciales.js`,
-`objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js`, y `lista-compra-neta.js` →
+`objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js` y `datos-iniciales.js`, y `lista-compra-neta.js` →
 `macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
 arranque se quedan en la raíz (`index.html`, `auth-bootstrap.jsx`, `cargador-ui.js`, `sw.js`,
@@ -195,6 +196,22 @@ Cómo se relaciona con el Menú completo (el Menú simple queda fuera):
   casillas de siempre en `data.listaCompraSimple`.
 - Borrar un alimento del catálogo lo quita también de la despensa: `useCatalogo` recibe el aviso
   `alBorrarAlimento` y `app.jsx` lo conecta con `useDespensa` (los hooks no se importan entre sí).
+- Las dos listas de la compra tienen un botón **Compartir** que manda lo pendiente como texto
+  (`navigator.share`, o al portapapeles donde no existe). Se descartó el PDF a propósito.
+
+Además, dentro de la misma clave:
+- **Queda poco** (`alertasStock`): lo acabado o con menos de una ración media (la media de los gramos con
+  que sale en los platos del usuario; si ningún plato lo usa, la cantidad por defecto de su carpeta) sale
+  en rojo, con un punto en el botón de su zona y un aviso arriba de «¿Qué tengo?» que se cierra hasta el
+  día siguiente (`localStorage`, `fooddraft:aviso-stock-cerrado`). Solo automático, sin mínimos a mano
+  (decisión del usuario).
+- **Limpieza y casa** (`despensa.limpieza`): lista de la compra de lo que no es comida, en texto libre,
+  fuera del catálogo y del menú. Se ve debajo del fregadero de la cocina dibujada
+  (`ui/despensa/fregadero.jsx`), en la vista de lista y al final de la lista de la compra del Menú
+  completo.
+- **Fecha de cambio** (`actualizado` en cada entrada): la pone `sellarCambios` en `useDespensa` con cada
+  cambio, nunca cada operación por su cuenta. Hoy no la usa nada: es para el futuro aviso de revisar lo
+  que lleva mucho sin tocarse (idea F2).
 
 La vista **Dibujo** (Fase B, octubre de 2026) es una cocina (`ui/despensa/cocina.jsx`) en tres capas: la
 nevera retro con su congelador y el estante de la despensa (lo que guarda de verdad); la pared, la
@@ -203,7 +220,9 @@ con un pequeño rebote, se enciende la luz y el interior se abre a pantalla comp
 (`ui/despensa/panel.jsx`), con fichas que se tocan para cambiar cada cosa (`editar.jsx`). La
 vitrocerámica enciende un fuego y lleva a «¿Qué cocino?» solo navegando, al destino
 `cocinar-desde-cocina` de `ui/pantallas.jsx` (la misma pantalla que `cocinar`, pero volviendo a «¿Qué
-tengo?»); el grifo es decorativo. Reglas de esta parte:
+tengo?»); el grifo es decorativo, y el mueble de debajo del fregadero se abre como la nevera y guarda la
+lista de limpieza. Los paneles a pantalla completa comparten marco (`MarcoPanel`, en `panel.jsx`).
+Reglas de esta parte:
 - **Qué va en cada hueco** (puerta, baldas, cajón, cesta...) **y con qué dibujo** lo decide
   `logica/nevera.js`, con sus casos en `validacion/tests.js` (grupo «Colocación en la nevera»); la
   interfaz solo pinta lo que le llega de `useDespensa().huecos(zona)`. Si algo es una bebida (va a la
