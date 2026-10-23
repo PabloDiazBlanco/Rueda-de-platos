@@ -46,7 +46,7 @@ index.html
 auth-bootstrap.jsx   (login, Firestore, App Check, puente con las Cloud Functions)
   │  cargador-ui.js: descarga, pasa por Babel y enlaza app.jsx + ui/ (import/export normales)
   ▼
-app.jsx + ui/        (componente principal + 48 archivos de interfaz, por pantalla)
+app.jsx + ui/        (componente principal + 50 archivos de interfaz, por pantalla)
   │  import { ... } from "nombre-corto"     ← resuelto por el importmap
   ▼
 logica/*.js          (16 módulos de lógica pura, sin JSX, sin React)
@@ -67,7 +67,7 @@ Rueda-de-platos/
 ├── index.html                       entrada de la app + importmap
 ├── auth-bootstrap.jsx               login, Firestore, App Check, puente con las Cloud Functions
 ├── cargador-ui.js                   carga app.jsx + ui/ con Babel, sin build
-├── app.jsx                          componente principal (estado y pantalla actual)
+├── app.jsx                          componente principal (estado, navegación y pantalla actual)
 ├── sw.js                            service worker (offline / PWA / notificaciones push)
 ├── manifest.json, icon.svg          metadatos de la PWA
 ├── privacidad.html, terminos.html   páginas legales (con selector de idioma propio)
@@ -76,7 +76,9 @@ Rueda-de-platos/
 │   ├── archivos.json                  lista de archivos de ui/ (cargador + modo sin conexión)
 │   ├── estilos.js, pantallas.jsx      tipografías; tabla destino → pantalla
 │   ├── estado/                        hooks: datos, menú, catálogo, perfil, peso, despensa
-│   ├── comun/, marco/                 piezas reutilizadas; Shell, cabecera y menú lateral
+│   ├── comun/                         piezas reutilizadas
+│   ├── marco/                         Shell, cabecera, menú lateral, barra inferior de cristal y
+│   │                                  navegacion.js (áreas FoodDraft · Entrenamiento · Cuerpo)
 │   └── menu/, catalogo/, perfil/, onboarding/, peso/, premium/, ajustes/, despensa/
 │
 ├── logica/                          lógica de negocio, sin JSX ni React

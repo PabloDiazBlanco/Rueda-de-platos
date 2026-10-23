@@ -40,8 +40,9 @@ index.html             → importmap + carga auth-bootstrap.jsx
 auth-bootstrap.jsx     → login/Firestore/App Check, puente con las Cloud Functions (window.*),
                           luego carga la interfaz con cargador-ui.js
 cargador-ui.js         → carga app.jsx y ui/ (Babel + registro de módulos propio, sin build)
-app.jsx                → componente principal (~100 líneas): reúne los hooks de ui/estado/, decide si
-                          toca carga, alta o app, y pinta la pantalla elegida
+app.jsx                → componente principal: reúne los hooks de ui/estado/, decide si toca carga,
+                          alta o app, lleva la navegación (destino, datos y última pantalla de cada
+                          área) y pinta la pantalla elegida con su cabecera y su barra inferior
 
 ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   archivos.json         lista de TODOS los archivos de ui/ (la usan el cargador y sw.js)
@@ -51,7 +52,8 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
                           el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js,
                           despensa.js (useDespensa)
   comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores)
-  marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral
+  marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral,
+                          navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
   menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/   una carpeta por área
 
 logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
@@ -131,6 +133,46 @@ la misma interfaz que la app. Reglas al escribir en `ui/`:
 - Coste de arranque: Babel transforma toda la interfaz en cada carga (~0,5 s en escritorio, medido
   en octubre de 2026; más en móvil). Una mejora pendiente es guardar el resultado transformado
   entre visitas — no está hecho porque hay que invalidarlo bien tras cada despliegue.
+
+## Navegación por áreas
+
+Desde octubre de 2026 la app es «muchas aplicaciones en una»: tres **áreas** — **FoodDraft**
+(nutrición), **Entrenamiento** y **Cuerpo** (peso, medidas, actividad diaria, resúmenes) — y una zona
+**común** sin área (Compartir, Ayuda y comentarios, Documentos, Premium, Ajustes, Perfil). El porqué y
+el aspecto de cada pieza están en `local/ideas/gimnasio/03-diseno-modulo-entreno.md` (§3).
+
+- **`ui/marco/navegacion.js`** (sin JSX) es la única descripción: `AREAS` (cada una con sus `pestanas`
+  y su `menu`) y `COMUNES`. Una pestaña tiene un destino raíz y la lista de destinos que cuelgan de ella
+  (`incluye`), escrita a mano. `areaDe(destino)` y `pestanaDe(destino)` dicen dónde cae cualquier
+  pantalla. De aquí leen el menú lateral, la barra inferior y la cabecera.
+- **Los destinos son los `tab` de siempre** (las claves de `PANTALLAS` en `ui/pantallas.jsx`): ninguna
+  pantalla cambia por dentro. `app.jsx` guarda `{ tab, params }`: `navegar(destino, params)` permite
+  abrir una pantalla con datos (la ficha de un ejercicio concreto...), y `setTab(destino)` sigue siendo
+  lo que usan las pantallas de siempre (navegar sin datos). Las dos van en `ctx`, junto con `params`.
+- **Última pantalla de cada área**: al tocar un área en el menú lateral se vuelve adonde se estaba
+  (`localStorage`, `fooddraft:ultima-pantalla`, comodidad del dispositivo); si no hay, a su primera
+  pestaña. La app sigue abriendo en `menu`.
+- **Menú lateral**: arriba las áreas, desplegables con todas sus funciones (el área actual sale
+  resaltada y desplegada); abajo lo común, con Premium en mostaza. Un área sin pantallas no se lista.
+- **Barra inferior** (`ui/marco/barra-inferior.jsx`): píldora flotante de cristal claro (fondo
+  `--cristal` al 72 % con desenfoque; fondo sólido sin `backdrop-filter` o con «reducir transparencia»),
+  solo en las pantallas de un área. Solo la pestaña activa enseña su nombre (las demás, como
+  `aria-label` y `title`); tocar una pestaña lleva a su raíz. Se esconde mientras hay un campo de texto
+  con el foco (el teclado del móvil la subiría encima), y `<main>` deja libre abajo lo que ocupa
+  (`RELLENO_BARRA`). Las variables del cristal están en `Shell`.
+- **Cabecera**: el título grande dice el área («Tu recetario», «Tu entreno», «Tu cuerpo»; «Tu cuenta» en
+  la zona común); el rótulo pequeño sigue siendo «FoodDraft».
+- **Capas (`z-index`)**: barra inferior 30 · pastilla de entreno en curso 31 · menú lateral 40/41 ·
+  sesión de entreno y paneles de la nevera 45 · modales 50 · botón «Cerrar sesión» de
+  `auth-bootstrap.jsx` 9999, arriba a la derecha: cualquier barra superior a pantalla completa deja
+  libres ~110 px a la derecha (como `MarcoPanel`).
+
+**Al añadir una pantalla**: su destino en `PANTALLAS`, y su sitio en `navegacion.js` — en el `incluye` de
+una pestaña, en el `menu` de un área o en `COMUNES`. Si se olvida, `validacion/` (grupo «Navegación por
+áreas») la marca en rojo como huérfana. **Al añadir una pestaña**: su entrada en `pestanas` con icono
+de `lucide-react` (monocromo, de línea) y su etiqueta `barra.*` en los cinco idiomas; caben cinco por
+área. Ese mismo grupo comprueba que todas las claves de la navegación (y las de los prefijos nuevos:
+`area.`, `barra.`, `entreno.`, `cuerpo.`...) existen en los cinco diccionarios.
 
 ## Al añadir un archivo `.js`/`.jsx` nuevo que la app carga siempre
 
