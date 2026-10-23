@@ -23,7 +23,7 @@ import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
 import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
-import { AREAS, COMUNES, areaDe, pestanaDe } from "./ui/marco/navegacion.js";
+import { AREAS, COMUNES, TITULO_COMUN, areaDe, pestanaDe, areaPorClave } from "./ui/marco/navegacion.js";
 import { ModalesCatalogo } from "./ui/catalogo/modales.jsx";
 
 // Funciones de logica/ que validacion/tests.js recoge del objeto exportado por este archivo.
@@ -136,7 +136,7 @@ export default function RuedaDePlatos() {
 
   return (
     <Shell>
-      <Header saveState={saveState} idioma={idioma} onOpenMenu={() => setDrawerOpen(true)} />
+      <Header saveState={saveState} idioma={idioma} titulo={area ? areaPorClave(area).titulo : TITULO_COMUN} onOpenMenu={() => setDrawerOpen(true)} />
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} area={area} setTab={setTab} onIrAArea={irAArea} idioma={idioma} premium={premium} />
 
       {/* Con barra inferior, <main> deja libre abajo lo que ella ocupa, para que lo último de cada

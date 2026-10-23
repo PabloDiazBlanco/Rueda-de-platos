@@ -56,7 +56,10 @@ export function Shell({ children }) {
   );
 }
 
-export function Header({ saveState, idioma, onOpenMenu }) {
+// `titulo`: clave i18n del título grande, que dice en qué área se está («Tu recetario», «Tu entreno»,
+// «Tu cuerpo» o «Tu cuenta» en la zona común; lo decide app.jsx con ui/marco/navegacion.js). El rótulo
+// pequeño de arriba sigue siendo siempre «FoodDraft», el nombre de la app.
+export function Header({ saveState, idioma, onOpenMenu, titulo = "header.tuRecetario" }) {
   return (
     <header
       style={{
@@ -97,7 +100,7 @@ export function Header({ saveState, idioma, onOpenMenu }) {
           <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, letterSpacing: 3, textTransform: "uppercase", opacity: 0.65, marginBottom: 4 }}>
             FoodDraft
           </div>
-          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400, letterSpacing: 0.3 }}>{t(idioma, "header.tuRecetario")}</h1>
+          <h1 style={{ margin: 0, fontSize: 26, fontWeight: 400, letterSpacing: 0.3 }}>{t(idioma, titulo)}</h1>
         </div>
         <SaveIndicator state={saveState} idioma={idioma} />
       </div>
