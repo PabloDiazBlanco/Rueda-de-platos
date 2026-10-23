@@ -16,6 +16,10 @@ import {
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 import { esBebida, huecoDe, formaDe, repartirEnHuecos } from "nevera";
 import { tieneTraduccion, clavesDeIdioma, IDIOMAS_DISPONIBLES } from "i18n";
+import {
+  EJERCICIOS_SEMILLA, TIPOS_EJERCICIO, GRUPOS_MUSCULARES, EQUIPOS, camposDeTipo, listaEjercicios, buscarEjercicios,
+  posibleDuplicado,
+} from "entreno-ejercicios";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1069,6 +1073,7 @@ export function crearGrupos(mod, carga) {
       ],
     },
     grupoNavegacion(mod),
+    grupoEntrenoBiblioteca(),
   ];
 }
 
@@ -1262,6 +1267,95 @@ function grupoNavegacion(mod) {
           const porPrefijo = clavesDeIdioma("es").filter((k) => PREFIJOS_NUEVOS.some((p) => k.startsWith(p)));
           const faltan = clavesSinTraducir([...new Set([...deNavegacion, ...porPrefijo])]);
           return comparar({ faltan: faltan.join(", ") }, { faltan: "" });
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Entreno (octubre de 2026) ----------
+// Valores esperados calculados a mano a partir del anexo A del plan (local/ideas/gimnasio/04-plan-de-ejecucion.md).
+
+// Nombres mínimos para probar la búsqueda sin depender del módulo de nombres; el resto cae a su id con
+// espacios («ex press banca barra»), que no contiene ninguna de las palabras buscadas aquí salvo donde se
+// espera.
+const NOMBRES_PRUEBA = {
+  ex_jalon_pecho: "Jalón al pecho (polea)",
+  ex_jalon_estrecho: "Jalón con agarre estrecho",
+  ex_press_inclinado_barra: "Press inclinado con barra",
+  ex_press_inclinado_mancuernas: "Press inclinado con mancuernas",
+  ex_curl_inclinado: "Curl inclinado con mancuernas",
+};
+const nombrePrueba = (e) => NOMBRES_PRUEBA[e.id] || e.nombre || e.id.replace(/_/g, " ");
+
+function grupoEntrenoBiblioteca() {
+  const lista = listaEjercicios(null);
+  const ids = (r) => r.map((e) => e.id).sort().join(",");
+  return {
+    grupo: "Entreno: biblioteca",
+    casos: [
+      {
+        nombre: "80 ejercicios semilla con ids únicos que empiezan por ex_",
+        ejecutar: () => comparar(
+          { total: EJERCICIOS_SEMILLA.length, unicos: new Set(EJERCICIOS_SEMILLA.map((e) => e.id)).size, malos: EJERCICIOS_SEMILLA.filter((e) => !e.id.startsWith("ex_")).length },
+          { total: 80, unicos: 80, malos: 0 }
+        ),
+      },
+      {
+        nombre: "Todo tipo, músculo, secundario y equipo pertenece a su lista",
+        ejecutar: () => {
+          const malos = EJERCICIOS_SEMILLA.filter((e) =>
+            !TIPOS_EJERCICIO.includes(e.tipo) || !GRUPOS_MUSCULARES.includes(e.musculo) || !EQUIPOS.includes(e.equipo) ||
+            e.secundarios.some((m) => !GRUPOS_MUSCULARES.includes(m) || m === "cardio")).map((e) => e.id);
+          return comparar({ malos: malos.join(",") }, { malos: "" });
+        },
+      },
+      {
+        nombre: "camposDeTipo de asistido y de distancia + duración",
+        ejecutar: () => comparar(
+          { asistido: camposDeTipo("asistido_reps").join(","), distancia: camposDeTipo("distancia_duracion").join(","), reps: camposDeTipo("reps").join(",") },
+          { asistido: "kg,reps", distancia: "km,seg", reps: "reps" }
+        ),
+      },
+      {
+        nombre: "Búsqueda: sin tilde, por prefijos, con una errata y sin resultados",
+        ejecutar: () => comparar(
+          {
+            jalon: buscarEjercicios(lista, "jalon", nombrePrueba).some((e) => e.id === "ex_jalon_pecho"),
+            pressInclin: ids(buscarEjercicios(lista, "press inclin", nombrePrueba)),
+            errata: buscarEjercicios(lista, "jalon pexho", nombrePrueba).map((e) => e.id)[0],
+            nada: buscarEjercicios(lista, "xyz", nombrePrueba).length,
+          },
+          { jalon: true, pressInclin: "ex_press_inclinado_barra,ex_press_inclinado_mancuernas", errata: "ex_jalon_pecho", nada: 0 }
+        ),
+      },
+      {
+        nombre: "Filtro por músculo principal: bíceps devuelve 6",
+        ejecutar: () => comparar({ n: buscarEjercicios(lista, "", nombrePrueba, { musculo: "biceps" }).length }, { n: 6 }),
+      },
+      {
+        nombre: "posibleDuplicado(«Jalon al pecho») avisa del jalón de la biblioteca",
+        ejecutar: () => {
+          const d = posibleDuplicado("Jalon al pecho", lista, nombrePrueba);
+          const n = posibleDuplicado("Remo en mi máquina rara", lista, nombrePrueba);
+          return comparar({ duplicado: d && d.id, nuevo: n }, { duplicado: "ex_jalon_pecho", nuevo: null });
+        },
+      },
+      {
+        nombre: "listaEjercicios oculta un propio archivado y aplica el favorito de personalizados",
+        ejecutar: () => {
+          const l = listaEjercicios({
+            propios: [
+              { id: "exp_1", nombre: "Remo en mi máquina", tipo: "peso_reps", musculo: "espalda_alta", secundarios: [], equipo: "maquina", archivado: false },
+              { id: "exp_2", nombre: "Viejo", tipo: "reps", musculo: "pecho", secundarios: [], equipo: "otro", archivado: true },
+            ],
+            personalizados: { ex_jalon_pecho: { favorito: true, notaFija: "Agarre abierto" } },
+          });
+          const jalon = l.find((e) => e.id === "ex_jalon_pecho");
+          return comparar(
+            { total: l.length, propio: l.some((e) => e.id === "exp_1" && e.propio), archivado: l.some((e) => e.id === "exp_2"), favorito: jalon.favorito, nota: jalon.notaFija },
+            { total: 81, propio: true, archivado: false, favorito: true, nota: "Agarre abierto" }
+          );
         },
       },
     ],
