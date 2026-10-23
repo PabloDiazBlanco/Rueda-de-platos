@@ -20,6 +20,7 @@
 import {
   Utensils, Dumbbell, PersonStanding, CalendarDays, ListChecks, Refrigerator, ChefHat, Apple, Package,
   Shuffle, Camera, PieChart, Scale, Activity, Ruler, Share2, Mail, FileText, Sparkles, Settings, User,
+  ClipboardList, BookOpen, History,
 } from "lucide-react";
 
 export const AREAS = [
@@ -51,10 +52,22 @@ export const AREAS = [
     ],
   },
   {
-    // Se rellena con las pantallas del módulo de entreno (fase E del plan).
+    // El módulo de entreno (octubre de 2026). El entreno en curso no es ninguna pestaña: es una capa a
+    // pantalla completa (ui/entreno/sesion.jsx) que se abre desde cualquier sitio con la pastilla.
     clave: "entreno", etiqueta: "area.entreno", titulo: "header.tuEntreno", icono: Dumbbell,
-    pestanas: [],
-    menu: [],
+    pestanas: [
+      { clave: "entrenar", destino: "entreno", etiqueta: "barra.entrenar", icono: Dumbbell, incluye: ["entreno"] },
+      { clave: "rutinas", destino: "entreno-rutinas", etiqueta: "barra.rutinas", icono: ClipboardList, incluye: ["entreno-rutinas", "entreno-rutina"] },
+      { clave: "ejercicios", destino: "entreno-ejercicios", etiqueta: "barra.ejercicios", icono: BookOpen, incluye: ["entreno-ejercicios"] },
+      { clave: "historial", destino: "entreno-historial", etiqueta: "barra.historial", icono: History, incluye: ["entreno-historial", "entreno-sesion"] },
+    ],
+    menu: [
+      { destino: "entreno", etiqueta: "barra.entrenar", icono: Dumbbell },
+      { destino: "entreno-rutinas", etiqueta: "barra.rutinas", icono: ClipboardList },
+      { destino: "entreno-ejercicios", etiqueta: "barra.ejercicios", icono: BookOpen },
+      { destino: "entreno-historial", etiqueta: "barra.historial", icono: History },
+      { destino: "entreno-ajustes", etiqueta: "entreno.ajustes.titulo", icono: Settings },
+    ],
   },
   {
     // El peso, las medidas y la actividad diaria los usan por igual la nutrición (objetivos de

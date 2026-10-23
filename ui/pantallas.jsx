@@ -24,6 +24,7 @@ import { PremiumView, PremiumRequiredNotice } from "./premium/premium.jsx";
 import { SuggestMealsView } from "./premium/que-cocino.jsx";
 import { SettingsView } from "./ajustes/ajustes.jsx";
 import { CompartirView, FeedbackView, DocumentosView } from "./ajustes/compartir.jsx";
+import { EntrenarView, ProntoView } from "./entreno/inicio.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -207,6 +208,17 @@ const PANTALLAS = {
   compartir: ({ idioma }) => <CompartirView idioma={idioma} />,
 
   feedback: ({ idioma }) => <FeedbackView idioma={idioma} />,
+
+  // ---------- Entrenamiento (octubre de 2026) ----------
+  // Las pantallas del área de entreno (ui/entreno/). La sesión en curso no está aquí: es una capa a
+  // pantalla completa que pinta app.jsx encima de cualquier pantalla.
+  entreno: ({ idioma, entreno, navegar }) => <EntrenarView entreno={entreno} idioma={idioma} navegar={navegar} />,
+  "entreno-rutinas": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-rutina": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-ejercicios": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-historial": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-sesion": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-ajustes": ({ idioma }) => <ProntoView idioma={idioma} />,
 };
 
 Object.keys(PANTALLAS_CATEGORIA).forEach((categoria) => {
