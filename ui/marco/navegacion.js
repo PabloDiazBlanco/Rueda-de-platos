@@ -58,7 +58,7 @@ export const AREAS = [
     pestanas: [
       { clave: "entrenar", destino: "entreno", etiqueta: "barra.entrenar", icono: Dumbbell, incluye: ["entreno"] },
       { clave: "rutinas", destino: "entreno-rutinas", etiqueta: "barra.rutinas", icono: ClipboardList, incluye: ["entreno-rutinas", "entreno-rutina"] },
-      { clave: "ejercicios", destino: "entreno-ejercicios", etiqueta: "barra.ejercicios", icono: BookOpen, incluye: ["entreno-ejercicios"] },
+      { clave: "ejercicios", destino: "entreno-ejercicios", etiqueta: "barra.ejercicios", icono: BookOpen, incluye: ["entreno-ejercicios", "entreno-ejercicio"] },
       { clave: "historial", destino: "entreno-historial", etiqueta: "barra.historial", icono: History, incluye: ["entreno-historial", "entreno-sesion"] },
     ],
     menu: [

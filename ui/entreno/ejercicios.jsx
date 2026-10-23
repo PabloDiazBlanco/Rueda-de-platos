@@ -1,7 +1,7 @@
 // ---------- ui/entreno/ejercicios.jsx ----------
 // «Ejercicios»: la biblioteca (diseño, §4.5). Buscador, filtros, favoritos, «mis ejercicios» y crear uno
 // propio. Sin imágenes ni textos copiados de ninguna app: la biblioteca es propia. Tocar un ejercicio abre
-// su ficha (ui/entreno/ficha.jsx desde la fase C; hasta entonces, la ficha mínima de este archivo).
+// su ficha (ui/entreno/ficha.jsx), que reutiliza las dos piezas de abajo (datos y ajustes del ejercicio).
 import React, { useState, useMemo } from "react";
 import { Plus, Star, Pencil, Archive } from "lucide-react";
 import { t } from "i18n";
@@ -9,7 +9,7 @@ import { buscarEjercicios } from "entreno-ejercicios";
 import { nombreEjercicio } from "entreno-nombres";
 import { Field, inputStyle, ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
-import { BotonSecundario, BotonTexto, TextoSuave, CapaCompleta, reloj } from "./comun.jsx";
+import { BotonSecundario, BotonTexto, TextoSuave, reloj } from "./comun.jsx";
 import { FiltrosEjercicios, FilaEjercicio } from "./selector-ejercicio.jsx";
 import { EditarEjercicio } from "./editar-ejercicio.jsx";
 
@@ -22,13 +22,12 @@ export function EjerciciosView({ entreno, idioma, onAbrir }) {
   const [soloFavoritos, setSoloFavoritos] = useState(false);
   const [soloPropios, setSoloPropios] = useState(false);
   const [creando, setCreando] = useState(false);
-  const [abierto, setAbierto] = useState(null); // id del ejercicio con la ficha mínima abierta
 
   const resultados = useMemo(
     () => buscarEjercicios(entreno.lista, texto, (e) => nombreEjercicio(e, idioma), { musculo, equipo, soloFavoritos, soloPropios }),
     [entreno.lista, texto, musculo, equipo, soloFavoritos, soloPropios, idioma]
   );
-  const abrir = onAbrir || setAbierto;
+  const abrir = onAbrir;
 
   return (
     <div>
@@ -56,7 +55,6 @@ export function EjerciciosView({ entreno, idioma, onAbrir }) {
           onCancelar={() => setCreando(false)}
         />
       )}
-      {abierto && <FichaMinima entreno={entreno} idioma={idioma} id={abierto} onCerrar={() => setAbierto(null)} />}
     </div>
   );
 }
@@ -129,16 +127,5 @@ export function DatosEjercicio({ ejercicio: e, idioma }) {
       {fila(t(idioma, "entreno.ejercicios.equipo"), t(idioma, "equipo." + e.equipo))}
       {fila(t(idioma, "entreno.ejercicios.tipo"), t(idioma, "tipoEjercicio." + e.tipo))}
     </div>
-  );
-}
-
-function FichaMinima({ entreno, idioma, id, onCerrar }) {
-  const e = entreno.ejercicioDe(id);
-  if (!e) return null;
-  return (
-    <CapaCompleta titulo={nombreEjercicio(e, idioma)} onCerrar={onCerrar} icono="volver" idioma={idioma}>
-      <DatosEjercicio ejercicio={e} idioma={idioma} />
-      <AjustesDeEjercicio entreno={entreno} idioma={idioma} ejercicio={e} onCerrar={onCerrar} />
-    </CapaCompleta>
   );
 }

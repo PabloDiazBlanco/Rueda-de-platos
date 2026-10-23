@@ -30,6 +30,7 @@ import { RutinasView } from "./entreno/rutinas.jsx";
 import { EditorRutinaView } from "./entreno/editor-rutina.jsx";
 import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
 import { AjustesEntrenoView } from "./entreno/ajustes.jsx";
+import { FichaEjercicioView } from "./entreno/ficha.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -224,11 +225,17 @@ const PANTALLAS = {
   "entreno-rutina": ({ idioma, entreno, navegar, params }) => (
     <EditorRutinaView key={(params && params.id) || "nueva"} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
   ),
-  "entreno-ejercicios": ({ idioma, entreno }) => <EjerciciosView entreno={entreno} idioma={idioma} />,
+  "entreno-ejercicios": ({ idioma, entreno, navegar }) => (
+    <EjerciciosView entreno={entreno} idioma={idioma} onAbrir={(id) => navegar("entreno-ejercicio", { id })} />
+  ),
+  // Ficha de un ejercicio: `params.id`.
+  "entreno-ejercicio": ({ idioma, entreno, navegar, params }) => (
+    <FichaEjercicioView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
+  ),
   "entreno-historial": ({ idioma, entreno, navegar }) => <HistorialView entreno={entreno} idioma={idioma} navegar={navegar} />,
   // Detalle de una sesión terminada: `params` = { id, inicio } (el inicio dice en qué mes buscarla).
   "entreno-sesion": ({ idioma, entreno, navegar, params }) => (
-    <DetalleSesionView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
+    <DetalleSesionView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} onAbrirEjercicio={(id) => navegar("entreno-ejercicio", { id })} />
   ),
   "entreno-ajustes": ({ idioma, entreno, navegar }) => <AjustesEntrenoView entreno={entreno} idioma={idioma} navegar={navegar} />,
 };

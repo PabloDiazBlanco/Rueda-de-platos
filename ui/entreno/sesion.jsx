@@ -12,7 +12,7 @@
 // Mientras la sesión está a la vista: la pantalla no se apaga (Wake Lock, donde exista), el cronómetro y
 // el descanso se repintan cada segundo (solo esas piezas, no la tabla) y la pantalla de debajo no se mueve.
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal, BookOpen } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
 import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
@@ -76,7 +76,7 @@ function textoAviso(aviso, serie, ajustes, idioma) {
   return t(idioma, "entreno.sesion.avisoDuracionAlta");
 }
 
-export function SesionEnCurso({ entreno, idioma, onGuardado }) {
+export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const s = entreno.borrador;
   const ajustes = entreno.ajustes;
   const [plegados, setPlegados] = useState({});
@@ -370,6 +370,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
               {t(idioma, "entreno.rutinas.bajar")}
             </OpcionHoja>
           )}
+          <OpcionHoja icono={BookOpen} onClick={() => { const ej = s.ejercicios.find((e) => e.inst === menuEjercicio); setMenuEjercicio(null); entreno.ocultarSesion(); navegar("entreno-ejercicio", { id: ej.ejercicioId }); }}>
+            {t(idioma, "entreno.ficha.verFicha")}
+          </OpcionHoja>
           <OpcionHoja icono={StickyNote} onClick={() => { const ej = s.ejercicios.find((e) => e.inst === menuEjercicio); setNota({ inst: menuEjercicio, texto: (ej && ej.nota) || "" }); setMenuEjercicio(null); }}>
             {t(idioma, "entreno.sesion.notaHoy")}
           </OpcionHoja>
