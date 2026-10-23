@@ -24,6 +24,7 @@ import {
 import { FilaSerie, HojaTipoSerie, etiquetasSeries, plantillaColumnas, columnasDe } from "./fila-serie.jsx";
 import { BarraDescanso, prepararAudio } from "./descanso.jsx";
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
+import { TerminarEntreno } from "./terminar.jsx";
 
 // Pide que la pantalla no se apague mientras la sesión está a la vista, y lo vuelve a pedir al volver a
 // la app (el navegador lo suelta solo al ocultarse). Donde no existe la API, no hace nada.
@@ -73,7 +74,7 @@ function textoAviso(aviso, serie, ajustes, idioma) {
   return t(idioma, "entreno.sesion.avisoDuracionAlta");
 }
 
-export function SesionEnCurso({ entreno, idioma, onTerminar }) {
+export function SesionEnCurso({ entreno, idioma, onGuardado }) {
   const s = entreno.borrador;
   const ajustes = entreno.ajustes;
   const [plegados, setPlegados] = useState({});
@@ -81,6 +82,8 @@ export function SesionEnCurso({ entreno, idioma, onTerminar }) {
   const [hojaTipo, setHojaTipo] = useState(null); // { inst, serie }
   const [menuEjercicio, setMenuEjercicio] = useState(null); // inst
   const [avisos, setAvisos] = useState({}); // id de serie → [avisos]
+  const [terminando, setTerminando] = useState(false);
+  const onTerminar = () => setTerminando(true);
 
   usePantallaEncendida();
   useEffect(() => {
@@ -309,6 +312,8 @@ export function SesionEnCurso({ entreno, idioma, onTerminar }) {
           onQuitar={() => { entreno.quitarSerie(hojaTipo.inst, hojaTipo.serie.id); setHojaTipo(null); }}
         />
       )}
+
+      {terminando && <TerminarEntreno entreno={entreno} idioma={idioma} onVolver={() => setTerminando(false)} onGuardado={onGuardado} />}
 
       {menuEjercicio && (
         <HojaInferior titulo={nombreDe(entreno, (s.ejercicios.find((e) => e.inst === menuEjercicio) || {}).ejercicioId, idioma)} onCerrar={() => setMenuEjercicio(null)} idioma={idioma}>

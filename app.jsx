@@ -154,7 +154,7 @@ export default function RuedaDePlatos() {
 
       {/* El entreno en curso: una capa a pantalla completa encima de cualquier pantalla (ver
           ui/entreno/sesion.jsx); al minimizarla queda la pastilla. */}
-      {entreno.sesionVisible && <SesionEnCurso entreno={entreno} idioma={idioma} onTerminar={() => entreno.terminar()} />}
+      {entreno.sesionVisible && <SesionEnCurso entreno={entreno} idioma={idioma} onGuardado={() => navegar("entreno")} />}
     </Shell>
   );
 }

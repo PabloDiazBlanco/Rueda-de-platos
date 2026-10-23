@@ -29,6 +29,7 @@
   "ui/entreno/inicio.jsx",
   "ui/entreno/selector-ejercicio.jsx",
   "ui/entreno/sesion.jsx",
+  "ui/entreno/terminar.jsx",
   "ui/estado/catalogo.js",
   "ui/estado/datos.js",
   "ui/estado/despensa.js",
