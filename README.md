@@ -49,7 +49,7 @@ auth-bootstrap.jsx   (login, Firestore, App Check, puente con las Cloud Function
 app.jsx + ui/        (componente principal + 50 archivos de interfaz, por pantalla)
   │  import { ... } from "nombre-corto"     ← resuelto por el importmap
   ▼
-logica/*.js          (16 módulos de lógica pura, sin JSX, sin React)
+logica/*.js          (21 módulos de lógica pura, sin JSX, sin React)
 ```
 
 La única pieza de servidor es `functions/` (Cloud Functions de Firebase: pagos con Stripe, Gemini
@@ -97,6 +97,11 @@ Rueda-de-platos/
 │   ├── despensa.js                    lo que hay en casa: zonas, consumos y compras
 │   ├── lista-compra-neta.js           lista de la compra menos lo que ya tienes
 │   ├── nevera.js                      dónde va cada cosa en la nevera dibujada y con qué dibujo
+│   ├── entreno-ejercicios.js          biblioteca de ejercicios (80 de serie) y su búsqueda
+│   ├── entreno-nombres.js             nombres de los ejercicios en los cinco idiomas
+│   ├── entreno-calculo.js             1RM, volumen, récords, series por músculo, validación
+│   ├── entreno-sesion.js              el entreno en curso: series, descanso, pausa, terminar
+│   ├── entreno-almacen.js             entrenos por meses, índice, borrador, cola y CSV
 │   └── i18n.js                        diccionario de textos ES/EN/CA/GL/EU
 │
 ├── functions/                       Cloud Functions de Firebase (Node 22, proyecto aparte)

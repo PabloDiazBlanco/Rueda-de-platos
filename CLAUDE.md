@@ -75,6 +75,14 @@ logica/despensa.js             → stock de la despensa: zonas, menú confirmado
                                   fecha de cambio (sellarCambios), migrarDespensa
 logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
 logica/nevera.js               → colocación de la nevera dibujada: huecoDe, formaDe, esBebida, repartirEnHuecos
+logica/entreno-ejercicios.js   → tipos de ejercicio y de serie, músculos, equipos, biblioteca semilla (80),
+                                  listaEjercicios, ejercicioPorId, buscarEjercicios, posibleDuplicado
+logica/entreno-nombres.js      → nombres de los 80 ejercicios en ES/EN/CA/GL/EU y nombreEjercicio
+logica/entreno-calculo.js      → 1RM (Epley), volumen, duración con pausas, récords, «anterior», series
+                                  por músculo, validarSerie, semanas
+logica/entreno-sesion.js       → operaciones puras de la sesión en curso (series, descanso, sustituir hoy,
+                                  pausa, terminar) y de rutinas (aplicarARutina, rutinaDesdeSesion)
+logica/entreno-almacen.js      → claves, migraciones, meses, índice, borrador, cola de envíos y CSV
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
@@ -82,7 +90,10 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 `evaluarTendencia` y meses de `formatFechaCorta`), `datos-iniciales.js` → `peso.js`,
 `cuestionario.js` → `comun.js` y `datos-iniciales.js`, `migraciones.js` → `datos-iniciales.js`,
 `objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js` y `datos-iniciales.js`, y `lista-compra-neta.js` →
-`macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). La interfaz importa `logica/` por **nombre corto** y otros
+`macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). Del entreno:
+`entreno-sesion.js` → `comun.js` y `entreno-almacen.js` → `entreno-calculo.js`; `entreno-ejercicios.js`,
+`entreno-nombres.js` y `entreno-calculo.js` no importan nada (reciben `ejercicioDe(id)` y `nombreDe` como
+funciones, para no depender de la biblioteca ni de los nombres). La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
 arranque se quedan en la raíz (`index.html`, `auth-bootstrap.jsx`, `cargador-ui.js`, `sw.js`,
 `manifest.json`, `icon.svg`): `sw.js` en concreto necesita estar ahí para que su "scope" cubra toda
@@ -303,6 +314,48 @@ Reglas de esta parte:
   `auth-bootstrap.jsx` fuera de React.
 - La vista elegida (Dibujo o Lista) se recuerda en `localStorage` (`fooddraft:vista-despensa`), como
   comodidad del dispositivo, no como dato de la cuenta.
+
+## Entrenamiento
+
+Módulo de entreno al estilo Hevy/Lyfta con la estética de FoodDraft (octubre de 2026), en el área
+Entrenamiento. Diseño y porqué: `local/ideas/gimnasio/03-diseno-modulo-entreno.md`; plan de construcción
+y decisiones cerradas: `04-plan-de-ejecucion.md` (§3 y §4.3). Toda la lógica está en los cinco módulos
+`logica/entreno-*.js`, con sus casos en `validacion/` (grupos «Entreno: …»).
+
+**Modelo de datos** (claves nuevas, cada una con su `version` y su migración en `entreno-almacen.js`; como la
+despensa, **no pasan por `migrateData`**):
+
+| Clave | Contenido |
+|---|---|
+| `rueda-de-platos:entreno-catalogo-v1` | ejercicios propios, personalización de los de fábrica (favorito, nota fija, descanso), rutinas, ajustes, estado del aviso de actividad |
+| `rueda-de-platos:entreno-AAAA-MM-v1` | las sesiones **terminadas** de ese mes |
+| `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes y, por ejercicio, la última vez y sus récords |
+| `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion }`: la sesión en curso (o `null`) |
+| `localStorage` `fooddraft:entreno-borrador` / `fooddraft:entreno-pendientes` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube |
+
+Una sesión es `{ id, nombre, rutinaId, inicio, fin, pausas, esfuerzo, nota, origen, lote, ejercicios:
+[{ inst, ejercicioId, sustituyeA, nota, descansoSeg, series: [{ id, tipo, kg, reps, seg, km, rir, hecha }] }],
+actualizado }` (el borrador añade `descanso: { inicio, hasta, inst, avisado }`). Los ejercicios de la
+biblioteca tienen **ids fijos** (`ex_…`, no se cambian nunca) y su nombre vive en `entreno-nombres.js`; los
+propios (`exp_…`) llevan su `nombre` y no se traducen. Siempre se guarda en **kg y km**; libras y millas son
+solo de pantalla.
+
+**Reglas de guardado** (que un entreno no se pierda nunca):
+1. Cada cambio del borrador va al instante a `localStorage` y, con 2,5 s de retraso y al ocultarse la app,
+   a la nube. Al cargar, si hay borrador en los dos sitios gana el de `actualizado` mayor.
+2. Al terminar, la sesión entra en la cola; se escribe en su mes (leer → fusionar por `id` → escribir) y,
+   si va bien, se actualiza el índice, se borra el borrador y sale de la cola. Si falla, se reintenta al
+   cargar la app y con el evento `online`.
+3. Editar o borrar una sesión pasada reescribe su mes y **reconstruye el índice**; también se reconstruye
+   si el nº de sesiones del mes actual no cuadra con `indice.meses`.
+4. **Nunca `window.storage.list()`** (en Firestore lee la colección entera): los meses se conocen por el índice.
+
+**Cálculos** (decisiones del plan, con sus casos): 1RM de Epley con r = repeticiones + RIR («fiable» hasta
+12); volumen = kg × reps de las series hechas que no son de calentamiento (peso corporal del perfil en los
+de peso corporal, lastre sumado, ayuda restada; 0 si falta el peso); series por músculo: el principal 1 y
+cada secundario 0,5 (el cardio no cuenta); récords por tipo de ejercicio (`RECORDS_POR_TIPO`), que solo se
+«baten» si había uno anterior; `validarSerie` avisa, sin bloquear, de errores de dedo (más de 2,5 × el
+máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0, más de 4 horas).
 
 ## Internacionalización
 
