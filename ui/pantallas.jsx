@@ -24,11 +24,12 @@ import { PremiumView, PremiumRequiredNotice } from "./premium/premium.jsx";
 import { SuggestMealsView } from "./premium/que-cocino.jsx";
 import { SettingsView } from "./ajustes/ajustes.jsx";
 import { CompartirView, FeedbackView, DocumentosView } from "./ajustes/compartir.jsx";
-import { EntrenarView, ProntoView } from "./entreno/inicio.jsx";
+import { EntrenarView } from "./entreno/inicio.jsx";
 import { EjerciciosView } from "./entreno/ejercicios.jsx";
 import { RutinasView } from "./entreno/rutinas.jsx";
 import { EditorRutinaView } from "./entreno/editor-rutina.jsx";
 import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
+import { AjustesEntrenoView } from "./entreno/ajustes.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -229,7 +230,7 @@ const PANTALLAS = {
   "entreno-sesion": ({ idioma, entreno, navegar, params }) => (
     <DetalleSesionView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
   ),
-  "entreno-ajustes": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-ajustes": ({ idioma, entreno, navegar }) => <AjustesEntrenoView entreno={entreno} idioma={idioma} navegar={navegar} />,
 };
 
 Object.keys(PANTALLAS_CATEGORIA).forEach((categoria) => {

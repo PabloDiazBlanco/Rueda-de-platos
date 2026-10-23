@@ -151,8 +151,3 @@ export function FilaSesion({ sesion, entreno, idioma, onClick, extra }) {
     </Tarjeta>
   );
 }
-
-// Pantalla provisional de lo que aún no está hecho (se sustituye en cuanto existe la pantalla real).
-export function ProntoView({ idioma }) {
-  return <TextoSuave style={{ textAlign: "center", padding: "40px 0" }}>{t(idioma, "entreno.comun.pronto")}</TextoSuave>;
-}

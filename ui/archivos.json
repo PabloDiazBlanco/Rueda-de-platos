@@ -21,6 +21,7 @@
   "ui/despensa/panel.jsx",
   "ui/despensa/piezas.jsx",
   "ui/despensa/tema.js",
+  "ui/entreno/ajustes.jsx",
   "ui/entreno/comun.jsx",
   "ui/entreno/descanso.jsx",
   "ui/entreno/editar-ejercicio.jsx",
