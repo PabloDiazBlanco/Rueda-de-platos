@@ -12,10 +12,12 @@
 // Mientras la sesión está a la vista: la pantalla no se apaga (Wake Lock, donde exista), el cronómetro y
 // el descanso se repintan cada segundo (solo esas piezas, no la tabla) y la pantalla de debajo no se mueve.
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
 import { resumenSesion, duracionEfectiva, validarSerie } from "entreno-calculo";
+import { estaPausada } from "entreno-sesion";
+import { inputStyle } from "../comun/modal.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
   reloj, duracionTexto, formatoNumero, textoPeso, nombreDe, HojaInferior, OpcionHoja, BotonPrincipal, BotonTexto,
@@ -78,7 +80,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
   const s = entreno.borrador;
   const ajustes = entreno.ajustes;
   const [plegados, setPlegados] = useState({});
+  // false | { modo: "anadir" } | { modo: "sustituir", inst }
   const [selector, setSelector] = useState(false);
+  const [nota, setNota] = useState(null); // { inst, texto } mientras se escribe la nota de hoy de un ejercicio
   const [hojaTipo, setHojaTipo] = useState(null); // { inst, serie }
   const [menuEjercicio, setMenuEjercicio] = useState(null); // inst
   const [avisos, setAvisos] = useState({}); // id de serie → [avisos]
@@ -143,6 +147,17 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
           <ChevronDown size={22} />
         </button>
         <Cronometro sesion={s} />
+        {/* Pausa (petición repetida en las reseñas): para el cronómetro de duración; el descanso sigue su
+            curso, porque es tiempo de reloj. */}
+        <button
+          onClick={estaPausada(s) ? entreno.reanudar : entreno.pausar}
+          aria-label={t(idioma, estaPausada(s) ? "entreno.sesion.reanudar" : "entreno.sesion.pausar")}
+          title={t(idioma, estaPausada(s) ? "entreno.sesion.reanudar" : "entreno.sesion.pausar")}
+          aria-pressed={estaPausada(s)}
+          style={{ ...botonIcono, background: estaPausada(s) ? "var(--mustard-soft)" : "none" }}
+        >
+          {estaPausada(s) ? <Play size={19} /> : <Pause size={19} />}
+        </button>
         <button
           onClick={() => entreno.iniciarDescanso(ajustes.descansoSeg)}
           aria-label={t(idioma, "entreno.sesion.descansoManual")}
@@ -170,6 +185,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
             style={{ width: "100%", border: "none", background: "transparent", fontFamily: FUENTE_TITULOS, fontSize: 22, color: "var(--green-dark)", padding: "2px 4px" }}
           />
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", padding: "4px 4px 10px", fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)" }}>
+            {estaPausada(s) && <b style={{ color: "var(--mustard-dark)" }}>{t(idioma, "entreno.sesion.enPausa")}</b>}
             <span>{t(idioma, "entreno.sesion.duracion")} <b style={{ color: "var(--ink)" }}><DuracionViva sesion={s} idioma={idioma} /></b></span>
             <span>{t(idioma, "entreno.sesion.volumen")} <b style={{ color: "var(--ink)" }}>{textoPeso(resumen.volumen, ajustes, idioma)}</b></span>
             <span>{t(idioma, "entreno.sesion.series")} <b style={{ color: "var(--ink)" }}>{resumen.series}</b></span>
@@ -219,7 +235,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
 
                 {!plegado && (
                   <div style={{ padding: "0 6px 8px" }}>
-                    {ejercicio && ejercicio.notaFija && <TextoSuave style={{ fontSize: 12, padding: "0 6px 4px" }}>{ejercicio.notaFija}</TextoSuave>}
+                    {ej.sustituyeA && <TextoSuave style={{ fontSize: 12, padding: "0 6px 2px" }}>{t(idioma, "entreno.sesion.enLugarDe", { nombre: nombreDe(entreno, ej.sustituyeA, idioma) })}</TextoSuave>}
+                    {ejercicio && ejercicio.notaFija && <TextoSuave style={{ fontSize: 12, padding: "0 6px 2px" }}>{ejercicio.notaFija}</TextoSuave>}
+                    {ej.nota && <TextoSuave style={{ fontSize: 12, fontStyle: "italic", padding: "0 6px 4px" }}>{ej.nota}</TextoSuave>}
                     <div style={{ display: "grid", gridTemplateColumns: columnas, gap: 6, padding: "2px 4px", fontFamily: FUENTE_TEXTO, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "var(--ink-soft)" }}>
                       <span style={{ textAlign: "center" }}>{t(idioma, "entreno.sesion.serie")}</span>
                       <span>{t(idioma, "entreno.sesion.anterior")}</span>
@@ -267,7 +285,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
           })}
 
           <button
-            onClick={() => setSelector(true)}
+            onClick={() => setSelector({ modo: "anadir" })}
             style={{ width: "100%", minHeight: 48, borderRadius: 10, border: "1.5px dashed var(--green)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700, color: "var(--green-dark)" }}
           >
             <Plus size={16} /> {t(idioma, "entreno.sesion.anadirEjercicio")}
@@ -298,9 +316,31 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
         <SelectorEjercicio
           entreno={entreno}
           idioma={idioma}
+          multiple={selector.modo === "anadir"}
+          titulo={selector.modo === "sustituir" ? t(idioma, "entreno.sesion.sustituirTitulo") : undefined}
           onCerrar={() => setSelector(false)}
-          onElegir={(ids) => { entreno.anadirEjercicios(ids); setSelector(false); }}
+          onElegir={(ids) => {
+            if (selector.modo === "sustituir") entreno.sustituirHoy(selector.inst, ids[0]);
+            else entreno.anadirEjercicios(ids);
+            setSelector(false);
+          }}
         />
+      )}
+
+      {nota && (
+        <HojaInferior titulo={t(idioma, "entreno.sesion.notaHoy")} onCerrar={() => setNota(null)} idioma={idioma}>
+          <textarea
+            value={nota.texto}
+            onChange={(e) => setNota({ ...nota, texto: e.target.value })}
+            rows={3}
+            autoFocus
+            placeholder={t(idioma, "entreno.sesion.notaPlaceholder")}
+            style={{ ...inputStyle, fontSize: 16, fontFamily: FUENTE_TEXTO, resize: "vertical" }}
+          />
+          <BotonPrincipal onClick={() => { entreno.notaEjercicio(nota.inst, nota.texto.trim()); setNota(null); }} style={{ marginTop: 10 }}>
+            {t(idioma, "common.guardar")}
+          </BotonPrincipal>
+        </HojaInferior>
       )}
 
       {hojaTipo && (
@@ -317,6 +357,22 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
 
       {menuEjercicio && (
         <HojaInferior titulo={nombreDe(entreno, (s.ejercicios.find((e) => e.inst === menuEjercicio) || {}).ejercicioId, idioma)} onCerrar={() => setMenuEjercicio(null)} idioma={idioma}>
+          <OpcionHoja icono={Repeat} onClick={() => { setSelector({ modo: "sustituir", inst: menuEjercicio }); setMenuEjercicio(null); }} detalle={t(idioma, "entreno.sesion.sustituirAyuda")}>
+            {t(idioma, "entreno.sesion.sustituir")}
+          </OpcionHoja>
+          {s.ejercicios.findIndex((e) => e.inst === menuEjercicio) > 0 && (
+            <OpcionHoja icono={ArrowUp} onClick={() => { const i = s.ejercicios.findIndex((e) => e.inst === menuEjercicio); entreno.reordenar(i, i - 1); setMenuEjercicio(null); }}>
+              {t(idioma, "entreno.rutinas.subir")}
+            </OpcionHoja>
+          )}
+          {s.ejercicios.findIndex((e) => e.inst === menuEjercicio) < s.ejercicios.length - 1 && (
+            <OpcionHoja icono={ArrowDown} onClick={() => { const i = s.ejercicios.findIndex((e) => e.inst === menuEjercicio); entreno.reordenar(i, i + 1); setMenuEjercicio(null); }}>
+              {t(idioma, "entreno.rutinas.bajar")}
+            </OpcionHoja>
+          )}
+          <OpcionHoja icono={StickyNote} onClick={() => { const ej = s.ejercicios.find((e) => e.inst === menuEjercicio); setNota({ inst: menuEjercicio, texto: (ej && ej.nota) || "" }); setMenuEjercicio(null); }}>
+            {t(idioma, "entreno.sesion.notaHoy")}
+          </OpcionHoja>
           <OpcionHoja icono={Trash2} peligro onClick={() => { entreno.quitarEjercicio(menuEjercicio); setMenuEjercicio(null); }}>
             {t(idioma, "entreno.sesion.quitarEjercicio")}
           </OpcionHoja>
