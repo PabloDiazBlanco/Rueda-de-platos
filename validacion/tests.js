@@ -23,7 +23,7 @@ import {
 import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
 import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
-  mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe,
+  mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -1507,6 +1507,25 @@ function grupoEntrenoCalculos() {
           const batidos = (reps) => recordsBatidos(previos, mejoresDeEjercicioEnSesion({ series: [serieP("normal", 62.5, reps)] }, "peso_reps", 80)).map((r) => r.clave).join(",");
           // 1RM de 62,5 × 6 = 62,5 × 1,2 = 75 (< 80); de 62,5 × 12 = 62,5 × 1,4 = 87,5 (> 80).
           return comparar({ seis: batidos(6), doce: batidos(12) }, { seis: "pesoMax", doce: "pesoMax,e1rm" });
+        },
+      },
+      {
+        nombre: "Récord en vivo: 62,5 × 6 bate el peso máximo; la siguiente, 62,5 × 12, solo el 1RM",
+        ejecutar: () => {
+          const ej = { series: [serieP("normal", 62.5, 6), serieP("normal", 62.5, 12)] };
+          const previos = { pesoMax: { valor: 60 }, e1rm: { valor: 80 } };
+          const claves = (i) => recordsEnVivo(ej, ej.series[i].id, "peso_reps", 80, previos).map((r) => r.clave).join(",");
+          // La 2.ª no bate el peso máximo (62,5 = 62,5 de la serie anterior), pero su 1RM (87,5) sí supera a 80 y a 75.
+          return comparar({ primera: claves(0), segunda: claves(1), sinPrevios: recordsEnVivo(ej, ej.series[0].id, "peso_reps", 80, {}).length }, { primera: "pesoMax", segunda: "e1rm", sinPrevios: 0 });
+        },
+      },
+      {
+        nombre: "Medallas del historial: la serie que tiene hoy el récord de su sesión",
+        ejecutar: () => {
+          const ej = { series: [serieP("normal", 60, 10), serieP("normal", 65, 8)] };
+          const registro = { records: { pesoMax: { valor: 65, sesionId: "s1" }, mejorSerie: { kg: 60, reps: 12, valor: 720, sesionId: "s3" } } };
+          const enS1 = seriesConRecord(registro, "s1", ej, "peso_reps", 80);
+          return comparar({ n: enS1.size, esLa65: enS1.has(ej.series[1].id), enOtra: seriesConRecord(registro, "s9", ej, "peso_reps", 80).size }, { n: 1, esLa65: true, enOtra: 0 });
         },
       },
       {

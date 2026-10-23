@@ -12,10 +12,10 @@
 // Mientras la sesión está a la vista: la pantalla no se apaga (Wake Lock, donde exista), el cronómetro y
 // el descanso se repintan cada segundo (solo esas piezas, no la tabla) y la pantalla de debajo no se mueve.
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
-import { resumenSesion, duracionEfectiva, validarSerie } from "entreno-calculo";
+import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
 import { estaPausada } from "entreno-sesion";
 import { inputStyle } from "../comun/modal.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
@@ -26,7 +26,7 @@ import {
 import { FilaSerie, HojaTipoSerie, etiquetasSeries, plantillaColumnas, columnasDe } from "./fila-serie.jsx";
 import { BarraDescanso, prepararAudio } from "./descanso.jsx";
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
-import { TerminarEntreno } from "./terminar.jsx";
+import { TerminarEntreno, textoRecord } from "./terminar.jsx";
 
 // Pide que la pantalla no se apague mientras la sesión está a la vista, y lo vuelve a pedir al volver a
 // la app (el navegador lo suelta solo al ocultarse). Donde no existe la API, no hace nada.
@@ -264,7 +264,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
                         onMarcar={() => marcar(ej, sr)}
                         onDesmarcar={() => entreno.desmarcar(ej.inst, sr.id)}
                         onAbrirTipo={() => setHojaTipo({ inst: ej.inst, serie: sr })}
-                        aviso={avisos[sr.id] && (
+                        aviso={!avisos[sr.id] ? (sr.hecha && <AvisoRecord records={recordsEnVivo(ej, sr.id, tipo, entreno.pesoCorporal, entreno.recordsDe(ej.ejercicioId))} ajustes={ajustes} idioma={idioma} />) : (
                           <div role="alert" style={{ margin: "0 6px 6px", padding: "8px 10px", borderRadius: 8, background: "var(--rust-soft)", fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink)" }}>
                             {avisos[sr.id].map((a) => <div key={a}>{textoAviso(a, sr, ajustes, idioma)}</div>)}
                             <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
@@ -378,6 +378,18 @@ export function SesionEnCurso({ entreno, idioma, onGuardado }) {
           </OpcionHoja>
         </HojaInferior>
       )}
+    </div>
+  );
+}
+
+// Récord batido al momento (fase C2): una línea discreta bajo la fila, sin confeti ni ventanas (nada
+// interrumpe una sesión).
+function AvisoRecord({ records, ajustes, idioma }) {
+  if (!records.length) return null;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 10px 6px 44px", fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--mustard-dark)", fontWeight: 600 }}>
+      <Medal size={14} style={{ flexShrink: 0 }} />
+      <span>{records.map((r) => textoRecord(r.clave, r.valor, ajustes, idioma)).join(" · ")}</span>
     </div>
   );
 }

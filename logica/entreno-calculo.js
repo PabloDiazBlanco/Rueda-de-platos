@@ -161,6 +161,55 @@ export function recordsBatidos(recordsPrevios, mejores) {
     .map((clave) => ({ clave, valor: mejores[clave], anterior: previos[clave] }));
 }
 
+// Récords que se miden en una sola serie (los de toda la sesión, volumen y repeticiones totales, se
+// ven al terminar).
+const CLAVES_DE_SERIE = ["pesoMax", "e1rm", "mejorSerie", "repsSerie", "segMax", "kmMax"];
+
+function maximoRecord(a, b) {
+  const va = valorDe(a);
+  const vb = valorDe(b);
+  if (va === null) return b;
+  if (vb === null) return a;
+  return vb > va ? b : a;
+}
+
+// Récord «en vivo» (fase C2): al marcar una serie, ¿bate algún récord de una serie? Se compara con los
+// récords anteriores del índice y con las series hechas que van antes en este mismo ejercicio de la
+// sesión (así, dos series iguales seguidas no dan dos avisos: solo la primera). Sin récord anterior no
+// hay aviso (ver recordsBatidos).
+export function recordsEnVivo(ej, serieId, tipo, pesoCorporal, recordsPrevios) {
+  const series = ej.series || [];
+  const i = series.findIndex((s) => s.id === serieId);
+  if (i < 0 || !cuenta(series[i])) return [];
+  const antes = mejoresDeEjercicioEnSesion({ series: series.slice(0, i) }, tipo, pesoCorporal);
+  const previos = {};
+  CLAVES_DE_SERIE.forEach((clave) => {
+    const m = maximoRecord((recordsPrevios || {})[clave], antes[clave]);
+    if (m !== undefined && m !== null && (recordsPrevios || {})[clave] !== undefined) previos[clave] = m;
+  });
+  const mios = mejoresDeEjercicioEnSesion({ series: [series[i]] }, tipo, pesoCorporal);
+  const deSerie = Object.fromEntries(Object.entries(mios).filter(([clave]) => CLAVES_DE_SERIE.includes(clave)));
+  return recordsBatidos(previos, deSerie);
+}
+
+// Medallas del historial: las series de una sesión que tienen hoy algún récord de su ejercicio (según el
+// índice, que guarda de qué sesión es cada récord). Se calcula con el índice actual, así que si se corrige
+// una sesión antigua las medallas se recolocan solas.
+export function seriesConRecord(registro, sesionId, ej, tipo, pesoCorporal) {
+  const conRecord = new Set();
+  const records = (registro && registro.records) || {};
+  CLAVES_DE_SERIE.forEach((clave) => {
+    const r = records[clave];
+    if (!r || r.sesionId !== sesionId) return;
+    const serie = (ej.series || []).filter(cuenta).find((s) => {
+      const m = mejoresDeEjercicioEnSesion({ series: [s] }, tipo, pesoCorporal)[clave];
+      return valorDe(m) === valorDe(r);
+    });
+    if (serie) conRecord.add(serie.id);
+  });
+  return conRecord;
+}
+
 // ---------- «Anterior» ----------
 // Las series de la última vez que se hizo el ejercicio (las guarda el índice, ver entreno-almacen.js),
 // serie a serie. Sin historial, una lista vacía (la primera vez no hay nada que enseñar, y no es error).

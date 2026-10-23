@@ -8,7 +8,7 @@ import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, ClipboardList, X, Medal } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
-import { resumenSesion } from "entreno-calculo";
+import { resumenSesion, seriesConRecord } from "entreno-calculo";
 import { mesDe } from "entreno-almacen";
 import { Field, inputStyle, ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { BackLink } from "../comun/tarjetas.jsx";
@@ -85,7 +85,7 @@ function CampoCorregir({ campo, valor, tipo, ajustes, idioma, onCambio, etiqueta
   );
 }
 
-export function DetalleSesionView({ entreno, idioma, navegar, params, medallas, onAbrirEjercicio }) {
+export function DetalleSesionView({ entreno, idioma, navegar, params, onAbrirEjercicio }) {
   const id = params && params.id;
   const mes = params && params.inicio ? mesDe(params.inicio) : entreno.mesActual();
   const [cargado, setCargado] = useState(!!entreno.meses[mes]);
@@ -153,7 +153,8 @@ export function DetalleSesionView({ entreno, idioma, navegar, params, medallas, 
         const tipo = (entreno.ejercicioDe(ej.ejercicioId) || {}).tipo || "peso_reps";
         const campos = camposDeTipo(tipo);
         const etiquetas = etiquetasSeries(ej.series);
-        const conMedalla = medallas ? medallas(sesion, ej) : new Set();
+        // Medalla junto a las series que tienen hoy un récord de su ejercicio (fase C2).
+        const conMedalla = editando ? new Set() : seriesConRecord((entreno.indice.ejercicios || {})[ej.ejercicioId], sesion.id, ej, tipo, entreno.pesoCorporal);
         return (
           <section key={ej.inst} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px", marginTop: 10 }}>
             <button
