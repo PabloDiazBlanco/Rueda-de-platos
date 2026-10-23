@@ -63,7 +63,7 @@ export const AREAS = [
     clave: "cuerpo", etiqueta: "area.cuerpo", titulo: "header.tuCuerpo", icono: PersonStanding,
     pestanas: [
       { clave: "peso", destino: "perfil-peso", etiqueta: "barra.peso", icono: Scale,
-        incluye: ["perfil-peso", "perfil-medidas", "peso-root"] },
+        incluye: ["perfil-peso", "perfil-medidas"] },
       { clave: "actividad", destino: "actividad-diaria", etiqueta: "barra.actividad", icono: Activity, incluye: ["actividad-diaria"] },
       { clave: "resumen", destino: "perfil-resumen", etiqueta: "barra.resumen", icono: PieChart, incluye: ["perfil-resumen"] },
     ],

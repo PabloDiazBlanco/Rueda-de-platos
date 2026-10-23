@@ -4,7 +4,7 @@
 // destino es una entrada de PANTALLAS y el componente principal solo elige cuál pintar. `ctx` lleva
 // todo lo que necesitan: los datos, el idioma, premium, la navegación y los hooks de ui/estado/.
 import React from "react";
-import { Utensils, Package, CalendarDays, Database, Layers, Camera, Scale, Ruler, TrendingUp, PieChart, ListChecks } from "lucide-react";
+import { Utensils, Package, CalendarDays, Database, Layers, Camera, PieChart, ListChecks } from "lucide-react";
 import { t } from "i18n";
 import { defaultPesoTracking } from "peso";
 import { CATEGORY_META, MACRO_CATS, ESPECIALES_CATS } from "./comun/categorias.js";
@@ -156,27 +156,15 @@ const PANTALLAS = {
   ),
 
   // perfil-datos, perfil-documentos y perfil-premium se llegan directos desde el menú lateral
-  // (DrawerMenu) — el ☰ del Header, siempre visible, hace de "volver". peso-root sí tiene su propia
-  // tarjeta intermedia (mismo patrón que config-root con sus categorías): agrupa seguimiento de
-  // peso, medidas corporales y resumen mensual bajo un único destino "Seguimiento de peso" en el
-  // menú, con BackLink de vuelta desde cada uno.
+  // (DrawerMenu) — el ☰ del Header, siempre visible, hace de "volver". El seguimiento de peso, las
+  // medidas y el resumen mensual son del área Cuerpo (ui/marco/navegacion.js): su barra inferior hace
+  // el papel de la antigua tarjeta intermedia «Seguimiento de peso» (peso-root), que se quitó con la
+  // navegación por áreas (octubre de 2026), así que ya no llevan enlace de vuelta.
 
   "perfil-datos": ({ data, idioma, perfil }) => <PerfilView perfil={data.perfil} onSave={perfil.savePerfil} idioma={idioma} />,
 
-  "peso-root": ({ idioma, setTab, premium }) => (
-    <BigCardGrid
-      onSelect={setTab}
-      cards={[
-        { key: "perfil-peso", label: t(idioma, "drawer.registroPeso"), desc: premium.active ? t(idioma, "perfilRoot.seguimientoPeso.desc") : t(idioma, "perfilRoot.funcionPremium"), icon: Scale, color: "var(--coffee)" },
-        { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), desc: t(idioma, "perfilRoot.proximamente"), icon: Ruler, color: "var(--berry)" },
-        { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), desc: t(idioma, "perfilRoot.resumenMensual.desc"), icon: TrendingUp, color: "var(--olive)" },
-      ]}
-    />
-  ),
-
   "perfil-peso": ({ data, idioma, setTab, premium, peso }) => (
     <>
-      <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
       {premium.active ? (
         <PesoView
           perfil={data.perfil}
@@ -203,18 +191,10 @@ const PANTALLAS = {
   "perfil-premium": ({ idioma, premium }) => <PremiumView premium={premium} idioma={idioma} />,
 
   "perfil-resumen": ({ data, idioma, setTab, premium }) => (
-    <>
-      <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
-      <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
-    </>
+    <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
   ),
 
-  "perfil-medidas": ({ idioma, setTab }) => (
-    <>
-      <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
-      <MedidasPlaceholderView idioma={idioma} />
-    </>
-  ),
+  "perfil-medidas": ({ idioma }) => <MedidasPlaceholderView idioma={idioma} />,
 
   "perfil-documentos": ({ idioma }) => <DocumentosView idioma={idioma} />,
 
