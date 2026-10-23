@@ -892,6 +892,21 @@ const TEXTOS = {
     "terminos.leyAplicableHeader": "Ley aplicable",
     "terminos.leyAplicableTexto": "Estos términos se rigen por la legislación española.",
     "terminos.volver": "← Volver a FoodDraft",
+
+    // Navegación por áreas (oct. 2026): nombres de las áreas, títulos de la cabecera y pestañas de la barra inferior
+    "area.fooddraft": "FoodDraft",
+    "area.entreno": "Entrenamiento",
+    "area.cuerpo": "Cuerpo",
+    "header.tuEntreno": "Tu entreno",
+    "header.tuCuerpo": "Tu cuerpo",
+    "header.tuCuenta": "Tu cuenta",
+    "barra.menus": "Menús",
+    "barra.queTengo": "¿Qué tengo?",
+    "barra.misComidas": "Mis comidas",
+    "barra.alimentos": "Alimentos",
+    "barra.peso": "Peso",
+    "barra.actividad": "Actividad",
+    "barra.resumen": "Resumen",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -1723,6 +1738,21 @@ const TEXTOS = {
     "terminos.leyAplicableHeader": "Governing law",
     "terminos.leyAplicableTexto": "These terms are governed by Spanish law.",
     "terminos.volver": "← Back to FoodDraft",
+
+    // Navegación por áreas (oct. 2026): nombres de las áreas, títulos de la cabecera y pestañas de la barra inferior
+    "area.fooddraft": "FoodDraft",
+    "area.entreno": "Training",
+    "area.cuerpo": "Body",
+    "header.tuEntreno": "Your training",
+    "header.tuCuerpo": "Your body",
+    "header.tuCuenta": "Your account",
+    "barra.menus": "Menus",
+    "barra.queTengo": "What I have",
+    "barra.misComidas": "My meals",
+    "barra.alimentos": "Foods",
+    "barra.peso": "Weight",
+    "barra.actividad": "Activity",
+    "barra.resumen": "Summary",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -2554,6 +2584,21 @@ const TEXTOS = {
     "terminos.leyAplicableHeader": "Llei aplicable",
     "terminos.leyAplicableTexto": "Aquests termes es regeixen per la legislació espanyola.",
     "terminos.volver": "← Torna a FoodDraft",
+
+    // Navegación por áreas (oct. 2026): nombres de las áreas, títulos de la cabecera y pestañas de la barra inferior
+    "area.fooddraft": "FoodDraft",
+    "area.entreno": "Entrenament",
+    "area.cuerpo": "Cos",
+    "header.tuEntreno": "El teu entrenament",
+    "header.tuCuerpo": "El teu cos",
+    "header.tuCuenta": "El teu compte",
+    "barra.menus": "Menús",
+    "barra.queTengo": "Què tinc?",
+    "barra.misComidas": "Els meus àpats",
+    "barra.alimentos": "Aliments",
+    "barra.peso": "Pes",
+    "barra.actividad": "Activitat",
+    "barra.resumen": "Resum",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -3385,6 +3430,21 @@ const TEXTOS = {
     "terminos.leyAplicableHeader": "Lei aplicable",
     "terminos.leyAplicableTexto": "Estes termos réxense pola lexislación española.",
     "terminos.volver": "← Volver a FoodDraft",
+
+    // Navegación por áreas (oct. 2026): nombres de las áreas, títulos de la cabecera y pestañas de la barra inferior
+    "area.fooddraft": "FoodDraft",
+    "area.entreno": "Adestramento",
+    "area.cuerpo": "Corpo",
+    "header.tuEntreno": "O teu adestramento",
+    "header.tuCuerpo": "O teu corpo",
+    "header.tuCuenta": "A túa conta",
+    "barra.menus": "Menús",
+    "barra.queTengo": "Que teño?",
+    "barra.misComidas": "As miñas comidas",
+    "barra.alimentos": "Alimentos",
+    "barra.peso": "Peso",
+    "barra.actividad": "Actividade",
+    "barra.resumen": "Resumo",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -4216,6 +4276,21 @@ const TEXTOS = {
     "terminos.leyAplicableHeader": "Legeria aplikagarria",
     "terminos.leyAplicableTexto": "Baldintza hauek Espainiako legeriaren mende daude.",
     "terminos.volver": "← Itzuli FoodDraft-era",
+
+    // Navegación por áreas (oct. 2026): nombres de las áreas, títulos de la cabecera y pestañas de la barra inferior
+    "area.fooddraft": "FoodDraft",
+    "area.entreno": "Entrenamendua",
+    "area.cuerpo": "Gorputza",
+    "header.tuEntreno": "Zure entrenamendua",
+    "header.tuCuerpo": "Zure gorputza",
+    "header.tuCuenta": "Zure kontua",
+    "barra.menus": "Menuak",
+    "barra.queTengo": "Zer dut?",
+    "barra.misComidas": "Nire otorduak",
+    "barra.alimentos": "Elikagaiak",
+    "barra.peso": "Pisua",
+    "barra.actividad": "Jarduera",
+    "barra.resumen": "Laburpena",
   },
 };
 
@@ -4232,4 +4307,18 @@ export function t(idioma, clave, vars) {
     });
   }
   return texto;
+}
+
+// ¿Tiene `clave` texto propio en `idioma`? (sin caer a español como hace `t`). Lo usan las pruebas de
+// validacion/ para comprobar que todo texto nuevo llega a los cinco diccionarios a la vez: en pantalla
+// una clave que falta en euskera no se nota (sale en español), así que solo una prueba la detecta.
+export function tieneTraduccion(idioma, clave) {
+  const dict = TEXTOS[idioma];
+  return !!dict && Object.prototype.hasOwnProperty.call(dict, clave);
+}
+
+// Todas las claves de un idioma, para que las pruebas puedan recorrer las de un prefijo concreto
+// (p. ej. todas las «entreno.») y comprobarlas en los otros cuatro diccionarios.
+export function clavesDeIdioma(idioma) {
+  return Object.keys(TEXTOS[idioma] || {});
 }

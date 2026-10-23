@@ -21,7 +21,8 @@ import { Shell, Header } from "./ui/marco/cabecera.jsx";
 import { DrawerMenu } from "./ui/marco/menu-lateral.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
-import { Pantalla } from "./ui/pantallas.jsx";
+import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
+import { AREAS, COMUNES, areaDe, pestanaDe } from "./ui/marco/navegacion.js";
 import { ModalesCatalogo } from "./ui/catalogo/modales.jsx";
 
 // Funciones de logica/ que validacion/tests.js recoge del objeto exportado por este archivo.
@@ -30,6 +31,8 @@ export { calcularObjetivosPerfil };
 export { fechaISO, esDiaSugeridoPeso, esCambioRadical, calcularTendenciaPeso, evaluarTendencia };
 export { resumenNutrientesSemana };
 export { calcularResumenMensual, pesoEnMes };
+// Y la descripción de la navegación por áreas, para el grupo «Navegación por áreas».
+export { AREAS, COMUNES, areaDe, pestanaDe, DESTINOS };
 
 // ---------- Componente principal ----------
 export default function RuedaDePlatos() {

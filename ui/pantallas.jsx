@@ -235,6 +235,10 @@ Object.keys(PANTALLAS_CATEGORIA).forEach((categoria) => {
   );
 });
 
+// Todos los destinos que existen (después de añadir las categorías). Lo usa validacion/ para comprobar
+// que ninguno se queda fuera de la navegación por áreas (ui/marco/navegacion.js).
+export const DESTINOS = Object.keys(PANTALLAS);
+
 // «¿Qué cocino?»: la pantalla premium de sugerencias (o su aviso para quien no tiene premium), con un
 // enlace de vuelta que depende de desde dónde se llega (ver los destinos "cocinar" y
 // "cocinar-desde-cocina" en PANTALLAS).

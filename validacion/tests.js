@@ -15,6 +15,7 @@ import {
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 import { esBebida, huecoDe, formaDe, repartirEnHuecos } from "nevera";
+import { tieneTraduccion, clavesDeIdioma, IDIOMAS_DISPONIBLES } from "i18n";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1067,6 +1068,7 @@ export function crearGrupos(mod, carga) {
         },
       ],
     },
+    grupoNavegacion(mod),
   ];
 }
 
@@ -1174,4 +1176,94 @@ function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
     protein: "Alto en sal", carbo, verdura: null, garbanzos: false, raciones: {},
   }));
   return { data, menu };
+}
+
+// ---------- Navegación por áreas (octubre de 2026) ----------
+// La descripción de ui/marco/navegacion.js se escribe a mano (ver su cabecera), así que estas pruebas
+// son lo que evita que una pantalla nueva se quede sin área, sin pestaña y sin entrada en el menú.
+
+// Prefijos de las claves de i18n creadas para la navegación por áreas y el módulo de entreno (anexo B
+// del plan): todas deben existir en los cinco idiomas, porque en pantalla una que falte no se nota.
+const PREFIJOS_NUEVOS = [
+  "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
+  "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio",
+];
+
+function clavesSinTraducir(claves) {
+  const faltan = [];
+  claves.forEach((clave) => {
+    IDIOMAS_DISPONIBLES.forEach(({ key }) => { if (!tieneTraduccion(key, clave)) faltan.push(`${key}:${clave}`); });
+  });
+  return faltan;
+}
+
+function grupoNavegacion(mod) {
+  const { AREAS, COMUNES, areaDe, pestanaDe, DESTINOS } = mod;
+  const pestanas = AREAS.flatMap((a) => a.pestanas);
+  return {
+    grupo: "Navegación por áreas",
+    casos: [
+      {
+        nombre: "Todo destino está en una pestaña, en el menú de un área o en la zona común",
+        ejecutar: () => {
+          const huerfanos = DESTINOS.filter((d) =>
+            !pestanas.some((p) => p.incluye.includes(d)) &&
+            !AREAS.some((a) => a.menu.some((m) => m.destino === d)) &&
+            !COMUNES.some((c) => c.destino === d));
+          return comparar({ huerfanos: huerfanos.join(", ") }, { huerfanos: "" });
+        },
+      },
+      {
+        nombre: "Todo destino de pestañas, menús y zona común existe en PANTALLAS",
+        ejecutar: () => {
+          const usados = [
+            ...pestanas.flatMap((p) => [p.destino, ...p.incluye]),
+            ...AREAS.flatMap((a) => a.menu.map((m) => m.destino)),
+            ...COMUNES.map((c) => c.destino),
+          ];
+          const inexistentes = [...new Set(usados.filter((d) => !DESTINOS.includes(d)))];
+          return comparar({ inexistentes: inexistentes.join(", ") }, { inexistentes: "" });
+        },
+      },
+      {
+        nombre: "areaDe y pestanaDe de algunos destinos conocidos",
+        ejecutar: () => comparar(
+          {
+            proteina: areaDe("proteina"), pestanaProteina: pestanaDe("proteina"), ajustes: areaDe("ajustes"),
+            peso: areaDe("perfil-peso"), cocinaVitro: pestanaDe("cocinar-desde-cocina"),
+          },
+          { proteina: "fooddraft", pestanaProteina: "comidas", ajustes: null, peso: "cuerpo", cocinaVitro: "despensa" }
+        ),
+      },
+      {
+        nombre: "Ningún destino aparece en dos pestañas",
+        ejecutar: () => {
+          const vistos = {};
+          const repetidos = [];
+          pestanas.forEach((p) => p.incluye.forEach((d) => { if (vistos[d]) repetidos.push(d); vistos[d] = true; }));
+          return comparar({ repetidos: repetidos.join(", ") }, { repetidos: "" });
+        },
+      },
+      {
+        nombre: "La raíz de cada pestaña está en su propio «incluye»",
+        ejecutar: () => {
+          const mal = pestanas.filter((p) => !p.incluye.includes(p.destino)).map((p) => p.clave);
+          return comparar({ mal: mal.join(", ") }, { mal: "" });
+        },
+      },
+      {
+        nombre: "Traducciones completas de lo nuevo (navegación y prefijos nuevos, cinco idiomas)",
+        ejecutar: () => {
+          const deNavegacion = [
+            ...AREAS.flatMap((a) => [a.etiqueta, a.titulo, ...a.pestanas.map((p) => p.etiqueta), ...a.menu.map((m) => m.etiqueta)]),
+            ...COMUNES.flatMap((c) => [c.etiqueta, c.etiquetaPremium].filter(Boolean)),
+            "header.tuCuenta",
+          ];
+          const porPrefijo = clavesDeIdioma("es").filter((k) => PREFIJOS_NUEVOS.some((p) => k.startsWith(p)));
+          const faltan = clavesSinTraducir([...new Set([...deNavegacion, ...porPrefijo])]);
+          return comparar({ faltan: faltan.join(", ") }, { faltan: "" });
+        },
+      },
+    ],
+  };
 }
