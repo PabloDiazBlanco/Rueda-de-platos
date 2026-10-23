@@ -50,11 +50,11 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   pantallas.jsx         tabla destino del menú lateral (`tab`) → pantalla
   estado/               hooks: datos.js (useDatos, usePremium, useCargaInicial), menu.js (useMenu,
                           el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js,
-                          despensa.js (useDespensa)
+                          despensa.js (useDespensa), entreno.js (useEntreno)
   comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores)
   marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral,
                           navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
-  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/   una carpeta por área
+  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/   una carpeta por área
 
 logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
 logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
@@ -356,6 +356,34 @@ de peso corporal, lastre sumado, ayuda restada; 0 si falta el peso); series por 
 cada secundario 0,5 (el cardio no cuenta); récords por tipo de ejercicio (`RECORDS_POR_TIPO`), que solo se
 «baten» si había uno anterior; `validarSerie` avisa, sin bloquear, de errores de dedo (más de 2,5 × el
 máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0, más de 4 horas).
+
+**Interfaz** (`ui/entreno/` y `ui/estado/entreno.js`):
+- **`useEntreno(data)`** lleva todo: catálogo, índice, borrador, meses (se leen **bajo demanda** con
+  `cargarMes`; `sesionesDeMes` junta los del mes con los que esperan en la cola), cola y las acciones, que
+  envuelven las operaciones puras de `entreno-sesion.js`. Todo cambio del borrador pasa por
+  `fijarBorrador` (sella `actualizado`, guarda en `localStorage` y programa la subida). Si la carga del
+  catálogo o del índice falla (sin conexión al abrir), no se escribe encima hasta haberlos leído bien. No
+  crea ningún documento hasta que se usa. `nube === "pendiente"` solo si una subida falló.
+- **Pantallas** (destinos del área Entrenamiento en `ui/pantallas.jsx`): `entreno` (inicio.jsx: empezar
+  vacío o con una rutina, seguir uno a medias, últimos entrenos), `entreno-rutinas` y `entreno-rutina`
+  (`params: { id }`, editor), `entreno-ejercicios` (biblioteca), `entreno-historial` y `entreno-sesion`
+  (`params: { id, inicio }`, detalle corregible), `entreno-ajustes` (unidades, interruptores, descansos,
+  exportar CSV/JSON, recalcular el índice).
+- **El entreno en curso no es un destino**: es una capa a pantalla completa (`sesion.jsx`, z-index 45) que
+  pinta `app.jsx` cuando `entreno.sesionVisible`; ˅ la minimiza y queda la **pastilla** (`pastilla.jsx`,
+  z-index 31, encima de la barra o abajo del todo en la zona común). Mientras se ve: Wake Lock, cronómetro y
+  descanso repintados cada segundo en piezas aparte (la tabla no), y la pantalla de debajo inmóvil.
+- **La tabla** (`fila-serie.jsx`): columnas según `camposDeTipo`; cada campo guarda su propio texto mientras
+  se escribe (coma decimal, unidades de pantalla) y manda el valor convertido en cada cambio; ✓ valida con
+  `validarSerie` (aviso con «Corregir» / «Es correcto»), marca, arranca el descanso y pasa el foco a la
+  siguiente serie. El descanso (`descanso.jsx`) se calcula con `descanso.hasta` y avisa una vez con un
+  pitido de Web Audio (el contexto se crea con el primer toque) y vibración donde exista.
+- **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca), récords
+  batidos, «actualizar la rutina» si cambió su estructura, guardar, compartir (`documentoSesion` con
+  `BotonCompartir`) y descartar con confirmación.
+- **Capas a pantalla completa y hojas inferiores** del módulo: `CapaCompleta` y `HojaInferior` en
+  `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
+  de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).
 
 ## Internacionalización
 
