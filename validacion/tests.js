@@ -20,6 +20,7 @@ import {
   EJERCICIOS_SEMILLA, TIPOS_EJERCICIO, GRUPOS_MUSCULARES, EQUIPOS, camposDeTipo, listaEjercicios, buscarEjercicios,
   posibleDuplicado,
 } from "entreno-ejercicios";
+import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1074,6 +1075,7 @@ export function crearGrupos(mod, carga) {
     },
     grupoNavegacion(mod),
     grupoEntrenoBiblioteca(),
+    grupoEntrenoNombres(),
   ];
 }
 
@@ -1356,6 +1358,45 @@ function grupoEntrenoBiblioteca() {
             { total: l.length, propio: l.some((e) => e.id === "exp_1" && e.propio), archivado: l.some((e) => e.id === "exp_2"), favorito: jalon.favorito, nota: jalon.notaFija },
             { total: 81, propio: true, archivado: false, favorito: true, nota: "Agarre abierto" }
           );
+        },
+      },
+    ],
+  };
+}
+
+function grupoEntrenoNombres() {
+  const lista = listaEjercicios(null);
+  return {
+    grupo: "Entreno: nombres de los ejercicios",
+    casos: [
+      {
+        nombre: "Todo ejercicio de la semilla tiene nombre en los cinco idiomas (y no sobra ninguno)",
+        ejecutar: () => {
+          const faltan = [];
+          IDIOMAS_DISPONIBLES.forEach(({ key }) => EJERCICIOS_SEMILLA.forEach((e) => {
+            if (!NOMBRES_EJERCICIOS[key] || !NOMBRES_EJERCICIOS[key][e.id]) faltan.push(`${key}:${e.id}`);
+          }));
+          const sobran = Object.keys(NOMBRES_EJERCICIOS.es).filter((id) => !EJERCICIOS_SEMILLA.some((e) => e.id === id));
+          return comparar({ faltan: faltan.join(","), sobran: sobran.join(",") }, { faltan: "", sobran: "" });
+        },
+      },
+      {
+        nombre: "nombreEjercicio: propio, de la semilla en euskera, id inexistente en euskera y desconocido",
+        ejecutar: () => comparar(
+          {
+            propio: nombreEjercicio({ id: "exp_1", nombre: "Remo en mi máquina", propio: true }, "en"),
+            eu: nombreEjercicio("ex_plancha", "eu"),
+            cae: nombreEjercicio("ex_plancha", "xx"),
+            desconocido: nombreEjercicio("ex_no_existe", "eu"),
+          },
+          { propio: "Remo en mi máquina", eu: "Plantxa", cae: "Plancha", desconocido: "ex_no_existe" }
+        ),
+      },
+      {
+        nombre: "Búsqueda con los nombres reales: «press inclin» encuentra los dos press inclinados",
+        ejecutar: () => {
+          const r = buscarEjercicios(lista, "press inclin", (e) => nombreEjercicio(e, "es")).map((e) => e.id).sort();
+          return comparar({ r: r.join(",") }, { r: "ex_press_inclinado_barra,ex_press_inclinado_mancuernas" });
         },
       },
     ],
