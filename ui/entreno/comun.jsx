@@ -62,7 +62,51 @@ export function CapaCompleta({ titulo, onCerrar, icono = "cerrar", pie, capa = 5
 }
 
 const LOCALES = { es: "es-ES", en: "en-GB", ca: "ca-ES", gl: "gl-ES", eu: "eu-ES" };
-export const localeDe = (idioma) => LOCALES[idioma] || "es-ES";
+
+// No todos los navegadores traen los datos de formato de gallego y euskera (algunos solo incluyen los
+// idiomas «grandes»): entonces Intl cae al inglés y saldría «5,842.5 kg» y «16 Oct» en mitad de una
+// pantalla en euskera. Si el idioma no está, los números usan el formato español (el mismo separador
+// decimal y de miles que el gallego y el euskera) y las fechas, las tablas de abajo.
+const soportados = {};
+function soportado(locale) {
+  if (soportados[locale] === undefined) {
+    try {
+      soportados[locale] = Intl.DateTimeFormat.supportedLocalesOf([locale]).length > 0 && Intl.NumberFormat.supportedLocalesOf([locale]).length > 0;
+    } catch (e) {
+      soportados[locale] = false;
+    }
+  }
+  return soportados[locale];
+}
+export const localeDe = (idioma) => {
+  const l = LOCALES[idioma] || "es-ES";
+  return soportado(l) ? l : "es-ES";
+};
+
+// Nombres de meses y días (lunes primero) para cuando el navegador no los tiene (ver arriba).
+const MESES = {
+  es: ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
+  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  ca: ["gener", "febrer", "març", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"],
+  gl: ["xaneiro", "febreiro", "marzo", "abril", "maio", "xuño", "xullo", "agosto", "setembro", "outubro", "novembro", "decembro"],
+  eu: ["urtarrila", "otsaila", "martxoa", "apirila", "maiatza", "ekaina", "uztaila", "abuztua", "iraila", "urria", "azaroa", "abendua"],
+};
+const MESES_CORTOS = {
+  es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"],
+  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  ca: ["gen.", "febr.", "març", "abr.", "maig", "juny", "jul.", "ag.", "set.", "oct.", "nov.", "des."],
+  gl: ["xan.", "feb.", "mar.", "abr.", "mai.", "xuñ.", "xul.", "ago.", "set.", "out.", "nov.", "dec."],
+  eu: ["urt.", "ots.", "mar.", "api.", "mai.", "eka.", "uzt.", "abu.", "ira.", "urr.", "aza.", "abe."],
+};
+// Iniciales de los días de la semana, empezando en lunes (para el calendario del historial).
+export const DIAS_CORTOS = {
+  es: ["L", "M", "X", "J", "V", "S", "D"],
+  en: ["M", "T", "W", "T", "F", "S", "S"],
+  ca: ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"],
+  gl: ["L", "M", "M", "X", "V", "S", "D"],
+  eu: ["Al", "Ar", "Az", "Og", "Or", "Lr", "Ig"],
+};
+const dos = (n) => String(n).padStart(2, "0");
 
 export function prefiereMenosMovimiento() {
   try {
@@ -143,16 +187,37 @@ export function fechaCorta(inicio, idioma) {
   const ayer = new Date(hoy);
   ayer.setDate(hoy.getDate() - 1);
   if (mismoDia(d, ayer)) return t(idioma, "entreno.comun.ayer");
-  return new Intl.DateTimeFormat(localeDe(idioma), { day: "numeric", month: "short" }).format(d);
+  return diaYMes(d, idioma, true);
+}
+
+// «24 oct» / «24 de octubre» (en euskera, «urr. 24» / «urriaren 24a»), con Intl si el navegador tiene el
+// idioma y con las tablas de arriba si no.
+function diaYMes(d, idioma, corto) {
+  const l = LOCALES[idioma] || "es-ES";
+  if (soportado(l)) return new Intl.DateTimeFormat(l, { day: "numeric", month: corto ? "short" : "long" }).format(d);
+  const tabla = (corto ? MESES_CORTOS : MESES)[idioma] || MESES.es;
+  const mes = tabla[d.getMonth()];
+  if (idioma === "eu") return corto ? `${mes} ${d.getDate()}` : `${mes}ren ${d.getDate()}a`;
+  if (idioma === "en") return `${d.getDate()} ${mes}`;
+  if (corto) return `${d.getDate()} ${mes}`;
+  // En catalán, «d’» delante de vocal (24 d’octubre, 3 d’abril).
+  return idioma === "ca" && /^[aeiou]/.test(mes) ? `${d.getDate()} d’${mes}` : `${d.getDate()} de ${mes}`;
 }
 
 export function fechaLarga(inicio, idioma) {
-  return new Intl.DateTimeFormat(localeDe(idioma), { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(new Date(inicio));
+  const d = new Date(inicio);
+  const l = LOCALES[idioma] || "es-ES";
+  if (soportado(l)) return new Intl.DateTimeFormat(l, { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }).format(d);
+  return `${diaYMes(d, idioma, false)}, ${dos(d.getHours())}:${dos(d.getMinutes())}`;
 }
 
 export function nombreMes(mesISO, idioma) {
   const [a, m] = mesISO.split("-").map(Number);
-  const texto = new Intl.DateTimeFormat(localeDe(idioma), { month: "long", year: "numeric" }).format(new Date(a, m - 1, 15));
+  const l = LOCALES[idioma] || "es-ES";
+  let texto;
+  if (soportado(l)) texto = new Intl.DateTimeFormat(l, { month: "long", year: "numeric" }).format(new Date(a, m - 1, 15));
+  else if (idioma === "eu") texto = `${a}ko ${MESES.eu[m - 1]}`;
+  else texto = `${(MESES[idioma] || MESES.es)[m - 1]} ${a}`;
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
