@@ -25,6 +25,10 @@ import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe,
 } from "entreno-calculo";
+import {
+  nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
+  terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion,
+} from "entreno-sesion";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1081,6 +1085,7 @@ export function crearGrupos(mod, carga) {
     grupoEntrenoBiblioteca(),
     grupoEntrenoNombres(),
     grupoEntrenoCalculos(),
+    grupoEntrenoSesion(),
   ];
 }
 
@@ -1509,6 +1514,126 @@ function grupoEntrenoCalculos() {
       {
         nombre: "semanaDe: el viernes 23-10-2026 es de la semana del lunes 19 (o del domingo 18)",
         ejecutar: () => comparar({ lunes: semanaDe("2026-10-23", 1), domingo: semanaDe("2026-10-23", 0), elPropioLunes: semanaDe("2026-10-19", 1) }, { lunes: "2026-10-19", domingo: "2026-10-18", elPropioLunes: "2026-10-19" }),
+      },
+    ],
+  };
+}
+
+// Rutina de prueba: press de banca con 1 calentamiento + 3 normales, y jalón con 3 normales y su propio
+// descanso de 105 s. Hora fija: 23-10-2026 a las 18:00 UTC.
+const AHORA_SESION = Date.UTC(2026, 9, 23, 18, 0, 0);
+const RUTINA_PRUEBA = {
+  id: "rt_torso", nombre: "Torso", actualizado: "2026-10-20",
+  ejercicios: [
+    { ejercicioId: "ex_press_banca_barra", descansoSeg: null, nota: "", series: [{ tipo: "calentamiento" }, { tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }] },
+    { ejercicioId: "ex_jalon_pecho", descansoSeg: 105, nota: "", series: [{ tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }] },
+  ],
+};
+const AJUSTES_PRUEBA = { precargar: true, descansoSeg: 120, descansoCalentamientoSeg: 60 };
+const ANTERIOR_BANCA = [{ kg: 32, reps: 8 }, { kg: 61.3, reps: 10 }, { kg: 59, reps: 6 }, { kg: 54.3, reps: 7 }];
+const anteriorPrueba = (id) => (id === "ex_press_banca_barra" ? ANTERIOR_BANCA : []);
+
+// La sesión de la rutina con todas sus series marcadas (como si se hubiera hecho entera).
+function sesionCompleta() {
+  let s = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+  s.ejercicios.forEach((ej) => ej.series.forEach((sr) => { s = marcarHecha(s, ej.inst, sr.id, AHORA_SESION, AJUSTES_PRUEBA); }));
+  return s;
+}
+
+function grupoEntrenoSesion() {
+  return {
+    grupo: "Entreno: sesión en curso",
+    casos: [
+      {
+        nombre: "nuevaSesion desde una rutina: 2 ejercicios, 7 series sin hacer; precarga en orden o vacía",
+        ejecutar: () => {
+          const con = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const sin = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: { ...AJUSTES_PRUEBA, precargar: false }, anteriorDe: anteriorPrueba });
+          const series = con.ejercicios.flatMap((e) => e.series);
+          return comparar(
+            {
+              ejercicios: con.ejercicios.length, series: series.length, hechas: series.filter((x) => x.hecha).length,
+              precargadas: con.ejercicios[0].series.map((x) => `${x.kg}x${x.reps}`).join(" "),
+              vacias: sin.ejercicios[0].series.every((x) => x.kg === null && x.reps === null),
+              nombre: con.nombre, rutinaId: con.rutinaId,
+            },
+            { ejercicios: 2, series: 7, hechas: 0, precargadas: "32x8 61.3x10 59x6 54.3x7", vacias: true, nombre: "Torso", rutinaId: "rt_torso" }
+          );
+        },
+      },
+      {
+        nombre: "marcarHecha arranca el descanso (60 s calentamiento, 105 s del ejercicio); ±15, saltar y desmarcar",
+        ejecutar: () => {
+          const s0 = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const [banca, jalon] = s0.ejercicios;
+          const sW = marcarHecha(s0, banca.inst, banca.series[0].id, AHORA_SESION, AJUSTES_PRUEBA);
+          const sJ = marcarHecha(s0, jalon.inst, jalon.series[0].id, AHORA_SESION, AJUSTES_PRUEBA);
+          const sMas = ajustarDescanso(sJ, 15);
+          const sDes = desmarcar(sW, banca.inst, banca.series[0].id);
+          return comparar(
+            {
+              calentamiento: sW.descanso.hasta - AHORA_SESION, ejercicio: sJ.descanso.hasta - AHORA_SESION, mas15: sMas.descanso.hasta - AHORA_SESION,
+              saltado: saltarDescanso(sJ).descanso, desmarcada: sDes.ejercicios[0].series[0].hecha, conserva: sDes.ejercicios[0].series[0].kg,
+            },
+            { calentamiento: 60000, ejercicio: 105000, mas15: 120000, saltado: null, desmarcada: false, conserva: 32 }
+          );
+        },
+      },
+      {
+        nombre: "sustituirHoy cambia el ejercicio, recuerda el original y conserva las series",
+        ejecutar: () => {
+          const s0 = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const s1 = sustituirHoy(s0, s0.ejercicios[1].inst, "ex_jalon_estrecho");
+          return comparar(
+            { id: s1.ejercicios[1].ejercicioId, original: s1.ejercicios[1].sustituyeA, series: s1.ejercicios[1].series.length },
+            { id: "ex_jalon_estrecho", original: "ex_jalon_pecho", series: 3 }
+          );
+        },
+      },
+      {
+        nombre: "terminarSesion quita lo no hecho, pone el fin y cierra la pausa abierta",
+        ejecutar: () => {
+          let s = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const banca = s.ejercicios[0];
+          s = marcarHecha(s, banca.inst, banca.series[1].id, AHORA_SESION, AJUSTES_PRUEBA);
+          s = marcarHecha(s, banca.inst, banca.series[2].id, AHORA_SESION, AJUSTES_PRUEBA);
+          s = pausar(s, AHORA_SESION + 30 * 60000);
+          const fin = AHORA_SESION + 45 * 60000;
+          const t = terminarSesion(s, fin, { nombre: "Torso corto", esfuerzo: 3 });
+          return comparar(
+            { ejercicios: t.ejercicios.length, series: t.ejercicios[0].series.length, fin: t.fin, pausaCerrada: t.pausas[0].fin, nombre: t.nombre, descanso: t.descanso },
+            { ejercicios: 1, series: 2, fin: new Date(fin).toISOString(), pausaCerrada: new Date(fin).toISOString(), nombre: "Torso corto", descanso: undefined }
+          );
+        },
+      },
+      {
+        nombre: "cambiosEstructurales: igual → no; una serie más → sí; sustituido solo hoy → no",
+        ejecutar: () => {
+          const s = sesionCompleta();
+          const conSerie = anadirSerie(s, s.ejercicios[0].inst);
+          const sustituida = sustituirHoy(s, s.ejercicios[1].inst, "ex_jalon_estrecho");
+          return comparar(
+            { igual: cambiosEstructurales(s, RUTINA_PRUEBA), serieMas: cambiosEstructurales(conSerie, RUTINA_PRUEBA), sustituida: cambiosEstructurales(sustituida, RUTINA_PRUEBA) },
+            { igual: false, serieMas: true, sustituida: false }
+          );
+        },
+      },
+      {
+        nombre: "aplicarARutina copia ejercicios y series (sin el sustituido solo hoy); rutinaDesdeSesion",
+        ejecutar: () => {
+          let s = sesionCompleta();
+          s = anadirSerie(s, s.ejercicios[0].inst);
+          s = sustituirHoy(s, s.ejercicios[1].inst, "ex_jalon_estrecho");
+          const r = aplicarARutina(RUTINA_PRUEBA, s, "2026-10-23");
+          const nueva = rutinaDesdeSesion(sesionCompleta(), "Mi torso", "2026-10-23");
+          return comparar(
+            {
+              seriesBanca: r.ejercicios[0].series.length, segundo: r.ejercicios[1].ejercicioId, descansoJalon: r.ejercicios[1].descansoSeg,
+              plantillaKg: r.ejercicios[0].series[1].kg, nueva: nueva.nombre, nuevaEjercicios: nueva.ejercicios.length, nuevaSeries: nueva.ejercicios[0].series.length,
+            },
+            { seriesBanca: 5, segundo: "ex_jalon_pecho", descansoJalon: 105, plantillaKg: 61.3, nueva: "Mi torso", nuevaEjercicios: 2, nuevaSeries: 4 }
+          );
+        },
       },
     ],
   };

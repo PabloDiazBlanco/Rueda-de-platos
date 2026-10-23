@@ -1,0 +1,271 @@
+// ---------- Entreno: la sesión en curso ----------
+// Módulo de lógica pura (sin JSX, sin React): todo lo que se le puede hacer a un entreno mientras se
+// está haciendo (añadir series, marcarlas, descansar, sustituir un ejercicio solo hoy, pausar...) y al
+// terminarlo. Cada función recibe la sesión y devuelve una nueva, sin tocar la de entrada, así el hook
+// (ui/estado/entreno.js) solo tiene que guardar lo que le devuelven, y cada operación se puede probar
+// en validacion/ con una hora fija.
+//
+// Nada aquí mira el reloj: la hora llega siempre como `ahora` (milisegundos o texto ISO). El descanso y
+// la duración se guardan como marcas de tiempo (`descanso.hasta`, `inicio`, `pausas`), no como cuentas
+// atrás, para que sigan siendo exactos aunque el móvil se bloquee y el navegador pare los temporizadores
+// (ver local/ideas/gimnasio/03-diseno-modulo-entreno.md, §5.4).
+//
+// Forma de la sesión: ver la sección «Entrenamiento» de CLAUDE.md. Ajustes que se usan aquí:
+// { precargar, descansoSeg, descansoCalentamientoSeg }.
+import { uid } from "comun";
+
+const ms = (t) => (typeof t === "number" ? t : new Date(t).getTime());
+const iso = (t) => new Date(ms(t)).toISOString();
+
+// Cuántas series lleva un ejercicio que se añade sin rutina y sin historial: tres es lo más habitual, y
+// las que sobren se quitan solas al terminar (solo se guardan las hechas). Menos toques que ir
+// añadiéndolas de una en una, que es lo que más importa mientras se entrena.
+const SERIES_POR_DEFECTO = 3;
+
+function serieVacia(tipo = "normal") {
+  return { id: "sr_" + uid(), tipo, kg: null, reps: null, seg: null, km: null, rir: null, hecha: false };
+}
+
+const esCalentamiento = (s) => s && s.tipo === "calentamiento";
+
+// Rellena las series con lo de la última vez. Si lo anterior trae el tipo de cada serie, se emparejan
+// por clase (el calentamiento con el calentamiento y el resto con el resto, en orden), para que una
+// serie de calentamiento de más o de menos no descuadre las demás; si no lo trae, en orden sin más.
+function precargarSeries(series, anterior) {
+  if (!anterior || !anterior.length) return series;
+  const conTipo = anterior.every((a) => a.tipo);
+  const deCalentamiento = anterior.filter(esCalentamiento);
+  const resto = anterior.filter((a) => !esCalentamiento(a));
+  let iCal = 0, iResto = 0;
+  return series.map((s, i) => {
+    let a;
+    if (!conTipo) a = anterior[i];
+    else if (esCalentamiento(s)) a = deCalentamiento[iCal++];
+    else a = resto[iResto++];
+    if (!a) return s;
+    return { ...s, kg: a.kg ?? null, reps: a.reps ?? null, seg: a.seg ?? null, km: a.km ?? null };
+  });
+}
+
+function nuevoEjercicio(ejercicioId, series, { descansoSeg = null, nota = "" } = {}) {
+  return { inst: "ei_" + uid(), ejercicioId, sustituyeA: null, nota, descansoSeg, series };
+}
+
+// Cambia un ejercicio de la sesión por su `inst` (la instancia: el mismo ejercicio puede salir dos veces).
+function cambiarEjercicio(s, inst, fn) {
+  return { ...s, ejercicios: s.ejercicios.map((ej) => (ej.inst === inst ? fn(ej) : ej)) };
+}
+function cambiarSerie(s, inst, id, fn) {
+  return cambiarEjercicio(s, inst, (ej) => ({ ...ej, series: ej.series.map((sr) => (sr.id === id ? fn(sr) : sr)) }));
+}
+
+// ---------- Empezar ----------
+// Desde una rutina (copia sus ejercicios, descansos, notas y nº y tipo de series) o vacía. Con
+// `ajustes.precargar`, los kilos y repeticiones salen ya rellenos con lo de la última vez (`anteriorDe(id)`
+// → series); sin él, vacíos (la columna «anterior» los sigue enseñando al lado). `descansoDe(id)` es el
+// descanso personalizado del ejercicio, si lo tiene.
+export function nuevaSesion({ rutina = null, ahora, ajustes = {}, anteriorDe = () => [], descansoDe = () => null, nombre = "" }) {
+  const ejercicios = ((rutina && rutina.ejercicios) || []).map((re) => {
+    let series = (re.series && re.series.length ? re.series : [{ tipo: "normal" }]).map((p) => serieVacia(p.tipo || "normal"));
+    if (ajustes.precargar) series = precargarSeries(series, anteriorDe(re.ejercicioId));
+    return nuevoEjercicio(re.ejercicioId, series, { descansoSeg: re.descansoSeg ?? descansoDe(re.ejercicioId) ?? null, nota: re.nota || "" });
+  });
+  return {
+    id: "ses_" + uid(),
+    nombre: (rutina && rutina.nombre) || nombre,
+    rutinaId: rutina ? rutina.id : null,
+    inicio: iso(ahora), fin: null, pausas: [],
+    esfuerzo: null, nota: "", origen: "app", lote: null,
+    ejercicios,
+    descanso: null,
+    actualizado: ms(ahora),
+  };
+}
+
+// Añade ejercicios al final. Llevan tantas series como la última vez (rellenas si se precarga) o, sin
+// historial, tres vacías.
+export function anadirEjercicios(s, ids, { ajustes = {}, anteriorDe = () => [], descansoDe = () => null } = {}) {
+  const nuevos = ids.map((id) => {
+    const anterior = anteriorDe(id) || [];
+    let series = anterior.length ? anterior.map((a) => serieVacia(a.tipo || "normal")) : Array.from({ length: SERIES_POR_DEFECTO }, () => serieVacia());
+    if (ajustes.precargar) series = precargarSeries(series, anterior);
+    return nuevoEjercicio(id, series, { descansoSeg: descansoDe(id) ?? null });
+  });
+  return { ...s, ejercicios: [...s.ejercicios, ...nuevos] };
+}
+
+export function quitarEjercicio(s, inst) {
+  return { ...s, ejercicios: s.ejercicios.filter((ej) => ej.inst !== inst) };
+}
+
+// ---------- Series ----------
+// Una serie más, con los valores de la última del ejercicio (lo normal es repetir peso), sin marcar.
+export function anadirSerie(s, inst) {
+  return cambiarEjercicio(s, inst, (ej) => {
+    const ultima = ej.series[ej.series.length - 1];
+    const nueva = serieVacia("normal");
+    if (ultima) Object.assign(nueva, { kg: ultima.kg, reps: ultima.reps, seg: ultima.seg, km: ultima.km });
+    return { ...ej, series: [...ej.series, nueva] };
+  });
+}
+
+export function quitarSerie(s, inst, id) {
+  return cambiarEjercicio(s, inst, (ej) => ({ ...ej, series: ej.series.filter((sr) => sr.id !== id) }));
+}
+
+export function cambiarTipoSerie(s, inst, id, tipo) {
+  return cambiarSerie(s, inst, id, (sr) => ({ ...sr, tipo }));
+}
+
+// `valores`: cualquiera de { kg, reps, seg, km, rir }, ya convertidos a kg y km.
+export function editarSerie(s, inst, id, valores) {
+  return cambiarSerie(s, inst, id, (sr) => ({ ...sr, ...valores }));
+}
+
+// Marca la serie como hecha y arranca el descanso: el del calentamiento si lo es; si no, el propio del
+// ejercicio o, si no tiene, el de los ajustes. Con un descanso de 0 no se arranca ninguno.
+export function marcarHecha(s, inst, id, ahora, ajustes = {}) {
+  const ej = s.ejercicios.find((e) => e.inst === inst);
+  const serie = ej && ej.series.find((sr) => sr.id === id);
+  if (!serie) return s;
+  const segundos = esCalentamiento(serie)
+    ? (ajustes.descansoCalentamientoSeg ?? 60)
+    : (ej.descansoSeg ?? ajustes.descansoSeg ?? 120);
+  const t = ms(ahora);
+  const marcada = cambiarSerie(s, inst, id, (sr) => ({ ...sr, hecha: true }));
+  return { ...marcada, descanso: segundos > 0 ? { inicio: t, hasta: t + segundos * 1000, inst, avisado: false } : null };
+}
+
+// Deshacer el ✓: la serie vuelve a estar pendiente con sus valores intactos.
+export function desmarcar(s, inst, id) {
+  return cambiarSerie(s, inst, id, (sr) => ({ ...sr, hecha: false }));
+}
+
+// ---------- Descanso ----------
+export function ajustarDescanso(s, segundos) {
+  if (!s.descanso) return s;
+  const hasta = Math.max(s.descanso.inicio, s.descanso.hasta + segundos * 1000);
+  return { ...s, descanso: { ...s.descanso, hasta, avisado: false } };
+}
+
+export function saltarDescanso(s) {
+  return { ...s, descanso: null };
+}
+
+// Se apunta que ya sonó el aviso del final del descanso, para no repetirlo al volver a la app.
+export function descansoAvisado(s) {
+  return s.descanso ? { ...s, descanso: { ...s.descanso, avisado: true } } : s;
+}
+
+// ---------- Ejercicios: sustituir, reordenar, nota ----------
+// «Sustituir solo hoy» (petición repetida en las reseñas: la máquina está ocupada): cambia el ejercicio
+// en esta sesión sin tocar la rutina. Se guarda cuál había (`sustituyeA`, el primero si se sustituye dos
+// veces) para que al terminar no cuente como un cambio de la rutina.
+export function sustituirHoy(s, inst, nuevoId) {
+  return cambiarEjercicio(s, inst, (ej) => ({ ...ej, ejercicioId: nuevoId, sustituyeA: ej.sustituyeA || ej.ejercicioId }));
+}
+
+export function reordenar(s, desde, hasta) {
+  if (desde === hasta || desde < 0 || hasta < 0 || desde >= s.ejercicios.length || hasta >= s.ejercicios.length) return s;
+  const ejercicios = [...s.ejercicios];
+  const [movido] = ejercicios.splice(desde, 1);
+  ejercicios.splice(hasta, 0, movido);
+  return { ...s, ejercicios };
+}
+
+export function notaEjercicio(s, inst, texto) {
+  return cambiarEjercicio(s, inst, (ej) => ({ ...ej, nota: texto }));
+}
+
+// ---------- Pausa ----------
+// Para el cronómetro de duración (no el descanso, que sigue su curso: es tiempo real de reloj).
+export function pausar(s, ahora) {
+  if ((s.pausas || []).some((p) => p.fin === null)) return s;
+  return { ...s, pausas: [...(s.pausas || []), { inicio: iso(ahora), fin: null }] };
+}
+
+export function reanudar(s, ahora) {
+  return { ...s, pausas: (s.pausas || []).map((p) => (p.fin === null ? { ...p, fin: iso(ahora) } : p)) };
+}
+
+export const estaPausada = (s) => (s.pausas || []).some((p) => p.fin === null);
+
+// ---------- Terminar ----------
+// Lo que se guarda: solo las series hechas y los ejercicios que tienen alguna; cierra una pausa abierta,
+// pone la hora de fin y quita el descanso (que solo tiene sentido en curso). `inicio` (opcional) cambia la
+// fecha y hora del entreno (por si se apunta después): se mueve todo, conservando la duración.
+export function terminarSesion(s, ahora, { nombre, esfuerzo, nota, inicio } = {}) {
+  let t = ms(ahora);
+  let cerrada = reanudar(s, ahora);
+  let pausas = cerrada.pausas || [];
+  let inicioFinal = cerrada.inicio;
+  if (inicio && ms(inicio) !== ms(cerrada.inicio)) {
+    const delta = ms(inicio) - ms(cerrada.inicio);
+    inicioFinal = iso(ms(inicio));
+    t += delta;
+    pausas = pausas.map((p) => ({ inicio: iso(ms(p.inicio) + delta), fin: iso(ms(p.fin) + delta) }));
+  }
+  const ejercicios = cerrada.ejercicios
+    .map((ej) => ({ ...ej, series: ej.series.filter((sr) => sr.hecha) }))
+    .filter((ej) => ej.series.length);
+  const { descanso, ...resto } = cerrada;
+  return {
+    ...resto,
+    nombre: nombre !== undefined ? nombre : s.nombre,
+    esfuerzo: esfuerzo !== undefined ? esfuerzo : s.esfuerzo,
+    nota: nota !== undefined ? nota : s.nota,
+    inicio: inicioFinal, fin: iso(t), pausas, ejercicios,
+    actualizado: ms(ahora),
+  };
+}
+
+// ---------- Rutinas ----------
+// La «huella» de una sesión frente a su rutina: qué ejercicios (los sustituidos solo hoy cuentan como el
+// original), en qué orden y cuántas series. Si cambia, al terminar se ofrece actualizar la rutina.
+const huellaSesion = (s) => s.ejercicios.map((ej) => `${ej.sustituyeA || ej.ejercicioId}:${ej.series.length}`).join("|");
+const huellaRutina = (r) => (r.ejercicios || []).map((re) => `${re.ejercicioId}:${(re.series || []).length}`).join("|");
+
+export function cambiosEstructurales(s, rutina) {
+  if (!rutina) return false;
+  return huellaSesion(s) !== huellaRutina(rutina);
+}
+
+const plantillaSerie = (sr) => {
+  const p = { tipo: sr.tipo };
+  ["kg", "reps", "seg", "km"].forEach((c) => { if (sr[c] !== null && sr[c] !== undefined) p[c] = sr[c]; });
+  return p;
+};
+
+// Pasa a la rutina los cambios de estructura de la sesión: ejercicios, orden y series (con los valores
+// de hoy como nueva plantilla). Un ejercicio sustituido solo hoy deja en la rutina el original con su
+// plantilla de siempre. Se conservan el descanso y la nota de cada ejercicio que ya estaba.
+export function aplicarARutina(rutina, s, hoy) {
+  const previos = rutina.ejercicios || [];
+  const usados = new Set();
+  const ejercicios = s.ejercicios.map((ej) => {
+    const id = ej.sustituyeA || ej.ejercicioId;
+    const i = previos.findIndex((re, k) => re.ejercicioId === id && !usados.has(k));
+    const previo = i >= 0 ? previos[i] : null;
+    if (i >= 0) usados.add(i);
+    if (ej.sustituyeA && previo) return previo;
+    return {
+      ejercicioId: id,
+      descansoSeg: previo ? previo.descansoSeg ?? null : ej.descansoSeg ?? null,
+      nota: previo ? previo.nota || "" : "",
+      series: ej.series.map(plantillaSerie),
+    };
+  });
+  return { ...rutina, ejercicios, actualizado: hoy || rutina.actualizado };
+}
+
+// «Guardar como rutina» desde un entreno hecho: sus ejercicios, con las series hechas como plantilla.
+export function rutinaDesdeSesion(s, nombre, hoy) {
+  return {
+    id: "rt_" + uid(),
+    nombre: nombre || s.nombre || "",
+    actualizado: hoy || null,
+    ejercicios: s.ejercicios
+      .map((ej) => ({ ejercicioId: ej.ejercicioId, descansoSeg: ej.descansoSeg ?? null, nota: "", series: ej.series.filter((sr) => sr.hecha).map(plantillaSerie) }))
+      .filter((re) => re.series.length),
+  };
+}
