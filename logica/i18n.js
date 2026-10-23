@@ -1116,6 +1116,9 @@ const TEXTOS = {
     "entreno.detalle.comoRutina": "Guardar como rutina",
     "entreno.detalle.sinConexion": "No se ha podido guardar: hace falta conexión para corregir entrenos pasados.",
     "entreno.detalle.record": "Récord",
+
+    "entreno.pastilla.enCurso": "Entreno en curso",
+    "entreno.pastilla.volver": "Volver al entreno",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2171,6 +2174,9 @@ const TEXTOS = {
     "entreno.detalle.comoRutina": "Save as routine",
     "entreno.detalle.sinConexion": "Couldn’t save: you need a connection to edit past workouts.",
     "entreno.detalle.record": "Record",
+
+    "entreno.pastilla.enCurso": "Workout in progress",
+    "entreno.pastilla.volver": "Back to the workout",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3226,6 +3232,9 @@ const TEXTOS = {
     "entreno.detalle.comoRutina": "Desar com a rutina",
     "entreno.detalle.sinConexion": "No s’ha pogut desar: cal connexió per corregir entrenaments passats.",
     "entreno.detalle.record": "Rècord",
+
+    "entreno.pastilla.enCurso": "Entrenament en curs",
+    "entreno.pastilla.volver": "Tornar a l’entrenament",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4281,6 +4290,9 @@ const TEXTOS = {
     "entreno.detalle.comoRutina": "Gardar como rutina",
     "entreno.detalle.sinConexion": "Non se puido gardar: fai falta conexión para corrixir adestramentos pasados.",
     "entreno.detalle.record": "Récord",
+
+    "entreno.pastilla.enCurso": "Adestramento en curso",
+    "entreno.pastilla.volver": "Volver ao adestramento",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -5336,6 +5348,9 @@ const TEXTOS = {
     "entreno.detalle.comoRutina": "Gorde errutina gisa",
     "entreno.detalle.sinConexion": "Ezin izan da gorde: konexioa behar da iraganeko entrenamenduak zuzentzeko.",
     "entreno.detalle.record": "Errekorra",
+
+    "entreno.pastilla.enCurso": "Entrenamendua martxan",
+    "entreno.pastilla.volver": "Itzuli entrenamendura",
   },
 };
 

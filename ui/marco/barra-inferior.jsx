@@ -43,8 +43,9 @@ function esCampoDeTexto(el) {
 }
 
 // Se esconde mientras haya un campo de texto con el foco. Se mira document.activeElement un instante
-// después de cada cambio de foco, para no hacerla parpadear al saltar de un campo a otro.
-function useEscribiendo() {
+// después de cada cambio de foco, para no hacerla parpadear al saltar de un campo a otro. (Lo usa también
+// la pastilla del entreno en curso, ui/entreno/pastilla.jsx.)
+export function useEscribiendo() {
   const [escribiendo, setEscribiendo] = useState(false);
   useEffect(() => {
     let temporizador = null;

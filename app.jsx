@@ -27,6 +27,7 @@ import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
 import { AREAS, COMUNES, TITULO_COMUN, areaDe, pestanaDe, areaPorClave } from "./ui/marco/navegacion.js";
 import { ModalesCatalogo } from "./ui/catalogo/modales.jsx";
 import { SesionEnCurso } from "./ui/entreno/sesion.jsx";
+import { PastillaEntreno, ALTO_PASTILLA } from "./ui/entreno/pastilla.jsx";
 
 // Funciones de logica/ que validacion/tests.js recoge del objeto exportado por este archivo.
 export { calcularListaCompra };
@@ -135,6 +136,7 @@ export default function RuedaDePlatos() {
   }
 
   const area = areaDe(tab);
+  const hayPastilla = !!entreno.borrador && !entreno.sesionVisible;
   const ctx = { data, idioma, premium, setTab, navegar, params, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa, entreno };
 
   return (
@@ -142,13 +144,14 @@ export default function RuedaDePlatos() {
       <Header saveState={saveState} idioma={idioma} titulo={area ? areaPorClave(area).titulo : TITULO_COMUN} onOpenMenu={() => setDrawerOpen(true)} />
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} area={area} setTab={setTab} onIrAArea={irAArea} idioma={idioma} premium={premium} />
 
-      {/* Con barra inferior, <main> deja libre abajo lo que ella ocupa, para que lo último de cada
-          pantalla no quede escondido detrás. */}
-      <main style={{ padding: "20px 22px 60px", paddingBottom: area ? RELLENO_BARRA : 60 }}>
+      {/* Con barra inferior (y con la pastilla del entreno en curso), <main> deja libre abajo lo que
+          ocupan, para que lo último de cada pantalla no quede escondido detrás. */}
+      <main style={{ padding: "20px 22px 60px", paddingBottom: `calc(${area ? RELLENO_BARRA : "60px"} + ${hayPastilla ? ALTO_PASTILLA : 0}px)` }}>
         <Pantalla tab={tab} ctx={ctx} />
       </main>
 
       <BarraInferior area={area} tab={tab} navegar={navegar} idioma={idioma} />
+      <PastillaEntreno entreno={entreno} idioma={idioma} hayBarra={!!area} />
 
       <ModalesCatalogo catalogo={catalogo} data={data} idioma={idioma} />
 

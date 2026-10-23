@@ -29,6 +29,7 @@
   "ui/entreno/fila-serie.jsx",
   "ui/entreno/historial.jsx",
   "ui/entreno/inicio.jsx",
+  "ui/entreno/pastilla.jsx",
   "ui/entreno/rutinas.jsx",
   "ui/entreno/selector-ejercicio.jsx",
   "ui/entreno/sesion.jsx",
