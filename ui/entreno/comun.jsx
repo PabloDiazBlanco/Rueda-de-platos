@@ -3,10 +3,63 @@
 // del idioma, duraciones, fechas cortas, el nombre de un ejercicio, y unos pocos componentes de
 // presentación (tarjeta, botones, título de sección) con la estética de FoodDraft: papel y tarjetas con
 // borde, sin sombras, una sola acción principal en verde sólido por pantalla (diseño, §7.1).
-import React from "react";
+import React, { useEffect } from "react";
+import { X, ArrowLeft } from "lucide-react";
 import { t } from "i18n";
 import { nombreEjercicio } from "entreno-nombres";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
+
+// ---------- Capa a pantalla completa ----------
+// Para lo que no cabe en un modal pequeño (elegir entre 80 ejercicios, crear uno, la sesión en curso):
+// fija sobre todo, con su barra arriba (volver o cerrar y el título), el contenido desplazable y un pie
+// opcional (el botón principal), y la pantalla de debajo inmóvil. `capa`: z-index (45 la sesión, como
+// los paneles de la nevera; 50 lo que se abre encima de ella, como los modales). La barra deja libres
+// ~110 px a la derecha, donde flota el botón «Cerrar sesión» de auth-bootstrap.jsx.
+export function CapaCompleta({ titulo, onCerrar, icono = "cerrar", pie, capa = 50, accionesTitulo, children, idioma }) {
+  useEffect(() => {
+    const antes = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function alPulsar(e) {
+      if (e.key === "Escape") onCerrar();
+    }
+    window.addEventListener("keydown", alPulsar);
+    return () => {
+      document.body.style.overflow = antes;
+      window.removeEventListener("keydown", alPulsar);
+    };
+  }, [onCerrar]);
+  const Icono = icono === "volver" ? ArrowLeft : X;
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={titulo}
+      style={{ position: "fixed", inset: 0, zIndex: capa, background: "var(--paper)", display: "flex", flexDirection: "column" }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 110px 10px 10px", borderBottom: "1px solid var(--line)", background: "var(--paper)", minHeight: 56, boxSizing: "border-box" }}>
+        <button
+          onClick={onCerrar}
+          aria-label={t(idioma, icono === "volver" ? "entreno.comun.volver" : "common.cerrar")}
+          style={{ width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "var(--ink)", flexShrink: 0 }}
+        >
+          <Icono size={20} />
+        </button>
+        <h2 style={{ flex: 1, minWidth: 0, margin: 0, fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 19, color: "var(--green-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {titulo}
+        </h2>
+        {accionesTitulo}
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto", padding: "14px 14px 24px" }}>{children}</div>
+      </div>
+      {pie && (
+        <div style={{ borderTop: "1px solid var(--line)", background: "var(--card)", padding: "10px 14px calc(10px + env(safe-area-inset-bottom))" }}>
+          <div style={{ maxWidth: 560, margin: "0 auto" }}>{pie}</div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const LOCALES = { es: "es-ES", en: "en-GB", ca: "ca-ES", gl: "gl-ES", eu: "eu-ES" };
 export const localeDe = (idioma) => LOCALES[idioma] || "es-ES";

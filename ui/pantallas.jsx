@@ -25,6 +25,7 @@ import { SuggestMealsView } from "./premium/que-cocino.jsx";
 import { SettingsView } from "./ajustes/ajustes.jsx";
 import { CompartirView, FeedbackView, DocumentosView } from "./ajustes/compartir.jsx";
 import { EntrenarView, ProntoView } from "./entreno/inicio.jsx";
+import { EjerciciosView } from "./entreno/ejercicios.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -215,7 +216,7 @@ const PANTALLAS = {
   entreno: ({ idioma, entreno, navegar }) => <EntrenarView entreno={entreno} idioma={idioma} navegar={navegar} />,
   "entreno-rutinas": ({ idioma }) => <ProntoView idioma={idioma} />,
   "entreno-rutina": ({ idioma }) => <ProntoView idioma={idioma} />,
-  "entreno-ejercicios": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-ejercicios": ({ idioma, entreno }) => <EjerciciosView entreno={entreno} idioma={idioma} />,
   "entreno-historial": ({ idioma }) => <ProntoView idioma={idioma} />,
   "entreno-sesion": ({ idioma }) => <ProntoView idioma={idioma} />,
   "entreno-ajustes": ({ idioma }) => <ProntoView idioma={idioma} />,
