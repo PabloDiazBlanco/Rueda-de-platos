@@ -26,6 +26,8 @@ import { SettingsView } from "./ajustes/ajustes.jsx";
 import { CompartirView, FeedbackView, DocumentosView } from "./ajustes/compartir.jsx";
 import { EntrenarView, ProntoView } from "./entreno/inicio.jsx";
 import { EjerciciosView } from "./entreno/ejercicios.jsx";
+import { RutinasView } from "./entreno/rutinas.jsx";
+import { EditorRutinaView } from "./entreno/editor-rutina.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -214,8 +216,12 @@ const PANTALLAS = {
   // Las pantallas del área de entreno (ui/entreno/). La sesión en curso no está aquí: es una capa a
   // pantalla completa que pinta app.jsx encima de cualquier pantalla.
   entreno: ({ idioma, entreno, navegar }) => <EntrenarView entreno={entreno} idioma={idioma} navegar={navegar} />,
-  "entreno-rutinas": ({ idioma }) => <ProntoView idioma={idioma} />,
-  "entreno-rutina": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-rutinas": ({ idioma, entreno, navegar }) => <RutinasView entreno={entreno} idioma={idioma} navegar={navegar} />,
+  // Editor de una rutina: `params.id` (null = nueva). Se monta de nuevo para cada rutina (key), así no
+  // se arrastra la copia que se estaba editando de otra.
+  "entreno-rutina": ({ idioma, entreno, navegar, params }) => (
+    <EditorRutinaView key={(params && params.id) || "nueva"} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
+  ),
   "entreno-ejercicios": ({ idioma, entreno }) => <EjerciciosView entreno={entreno} idioma={idioma} />,
   "entreno-historial": ({ idioma }) => <ProntoView idioma={idioma} />,
   "entreno-sesion": ({ idioma }) => <ProntoView idioma={idioma} />,
