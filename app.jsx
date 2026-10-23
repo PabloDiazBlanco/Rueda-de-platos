@@ -71,6 +71,14 @@ export default function RuedaDePlatos() {
     });
   }
   const setTab = (destino) => navegar(destino);
+  // Tocar un área en el menú lateral: a la última pantalla visitada en ella o, si no hay, a su primera
+  // pestaña.
+  function irAArea(clave) {
+    const a = AREAS.find((x) => x.clave === clave);
+    if (!a) return;
+    const destino = ultimaPantalla[clave] || (a.pestanas[0] && a.pestanas[0].destino) || (a.menu[0] && a.menu[0].destino);
+    if (destino) navegar(destino);
+  }
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Abarca toda la carga inicial (datos, los dos menús y la despensa): mientras dura se enseña
   // "Cargando…" y no se dispara el guardado automático (ver useDatos).
@@ -128,7 +136,7 @@ export default function RuedaDePlatos() {
   return (
     <Shell>
       <Header saveState={saveState} idioma={idioma} onOpenMenu={() => setDrawerOpen(true)} />
-      <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} setTab={setTab} idioma={idioma} premium={premium} />
+      <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} area={area} setTab={setTab} onIrAArea={irAArea} idioma={idioma} premium={premium} />
 
       <main style={{ padding: "20px 22px 60px" }}>
         <Pantalla tab={tab} ctx={ctx} />
