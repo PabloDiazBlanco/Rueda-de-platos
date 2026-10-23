@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v16";
+const CACHE_NAME = "fooddraft-v17";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./cargador-ui.js", "./ui/archivos.json",
   "./manifest.json", "./icon.svg",
