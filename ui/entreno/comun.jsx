@@ -244,6 +244,58 @@ export function TextoSuave({ children, style }) {
   return <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5, ...style }}>{children}</div>;
 }
 
+// Hoja que sube desde abajo con unas pocas opciones (tipo de serie, menú ⋮ de un ejercicio): se alcanza
+// con el pulgar, a diferencia de un menú desplegable arriba. Tocar fuera la cierra.
+export function HojaInferior({ titulo, onCerrar, children, idioma }) {
+  return (
+    <div
+      onClick={onCerrar}
+      style={{ position: "fixed", inset: 0, zIndex: 50, background: "rgba(31,77,56,0.35)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={titulo}
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 520, background: "var(--card)", borderRadius: "16px 16px 0 0",
+          padding: "8px 14px calc(14px + env(safe-area-inset-bottom))", boxShadow: "0 -8px 30px rgba(0,0,0,0.18)",
+          maxHeight: "85vh", overflowY: "auto",
+        }}
+      >
+        <div style={{ width: 40, height: 4, borderRadius: 2, background: "var(--line)", margin: "4px auto 10px" }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+          <div style={{ fontFamily: FUENTE_TITULOS, fontSize: 17, color: "var(--green-dark)" }}>{titulo}</div>
+          <button onClick={onCerrar} aria-label={t(idioma, "common.cerrar")} style={{ width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "var(--ink-soft)" }}>
+            <X size={18} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// Una opción de una hoja inferior: fila grande y fácil de tocar.
+export function OpcionHoja({ icono: Icono, children, onClick, peligro, activa, detalle }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex", alignItems: "center", gap: 12, width: "100%", minHeight: 48, padding: "10px 8px",
+        background: activa ? "var(--green-soft)" : "none", border: "none", borderRadius: 8, cursor: "pointer", textAlign: "left",
+        fontFamily: FUENTE_TEXTO, fontSize: 14.5, fontWeight: activa ? 700 : 500, color: peligro ? "var(--rust)" : "var(--ink)",
+      }}
+    >
+      {Icono && <Icono size={18} style={{ flexShrink: 0 }} />}
+      <span style={{ flex: 1 }}>
+        {children}
+        {detalle && <span style={{ display: "block", fontSize: 12, fontWeight: 400, color: "var(--ink-soft)", marginTop: 2, lineHeight: 1.4 }}>{detalle}</span>}
+      </span>
+    </button>
+  );
+}
+
 // Chip de filtro o de opción (músculo, equipo, unidad...).
 export function Chip({ activo, children, onClick, ...resto }) {
   return (

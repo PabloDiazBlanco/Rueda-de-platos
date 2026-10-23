@@ -232,7 +232,8 @@ export function useEntreno(data) {
     ref.current.borrador = sellada;
     setBorrador(sellada);
     escribirLocal(LOCAL_BORRADOR, { sesion: sellada, actualizado: sellada ? sellada.actualizado : Date.now() });
-    setNube("pendiente");
+    // `nube` no pasa a «pendiente» aquí: los 2,5 s de espera son lo normal y avisar en cada toque sería
+    // ruido. Solo cambia si la subida falla (ver subirBorrador).
     clearTimeout(temporizadorNube.current);
     temporizadorNube.current = setTimeout(subirBorrador, RETRASO_NUBE_MS);
   }
@@ -334,6 +335,11 @@ export function useEntreno(data) {
     desmarcar: (inst, id) => cambiar((s) => S.desmarcar(s, inst, id)),
     ajustarDescanso: (seg) => cambiar((s) => S.ajustarDescanso(s, seg)),
     saltarDescanso: () => cambiar(S.saltarDescanso),
+    // Descanso a mano (botón ⏱ de la barra de la sesión), sin marcar ninguna serie.
+    iniciarDescanso: (segundos) => cambiar((s) => {
+      const ahora = Date.now();
+      return { ...s, descanso: { inicio: ahora, hasta: ahora + segundos * 1000, inst: null, avisado: false } };
+    }),
     descansoAvisado: () => cambiar(S.descansoAvisado),
     sustituirHoy: (inst, id) => cambiar((s) => S.sustituirHoy(s, inst, id)),
     reordenar: (desde, hasta) => cambiar((s) => S.reordenar(s, desde, hasta)),

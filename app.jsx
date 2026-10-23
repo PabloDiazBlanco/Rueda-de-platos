@@ -26,6 +26,7 @@ import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
 import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
 import { AREAS, COMUNES, TITULO_COMUN, areaDe, pestanaDe, areaPorClave } from "./ui/marco/navegacion.js";
 import { ModalesCatalogo } from "./ui/catalogo/modales.jsx";
+import { SesionEnCurso } from "./ui/entreno/sesion.jsx";
 
 // Funciones de logica/ que validacion/tests.js recoge del objeto exportado por este archivo.
 export { calcularListaCompra };
@@ -150,6 +151,10 @@ export default function RuedaDePlatos() {
       <BarraInferior area={area} tab={tab} navegar={navegar} idioma={idioma} />
 
       <ModalesCatalogo catalogo={catalogo} data={data} idioma={idioma} />
+
+      {/* El entreno en curso: una capa a pantalla completa encima de cualquier pantalla (ver
+          ui/entreno/sesion.jsx); al minimizarla queda la pastilla. */}
+      {entreno.sesionVisible && <SesionEnCurso entreno={entreno} idioma={idioma} onTerminar={() => entreno.terminar()} />}
     </Shell>
   );
 }
