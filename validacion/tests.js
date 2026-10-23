@@ -29,6 +29,10 @@ import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
   terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion,
 } from "entreno-sesion";
+import {
+  claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
+  elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV,
+} from "entreno-almacen";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1086,6 +1090,7 @@ export function crearGrupos(mod, carga) {
     grupoEntrenoNombres(),
     grupoEntrenoCalculos(),
     grupoEntrenoSesion(),
+    grupoEntrenoAlmacen(),
   ];
 }
 
@@ -1632,6 +1637,111 @@ function grupoEntrenoSesion() {
               plantillaKg: r.ejercicios[0].series[1].kg, nueva: nueva.nombre, nuevaEjercicios: nueva.ejercicios.length, nuevaSeries: nueva.ejercicios[0].series.length,
             },
             { seriesBanca: 5, segundo: "ex_jalon_pecho", descansoJalon: 105, plantillaKg: 61.3, nueva: "Mi torso", nuevaEjercicios: 2, nuevaSeries: 4 }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// Sesión mínima terminada para los casos del almacén: un ejercicio con sus series (todas hechas).
+function sesionAlmacen(id, inicio, series, { actualizado = 1, ejercicioId = "banca", nombre = "Torso" } = {}) {
+  return { id, nombre, inicio, fin: inicio, pausas: [], actualizado, ejercicios: [{ inst: "ei_" + id, ejercicioId, nota: "", series: series.map(([kg, reps]) => serieP("normal", kg, reps)) }] };
+}
+
+function grupoEntrenoAlmacen() {
+  const septiembre = { version: 1, mes: "2026-09", sesiones: [sesionAlmacen("s1", "2026-09-10T17:00:00.000Z", [[60, 10], [65, 8]])] };
+  const octubre = { version: 1, mes: "2026-10", sesiones: [sesionAlmacen("s2", "2026-10-05T17:00:00.000Z", [[62.5, 8]]), sesionAlmacen("s3", "2026-10-20T17:00:00.000Z", [[60, 12]])] };
+  return {
+    grupo: "Entreno: almacén",
+    casos: [
+      {
+        nombre: "claveMes y mesDe (hora local)",
+        ejecutar: () => comparar(
+          { clave: claveMes("2026-10"), mes: mesDe("2026-10-23T17:55:00.000Z") },
+          { clave: "rueda-de-platos:entreno-2026-10-v1", mes: "2026-10" }
+        ),
+      },
+      {
+        nombre: "migrarCatalogo: vacío con ajustes por defecto; completa sin pisar lo elegido",
+        ejecutar: () => {
+          const vacio = migrarCatalogo(null);
+          const viejo = migrarCatalogo({ version: 1, propios: [], personalizados: {}, rutinas: [], ajustes: { precargar: false, descansoSeg: 90 }, aviso: {} });
+          return comparar(
+            { changed: vacio.changed, precargar: vacio.valor.ajustes.precargar, descanso: vacio.valor.ajustes.descansoSeg, inicioViejo: viejo.valor.ajustes.inicioSemana, precargarViejo: viejo.valor.ajustes.precargar, descansoViejo: viejo.valor.ajustes.descansoSeg, cambioViejo: viejo.changed },
+            { changed: true, precargar: true, descanso: 120, inicioViejo: 1, precargarViejo: false, descansoViejo: 90, cambioViejo: true }
+          );
+        },
+      },
+      {
+        nombre: "anadirSesionAMes ordena por inicio y, con el mismo id, gana el actualizado mayor",
+        ejecutar: () => {
+          let m = { version: 1, mes: "2026-10", sesiones: [] };
+          m = anadirSesionAMes(m, sesionAlmacen("b", "2026-10-20T17:00:00.000Z", [[60, 10]], { actualizado: 5 }));
+          m = anadirSesionAMes(m, sesionAlmacen("a", "2026-10-05T17:00:00.000Z", [[60, 10]]));
+          const masNueva = anadirSesionAMes(m, sesionAlmacen("b", "2026-10-20T17:00:00.000Z", [[70, 10]], { actualizado: 9 }));
+          const masVieja = anadirSesionAMes(m, sesionAlmacen("b", "2026-10-20T17:00:00.000Z", [[50, 10]], { actualizado: 2 }));
+          return comparar(
+            { orden: m.sesiones.map((x) => x.id).join(","), nueva: masNueva.sesiones[1].ejercicios[0].series[0].kg, vieja: masVieja.sesiones[1].ejercicios[0].series[0].kg, total: masNueva.sesiones.length },
+            { orden: "a,b", nueva: 70, vieja: 60, total: 2 }
+          );
+        },
+      },
+      {
+        nombre: "fusionarMeses une por id y gana el actualizado mayor",
+        ejecutar: () => {
+          const a = { version: 1, mes: "2026-10", sesiones: [sesionAlmacen("x", "2026-10-01T10:00:00.000Z", [[40, 10]], { actualizado: 1 }), sesionAlmacen("y", "2026-10-03T10:00:00.000Z", [[40, 10]])] };
+          const b = { version: 1, mes: "2026-10", sesiones: [sesionAlmacen("x", "2026-10-01T10:00:00.000Z", [[45, 10]], { actualizado: 3 }), sesionAlmacen("z", "2026-10-02T10:00:00.000Z", [[40, 10]])] };
+          const f = fusionarMeses(a, b);
+          return comparar({ ids: f.sesiones.map((x) => x.id).join(","), x: f.sesiones[0].ejercicios[0].series[0].kg }, { ids: "x,z,y", x: 45 });
+        },
+      },
+      {
+        nombre: "reconstruirIndice: «anterior» de la sesión más reciente, récords máximos y sesiones por mes",
+        ejecutar: () => {
+          const ind = reconstruirIndice([septiembre, octubre], ejercicioPrueba, 80);
+          const b = ind.ejercicios.banca;
+          // Peso máximo 65 (s1); 1RM: 60 × 1,4 = 84 (s3) > 65 × (1 + 8/30) = 82,3 (s1); mejor serie 60 × 12 = 720 (s3);
+          // mejor volumen de sesión: s1 = 600 + 520 = 1120.
+          return comparar(
+            {
+              ultima: b.ultima.sesionId, kgUltima: b.ultima.series[0].kg, sesiones: b.sesiones, sep: ind.meses["2026-09"], oct: ind.meses["2026-10"],
+              pesoMax: b.records.pesoMax.valor, pesoMaxDe: b.records.pesoMax.sesionId, e1rm: b.records.e1rm.valor, mejorSerie: b.records.mejorSerie.valor, volumen: b.records.volumenSesion.valor,
+            },
+            { ultima: "s3", kgUltima: 60, sesiones: 3, sep: 1, oct: 2, pesoMax: 65, pesoMaxDe: "s1", e1rm: 84, mejorSerie: 720, volumen: 1120 }
+          );
+        },
+      },
+      {
+        nombre: "actualizarIndiceConSesion da lo mismo que reconstruir con esa sesión añadida",
+        ejecutar: () => {
+          const nueva = sesionAlmacen("s4", "2026-10-23T17:00:00.000Z", [[70, 5], [60, 10]]);
+          const incremental = actualizarIndiceConSesion(reconstruirIndice([septiembre, octubre], ejercicioPrueba, 80), nueva, ejercicioPrueba, 80);
+          const completo = reconstruirIndice([septiembre, anadirSesionAMes(octubre, nueva)], ejercicioPrueba, 80);
+          return comparar({ iguales: JSON.stringify(incremental) === JSON.stringify(completo), pesoMax: incremental.ejercicios.banca.records.pesoMax.valor }, { iguales: true, pesoMax: 70 });
+        },
+      },
+      {
+        nombre: "elegirBorrador y la cola de envíos pendientes",
+        ejecutar: () => {
+          const local = { id: "ses_1", actualizado: 200 };
+          const nube = { id: "ses_1", actualizado: 100 };
+          let cola = encolar([], local);
+          cola = encolar(cola, { ...local, actualizado: 300 });
+          return comparar(
+            { gana: elegirBorrador(local, nube).actualizado, soloNube: elegirBorrador(null, nube).actualizado, ninguno: elegirBorrador(null, null), cola: cola.length, ultima: cola[0].actualizado, vacia: quitarDeCola(cola, "ses_1").length },
+            { gana: 200, soloNube: 100, ninguno: null, cola: 1, ultima: 300, vacia: 0 }
+          );
+        },
+      },
+      {
+        nombre: "sesionesACSV: cabecera fija, una fila por serie y comillas si el nombre lleva «;»",
+        ejecutar: () => {
+          const s = sesionAlmacen("c1", "2026-10-23T17:00:00.000Z", [[61.3, 10], [59, 6]], { nombre: "Torso; día A" });
+          const csv = sesionesACSV([s], () => "Press banca", "es").split("\n");
+          return comparar(
+            { cabecera: csv[0], filas: csv.length - 1, entreno: csv[1].split(";")[1], kg: csv[1].includes(";61,3;10;") },
+            { cabecera: CABECERA_CSV, filas: 2, entreno: '"Torso', kg: true }
           );
         },
       },
