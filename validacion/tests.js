@@ -21,6 +21,10 @@ import {
   posibleDuplicado,
 } from "entreno-ejercicios";
 import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
+import {
+  e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
+  mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe,
+} from "entreno-calculo";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1076,6 +1080,7 @@ export function crearGrupos(mod, carga) {
     grupoNavegacion(mod),
     grupoEntrenoBiblioteca(),
     grupoEntrenoNombres(),
+    grupoEntrenoCalculos(),
   ];
 }
 
@@ -1398,6 +1403,112 @@ function grupoEntrenoNombres() {
           const r = buscarEjercicios(lista, "press inclin", (e) => nombreEjercicio(e, "es")).map((e) => e.id).sort();
           return comparar({ r: r.join(",") }, { r: "ex_press_inclinado_barra,ex_press_inclinado_mancuernas" });
         },
+      },
+    ],
+  };
+}
+
+// `ejercicioDe` sintético para los cálculos (no depende de la biblioteca).
+const EJERCICIOS_PRUEBA = {
+  banca: { tipo: "peso_reps", musculo: "pecho", secundarios: ["triceps", "hombros"] },
+  curl: { tipo: "peso_reps", musculo: "biceps", secundarios: ["antebrazos"] },
+  cinta: { tipo: "distancia_duracion", musculo: "cardio", secundarios: [] },
+};
+const ejercicioPrueba = (id) => EJERCICIOS_PRUEBA[id] || null;
+const serieP = (tipo, kg, reps, hecha = true, extra = {}) => ({ id: Math.random().toString(36).slice(2), tipo, kg, reps, seg: null, km: null, rir: null, hecha, ...extra });
+
+function grupoEntrenoCalculos() {
+  return {
+    grupo: "Entreno: cálculos",
+    casos: [
+      {
+        nombre: "1RM estimado (Epley, con RIR) y fiabilidad",
+        ejecutar: () => comparar(
+          { uno: e1rm(100, 1), cinco: e1rm(100, 5), conRir: e1rm(59, 11, 2), cero: e1rm(60, 0), fiable: e1rmFiable(10, 2), noFiable: e1rmFiable(11, 2) },
+          // 100 × (1 + 5/30) = 116,67 → 116,7; 59 × (1 + 13/30) = 84,57 → 84,6.
+          { uno: 100, cinco: 116.7, conRir: 84.6, cero: null, fiable: true, noFiable: false }
+        ),
+      },
+      {
+        nombre: "Volumen: solo series hechas que no son de calentamiento",
+        ejecutar: () => {
+          const sesion = { ejercicios: [{ ejercicioId: "banca", series: [serieP("normal", 60, 10), serieP("calentamiento", 40, 10), serieP("normal", 60, 8, false)] }] };
+          return comparar({ v: volumenSesion(sesion, ejercicioPrueba, 80) }, { v: 600 });
+        },
+      },
+      {
+        nombre: "Volumen por tipo: peso corporal, lastre, asistido y duración",
+        ejecutar: () => comparar(
+          {
+            reps: volumenSerie(serieP("normal", null, 10), "reps", 80),
+            repsSinPeso: volumenSerie(serieP("normal", null, 10), "reps", null),
+            lastre: volumenSerie(serieP("normal", 10, 5), "lastre_reps", 80),
+            asistido: volumenSerie(serieP("normal", 30, 8), "asistido_reps", 80),
+            asistidoDeMas: volumenSerie(serieP("normal", 100, 8), "asistido_reps", 80),
+            duracion: volumenSerie(serieP("normal", null, null, true, { seg: 60 }), "duracion", 80),
+          },
+          // (80 + 10) × 5 = 450; (80 − 30) × 8 = 400; máx(0, 80 − 100) × 8 = 0.
+          { reps: 800, repsSinPeso: 0, lastre: 450, asistido: 400, asistidoDeMas: 0, duracion: 0 }
+        ),
+      },
+      {
+        nombre: "duracionEfectiva descuenta las pausas (también una aún abierta)",
+        ejecutar: () => {
+          const h = (hm) => `2026-10-23T${hm}:00.000Z`;
+          const s1 = { inicio: h("10:00"), fin: null, pausas: [{ inicio: h("10:20"), fin: h("10:30") }] };
+          const s2 = { ...s1, pausas: [...s1.pausas, { inicio: h("10:50"), fin: null }] };
+          return comparar({ una: duracionEfectiva(s1, h("11:00")), dos: duracionEfectiva(s2, h("11:00")) }, { una: 3000, dos: 2400 });
+        },
+      },
+      {
+        nombre: "Series por músculo: principal 1, secundarios 0,5, sin calentamiento ni cardio",
+        ejecutar: () => {
+          const sesion = {
+            inicio: "2026-10-23T17:00:00.000Z",
+            ejercicios: [
+              { ejercicioId: "banca", series: [serieP("normal", 60, 10), serieP("normal", 60, 10), serieP("fallo", 60, 8), serieP("calentamiento", 40, 10)] },
+              { ejercicioId: "curl", series: [serieP("normal", 30, 10), serieP("normal", 30, 9)] },
+              { ejercicioId: "cinta", series: [serieP("normal", null, null, true, { km: 3, seg: 1200 })] },
+            ],
+          };
+          const r = seriesPorMusculo([sesion], ejercicioPrueba, null, null);
+          return comparar({ ...r, cardio: r.cardio ?? 0 }, { pecho: 3, triceps: 1.5, hombros: 1.5, biceps: 2, antebrazos: 1, cardio: 0 });
+        },
+      },
+      {
+        nombre: "validarSerie: peso alto con y sin histórico, repeticiones de más y a cero",
+        ejecutar: () => {
+          const avisos = (v, h) => validarSerie(v, "peso_reps", h).avisos.join(",");
+          return comparar(
+            {
+              a250: avisos({ kg: 250, reps: 5 }, { pesoMax: 100 }), a251: avisos({ kg: 251, reps: 5 }, { pesoMax: 100 }),
+              a1005: avisos({ kg: 1005, reps: 5 }, { pesoMax: 100 }), s400: avisos({ kg: 400, reps: 5 }, {}),
+              s401: avisos({ kg: 401, reps: 5 }, {}), reps101: avisos({ kg: 60, reps: 101 }, { pesoMax: 100 }),
+              reps0: avisos({ kg: 60, reps: 0 }, { pesoMax: 100 }),
+            },
+            { a250: "", a251: "peso_alto", a1005: "peso_alto", s400: "", s401: "peso_alto", reps101: "reps_altas", reps0: "sin_reps" }
+          );
+        },
+      },
+      {
+        nombre: "Récords: 62,5 × 6 bate solo el peso máximo; 62,5 × 12 bate también el 1RM",
+        ejecutar: () => {
+          const previos = { pesoMax: 60, e1rm: 80 };
+          const batidos = (reps) => recordsBatidos(previos, mejoresDeEjercicioEnSesion({ series: [serieP("normal", 62.5, reps)] }, "peso_reps", 80)).map((r) => r.clave).join(",");
+          // 1RM de 62,5 × 6 = 62,5 × 1,2 = 75 (< 80); de 62,5 × 12 = 62,5 × 1,4 = 87,5 (> 80).
+          return comparar({ seis: batidos(6), doce: batidos(12) }, { seis: "pesoMax", doce: "pesoMax,e1rm" });
+        },
+      },
+      {
+        nombre: "anteriorDe: las series de la última vez, o nada sin historial",
+        ejecutar: () => {
+          const indice = { ejercicios: { banca: { ultima: { sesionId: "s1", fecha: "2026-10-21", series: [{ tipo: "normal", kg: 60, reps: 10 }] } } } };
+          return comparar({ con: anteriorDe(indice, "banca").length, kg: anteriorDe(indice, "banca")[0].kg, sin: anteriorDe(indice, "curl").length }, { con: 1, kg: 60, sin: 0 });
+        },
+      },
+      {
+        nombre: "semanaDe: el viernes 23-10-2026 es de la semana del lunes 19 (o del domingo 18)",
+        ejecutar: () => comparar({ lunes: semanaDe("2026-10-23", 1), domingo: semanaDe("2026-10-23", 0), elPropioLunes: semanaDe("2026-10-19", 1) }, { lunes: "2026-10-19", domingo: "2026-10-18", elPropioLunes: "2026-10-19" }),
       },
     ],
   };
