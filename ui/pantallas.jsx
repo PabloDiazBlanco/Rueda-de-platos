@@ -28,6 +28,7 @@ import { EntrenarView, ProntoView } from "./entreno/inicio.jsx";
 import { EjerciciosView } from "./entreno/ejercicios.jsx";
 import { RutinasView } from "./entreno/rutinas.jsx";
 import { EditorRutinaView } from "./entreno/editor-rutina.jsx";
+import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -223,8 +224,11 @@ const PANTALLAS = {
     <EditorRutinaView key={(params && params.id) || "nueva"} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
   ),
   "entreno-ejercicios": ({ idioma, entreno }) => <EjerciciosView entreno={entreno} idioma={idioma} />,
-  "entreno-historial": ({ idioma }) => <ProntoView idioma={idioma} />,
-  "entreno-sesion": ({ idioma }) => <ProntoView idioma={idioma} />,
+  "entreno-historial": ({ idioma, entreno, navegar }) => <HistorialView entreno={entreno} idioma={idioma} navegar={navegar} />,
+  // Detalle de una sesión terminada: `params` = { id, inicio } (el inicio dice en qué mes buscarla).
+  "entreno-sesion": ({ idioma, entreno, navegar, params }) => (
+    <DetalleSesionView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
+  ),
   "entreno-ajustes": ({ idioma }) => <ProntoView idioma={idioma} />,
 };
 
