@@ -15,6 +15,7 @@ import { LETRA_SERIE, TIPOS_SERIE } from "entreno-ejercicios";
 import { FUENTE_MONO } from "../estilos.js";
 import {
   formatoNumero, pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, HojaInferior, OpcionHoja,
+  prefiereMenosMovimiento,
 } from "./comun.jsx";
 
 // Colores de cada tipo de serie: los del tema (Shell), sin azul (diseño, §7.1).
@@ -112,7 +113,7 @@ function FilaSerieSinMemo({ serie, etiqueta, tipo, campos, anterior, ajustes, mo
   const color = COLOR_SERIE[serie.tipo] || COLOR_SERIE.normal;
   const nombresCampo = columnasDe(campos, tipo, ajustes);
   return (
-    <div style={{ borderRadius: 8, background: hecha ? "var(--green-soft)" : FONDO_SERIE[serie.tipo] || "transparent", transition: "background 120ms" }}>
+    <div style={{ borderRadius: 8, background: hecha ? "var(--green-soft)" : FONDO_SERIE[serie.tipo] || "transparent", transition: prefiereMenosMovimiento() ? "none" : "background 120ms" }}>
       <div style={{ display: "grid", gridTemplateColumns: plantillaColumnas, alignItems: "center", gap: 6, padding: "3px 4px", minHeight: 46 }}>
         <button
           onClick={onAbrirTipo}
