@@ -28,6 +28,7 @@
   "ui/estado/perfil.js",
   "ui/estado/peso.js",
   "ui/estilos.js",
+  "ui/marco/barra-inferior.jsx",
   "ui/marco/cabecera.jsx",
   "ui/marco/menu-lateral.jsx",
   "ui/marco/navegacion.js",

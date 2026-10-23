@@ -31,6 +31,11 @@ export function Shell({ children }) {
         "--olive-soft": "#f0eed6",
         "--citrus": "#c2662d",
         "--citrus-soft": "#f5e2d3",
+        // Cristal de la barra inferior (ui/marco/barra-inferior.jsx): fondo de tarjeta al 72 % (con
+        // desenfoque detrás), borde verde oscuro translúcido y la cápsula de la pestaña activa.
+        "--cristal": "rgba(255,253,247,0.72)",
+        "--cristal-borde": "rgba(31,77,56,0.14)",
+        "--cristal-activo": "rgba(47,107,79,0.14)",
         background: "var(--paper)",
         minHeight: "100%",
         fontFamily: FUENTE_TITULOS,

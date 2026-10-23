@@ -19,6 +19,7 @@ import { usePeso } from "./ui/estado/peso.js";
 import { useDespensa } from "./ui/estado/despensa.js";
 import { Shell, Header } from "./ui/marco/cabecera.jsx";
 import { DrawerMenu } from "./ui/marco/menu-lateral.jsx";
+import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
 import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
@@ -138,9 +139,13 @@ export default function RuedaDePlatos() {
       <Header saveState={saveState} idioma={idioma} onOpenMenu={() => setDrawerOpen(true)} />
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} area={area} setTab={setTab} onIrAArea={irAArea} idioma={idioma} premium={premium} />
 
-      <main style={{ padding: "20px 22px 60px" }}>
+      {/* Con barra inferior, <main> deja libre abajo lo que ella ocupa, para que lo último de cada
+          pantalla no quede escondido detrás. */}
+      <main style={{ padding: "20px 22px 60px", paddingBottom: area ? RELLENO_BARRA : 60 }}>
         <Pantalla tab={tab} ctx={ctx} />
       </main>
+
+      <BarraInferior area={area} tab={tab} navegar={navegar} idioma={idioma} />
 
       <ModalesCatalogo catalogo={catalogo} data={data} idioma={idioma} />
     </Shell>
