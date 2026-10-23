@@ -24,6 +24,7 @@
   "ui/estado/catalogo.js",
   "ui/estado/datos.js",
   "ui/estado/despensa.js",
+  "ui/estado/entreno.js",
   "ui/estado/menu.js",
   "ui/estado/perfil.js",
   "ui/estado/peso.js",

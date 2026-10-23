@@ -17,6 +17,7 @@ import { useCatalogo } from "./ui/estado/catalogo.js";
 import { usePerfil } from "./ui/estado/perfil.js";
 import { usePeso } from "./ui/estado/peso.js";
 import { useDespensa } from "./ui/estado/despensa.js";
+import { useEntreno } from "./ui/estado/entreno.js";
 import { Shell, Header } from "./ui/marco/cabecera.jsx";
 import { DrawerMenu } from "./ui/marco/menu-lateral.jsx";
 import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
@@ -81,7 +82,7 @@ export default function RuedaDePlatos() {
     if (destino) navegar(destino);
   }
   const [drawerOpen, setDrawerOpen] = useState(false);
-  // Abarca toda la carga inicial (datos, los dos menús y la despensa): mientras dura se enseña
+  // Abarca toda la carga inicial (datos, los dos menús, la despensa y el entreno): mientras dura se enseña
   // "Cargando…" y no se dispara el guardado automático (ver useDatos).
   const [loading, setLoading] = useState(true);
 
@@ -94,7 +95,8 @@ export default function RuedaDePlatos() {
   const catalogo = useCatalogo(setData, { alBorrarAlimento: despensa.alBorrarAlimento });
   const perfil = usePerfil(setData);
   const peso = usePeso(setData);
-  useCargaInicial([cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar], () => setLoading(false));
+  const entreno = useEntreno(data);
+  useCargaInicial([cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar, entreno.cargar], () => setLoading(false));
 
   if (loading || !data) {
     return (
@@ -132,7 +134,7 @@ export default function RuedaDePlatos() {
   }
 
   const area = areaDe(tab);
-  const ctx = { data, idioma, premium, setTab, navegar, params, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa };
+  const ctx = { data, idioma, premium, setTab, navegar, params, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa, entreno };
 
   return (
     <Shell>
