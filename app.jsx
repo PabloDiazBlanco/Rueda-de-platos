@@ -35,8 +35,42 @@ export { calcularResumenMensual, pesoEnMes };
 export { AREAS, COMUNES, areaDe, pestanaDe, DESTINOS };
 
 // ---------- Componente principal ----------
+// Última pantalla visitada de cada área ({ fooddraft: "despensa", cuerpo: "perfil-peso", ... }), para que
+// al tocar un área en el menú lateral se vuelva adonde se estaba. Es una comodidad del dispositivo (como
+// la vista elegida de la despensa), no un dato de la cuenta: va en localStorage y, si falla, no pasa nada.
+const CLAVE_ULTIMA_PANTALLA = "fooddraft:ultima-pantalla";
+function leerUltimaPantalla() {
+  try {
+    const guardado = JSON.parse(localStorage.getItem(CLAVE_ULTIMA_PANTALLA) || "{}");
+    return guardado && typeof guardado === "object" ? guardado : {};
+  } catch (e) {
+    return {};
+  }
+}
+
 export default function RuedaDePlatos() {
-  const [tab, setTab] = useState("menu");
+  // Destino actual y, opcionalmente, datos para él (la ficha de un ejercicio concreto, la ayuda con un
+  // ejercicio ya indicado...). Las pantallas de siempre siguen usando setTab(destino), que es navegar
+  // sin datos.
+  const [nav, setNav] = useState({ tab: "menu", params: null });
+  const { tab, params } = nav;
+  const [ultimaPantalla, setUltimaPantalla] = useState(leerUltimaPantalla);
+  function navegar(destino, nuevosParams = null) {
+    setNav({ tab: destino, params: nuevosParams });
+    const area = areaDe(destino);
+    if (!area) return;
+    setUltimaPantalla((prev) => {
+      if (prev[area] === destino) return prev;
+      const siguiente = { ...prev, [area]: destino };
+      try {
+        localStorage.setItem(CLAVE_ULTIMA_PANTALLA, JSON.stringify(siguiente));
+      } catch (e) {
+        // sin localStorage, el área solo se recuerda mientras la app esté abierta
+      }
+      return siguiente;
+    });
+  }
+  const setTab = (destino) => navegar(destino);
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Abarca toda la carga inicial (datos, los dos menús y la despensa): mientras dura se enseña
   // "Cargando…" y no se dispara el guardado automático (ver useDatos).
@@ -88,7 +122,8 @@ export default function RuedaDePlatos() {
     );
   }
 
-  const ctx = { data, idioma, premium, setTab, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa };
+  const area = areaDe(tab);
+  const ctx = { data, idioma, premium, setTab, navegar, params, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa };
 
   return (
     <Shell>
