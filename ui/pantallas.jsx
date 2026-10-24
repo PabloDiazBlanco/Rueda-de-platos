@@ -199,8 +199,8 @@ const PANTALLAS = {
 
   "perfil-premium": ({ idioma, premium }) => <PremiumView premium={premium} idioma={idioma} />,
 
-  "perfil-resumen": ({ data, idioma, setTab, premium }) => (
-    <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
+  "perfil-resumen": ({ data, idioma, setTab, premium, entreno }) => (
+    <ResumenMensualView data={data} premium={premium} entreno={entreno} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
   ),
 
   "perfil-medidas": ({ idioma }) => <MedidasPlaceholderView idioma={idioma} />,

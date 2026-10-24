@@ -527,8 +527,8 @@ const TEXTOS = {
     "premiumNotice.cocinar.texto": "Manda una foto de lo que tengas y recibe ideas hechas solo con alimentos de tu propio catálogo, con macros reales — parte de la suscripción premium.",
     "premiumNotice.peso.titulo": "El seguimiento de peso es premium",
     "premiumNotice.peso.texto": "Ciclos, tendencia y ajuste automático de tus objetivos según cómo evoluciona tu peso real — parte de la suscripción premium.",
-    "premiumNotice.resumen.titulo": "El resumen completo es premium",
-    "premiumNotice.resumen.texto": "Con premium, este resumen se combina con tu objetivo actual y tu tendencia de peso del mes, con gráfica incluida.",
+    "premiumNotice.resumen.titulo": "El apartado de peso es premium",
+    "premiumNotice.resumen.texto": "Sale del seguimiento de peso, que es premium: con él verás aquí tu peso del mes y su tendencia. La nutrición y el entreno de este resumen son gratis.",
 
     "resumenMensual.intro": "Cuenta las comidas que has marcado como completadas desde el detalle de cada comida en el Menú — se guarda con fecha real, aunque regeneres el menú.",
     "resumenMensual.completadas": "{completadas} de {esperadas} comidas completadas",
@@ -555,7 +555,7 @@ const TEXTOS = {
     "premiumView.ventaja1": "Lector de etiquetas por foto (20 análisis al mes con IA)",
     "premiumView.ventaja2": "Seguimiento de peso completo: ciclos, tendencia y ajuste automático de objetivos",
     "premiumView.ventaja3": "\"Qué puedo cocinar con lo que tengo\" a partir de una foto y/o texto con tus ingredientes",
-    "premiumView.ventaja4": "Resumen mensual extendido: objetivo actual, peso del mes y su gráfica de tendencia",
+    "premiumView.ventaja4": "Informes cruzados: tu entreno, tu comida y tu peso juntos, mes a mes",
     "premiumView.ventaja5": "Sin anuncios",
 
     "suggestMeals.intro": "Manda una foto de lo que tengas (nevera, despensa...), escribe qué ingredientes tienes, o ambas cosas — te sugerimos combinaciones hechas solo con alimentos de tu propio catálogo, con macros reales, no una estimación de la IA.",
@@ -1201,6 +1201,18 @@ const TEXTOS = {
     "feedback.ejercicio.cuerpoGeneral": "Cuéntanos qué ejercicio es y qué está mal o qué falta:",
     "feedback.ejercicioSobre": "Escribir sobre «{nombre}»",
     "feedback.ejercicioSobre.desc": "Te abrimos el correo con el ejercicio ya indicado, para que no haga falta explicar cuál es.",
+
+    // Área Cuerpo (oct. 2026)
+    "cuerpo.resumen.nutricion": "Nutrición",
+    "cuerpo.resumen.entreno": "Entreno",
+    "cuerpo.resumen.peso": "Peso",
+    "cuerpo.resumen.entrenos": "Entrenos",
+    "cuerpo.resumen.dias": "Días con entreno",
+    "cuerpo.resumen.tiempo": "Tiempo total",
+    "cuerpo.resumen.records": "Récords conseguidos",
+    "cuerpo.resumen.musculos": "Lo más trabajado",
+    "cuerpo.resumen.sinEntrenos": "Este mes no hay entrenos registrados.",
+    "cuerpo.resumen.comparacion": "Frente a {mes}: {entrenos} entrenos y volumen {volumen}.",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -1670,8 +1682,8 @@ const TEXTOS = {
     "premiumNotice.cocinar.texto": "Send a photo of what you have and get ideas made only with food from your own catalog, with real macros — part of the premium subscription.",
     "premiumNotice.peso.titulo": "Weight tracking is premium",
     "premiumNotice.peso.texto": "Cycles, trend and automatic adjustment of your goals based on how your real weight evolves — part of the premium subscription.",
-    "premiumNotice.resumen.titulo": "The full summary is premium",
-    "premiumNotice.resumen.texto": "With premium, this summary combines with your current goal and your weight trend for the month, chart included.",
+    "premiumNotice.resumen.titulo": "The weight section is premium",
+    "premiumNotice.resumen.texto": "It comes from weight tracking, which is premium: with it you’ll see your weight for the month and its trend here. The nutrition and training in this summary are free.",
 
     "resumenMensual.intro": "Counts the meals you've marked as completed from each meal's detail in Menu — saved with the real date, even if you regenerate the menu.",
     "resumenMensual.completadas": "{completadas} of {esperadas} meals completed",
@@ -1698,7 +1710,7 @@ const TEXTOS = {
     "premiumView.ventaja1": "Photo label reader (20 AI analyses a month)",
     "premiumView.ventaja2": "Full weight tracking: cycles, trend and automatic goal adjustment",
     "premiumView.ventaja3": "\"What can I cook with what I have\" from a photo and/or text with your ingredients",
-    "premiumView.ventaja4": "Extended monthly summary: current goal, weight for the month and its trend chart",
+    "premiumView.ventaja4": "Cross reports: your training, meals and weight together, month by month",
     "premiumView.ventaja5": "No ads",
 
     "suggestMeals.intro": "Send a photo of what you have (fridge, pantry...), type what ingredients you have, or both — we'll suggest combinations made only with food from your own catalog, with real macros, not an AI estimate.",
@@ -2341,6 +2353,18 @@ const TEXTOS = {
     "feedback.ejercicio.cuerpoGeneral": "Tell us which exercise it is and what’s wrong or missing:",
     "feedback.ejercicioSobre": "Write about “{nombre}”",
     "feedback.ejercicioSobre.desc": "We’ll open an email with the exercise already filled in, so you don’t need to explain which one.",
+
+    // Área Cuerpo (oct. 2026)
+    "cuerpo.resumen.nutricion": "Nutrition",
+    "cuerpo.resumen.entreno": "Training",
+    "cuerpo.resumen.peso": "Weight",
+    "cuerpo.resumen.entrenos": "Workouts",
+    "cuerpo.resumen.dias": "Days with a workout",
+    "cuerpo.resumen.tiempo": "Total time",
+    "cuerpo.resumen.records": "Records set",
+    "cuerpo.resumen.musculos": "Most trained",
+    "cuerpo.resumen.sinEntrenos": "No workouts logged this month.",
+    "cuerpo.resumen.comparacion": "Compared with {mes}: {entrenos} workouts and volume {volumen}.",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -2810,8 +2834,8 @@ const TEXTOS = {
     "premiumNotice.cocinar.texto": "Envia una foto del que tinguis i rep idees fetes només amb aliments del teu propi catàleg, amb macros reals — part de la subscripció premium.",
     "premiumNotice.peso.titulo": "El seguiment de pes és premium",
     "premiumNotice.peso.texto": "Cicles, tendència i ajust automàtic dels teus objectius segons com evoluciona el teu pes real — part de la subscripció premium.",
-    "premiumNotice.resumen.titulo": "El resum complet és premium",
-    "premiumNotice.resumen.texto": "Amb premium, aquest resum es combina amb el teu objectiu actual i la teva tendència de pes del mes, amb gràfica inclosa.",
+    "premiumNotice.resumen.titulo": "L’apartat de pes és prèmium",
+    "premiumNotice.resumen.texto": "Surt del seguiment de pes, que és prèmium: amb ell hi veuràs el teu pes del mes i la seva tendència. La nutrició i l’entrenament d’aquest resum són gratuïts.",
 
     "resumenMensual.intro": "Compta els àpats que has marcat com a completats des del detall de cada àpat al Menú — es desa amb data real, encara que regeneris el menú.",
     "resumenMensual.completadas": "{completadas} de {esperadas} àpats completats",
@@ -2838,7 +2862,7 @@ const TEXTOS = {
     "premiumView.ventaja1": "Lector d'etiquetes per foto (20 anàlisis al mes amb IA)",
     "premiumView.ventaja2": "Seguiment de pes complet: cicles, tendència i ajust automàtic d'objectius",
     "premiumView.ventaja3": "\"Què puc cuinar amb el que tinc\" a partir d'una foto i/o text amb els teus ingredients",
-    "premiumView.ventaja4": "Resum mensual ampliat: objectiu actual, pes del mes i la seva gràfica de tendència",
+    "premiumView.ventaja4": "Informes creuats: el teu entrenament, el teu menjar i el teu pes junts, mes a mes",
     "premiumView.ventaja5": "Sense anuncis",
 
     "suggestMeals.intro": "Envia una foto del que tinguis (nevera, rebost...), escriu quins ingredients tens, o totes dues coses — et suggerim combinacions fetes només amb aliments del teu propi catàleg, amb macros reals, no una estimació de la IA.",
@@ -3481,6 +3505,18 @@ const TEXTOS = {
     "feedback.ejercicio.cuerpoGeneral": "Explica’ns quin exercici és i què està malament o què falta:",
     "feedback.ejercicioSobre": "Escriure sobre «{nombre}»",
     "feedback.ejercicioSobre.desc": "T’obrim el correu amb l’exercici ja indicat, perquè no calgui explicar quin és.",
+
+    // Área Cuerpo (oct. 2026)
+    "cuerpo.resumen.nutricion": "Nutrició",
+    "cuerpo.resumen.entreno": "Entrenament",
+    "cuerpo.resumen.peso": "Pes",
+    "cuerpo.resumen.entrenos": "Entrenaments",
+    "cuerpo.resumen.dias": "Dies amb entrenament",
+    "cuerpo.resumen.tiempo": "Temps total",
+    "cuerpo.resumen.records": "Rècords aconseguits",
+    "cuerpo.resumen.musculos": "El més treballat",
+    "cuerpo.resumen.sinEntrenos": "Aquest mes no hi ha entrenaments registrats.",
+    "cuerpo.resumen.comparacion": "Davant de {mes}: {entrenos} entrenaments i volum {volumen}.",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -3950,8 +3986,8 @@ const TEXTOS = {
     "premiumNotice.cocinar.texto": "Envía unha foto do que teñas e recibe ideas feitas só con alimentos do teu propio catálogo, con macros reais — parte da subscrición premium.",
     "premiumNotice.peso.titulo": "O seguimento de peso é premium",
     "premiumNotice.peso.texto": "Ciclos, tendencia e axuste automático dos teus obxectivos segundo evolucione o teu peso real — parte da subscrición premium.",
-    "premiumNotice.resumen.titulo": "O resumo completo é premium",
-    "premiumNotice.resumen.texto": "Con premium, este resumo combínase co teu obxectivo actual e a túa tendencia de peso do mes, con gráfica incluída.",
+    "premiumNotice.resumen.titulo": "O apartado de peso é premium",
+    "premiumNotice.resumen.texto": "Sae do seguimento de peso, que é premium: con el verás aquí o teu peso do mes e a súa tendencia. A nutrición e o adestramento deste resumo son de balde.",
 
     "resumenMensual.intro": "Conta as comidas que marcaches como completadas desde o detalle de cada comida no Menú — gárdase con data real, aínda que rexeneres o menú.",
     "resumenMensual.completadas": "{completadas} de {esperadas} comidas completadas",
@@ -3978,7 +4014,7 @@ const TEXTOS = {
     "premiumView.ventaja1": "Lector de etiquetas por foto (20 análises ao mes con IA)",
     "premiumView.ventaja2": "Seguimento de peso completo: ciclos, tendencia e axuste automático de obxectivos",
     "premiumView.ventaja3": "\"Que podo cociñar co que teño\" a partir dunha foto e/ou texto cos teus ingredientes",
-    "premiumView.ventaja4": "Resumo mensual ampliado: obxectivo actual, peso do mes e a súa gráfica de tendencia",
+    "premiumView.ventaja4": "Informes cruzados: o teu adestramento, a túa comida e o teu peso xuntos, mes a mes",
     "premiumView.ventaja5": "Sen anuncios",
 
     "suggestMeals.intro": "Envía unha foto do que teñas (neveira, despensa...), escribe que ingredientes tes, ou ambas as cousas — suxerímosche combinacións feitas só con alimentos do teu propio catálogo, con macros reais, non unha estimación da IA.",
@@ -4621,6 +4657,18 @@ const TEXTOS = {
     "feedback.ejercicio.cuerpoGeneral": "Cóntanos que exercicio é e que está mal ou que falta:",
     "feedback.ejercicioSobre": "Escribir sobre «{nombre}»",
     "feedback.ejercicioSobre.desc": "Abrímosche o correo co exercicio xa indicado, para que non faga falta explicar cal é.",
+
+    // Área Cuerpo (oct. 2026)
+    "cuerpo.resumen.nutricion": "Nutrición",
+    "cuerpo.resumen.entreno": "Adestramento",
+    "cuerpo.resumen.peso": "Peso",
+    "cuerpo.resumen.entrenos": "Adestramentos",
+    "cuerpo.resumen.dias": "Días con adestramento",
+    "cuerpo.resumen.tiempo": "Tempo total",
+    "cuerpo.resumen.records": "Récords conseguidos",
+    "cuerpo.resumen.musculos": "O máis traballado",
+    "cuerpo.resumen.sinEntrenos": "Este mes non hai adestramentos rexistrados.",
+    "cuerpo.resumen.comparacion": "Fronte a {mes}: {entrenos} adestramentos e volume {volumen}.",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -5090,8 +5138,8 @@ const TEXTOS = {
     "premiumNotice.cocinar.texto": "Bidali daukazunaren argazkia eta jaso zure katalogoko elikagai hutsekin egindako ideiak, makro errealekin — premium harpidetzaren parte.",
     "premiumNotice.peso.titulo": "Pisuaren jarraipena premium eginbidea da",
     "premiumNotice.peso.texto": "Zikloak, joera eta zure helburuen doikuntza automatikoa zure benetako pisuaren bilakaeraren arabera — premium harpidetzaren parte.",
-    "premiumNotice.resumen.titulo": "Laburpen osoa premium eginbidea da",
-    "premiumNotice.resumen.texto": "Premiumekin, laburpen hau zure uneko helburuarekin eta hilabeteko pisu-joerarekin konbinatzen da, grafikoa barne.",
+    "premiumNotice.resumen.titulo": "Pisuaren atala premium da",
+    "premiumNotice.resumen.texto": "Pisuaren jarraipenetik dator, premium dena: harekin hileko pisua eta bere joera ikusiko dituzu hemen. Laburpen honetako elikadura eta entrenamendua doakoak dira.",
 
     "resumenMensual.intro": "Menuko otordu bakoitzaren xehetasunetik bete gisa markatu dituzun otorduak zenbatzen ditu — data errealarekin gordetzen da, menua berriz sortu arren.",
     "resumenMensual.completadas": "{esperadas}etik {completadas} otordu bete dira",
@@ -5118,7 +5166,7 @@ const TEXTOS = {
     "premiumView.ventaja1": "Argazki bidezko etiketa-irakurgailua (hilean 20 analisi AArekin)",
     "premiumView.ventaja2": "Pisuaren jarraipen osoa: zikloak, joera eta helburuen doikuntza automatikoa",
     "premiumView.ventaja3": "\"Daukadanarekin zer sukaldatu dezaket\" argazki eta/edo testu bidez, zure osagaiekin",
-    "premiumView.ventaja4": "Hilabeteko laburpen zabaldua: uneko helburua, hilabeteko pisua eta bere joera-grafikoa",
+    "premiumView.ventaja4": "Txosten gurutzatuak: zure entrenamendua, janaria eta pisua batera, hilabetez hilabete",
     "premiumView.ventaja5": "Iragarkirik gabe",
 
     "suggestMeals.intro": "Bidali daukazunaren argazkia (hozkailua, despentsa...), idatzi zein osagai dituzun, edo biak — zure katalogoko elikagai hutsekin egindako konbinazioak proposatzen dizkizugu, makro errealekin, ez AAren estimazio batekin.",
@@ -5761,6 +5809,18 @@ const TEXTOS = {
     "feedback.ejercicio.cuerpoGeneral": "Esaiguzu zein ariketa den eta zer dagoen gaizki edo zer falta den:",
     "feedback.ejercicioSobre": "Idatzi «{nombre}»-ri buruz",
     "feedback.ejercicioSobre.desc": "Posta irekiko dizugu ariketa adierazita, zein den azaldu beharrik izan ez dezazun.",
+
+    // Área Cuerpo (oct. 2026)
+    "cuerpo.resumen.nutricion": "Elikadura",
+    "cuerpo.resumen.entreno": "Entrenamendua",
+    "cuerpo.resumen.peso": "Pisua",
+    "cuerpo.resumen.entrenos": "Entrenamenduak",
+    "cuerpo.resumen.dias": "Entrenamendua izan duten egunak",
+    "cuerpo.resumen.tiempo": "Denbora guztira",
+    "cuerpo.resumen.records": "Lortutako errekorrak",
+    "cuerpo.resumen.musculos": "Gehien landutakoa",
+    "cuerpo.resumen.sinEntrenos": "Hilabete honetan ez dago entrenamendurik erregistratuta.",
+    "cuerpo.resumen.comparacion": "{mes}(e)kin alderatuta: {entrenos} entrenamendu eta bolumena {volumen}.",
   },
 };
 

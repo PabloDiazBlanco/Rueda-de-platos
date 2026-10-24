@@ -329,3 +329,24 @@ export function distanciaDePantalla(valor, unidad) {
   const v = Number(valor);
   return unidad === "mi" ? Math.round(v * KM_POR_MI * 1000) / 1000 : v;
 }
+
+// ---------- Resumen del mes (fase K1) ----------
+// Lo del entreno de un mes para el resumen mensual de Cuerpo (gratis): entrenos, días distintos con
+// entreno, volumen, tiempo total (descontando pausas), récords conseguidos ese mes que siguen vigentes
+// (según el índice, que guarda la fecha de cada récord) y los tres grupos musculares con más series.
+// `sesiones` son las del mes; `mes` es «AAAA-MM».
+export function resumenEntrenoMes(sesiones, ejercicioDe, pesoCorporal, { indice = null, mes = null } = {}) {
+  const lista = sesiones || [];
+  const dias = new Set(lista.map((s) => fechaLocal(s.inicio)));
+  const volumen = redondear1(lista.reduce((t, s) => t + volumenSesion(s, ejercicioDe, pesoCorporal), 0));
+  const duracionSeg = lista.reduce((t, s) => t + duracionEfectiva(s, s.fin || s.inicio), 0);
+  let records = 0;
+  if (indice && mes) {
+    Object.values(indice.ejercicios || {}).forEach((e) => Object.values(e.records || {}).forEach((r) => {
+      if (r && r.fecha && r.fecha.slice(0, 7) === mes) records += 1;
+    }));
+  }
+  const porMusculo = seriesPorMusculo(lista, ejercicioDe, null, null);
+  const topMusculos = Object.entries(porMusculo).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([musculo, series]) => ({ musculo, series }));
+  return { sesiones: lista.length, dias: dias.size, volumen, duracionSeg, records, topMusculos };
+}

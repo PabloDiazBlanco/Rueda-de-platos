@@ -24,7 +24,7 @@ import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
 import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
-  pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla,
+  pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -1560,6 +1560,24 @@ function grupoEntrenoCalculos() {
           { cienKgEnLb: 220.5, lb135EnKg: 61.235, idaYVuelta: 135, enKg: 61.3, cincoMi: 8.047, vueltaMi: 5, vacio: null },
           0.0001
         ),
+      },
+      {
+        nombre: "resumenEntrenoMes: entrenos, días, volumen, tiempo, récords del mes y músculos más trabajados",
+        ejecutar: () => {
+          const ses = (inicio, fin, ejercicios) => ({ inicio, fin, pausas: [], ejercicios });
+          const sesiones = [
+            ses("2026-10-05T17:00:00.000Z", "2026-10-05T18:00:00.000Z", [{ ejercicioId: "banca", series: [serieP("normal", 60, 10), serieP("normal", 60, 10)] }]),
+            ses("2026-10-05T19:00:00.000Z", "2026-10-05T19:30:00.000Z", [{ ejercicioId: "curl", series: [serieP("normal", 20, 10)] }]),
+            ses("2026-10-07T17:00:00.000Z", "2026-10-07T17:45:00.000Z", [{ ejercicioId: "banca", series: [serieP("normal", 62.5, 8)] }]),
+          ];
+          const indice = { ejercicios: { banca: { records: { pesoMax: { valor: 62.5, fecha: "2026-10-07" }, e1rm: { valor: 80, fecha: "2026-09-20" } } } } };
+          const r = resumenEntrenoMes(sesiones, ejercicioPrueba, 80, { indice, mes: "2026-10" });
+          // Volumen: 1200 + 200 + 500 = 1900. Tiempo: 60 + 30 + 45 min = 8100 s. Pecho 3, tríceps y hombros 1,5, bíceps 1.
+          return comparar(
+            { sesiones: r.sesiones, dias: r.dias, volumen: r.volumen, duracion: r.duracionSeg, records: r.records, primero: r.topMusculos[0].musculo, series: r.topMusculos[0].series, n: r.topMusculos.length },
+            { sesiones: 3, dias: 2, volumen: 1900, duracion: 8100, records: 1, primero: "pecho", series: 3, n: 3 }
+          );
+        },
       },
       {
         nombre: "semanaDe: el viernes 23-10-2026 es de la semana del lunes 19 (o del domingo 18)",
