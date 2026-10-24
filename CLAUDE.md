@@ -398,6 +398,10 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   `entreno-calculo.js` (con sus pruebas) y `comun.jsx` las reexporta. «¿Datos erróneos o que faltan?» de la
   ficha navega a `feedback` con `params: { categoria: "ejercicio", ejercicioId }`, y `FeedbackView` ofrece
   arriba el correo ya rellenado (nunca lo abre solo).
+- **Opcionales hechos**: calculadora de discos (`discos.jsx` y `discosPorLado`, desde el ⋮ de los ejercicios
+  con barra; barra de 20 kg o 45 lb) y carpetas de rutinas (`rutina.carpeta`, texto opcional que solo agrupa
+  la lista; sin migración, porque una rutina sin carpeta se ve como siempre). Quedan sin hacer las
+  superseries y el mapa corporal.
 - **Capas a pantalla completa y hojas inferiores** del módulo: `CapaCompleta` y `HojaInferior` en
   `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
   de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).
