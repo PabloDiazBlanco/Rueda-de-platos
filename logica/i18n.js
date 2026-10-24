@@ -1194,6 +1194,13 @@ const TEXTOS = {
     "entreno.progreso.leyendaMedia": "media de las 4 anteriores",
     "entreno.progreso.entrenosSemana": "Entrenos por semana",
     "entreno.progreso.volumenSemana": "Volumen por semana",
+
+    "feedback.ejercicio": "Datos de un ejercicio",
+    "feedback.ejercicio.asunto": "FoodDraft — Datos de un ejercicio",
+    "feedback.ejercicio.cuerpo": "Ejercicio: {nombre}\nId: {id}\nIdioma: {idioma}\n\nCuéntanos qué está mal o qué falta:",
+    "feedback.ejercicio.cuerpoGeneral": "Cuéntanos qué ejercicio es y qué está mal o qué falta:",
+    "feedback.ejercicioSobre": "Escribir sobre «{nombre}»",
+    "feedback.ejercicioSobre.desc": "Te abrimos el correo con el ejercicio ya indicado, para que no haga falta explicar cuál es.",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2327,6 +2334,13 @@ const TEXTOS = {
     "entreno.progreso.leyendaMedia": "average of the previous 4",
     "entreno.progreso.entrenosSemana": "Workouts per week",
     "entreno.progreso.volumenSemana": "Volume per week",
+
+    "feedback.ejercicio": "Exercise details",
+    "feedback.ejercicio.asunto": "FoodDraft — Exercise details",
+    "feedback.ejercicio.cuerpo": "Exercise: {nombre}\nId: {id}\nLanguage: {idioma}\n\nTell us what’s wrong or missing:",
+    "feedback.ejercicio.cuerpoGeneral": "Tell us which exercise it is and what’s wrong or missing:",
+    "feedback.ejercicioSobre": "Write about “{nombre}”",
+    "feedback.ejercicioSobre.desc": "We’ll open an email with the exercise already filled in, so you don’t need to explain which one.",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3460,6 +3474,13 @@ const TEXTOS = {
     "entreno.progreso.leyendaMedia": "mitjana de les 4 anteriors",
     "entreno.progreso.entrenosSemana": "Entrenaments per setmana",
     "entreno.progreso.volumenSemana": "Volum per setmana",
+
+    "feedback.ejercicio": "Dades d’un exercici",
+    "feedback.ejercicio.asunto": "FoodDraft — Dades d’un exercici",
+    "feedback.ejercicio.cuerpo": "Exercici: {nombre}\nId: {id}\nIdioma: {idioma}\n\nExplica’ns què està malament o què falta:",
+    "feedback.ejercicio.cuerpoGeneral": "Explica’ns quin exercici és i què està malament o què falta:",
+    "feedback.ejercicioSobre": "Escriure sobre «{nombre}»",
+    "feedback.ejercicioSobre.desc": "T’obrim el correu amb l’exercici ja indicat, perquè no calgui explicar quin és.",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4593,6 +4614,13 @@ const TEXTOS = {
     "entreno.progreso.leyendaMedia": "media das 4 anteriores",
     "entreno.progreso.entrenosSemana": "Adestramentos por semana",
     "entreno.progreso.volumenSemana": "Volume por semana",
+
+    "feedback.ejercicio": "Datos dun exercicio",
+    "feedback.ejercicio.asunto": "FoodDraft — Datos dun exercicio",
+    "feedback.ejercicio.cuerpo": "Exercicio: {nombre}\nId: {id}\nIdioma: {idioma}\n\nCóntanos que está mal ou que falta:",
+    "feedback.ejercicio.cuerpoGeneral": "Cóntanos que exercicio é e que está mal ou que falta:",
+    "feedback.ejercicioSobre": "Escribir sobre «{nombre}»",
+    "feedback.ejercicioSobre.desc": "Abrímosche o correo co exercicio xa indicado, para que non faga falta explicar cal é.",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -5726,6 +5754,13 @@ const TEXTOS = {
     "entreno.progreso.leyendaMedia": "aurreko 4en batez bestekoa",
     "entreno.progreso.entrenosSemana": "Entrenamenduak asteko",
     "entreno.progreso.volumenSemana": "Bolumena asteko",
+
+    "feedback.ejercicio": "Ariketa baten datuak",
+    "feedback.ejercicio.asunto": "FoodDraft — Ariketa baten datuak",
+    "feedback.ejercicio.cuerpo": "Ariketa: {nombre}\nId: {id}\nHizkuntza: {idioma}\n\nEsaiguzu zer dagoen gaizki edo zer falta den:",
+    "feedback.ejercicio.cuerpoGeneral": "Esaiguzu zein ariketa den eta zer dagoen gaizki edo zer falta den:",
+    "feedback.ejercicioSobre": "Idatzi «{nombre}»-ri buruz",
+    "feedback.ejercicioSobre.desc": "Posta irekiko dizugu ariketa adierazita, zein den azaldu beharrik izan ez dezazun.",
   },
 };
 

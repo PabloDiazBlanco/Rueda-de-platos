@@ -1,7 +1,7 @@
 // ---------- ui/ajustes/compartir.jsx ----------
 // Pantallas sencillas del menú lateral: Compartir, Ayuda y comentarios, y Documentos.
 import React, { useState } from "react";
-import { Sparkles, AlertCircle, Link2, FileText, Share2, Mail, Lightbulb, Globe, Lock } from "lucide-react";
+import { Sparkles, AlertCircle, Link2, FileText, Share2, Mail, Lightbulb, Globe, Lock, Dumbbell } from "lucide-react";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { FUENTE_TEXTO, FUENTE_MONO } from "../estilos.js";
@@ -82,26 +82,49 @@ const FEEDBACK_CATEGORIAS = [
   { key: "traduccion", icon: Globe, color: "var(--olive)" },
   { key: "premium", icon: Sparkles, color: "var(--coffee)" },
   { key: "privacidad", icon: Lock, color: "var(--green)" },
+  { key: "ejercicio", icon: Dumbbell, color: "var(--green-dark)", cuerpo: "feedback.ejercicio.cuerpoGeneral" },
   { key: "otro", icon: Mail, color: "var(--ink-soft)" },
 ];
 
-export function FeedbackView({ idioma }) {
-  function abrirCorreo(key) {
+// `ejercicio` (opcional): { id, nombre } cuando se llega desde la ficha de un ejercicio («¿Datos erróneos
+// o que faltan?»). Entonces sale arriba una tarjeta destacada que abre el correo con el ejercicio, su id y
+// el idioma ya escritos, para no tener que preguntar «¿cuál?». No abre el correo sola: lo decide el usuario.
+export function FeedbackView({ idioma, ejercicio }) {
+  function abrirCorreo(key, claveCuerpo, vars) {
     const asunto = encodeURIComponent(t(idioma, `feedback.${key}.asunto`));
-    const cuerpo = encodeURIComponent(t(idioma, `feedback.${key}.cuerpo`));
+    const cuerpo = encodeURIComponent(t(idioma, claveCuerpo || `feedback.${key}.cuerpo`, vars));
     window.location.href = `mailto:draftedfood@gmail.com?subject=${asunto}&body=${cuerpo}`;
   }
 
   return (
     <>
       <SectionIntro text={t(idioma, "feedback.intro")} />
+      {ejercicio && (
+        <button
+          onClick={() => abrirCorreo("ejercicio", "feedback.ejercicio.cuerpo", { nombre: ejercicio.nombre, id: ejercicio.id, idioma })}
+          style={{
+            display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%", maxWidth: 480, marginBottom: 14,
+            background: "var(--green-soft)", border: "1.5px solid var(--green)", borderRadius: 10, padding: "14px", cursor: "pointer",
+          }}
+        >
+          <Dumbbell size={20} color="var(--green-dark)" style={{ flexShrink: 0 }} />
+          <span>
+            <span style={{ display: "block", fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700, color: "var(--green-dark)" }}>
+              {t(idioma, "feedback.ejercicioSobre", { nombre: ejercicio.nombre })}
+            </span>
+            <span style={{ display: "block", fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>
+              {t(idioma, "feedback.ejercicioSobre.desc")}
+            </span>
+          </span>
+        </button>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 480 }}>
         {FEEDBACK_CATEGORIAS.map((cat) => {
           const Icon = cat.icon;
           return (
             <button
               key={cat.key}
-              onClick={() => abrirCorreo(cat.key)}
+              onClick={() => abrirCorreo(cat.key, cat.cuerpo)}
               style={{
                 display: "flex", alignItems: "center", gap: 12, textAlign: "left", width: "100%",
                 background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "13px 14px", cursor: "pointer",

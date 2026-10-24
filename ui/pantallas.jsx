@@ -7,6 +7,7 @@ import React from "react";
 import { Utensils, Package, CalendarDays, Database, Layers, Camera, PieChart, ListChecks } from "lucide-react";
 import { t } from "i18n";
 import { defaultPesoTracking } from "peso";
+import { nombreEjercicio } from "entreno-nombres";
 import { CATEGORY_META, MACRO_CATS, ESPECIALES_CATS } from "./comun/categorias.js";
 import { BigCardGrid, BackLink } from "./comun/tarjetas.jsx";
 import { MenuView } from "./menu/menu-completo.jsx";
@@ -214,7 +215,13 @@ const PANTALLAS = {
 
   compartir: ({ idioma }) => <CompartirView idioma={idioma} />,
 
-  feedback: ({ idioma }) => <FeedbackView idioma={idioma} />,
+  // Ayuda y comentarios. Desde la ficha de un ejercicio llega con `params: { categoria: "ejercicio",
+  // ejercicioId }`, y la pantalla ofrece arriba el correo ya rellenado con ese ejercicio.
+  feedback: ({ idioma, params, entreno }) => {
+    const id = params && params.categoria === "ejercicio" ? params.ejercicioId : null;
+    const e = id ? entreno.ejercicioDe(id) : null;
+    return <FeedbackView idioma={idioma} ejercicio={id ? { id, nombre: nombreEjercicio(e || id, idioma) } : null} />;
+  },
 
   // ---------- Entrenamiento (octubre de 2026) ----------
   // Las pantallas del área de entreno (ui/entreno/). La sesión en curso no está aquí: es una capa a
