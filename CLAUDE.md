@@ -381,6 +381,20 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
 - **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca), récords
   batidos, «actualizar la rutina» si cambió su estructura, guardar, compartir (`documentoSesion` con
   `BotonCompartir`) y descartar con confirmación.
+- **Comodidad y progreso** (fase C): en el ⋮ de cada ejercicio de la sesión, sustituir solo hoy
+  (`sustituyeA`, no cambia la rutina), subir/bajar, nota de hoy, ver ficha y quitar; ⏸ pausa el cronómetro
+  (no el descanso). Al marcar una serie que bate un récord sale una línea discreta (`recordsEnVivo`), y en el
+  historial una medalla junto a las series que **tienen hoy** un récord (`seriesConRecord`, a partir del
+  índice: se recolocan solas al corregir). Ficha de cada ejercicio (`ficha.jsx`, destino
+  `entreno-ejercicio`): Resumen · Historial · Progreso · Récords, con gráficas propias en SVG
+  (`graficas.jsx`, reutilizables: `GraficaLineas`, `GraficaBarras`) y rangos 3 meses / 1 año / todo, todos
+  gratis; lee todos los meses al abrirse (`useTodasLasSesiones`). El historial tiene calendario con puntos
+  en los días entrenados. «Progreso» (`progreso.jsx`, quinta pestaña): series por músculo de esta semana
+  frente a la media de las 4 anteriores, y entrenos y volumen de las últimas 12 semanas
+  (`semanasRecientes`), sin «zona recomendada». Libras y millas: las conversiones están en
+  `entreno-calculo.js` (con sus pruebas) y `comun.jsx` las reexporta. «¿Datos erróneos o que faltan?» de la
+  ficha navega a `feedback` con `params: { categoria: "ejercicio", ejercicioId }`, y `FeedbackView` ofrece
+  arriba el correo ya rellenado (nunca lo abre solo).
 - **Capas a pantalla completa y hojas inferiores** del módulo: `CapaCompleta` y `HojaInferior` en
   `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
   de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).

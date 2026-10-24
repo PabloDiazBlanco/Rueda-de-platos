@@ -46,7 +46,7 @@ index.html
 auth-bootstrap.jsx   (login, Firestore, App Check, puente con las Cloud Functions)
   │  cargador-ui.js: descarga, pasa por Babel y enlaza app.jsx + ui/ (import/export normales)
   ▼
-app.jsx + ui/        (componente principal + 67 archivos de interfaz, por pantalla)
+app.jsx + ui/        (componente principal + 70 archivos de interfaz, por pantalla)
   │  import { ... } from "nombre-corto"     ← resuelto por el importmap
   ▼
 logica/*.js          (21 módulos de lógica pura, sin JSX, sin React)
