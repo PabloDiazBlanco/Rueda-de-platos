@@ -54,7 +54,7 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores)
   marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral,
                           navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
-  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/   una carpeta por área
+  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/ cuerpo/   una carpeta por área
 
 logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
 logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
@@ -83,6 +83,8 @@ logica/entreno-calculo.js      → 1RM (Epley), volumen, duración con pausas, r
 logica/entreno-sesion.js       → operaciones puras de la sesión en curso (series, descanso, sustituir hoy,
                                   pausa, terminar) y de rutinas (aplicarARutina, rutinaDesdeSesion)
 logica/entreno-almacen.js      → claves, migraciones, meses, índice, borrador, cola de envíos y CSV
+logica/informes.js             → informes cruzados del área Cuerpo (informeCruzadoMes, declaradoPorSemana)
+                                  y aviso de actividad (sesionesPorSemana, evaluarAvisoActividad)
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
@@ -91,7 +93,8 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 `cuestionario.js` → `comun.js` y `datos-iniciales.js`, `migraciones.js` → `datos-iniciales.js`,
 `objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js` y `datos-iniciales.js`, y `lista-compra-neta.js` →
 `macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). Del entreno:
-`entreno-sesion.js` → `comun.js` y `entreno-almacen.js` → `entreno-calculo.js`; `entreno-ejercicios.js`,
+`entreno-sesion.js` → `comun.js`, `entreno-almacen.js` → `entreno-calculo.js` e `informes.js` →
+`entreno-calculo.js`, `resumen-mensual.js` y `objetivos.js` (solo lee de él); `entreno-ejercicios.js`,
 `entreno-nombres.js` y `entreno-calculo.js` no importan nada (reciben `ejercicioDe(id)` y `nombreDe` como
 funciones, para no depender de la biblioteca ni de los nombres). La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
@@ -399,6 +402,26 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
   de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).
 
+## Área Cuerpo: resumen, informes cruzados y aviso de actividad
+
+- **Resumen mensual** (`ui/peso/resumen-mensual.jsx`, gratis): un mes cualquiera en tres apartados —
+  Nutrición (comidas hechas y objetivo), Entreno (`resumenEntrenoMes`: entrenos, días, volumen, tiempo,
+  récords del mes, músculos más trabajados y comparación con el mes anterior) y Peso (premium, porque sale
+  del seguimiento de peso).
+- **Informes cruzados** (`ui/cuerpo/informes.jsx`, destino `cuerpo-informes`, premium; cálculos en
+  `informes.js`, grupo «Informes cruzados» de `validacion/`): entreno y peso, constancia en la comida en días
+  con y sin entreno (solo lo marcado como hecho: la app no sabe qué plato se comió), declarado frente a
+  registrado (sesiones por semana y kcal de entrenamiento al día, con la misma fórmula MET del objetivo) y
+  mes frente a mes. Cada tarjeta, con su gráfica y una frase prudente; **solo lectura**: nunca cambian los
+  objetivos (alimentar el gasto con lo registrado tocaría `calcularObjetivosPerfil` y necesitaría antes su
+  estudio en los PDFs explicativos).
+- **Aviso de actividad** (`ui/entreno/aviso-actividad.jsx`, en Entrenar y arriba de Actividad diaria; regla
+  en `evaluarAvisoActividad`, grupo «Aviso de actividad»): mira las 3 últimas semanas completas; «menos» si en
+  todas se registra menos de la mitad de lo declarado, «más» si en todas al menos 1,5 veces y 2 sesiones
+  más. No avisa con menos de 4 sesiones registradas en total, en semanas de pausa, si está silenciado (28
+  días) o si se cerró hace menos de 14 días. El estado vive en `catalogo.aviso` (`pausa`, `silenciadoHasta`,
+  `descartadoEl`). Sin push.
+
 ## Internacionalización
 
 La interfaz existe en 5 idiomas: español (por defecto), inglés, catalán, gallego y euskera.
@@ -439,8 +462,10 @@ Puntos que hay que saber antes de tocarlas:
   Convenio obligatorio al crear un Checkout: `client_reference_id: uid` y
   `subscription_data.metadata.firebaseUID: uid` — sin eso el webhook no sabe de qué usuario es el
   evento y lo descarta. Gratis: generador de menús, objetivos, catálogo, Menú simple, lista de la
-  compra y resumen mensual básico. Premium: seguimiento de peso, las dos funciones de Gemini y el
-  resumen mensual ampliado.
+  compra, despensa, todo el módulo de entreno (sin límites: rutinas, ejercicios propios, historial,
+  gráficas, récords, exportar) y el resumen mensual (nutrición y entreno). Premium: seguimiento de peso
+  (y con él el apartado de peso del resumen), las dos funciones de Gemini y los **informes cruzados** del
+  área Cuerpo. Desde octubre de 2026 el resumen ampliado dejó de ser premium (decisión del 23-oct).
 - **Secretos** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `GEMINI_API_KEY`): viven en Firebase,
   nunca en el repo. Las funciones callable exigen App Check (`enforceAppCheck: true`); el webhook no,
   porque quien llama es Stripe, no la app.
