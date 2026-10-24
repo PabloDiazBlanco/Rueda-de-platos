@@ -31,6 +31,7 @@ import { EditorRutinaView } from "./entreno/editor-rutina.jsx";
 import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
 import { AjustesEntrenoView } from "./entreno/ajustes.jsx";
 import { FichaEjercicioView } from "./entreno/ficha.jsx";
+import { ProgresoView } from "./entreno/progreso.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -237,6 +238,7 @@ const PANTALLAS = {
   "entreno-sesion": ({ idioma, entreno, navegar, params }) => (
     <DetalleSesionView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} onAbrirEjercicio={(id) => navegar("entreno-ejercicio", { id })} />
   ),
+  "entreno-progreso": ({ idioma, entreno }) => <ProgresoView entreno={entreno} idioma={idioma} />,
   "entreno-ajustes": ({ idioma, entreno, navegar }) => <AjustesEntrenoView entreno={entreno} idioma={idioma} navegar={navegar} />,
 };
 

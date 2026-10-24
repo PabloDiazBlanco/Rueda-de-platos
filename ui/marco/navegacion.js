@@ -20,7 +20,7 @@
 import {
   Utensils, Dumbbell, PersonStanding, CalendarDays, ListChecks, Refrigerator, ChefHat, Apple, Package,
   Shuffle, Camera, PieChart, Scale, Activity, Ruler, Share2, Mail, FileText, Sparkles, Settings, User,
-  ClipboardList, BookOpen, History,
+  ClipboardList, BookOpen, History, TrendingUp,
 } from "lucide-react";
 
 export const AREAS = [
@@ -60,12 +60,14 @@ export const AREAS = [
       { clave: "rutinas", destino: "entreno-rutinas", etiqueta: "barra.rutinas", icono: ClipboardList, incluye: ["entreno-rutinas", "entreno-rutina"] },
       { clave: "ejercicios", destino: "entreno-ejercicios", etiqueta: "barra.ejercicios", icono: BookOpen, incluye: ["entreno-ejercicios", "entreno-ejercicio"] },
       { clave: "historial", destino: "entreno-historial", etiqueta: "barra.historial", icono: History, incluye: ["entreno-historial", "entreno-sesion"] },
+      { clave: "progreso", destino: "entreno-progreso", etiqueta: "barra.progreso", icono: TrendingUp, incluye: ["entreno-progreso"] },
     ],
     menu: [
       { destino: "entreno", etiqueta: "barra.entrenar", icono: Dumbbell },
       { destino: "entreno-rutinas", etiqueta: "barra.rutinas", icono: ClipboardList },
       { destino: "entreno-ejercicios", etiqueta: "barra.ejercicios", icono: BookOpen },
       { destino: "entreno-historial", etiqueta: "barra.historial", icono: History },
+      { destino: "entreno-progreso", etiqueta: "barra.progreso", icono: TrendingUp },
       { destino: "entreno-ajustes", etiqueta: "entreno.ajustes.titulo", icono: Settings },
     ],
   },

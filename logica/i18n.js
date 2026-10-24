@@ -1183,6 +1183,17 @@ const TEXTOS = {
     "entreno.graficas.e1rmAyuda": "Estimación con la fórmula de Epley a partir de tu mejor serie de cada día: sirve para ver la tendencia, no es un máximo real.",
 
     "entreno.historial.diaEntrenado": "día con entreno",
+
+    "barra.progreso": "Progreso",
+    "entreno.progreso.seriesMusculo": "Series por músculo",
+    "entreno.progreso.seriesAyuda": "Esta semana frente a la media de las 4 anteriores. El músculo principal cuenta una serie entera y cada secundario media; el calentamiento no cuenta.",
+    "entreno.progreso.sinSeries": "Todavía no hay entrenos recientes.",
+    "entreno.progreso.media": "media {n}",
+    "entreno.progreso.filaMusculo": "{musculo}: {n} series esta semana, media {media}",
+    "entreno.progreso.leyendaSemana": "esta semana",
+    "entreno.progreso.leyendaMedia": "media de las 4 anteriores",
+    "entreno.progreso.entrenosSemana": "Entrenos por semana",
+    "entreno.progreso.volumenSemana": "Volumen por semana",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2305,6 +2316,17 @@ const TEXTOS = {
     "entreno.graficas.e1rmAyuda": "Estimated with the Epley formula from your best set each day: it shows the trend, it isn’t a real max.",
 
     "entreno.historial.diaEntrenado": "workout day",
+
+    "barra.progreso": "Progress",
+    "entreno.progreso.seriesMusculo": "Sets per muscle",
+    "entreno.progreso.seriesAyuda": "This week against the average of the previous 4. The main muscle counts a full set and each secondary one half; warm-ups don’t count.",
+    "entreno.progreso.sinSeries": "No recent workouts yet.",
+    "entreno.progreso.media": "avg. {n}",
+    "entreno.progreso.filaMusculo": "{musculo}: {n} sets this week, average {media}",
+    "entreno.progreso.leyendaSemana": "this week",
+    "entreno.progreso.leyendaMedia": "average of the previous 4",
+    "entreno.progreso.entrenosSemana": "Workouts per week",
+    "entreno.progreso.volumenSemana": "Volume per week",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3427,6 +3449,17 @@ const TEXTOS = {
     "entreno.graficas.e1rmAyuda": "Estimació amb la fórmula d’Epley a partir de la teva millor sèrie de cada dia: serveix per veure la tendència, no és un màxim real.",
 
     "entreno.historial.diaEntrenado": "dia amb entrenament",
+
+    "barra.progreso": "Progrés",
+    "entreno.progreso.seriesMusculo": "Sèries per múscul",
+    "entreno.progreso.seriesAyuda": "Aquesta setmana davant la mitjana de les 4 anteriors. El múscul principal compta una sèrie sencera i cada secundari mitja; l’escalfament no compta.",
+    "entreno.progreso.sinSeries": "Encara no hi ha entrenaments recents.",
+    "entreno.progreso.media": "mitjana {n}",
+    "entreno.progreso.filaMusculo": "{musculo}: {n} sèries aquesta setmana, mitjana {media}",
+    "entreno.progreso.leyendaSemana": "aquesta setmana",
+    "entreno.progreso.leyendaMedia": "mitjana de les 4 anteriors",
+    "entreno.progreso.entrenosSemana": "Entrenaments per setmana",
+    "entreno.progreso.volumenSemana": "Volum per setmana",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4549,6 +4582,17 @@ const TEXTOS = {
     "entreno.graficas.e1rmAyuda": "Estimación coa fórmula de Epley a partir da túa mellor serie de cada día: serve para ver a tendencia, non é un máximo real.",
 
     "entreno.historial.diaEntrenado": "día con adestramento",
+
+    "barra.progreso": "Progreso",
+    "entreno.progreso.seriesMusculo": "Series por músculo",
+    "entreno.progreso.seriesAyuda": "Esta semana fronte á media das 4 anteriores. O músculo principal conta unha serie enteira e cada secundario media; o quecemento non conta.",
+    "entreno.progreso.sinSeries": "Aínda non hai adestramentos recentes.",
+    "entreno.progreso.media": "media {n}",
+    "entreno.progreso.filaMusculo": "{musculo}: {n} series esta semana, media {media}",
+    "entreno.progreso.leyendaSemana": "esta semana",
+    "entreno.progreso.leyendaMedia": "media das 4 anteriores",
+    "entreno.progreso.entrenosSemana": "Adestramentos por semana",
+    "entreno.progreso.volumenSemana": "Volume por semana",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -5671,6 +5715,17 @@ const TEXTOS = {
     "entreno.graficas.e1rmAyuda": "Egun bakoitzeko zure serie onenetik Epleyren formularekin estimatua: joera ikusteko balio du, ez da benetako maximoa.",
 
     "entreno.historial.diaEntrenado": "entrenamendu-eguna",
+
+    "barra.progreso": "Aurrerapena",
+    "entreno.progreso.seriesMusculo": "Serieak giharreko",
+    "entreno.progreso.seriesAyuda": "Aste hau aurreko 4en batez bestekoarekin alderatuta. Gihar nagusiak serie oso bat zenbatzen du eta bigarren mailako bakoitzak erdia; beroketa ez da zenbatzen.",
+    "entreno.progreso.sinSeries": "Oraindik ez dago azken entrenamendurik.",
+    "entreno.progreso.media": "batez beste {n}",
+    "entreno.progreso.filaMusculo": "{musculo}: {n} serie aste honetan, batez beste {media}",
+    "entreno.progreso.leyendaSemana": "aste hau",
+    "entreno.progreso.leyendaMedia": "aurreko 4en batez bestekoa",
+    "entreno.progreso.entrenosSemana": "Entrenamenduak asteko",
+    "entreno.progreso.volumenSemana": "Bolumena asteko",
   },
 };
 

@@ -283,3 +283,18 @@ export function sumarDias(fecha, n) {
   d.setDate(d.getDate() + n);
   return fechaLocal(d.getTime());
 }
+
+// Las últimas `n` semanas (la actual incluida, la más antigua primero): cuántos entrenos y cuánto volumen
+// hubo en cada una. Lo usa la pantalla de Progreso (fase C6).
+export function semanasRecientes(sesiones, ejercicioDe, pesoCorporal, inicioSemana, hoy, n) {
+  const actual = semanaDe(hoy, inicioSemana);
+  const semanas = Array.from({ length: n }, (_, i) => ({ semana: sumarDias(actual, -7 * (n - 1 - i)), entrenos: 0, volumen: 0 }));
+  const porSemana = Object.fromEntries(semanas.map((s) => [s.semana, s]));
+  (sesiones || []).forEach((s) => {
+    const fila = porSemana[semanaDe(s.inicio, inicioSemana)];
+    if (!fila) return;
+    fila.entrenos += 1;
+    fila.volumen = redondear1(fila.volumen + volumenSesion(s, ejercicioDe, pesoCorporal));
+  });
+  return semanas;
+}

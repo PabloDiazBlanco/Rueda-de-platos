@@ -23,7 +23,7 @@ import {
 import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
 import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
-  mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord,
+  mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -1533,6 +1533,18 @@ function grupoEntrenoCalculos() {
         ejecutar: () => {
           const indice = { ejercicios: { banca: { ultima: { sesionId: "s1", fecha: "2026-10-21", series: [{ tipo: "normal", kg: 60, reps: 10 }] } } } };
           return comparar({ con: anteriorDe(indice, "banca").length, kg: anteriorDe(indice, "banca")[0].kg, sin: anteriorDe(indice, "curl").length }, { con: 1, kg: 60, sin: 0 });
+        },
+      },
+      {
+        nombre: "semanasRecientes: entrenos y volumen de las 3 últimas semanas (lunes como inicio)",
+        ejecutar: () => {
+          const ses = (dia, kg) => ({ inicio: `2026-10-${dia}T17:00:00.000Z`, ejercicios: [{ ejercicioId: "banca", series: [serieP("normal", kg, 10)] }] });
+          // Hoy viernes 23: semanas del 5, del 12 y del 19. El 4 (domingo) es de la semana del 28-9 y queda fuera.
+          const r = semanasRecientes([ses("04", 50), ses("06", 60), ses("13", 60), ses("15", 62), ses("20", 65)], ejercicioPrueba, 80, 1, "2026-10-23", 3);
+          return comparar(
+            { semanas: r.map((s) => s.semana).join(","), entrenos: r.map((s) => s.entrenos).join(","), volumen: r.map((s) => s.volumen).join(",") },
+            { semanas: "2026-10-05,2026-10-12,2026-10-19", entrenos: "1,2,1", volumen: "600,1220,650" }
+          );
         },
       },
       {
