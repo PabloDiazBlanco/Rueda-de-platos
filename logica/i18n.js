@@ -1181,6 +1181,8 @@ const TEXTOS = {
     "entreno.graficas.barras.volumen": "Volumen por sesión",
     "entreno.graficas.barras.tiempo": "Tiempo por sesión",
     "entreno.graficas.e1rmAyuda": "Estimación con la fórmula de Epley a partir de tu mejor serie de cada día: sirve para ver la tendencia, no es un máximo real.",
+
+    "entreno.historial.diaEntrenado": "día con entreno",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2301,6 +2303,8 @@ const TEXTOS = {
     "entreno.graficas.barras.volumen": "Volume per session",
     "entreno.graficas.barras.tiempo": "Time per session",
     "entreno.graficas.e1rmAyuda": "Estimated with the Epley formula from your best set each day: it shows the trend, it isn’t a real max.",
+
+    "entreno.historial.diaEntrenado": "workout day",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3421,6 +3425,8 @@ const TEXTOS = {
     "entreno.graficas.barras.volumen": "Volum per sessió",
     "entreno.graficas.barras.tiempo": "Temps per sessió",
     "entreno.graficas.e1rmAyuda": "Estimació amb la fórmula d’Epley a partir de la teva millor sèrie de cada dia: serveix per veure la tendència, no és un màxim real.",
+
+    "entreno.historial.diaEntrenado": "dia amb entrenament",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4541,6 +4547,8 @@ const TEXTOS = {
     "entreno.graficas.barras.volumen": "Volume por sesión",
     "entreno.graficas.barras.tiempo": "Tempo por sesión",
     "entreno.graficas.e1rmAyuda": "Estimación coa fórmula de Epley a partir da túa mellor serie de cada día: serve para ver a tendencia, non é un máximo real.",
+
+    "entreno.historial.diaEntrenado": "día con adestramento",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -5661,6 +5669,8 @@ const TEXTOS = {
     "entreno.graficas.barras.volumen": "Saio bakoitzeko bolumena",
     "entreno.graficas.barras.tiempo": "Saio bakoitzeko denbora",
     "entreno.graficas.e1rmAyuda": "Egun bakoitzeko zure serie onenetik Epleyren formularekin estimatua: joera ikusteko balio du, ez da benetako maximoa.",
+
+    "entreno.historial.diaEntrenado": "entrenamendu-eguna",
   },
 };
 

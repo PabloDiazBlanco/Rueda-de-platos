@@ -8,7 +8,7 @@ import React, { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Pencil, Trash2, ClipboardList, X, Medal } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
-import { resumenSesion, seriesConRecord } from "entreno-calculo";
+import { resumenSesion, seriesConRecord, fechaLocal } from "entreno-calculo";
 import { mesDe } from "entreno-almacen";
 import { Field, inputStyle, ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { BackLink } from "../comun/tarjetas.jsx";
@@ -16,7 +16,7 @@ import { BotonCompartir } from "../comun/compartir.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
   BotonPrincipal, BotonSecundario, BotonTexto, TextoSuave, duracionTexto, textoPeso, nombreDe, nombreMes, fechaLarga,
-  formatoNumero, pesoAPantalla, distanciaAPantalla,
+  formatoNumero, pesoAPantalla, distanciaAPantalla, fechaDia, DIAS_CORTOS,
 } from "./comun.jsx";
 import { FilaSesion } from "./inicio.jsx";
 import { textoSerie, documentoSesion } from "./terminar.jsx";
@@ -28,13 +28,15 @@ function sumarMes(mes, n) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function HistorialView({ entreno, idioma, navegar, encima }) {
+export function HistorialView({ entreno, idioma, navegar }) {
   const actual = entreno.mesActual();
   const [mes, setMes] = useState(actual);
   const [cargando, setCargando] = useState(false);
+  const [dia, setDia] = useState(null); // «AAAA-MM-DD» elegido en el calendario, o null (todo el mes)
 
   useEffect(() => {
     let vivo = true;
+    setDia(null);
     if (!entreno.meses[mes]) {
       setCargando(true);
       entreno.cargarMes(mes).finally(() => { if (vivo) setCargando(false); });
@@ -43,6 +45,7 @@ export function HistorialView({ entreno, idioma, navegar, encima }) {
   }, [mes]);
 
   const sesiones = entreno.sesionesDeMes(mes);
+  const delDia = dia ? sesiones.filter((s) => fechaLocal(s.inicio) === dia) : sesiones;
   const flecha = { width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "var(--green-dark)" };
 
   return (
@@ -53,15 +56,66 @@ export function HistorialView({ entreno, idioma, navegar, encima }) {
         <button onClick={() => setMes(sumarMes(mes, 1))} disabled={mes >= actual} aria-label={t(idioma, "entreno.historial.mesSiguiente")} style={{ ...flecha, opacity: mes >= actual ? 0.3 : 1, cursor: mes >= actual ? "default" : "pointer" }}><ChevronRight size={20} /></button>
       </div>
 
-      {encima && encima({ mes, sesiones, navegar })}
+      <Calendario mes={mes} sesiones={sesiones} inicioSemana={entreno.ajustes.inicioSemana} dia={dia} onDia={(d) => setDia(dia === d ? null : d)} idioma={idioma} />
 
-      <TextoSuave style={{ margin: "4px 0 10px" }}>
-        {cargando ? t(idioma, "loading.cargando") : sesiones.length ? t(idioma, sesiones.length === 1 ? "entreno.historial.unEntreno" : "entreno.historial.nEntrenos", { n: sesiones.length }) : t(idioma, "entreno.historial.vacio")}
+      <TextoSuave style={{ margin: "10px 0 10px" }}>
+        {cargando ? t(idioma, "loading.cargando")
+          : dia ? fechaDia(dia + "T12:00:00", idioma)
+          : sesiones.length ? t(idioma, sesiones.length === 1 ? "entreno.historial.unEntreno" : "entreno.historial.nEntrenos", { n: sesiones.length })
+          : t(idioma, "entreno.historial.vacio")}
       </TextoSuave>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {sesiones.map((s) => (
+        {delDia.map((s) => (
           <FilaSesion key={s.id} sesion={s} entreno={entreno} idioma={idioma} onClick={() => navegar("entreno-sesion", { id: s.id, inicio: s.inicio })} />
         ))}
+      </div>
+    </div>
+  );
+}
+
+// Calendario del mes con un punto en cada día entrenado (patrón muy valorado en las reseñas de Strong;
+// diseño, §4.7). La semana empieza en lunes o en domingo según los ajustes. Tocar un día con entrenos
+// enseña solo los de ese día; tocarlo otra vez vuelve al mes entero.
+function Calendario({ mes, sesiones, inicioSemana, dia, onDia, idioma }) {
+  const [a, m] = mes.split("-").map(Number);
+  const diasMes = new Date(a, m, 0).getDate();
+  const primero = new Date(a, m - 1, 1).getDay(); // 0 = domingo
+  const hueco = (primero - inicioSemana + 7) % 7;
+  const entrenados = new Set(sesiones.map((s) => fechaLocal(s.inicio)));
+  const hoy = fechaLocal(Date.now());
+  const iniciales = DIAS_CORTOS[idioma] || DIAS_CORTOS.es; // empiezan en lunes
+  const cabecera = inicioSemana === 0 ? [iniciales[6], ...iniciales.slice(0, 6)] : iniciales;
+  const celdas = [...Array(hueco).fill(null), ...Array.from({ length: diasMes }, (_, i) => i + 1)];
+  return (
+    <div role="grid" aria-label={nombreMes(mes, idioma)} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "8px 6px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", marginBottom: 2 }}>
+        {cabecera.map((d, i) => <span key={i}>{d}</span>)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", rowGap: 2 }}>
+        {celdas.map((n, i) => {
+          if (!n) return <span key={i} />;
+          const fecha = `${mes}-${String(n).padStart(2, "0")}`;
+          const entrenado = entrenados.has(fecha);
+          const elegido = dia === fecha;
+          return (
+            <button
+              key={i}
+              onClick={entrenado ? () => onDia(fecha) : undefined}
+              disabled={!entrenado}
+              aria-pressed={entrenado ? elegido : undefined}
+              aria-label={entrenado ? `${n} · ${t(idioma, "entreno.historial.diaEntrenado")}` : String(n)}
+              style={{
+                height: 40, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+                border: "none", borderRadius: 8, background: elegido ? "var(--green-soft)" : "transparent", cursor: entrenado ? "pointer" : "default",
+                fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: fecha === hoy ? 700 : 400,
+                color: fecha > hoy ? "var(--line)" : fecha === hoy ? "var(--green-dark)" : "var(--ink)",
+              }}
+            >
+              {n}
+              <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: "50%", background: entrenado ? "var(--green)" : "transparent" }} />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

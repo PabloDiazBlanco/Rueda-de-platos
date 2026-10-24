@@ -211,6 +211,14 @@ export function fechaLarga(inicio, idioma) {
   return `${diaYMes(d, idioma, false)}, ${dos(d.getHours())}:${dos(d.getMinutes())}`;
 }
 
+// Un día sin hora: «sábado, 24 de octubre» (o «urriaren 24a» sin datos del idioma).
+export function fechaDia(fecha, idioma) {
+  const d = new Date(fecha);
+  const l = LOCALES[idioma] || "es-ES";
+  if (soportado(l)) return new Intl.DateTimeFormat(l, { weekday: "long", day: "numeric", month: "long" }).format(d);
+  return diaYMes(d, idioma, false);
+}
+
 export function nombreMes(mesISO, idioma) {
   const [a, m] = mesISO.split("-").map(Number);
   const l = LOCALES[idioma] || "es-ES";
