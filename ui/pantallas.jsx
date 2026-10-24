@@ -34,6 +34,7 @@ import { AjustesEntrenoView } from "./entreno/ajustes.jsx";
 import { FichaEjercicioView } from "./entreno/ficha.jsx";
 import { ProgresoView } from "./entreno/progreso.jsx";
 import { InformesView } from "./cuerpo/informes.jsx";
+import { AvisoActividad } from "./entreno/aviso-actividad.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -213,7 +214,15 @@ const PANTALLAS = {
 
   "perfil-documentos": ({ idioma }) => <DocumentosView idioma={idioma} />,
 
-  "actividad-diaria": ({ data, idioma, perfil }) => <ActividadDiariaView perfil={data.perfil} onSave={perfil.savePerfil} idioma={idioma} />,
+  // Arriba, el aviso de actividad (si lo hay): lo registrado frente a lo declarado aquí.
+  "actividad-diaria": ({ data, idioma, perfil, entreno, navegar }) => (
+    <ActividadDiariaView
+      perfil={data.perfil}
+      onSave={perfil.savePerfil}
+      idioma={idioma}
+      aviso={<AvisoActividad entreno={entreno} data={data} idioma={idioma} navegar={navegar} enActividad />}
+    />
+  ),
 
   ajustes: ({ data, idioma, perfil }) => (
     <SettingsView perfil={data.perfil} data={data} onSave={perfil.savePerfil} onRepetirCuestionario={perfil.repetirCuestionarioCatalogo} idioma={idioma} />
@@ -232,7 +241,9 @@ const PANTALLAS = {
   // ---------- Entrenamiento (octubre de 2026) ----------
   // Las pantallas del área de entreno (ui/entreno/). La sesión en curso no está aquí: es una capa a
   // pantalla completa que pinta app.jsx encima de cualquier pantalla.
-  entreno: ({ idioma, entreno, navegar }) => <EntrenarView entreno={entreno} idioma={idioma} navegar={navegar} />,
+  entreno: ({ data, idioma, entreno, navegar }) => (
+    <EntrenarView entreno={entreno} idioma={idioma} navegar={navegar} aviso={<AvisoActividad entreno={entreno} data={data} idioma={idioma} navegar={navegar} />} />
+  ),
   "entreno-rutinas": ({ idioma, entreno, navegar }) => <RutinasView entreno={entreno} idioma={idioma} navegar={navegar} />,
   // Editor de una rutina: `params.id` (null = nueva). Se monta de nuevo para cada rutina (key), así no
   // se arrastra la copia que se estaba editando de otra.

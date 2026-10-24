@@ -5,7 +5,7 @@
 // §9). Todo es **solo lectura**: ningún informe ni aviso cambia los objetivos; como mucho sugiere revisar
 // «Actividad diaria», y la decisión es siempre del usuario. Alimentar el gasto con lo registrado tocaría
 // calcularObjetivosPerfil y, según CLAUDE.md, necesitaría antes su propio estudio en los PDFs explicativos.
-import { duracionEfectiva, volumenSesion, fechaLocal } from "entreno-calculo";
+import { duracionEfectiva, volumenSesion, fechaLocal, semanaDe, sumarDias } from "entreno-calculo";
 import { pesoEnMes } from "resumen-mensual";
 import { TIPOS_ENTRENAMIENTO, calcularObjetivosPerfil } from "objetivos";
 
@@ -99,4 +99,60 @@ export function informeCruzadoMes({ data, sesionesMes, sesionesMesAnterior, ejer
       peso: actual.peso && anterior.peso ? redondear1(actual.peso.delta - anterior.peso.delta) : null,
     },
   };
+}
+
+// ---------- Aviso de actividad (fase K3) ----------
+// Si lo que se registra se aleja mucho de lo declarado en el perfil durante varias semanas, se sugiere
+// revisar «Actividad diaria», porque calcularObjetivosPerfil usa lo declarado para las calorías (diseño,
+// §8.1, decidido el 23-oct). Es una sugerencia que acepta el usuario; nunca cambia nada solo, y no hay
+// notificación push.
+
+// Una sesión cuenta como entreno de la semana si tiene al menos una serie hecha de un ejercicio que no es
+// cardio (lo declarado que se compara es de pesas).
+function cuentaComoPesas(sesion, ejercicioDe) {
+  return (sesion.ejercicios || []).some((ej) => {
+    const e = ejercicioDe(ej.ejercicioId);
+    return (!e || e.musculo !== "cardio") && (ej.series || []).some((s) => s.hecha);
+  });
+}
+
+// Sesiones de pesas de cada una de las `k` últimas semanas **completas** (la actual no cuenta, porque
+// aún puede llenarse), de la más antigua a la más reciente: [{ inicio: "AAAA-MM-DD", n }].
+export function sesionesPorSemana(sesiones, ejercicioDe, inicioSemana, hoy, k = 3) {
+  const hoyISO = typeof hoy === "string" ? hoy : fechaLocal(hoy);
+  const actual = semanaDe(hoyISO, inicioSemana);
+  const semanas = Array.from({ length: k }, (_, i) => ({ inicio: sumarDias(actual, -7 * (k - i)), n: 0 }));
+  const porInicio = Object.fromEntries(semanas.map((s) => [s.inicio, s]));
+  (sesiones || []).forEach((s) => {
+    const fila = porInicio[semanaDe(s.inicio, inicioSemana)];
+    if (fila && cuentaComoPesas(s, ejercicioDe)) fila.n += 1;
+  });
+  return semanas;
+}
+
+// ¿Toca avisar? Devuelve null o { tipo: "menos" | "mas", declarado, media }.
+// - «menos»: declara al menos 1 sesión y en las 3 semanas registra menos de la mitad.
+// - «mas»: en las 3 semanas registra al menos 1,5 veces lo declarado y como mínimo 2 sesiones más (con
+//   0 declaradas, 2 o más registradas).
+// No avisa si hay menos de 4 sesiones registradas en total (quien no usa el registro no anota sus
+// entrenos aquí: sería un aviso falso), si alguna de esas semanas cae en una pausa (viaje, lesión), si está
+// silenciado o si se descartó hace menos de 14 días.
+export const MINIMO_SESIONES_AVISO = 4;
+export const ESPERA_TRAS_DESCARTAR_DIAS = 14;
+
+export function evaluarAvisoActividad({ declaradoSemana, semanas, totalRegistradas, hoy, aviso }) {
+  const hoyISO = typeof hoy === "string" ? hoy : fechaLocal(hoy);
+  const estado = aviso || {};
+  if ((totalRegistradas || 0) < MINIMO_SESIONES_AVISO) return null;
+  if (!semanas || !semanas.length) return null;
+  if (estado.silenciadoHasta && hoyISO < estado.silenciadoHasta) return null;
+  if (estado.descartadoEl && hoyISO < sumarDias(estado.descartadoEl, ESPERA_TRAS_DESCARTAR_DIAS)) return null;
+  const pausa = estado.pausa;
+  if (pausa && pausa.desde && semanas.some((s) => pausa.desde <= sumarDias(s.inicio, 6) && (!pausa.hasta || pausa.hasta >= s.inicio))) return null;
+  const d = Number(declaradoSemana) || 0;
+  const ns = semanas.map((s) => (typeof s === "number" ? s : s.n));
+  const media = Math.round((ns.reduce((t, n) => t + n, 0) / ns.length) * 10) / 10;
+  if (d >= 1 && ns.every((n) => n < 0.5 * d)) return { tipo: "menos", declarado: d, media };
+  if (ns.every((n) => n >= 1.5 * d && n - d >= 2)) return { tipo: "mas", declarado: d, media };
+  return null;
 }

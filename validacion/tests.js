@@ -34,7 +34,7 @@ import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
   elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV,
 } from "entreno-almacen";
-import { declaradoPorSemana, informeCruzadoMes } from "informes";
+import { declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad } from "informes";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1094,6 +1094,7 @@ export function crearGrupos(mod, carga) {
     grupoEntrenoSesion(),
     grupoEntrenoAlmacen(),
     grupoInformes(),
+    grupoAvisoActividad(),
   ];
 }
 
@@ -1872,6 +1873,54 @@ function grupoInformes() {
           const r = informeCruzadoMes({ data, sesionesMes: sesiones, sesionesMesAnterior: sesiones.slice(0, 9), ejercicioDe: ejercicioPrueba, mesISO: "2026-09", hoy: "2026-10-05" });
           return comparar({ sesiones: r.variacion.sesiones, mesAnterior: r.anterior.mes, volumen: r.variacion.volumenPct }, { sesiones: 3, mesAnterior: "2026-08", volumen: null });
         },
+      },
+    ],
+  };
+}
+
+// ---------- Aviso de actividad (fase K3) ----------
+// Hoy: viernes 23-10-2026. Las 3 últimas semanas completas empiezan el 28-9, el 5-10 y el 12-10.
+const SEMANAS_AVISO = ["2026-09-28", "2026-10-05", "2026-10-12"];
+const semanasCon = (ns) => ns.map((n, i) => ({ inicio: SEMANAS_AVISO[i], n }));
+const avisoDe = (declarado, ns, extra = {}) => {
+  const r = evaluarAvisoActividad({ declaradoSemana: declarado, semanas: semanasCon(ns), totalRegistradas: 10, hoy: "2026-10-23", aviso: {}, ...extra });
+  return r ? r.tipo : "nada";
+};
+
+function grupoAvisoActividad() {
+  return {
+    grupo: "Aviso de actividad",
+    casos: [
+      {
+        nombre: "sesionesPorSemana: las 3 últimas semanas completas, sin cardio ni la semana actual",
+        ejecutar: () => {
+          const ej = (id) => ({ ejercicioId: id, series: [serieP("normal", 50, 10)] });
+          const ses = (dia, id) => ({ inicio: `2026-10-${dia}T17:00:00.000Z`, ejercicios: [ej(id)] });
+          // 6-10: banca (cuenta); 7-10: solo cinta (no cuenta); 13 y 15-10: banca; 20-10: semana actual (no cuenta).
+          const r = sesionesPorSemana([ses("06", "banca"), ses("07", "cinta"), ses("13", "banca"), ses("15", "curl"), ses("20", "banca")], ejercicioPrueba, 1, "2026-10-23", 3);
+          return comparar({ inicios: r.map((s) => s.inicio).join(","), n: r.map((s) => s.n).join(",") }, { inicios: SEMANAS_AVISO.join(","), n: "0,1,2" });
+        },
+      },
+      {
+        nombre: "«Menos»: declara 4 y registra [1,1,1]; con [1,3,1] no avisa",
+        ejecutar: () => comparar({ menos: avisoDe(4, [1, 1, 1]), mezcla: avisoDe(4, [1, 3, 1]) }, { menos: "menos", mezcla: "nada" }),
+      },
+      {
+        nombre: "No avisa con una pausa en la 2.ª semana, con 3 sesiones en total, silenciado o recién descartado",
+        ejecutar: () => comparar(
+          {
+            pausa: avisoDe(4, [1, 1, 1], { aviso: { pausa: { desde: "2026-10-07", hasta: "2026-10-09" } } }),
+            pocas: avisoDe(4, [1, 1, 1], { totalRegistradas: 3 }),
+            silenciado: avisoDe(4, [1, 1, 1], { aviso: { silenciadoHasta: "2026-10-24" } }),
+            descartado: avisoDe(4, [1, 1, 1], { aviso: { descartadoEl: "2026-10-15" } }),
+            descartadoHaceTiempo: avisoDe(4, [1, 1, 1], { aviso: { descartadoEl: "2026-10-01" } }),
+          },
+          { pausa: "nada", pocas: "nada", silenciado: "nada", descartado: "nada", descartadoHaceTiempo: "menos" }
+        ),
+      },
+      {
+        nombre: "«Más»: declara 2 y registra [4,4,4]; declara 0 y registra [2,3,2]; declara 4 y [2,2,2] no avisa",
+        ejecutar: () => comparar({ mas: avisoDe(2, [4, 4, 4]), ceroDeclarado: avisoDe(0, [2, 3, 2]), limite: avisoDe(4, [2, 2, 2]) }, { mas: "mas", ceroDeclarado: "mas", limite: "nada" }),
       },
     ],
   };

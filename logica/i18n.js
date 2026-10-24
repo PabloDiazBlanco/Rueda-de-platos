@@ -1243,6 +1243,15 @@ const TEXTOS = {
     "cuerpo.informes.comidasDiasEntreno": "Comidas hechas los días con entreno",
     "cuerpo.informes.columnas": "Columnas: {antes} · {ahora} · cambio.",
     "cuerpo.informes.aviso": "Estos informes te ayudan a interpretar tus propios datos; no sustituyen la valoración de un profesional de la nutrición, del entrenamiento o de la salud.",
+
+    "entreno.aviso.textoMenos": "En las últimas 3 semanas has anotado {n} entrenos por semana y en tu perfil declaras {d}. Tus objetivos de calorías usan ese dato. Si entrenas sin anotarlo aquí, puedes ignorar este aviso.",
+    "entreno.aviso.textoMas": "En las últimas 3 semanas has anotado {n} entrenos por semana y en tu perfil declaras {d}. Tus objetivos de calorías usan ese dato, así que podrían estar quedándose cortos. Si quieres, revisa tu actividad.",
+    "entreno.aviso.ajustar": "Ajustar mi actividad",
+    "entreno.aviso.pausa": "Estoy de pausa",
+    "entreno.aviso.silenciar": "No avisar durante unas semanas",
+    "entreno.aviso.cerrar": "Cerrar el aviso",
+    "entreno.aviso.dePausa": "Estás de pausa desde el {fecha}: mientras dure, no se compara lo que anotas con tu perfil.",
+    "entreno.aviso.terminarPausa": "Terminar la pausa",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2425,6 +2434,15 @@ const TEXTOS = {
     "cuerpo.informes.comidasDiasEntreno": "Meals done on training days",
     "cuerpo.informes.columnas": "Columns: {antes} · {ahora} · change.",
     "cuerpo.informes.aviso": "These reports help you read your own data; they don’t replace advice from a nutrition, training or health professional.",
+
+    "entreno.aviso.textoMenos": "Over the last 3 weeks you’ve logged {n} workouts a week, and your profile says {d}. Your calorie goals use that number. If you train without logging it here, you can ignore this.",
+    "entreno.aviso.textoMas": "Over the last 3 weeks you’ve logged {n} workouts a week, and your profile says {d}. Your calorie goals use that number, so they may be falling short. You may want to review your activity.",
+    "entreno.aviso.ajustar": "Adjust my activity",
+    "entreno.aviso.pausa": "I’m taking a break",
+    "entreno.aviso.silenciar": "Don’t remind me for a few weeks",
+    "entreno.aviso.cerrar": "Close the notice",
+    "entreno.aviso.dePausa": "You’ve been on a break since {fecha}: while it lasts, your logs aren’t compared with your profile.",
+    "entreno.aviso.terminarPausa": "End the break",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3607,6 +3625,15 @@ const TEXTOS = {
     "cuerpo.informes.comidasDiasEntreno": "Àpats fets els dies amb entrenament",
     "cuerpo.informes.columnas": "Columnes: {antes} · {ahora} · canvi.",
     "cuerpo.informes.aviso": "Aquests informes t’ajuden a interpretar les teves pròpies dades; no substitueixen la valoració d’un professional de la nutrició, de l’entrenament o de la salut.",
+
+    "entreno.aviso.textoMenos": "En les últimes 3 setmanes has anotat {n} entrenaments per setmana i al teu perfil en declares {d}. Els teus objectius de calories fan servir aquesta dada. Si entrenes sense anotar-ho aquí, pots ignorar aquest avís.",
+    "entreno.aviso.textoMas": "En les últimes 3 setmanes has anotat {n} entrenaments per setmana i al teu perfil en declares {d}. Els teus objectius de calories fan servir aquesta dada, així que es podrien estar quedant curts. Si vols, revisa la teva activitat.",
+    "entreno.aviso.ajustar": "Ajustar la meva activitat",
+    "entreno.aviso.pausa": "Estic de pausa",
+    "entreno.aviso.silenciar": "No avisar durant unes setmanes",
+    "entreno.aviso.cerrar": "Tancar l’avís",
+    "entreno.aviso.dePausa": "Estàs de pausa des del {fecha}: mentre duri, no es compara el que anotes amb el teu perfil.",
+    "entreno.aviso.terminarPausa": "Acabar la pausa",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4789,6 +4816,15 @@ const TEXTOS = {
     "cuerpo.informes.comidasDiasEntreno": "Comidas feitas os días con adestramento",
     "cuerpo.informes.columnas": "Columnas: {antes} · {ahora} · cambio.",
     "cuerpo.informes.aviso": "Estes informes axúdanche a interpretar os teus propios datos; non substitúen a valoración dun profesional da nutrición, do adestramento ou da saúde.",
+
+    "entreno.aviso.textoMenos": "Nas últimas 3 semanas anotaches {n} adestramentos por semana e no teu perfil declaras {d}. Os teus obxectivos de calorías usan ese dato. Se adestras sen anotalo aquí, podes ignorar este aviso.",
+    "entreno.aviso.textoMas": "Nas últimas 3 semanas anotaches {n} adestramentos por semana e no teu perfil declaras {d}. Os teus obxectivos de calorías usan ese dato, así que poderían estar quedando curtos. Se queres, revisa a túa actividade.",
+    "entreno.aviso.ajustar": "Axustar a miña actividade",
+    "entreno.aviso.pausa": "Estou en pausa",
+    "entreno.aviso.silenciar": "Non avisar durante unhas semanas",
+    "entreno.aviso.cerrar": "Pechar o aviso",
+    "entreno.aviso.dePausa": "Estás en pausa desde o {fecha}: mentres dure, non se compara o que anotas co teu perfil.",
+    "entreno.aviso.terminarPausa": "Rematar a pausa",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -5971,6 +6007,15 @@ const TEXTOS = {
     "cuerpo.informes.comidasDiasEntreno": "Entrenamendu-egunetan egindako otorduak",
     "cuerpo.informes.columnas": "Zutabeak: {antes} · {ahora} · aldaketa.",
     "cuerpo.informes.aviso": "Txosten hauek zure datuak interpretatzen laguntzen dizute; ez dute ordezten elikadura, entrenamendu edo osasun arloko profesional baten balorazioa.",
+
+    "entreno.aviso.textoMenos": "Azken 3 asteetan {n} entrenamendu idatzi dituzu asteko, eta zure profilean {d} adierazten dituzu. Zure kaloria-helburuek datu hori erabiltzen dute. Hemen idatzi gabe entrenatzen baduzu, abisu hau ez ikusi egin dezakezu.",
+    "entreno.aviso.textoMas": "Azken 3 asteetan {n} entrenamendu idatzi dituzu asteko, eta zure profilean {d} adierazten dituzu. Zure kaloria-helburuek datu hori erabiltzen dute, beraz baliteke laburregi geratzea. Nahi baduzu, berrikusi zure jarduera.",
+    "entreno.aviso.ajustar": "Doitu nire jarduera",
+    "entreno.aviso.pausa": "Atsedenaldian nago",
+    "entreno.aviso.silenciar": "Ez abisatu aste batzuetan",
+    "entreno.aviso.cerrar": "Itxi abisua",
+    "entreno.aviso.dePausa": "{fecha}(e)tik atsedenaldian zaude: irauten duen bitartean, ez da idazten duzuna zure profilarekin alderatzen.",
+    "entreno.aviso.terminarPausa": "Amaitu atsedenaldia",
   },
 };
 
