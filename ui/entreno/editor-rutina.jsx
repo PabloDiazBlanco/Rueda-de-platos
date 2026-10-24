@@ -66,7 +66,7 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
       setError(t(idioma, "entreno.rutinas.nombreObligatorio"));
       return;
     }
-    entreno.guardarRutina({ ...rutina, nombre: rutina.nombre.trim() });
+    entreno.guardarRutina({ ...rutina, nombre: rutina.nombre.trim(), carpeta: (rutina.carpeta || "").trim() || null });
     navegar("entreno-rutinas");
   }
 
@@ -85,6 +85,21 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
           style={{ ...inputStyle, minHeight: 44, fontSize: 16 }}
         />
         {error && <TextoSuave style={{ color: "var(--rust)", marginTop: 4 }}>{error}</TextoSuave>}
+      </Field>
+
+      {/* Carpeta (opcional C11): solo agrupa las rutinas en su lista; se elige entre las que ya hay o se
+          escribe una nueva. */}
+      <Field label={t(idioma, "entreno.rutinas.carpeta")}>
+        <input
+          value={rutina.carpeta || ""}
+          onChange={(e) => setRutina({ ...rutina, carpeta: e.target.value })}
+          list="carpetas-rutinas"
+          placeholder={t(idioma, "entreno.rutinas.carpetaPlaceholder")}
+          style={{ ...inputStyle, minHeight: 44, fontSize: 16 }}
+        />
+        <datalist id="carpetas-rutinas">
+          {[...new Set(((entreno.catalogo && entreno.catalogo.rutinas) || []).map((r) => (r.carpeta || "").trim()).filter(Boolean))].map((c) => <option key={c} value={c} />)}
+        </datalist>
       </Field>
 
       {!rutina.ejercicios.length && <TextoSuave style={{ margin: "8px 0 12px" }}>{t(idioma, "entreno.rutinas.anadeEjercicios")}</TextoSuave>}

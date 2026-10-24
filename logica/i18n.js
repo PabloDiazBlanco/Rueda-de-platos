@@ -1260,6 +1260,9 @@ const TEXTOS = {
     "entreno.discos.soloBarra": "Solo la barra.",
     "entreno.discos.menosQueBarra": "Es menos de lo que pesa la barra.",
     "entreno.discos.resto": "Con estos discos llegas a {total}; faltan {resto} que no se pueden poner.",
+
+    "entreno.rutinas.carpeta": "Carpeta (opcional)",
+    "entreno.rutinas.carpetaPlaceholder": "Ej.: Fuerza, Verano…",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2459,6 +2462,9 @@ const TEXTOS = {
     "entreno.discos.soloBarra": "Just the bar.",
     "entreno.discos.menosQueBarra": "That’s less than the bar weighs.",
     "entreno.discos.resto": "These plates get you to {total}; {resto} can’t be added.",
+
+    "entreno.rutinas.carpeta": "Folder (optional)",
+    "entreno.rutinas.carpetaPlaceholder": "E.g. Strength, Summer…",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3658,6 +3664,9 @@ const TEXTOS = {
     "entreno.discos.soloBarra": "Només la barra.",
     "entreno.discos.menosQueBarra": "És menys del que pesa la barra.",
     "entreno.discos.resto": "Amb aquests discos arribes a {total}; en falten {resto} que no es poden posar.",
+
+    "entreno.rutinas.carpeta": "Carpeta (opcional)",
+    "entreno.rutinas.carpetaPlaceholder": "Ex.: Força, Estiu…",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4857,6 +4866,9 @@ const TEXTOS = {
     "entreno.discos.soloBarra": "Só a barra.",
     "entreno.discos.menosQueBarra": "É menos do que pesa a barra.",
     "entreno.discos.resto": "Con estes discos chegas a {total}; faltan {resto} que non se poden poñer.",
+
+    "entreno.rutinas.carpeta": "Cartafol (opcional)",
+    "entreno.rutinas.carpetaPlaceholder": "Ex.: Forza, Verán…",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6056,6 +6068,9 @@ const TEXTOS = {
     "entreno.discos.soloBarra": "Barra bakarrik.",
     "entreno.discos.menosQueBarra": "Barrak pisatzen duena baino gutxiago da.",
     "entreno.discos.resto": "Disko hauekin {total}ra iristen zara; ezin diren {resto} falta dira.",
+
+    "entreno.rutinas.carpeta": "Karpeta (aukerakoa)",
+    "entreno.rutinas.carpetaPlaceholder": "Adib.: Indarra, Uda…",
   },
 };
 
