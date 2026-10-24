@@ -15,6 +15,26 @@ import {
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 import { esBebida, huecoDe, formaDe, repartirEnHuecos } from "nevera";
+import { tieneTraduccion, clavesDeIdioma, IDIOMAS_DISPONIBLES } from "i18n";
+import {
+  EJERCICIOS_SEMILLA, TIPOS_EJERCICIO, GRUPOS_MUSCULARES, EQUIPOS, camposDeTipo, listaEjercicios, buscarEjercicios,
+  posibleDuplicado,
+} from "entreno-ejercicios";
+import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
+import {
+  e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
+  mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
+  pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes, discosPorLado,
+} from "entreno-calculo";
+import {
+  nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
+  terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion,
+} from "entreno-sesion";
+import {
+  claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
+  elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV,
+} from "entreno-almacen";
+import { declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad } from "informes";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1067,6 +1087,14 @@ export function crearGrupos(mod, carga) {
         },
       ],
     },
+    grupoNavegacion(mod),
+    grupoEntrenoBiblioteca(),
+    grupoEntrenoNombres(),
+    grupoEntrenoCalculos(),
+    grupoEntrenoSesion(),
+    grupoEntrenoAlmacen(),
+    grupoInformes(),
+    grupoAvisoActividad(),
   ];
 }
 
@@ -1174,4 +1202,737 @@ function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
     protein: "Alto en sal", carbo, verdura: null, garbanzos: false, raciones: {},
   }));
   return { data, menu };
+}
+
+// ---------- Navegación por áreas (octubre de 2026) ----------
+// La descripción de ui/marco/navegacion.js se escribe a mano (ver su cabecera), así que estas pruebas
+// son lo que evita que una pantalla nueva se quede sin área, sin pestaña y sin entrada en el menú.
+
+// Prefijos de las claves de i18n creadas para la navegación por áreas y el módulo de entreno (anexo B
+// del plan): todas deben existir en los cinco idiomas, porque en pantalla una que falte no se nota.
+const PREFIJOS_NUEVOS = [
+  "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
+  "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio",
+];
+
+function clavesSinTraducir(claves) {
+  const faltan = [];
+  claves.forEach((clave) => {
+    IDIOMAS_DISPONIBLES.forEach(({ key }) => { if (!tieneTraduccion(key, clave)) faltan.push(`${key}:${clave}`); });
+  });
+  return faltan;
+}
+
+function grupoNavegacion(mod) {
+  const { AREAS, COMUNES, areaDe, pestanaDe, DESTINOS } = mod;
+  const pestanas = AREAS.flatMap((a) => a.pestanas);
+  return {
+    grupo: "Navegación por áreas",
+    casos: [
+      {
+        nombre: "Todo destino está en una pestaña, en el menú de un área o en la zona común",
+        ejecutar: () => {
+          const huerfanos = DESTINOS.filter((d) =>
+            !pestanas.some((p) => p.incluye.includes(d)) &&
+            !AREAS.some((a) => a.menu.some((m) => m.destino === d)) &&
+            !COMUNES.some((c) => c.destino === d));
+          return comparar({ huerfanos: huerfanos.join(", ") }, { huerfanos: "" });
+        },
+      },
+      {
+        nombre: "Todo destino de pestañas, menús y zona común existe en PANTALLAS",
+        ejecutar: () => {
+          const usados = [
+            ...pestanas.flatMap((p) => [p.destino, ...p.incluye]),
+            ...AREAS.flatMap((a) => a.menu.map((m) => m.destino)),
+            ...COMUNES.map((c) => c.destino),
+          ];
+          const inexistentes = [...new Set(usados.filter((d) => !DESTINOS.includes(d)))];
+          return comparar({ inexistentes: inexistentes.join(", ") }, { inexistentes: "" });
+        },
+      },
+      {
+        nombre: "areaDe y pestanaDe de algunos destinos conocidos",
+        ejecutar: () => comparar(
+          {
+            proteina: areaDe("proteina"), pestanaProteina: pestanaDe("proteina"), ajustes: areaDe("ajustes"),
+            peso: areaDe("perfil-peso"), cocinaVitro: pestanaDe("cocinar-desde-cocina"),
+          },
+          { proteina: "fooddraft", pestanaProteina: "comidas", ajustes: null, peso: "cuerpo", cocinaVitro: "despensa" }
+        ),
+      },
+      {
+        nombre: "Ningún destino aparece en dos pestañas",
+        ejecutar: () => {
+          const vistos = {};
+          const repetidos = [];
+          pestanas.forEach((p) => p.incluye.forEach((d) => { if (vistos[d]) repetidos.push(d); vistos[d] = true; }));
+          return comparar({ repetidos: repetidos.join(", ") }, { repetidos: "" });
+        },
+      },
+      {
+        nombre: "La raíz de cada pestaña está en su propio «incluye»",
+        ejecutar: () => {
+          const mal = pestanas.filter((p) => !p.incluye.includes(p.destino)).map((p) => p.clave);
+          return comparar({ mal: mal.join(", ") }, { mal: "" });
+        },
+      },
+      {
+        nombre: "Traducciones completas de lo nuevo (navegación y prefijos nuevos, cinco idiomas)",
+        ejecutar: () => {
+          const deNavegacion = [
+            ...AREAS.flatMap((a) => [a.etiqueta, a.titulo, ...a.pestanas.map((p) => p.etiqueta), ...a.menu.map((m) => m.etiqueta)]),
+            ...COMUNES.flatMap((c) => [c.etiqueta, c.etiquetaPremium].filter(Boolean)),
+            "header.tuCuenta",
+          ];
+          const porPrefijo = clavesDeIdioma("es").filter((k) => PREFIJOS_NUEVOS.some((p) => k.startsWith(p)));
+          const faltan = clavesSinTraducir([...new Set([...deNavegacion, ...porPrefijo])]);
+          return comparar({ faltan: faltan.join(", ") }, { faltan: "" });
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Entreno (octubre de 2026) ----------
+// Valores esperados calculados a mano a partir del anexo A del plan (local/ideas/gimnasio/04-plan-de-ejecucion.md).
+
+// Nombres mínimos para probar la búsqueda sin depender del módulo de nombres; el resto cae a su id con
+// espacios («ex press banca barra»), que no contiene ninguna de las palabras buscadas aquí salvo donde se
+// espera.
+const NOMBRES_PRUEBA = {
+  ex_jalon_pecho: "Jalón al pecho (polea)",
+  ex_jalon_estrecho: "Jalón con agarre estrecho",
+  ex_press_inclinado_barra: "Press inclinado con barra",
+  ex_press_inclinado_mancuernas: "Press inclinado con mancuernas",
+  ex_curl_inclinado: "Curl inclinado con mancuernas",
+};
+const nombrePrueba = (e) => NOMBRES_PRUEBA[e.id] || e.nombre || e.id.replace(/_/g, " ");
+
+function grupoEntrenoBiblioteca() {
+  const lista = listaEjercicios(null);
+  const ids = (r) => r.map((e) => e.id).sort().join(",");
+  return {
+    grupo: "Entreno: biblioteca",
+    casos: [
+      {
+        nombre: "80 ejercicios semilla con ids únicos que empiezan por ex_",
+        ejecutar: () => comparar(
+          { total: EJERCICIOS_SEMILLA.length, unicos: new Set(EJERCICIOS_SEMILLA.map((e) => e.id)).size, malos: EJERCICIOS_SEMILLA.filter((e) => !e.id.startsWith("ex_")).length },
+          { total: 80, unicos: 80, malos: 0 }
+        ),
+      },
+      {
+        nombre: "Todo tipo, músculo, secundario y equipo pertenece a su lista",
+        ejecutar: () => {
+          const malos = EJERCICIOS_SEMILLA.filter((e) =>
+            !TIPOS_EJERCICIO.includes(e.tipo) || !GRUPOS_MUSCULARES.includes(e.musculo) || !EQUIPOS.includes(e.equipo) ||
+            e.secundarios.some((m) => !GRUPOS_MUSCULARES.includes(m) || m === "cardio")).map((e) => e.id);
+          return comparar({ malos: malos.join(",") }, { malos: "" });
+        },
+      },
+      {
+        nombre: "camposDeTipo de asistido y de distancia + duración",
+        ejecutar: () => comparar(
+          { asistido: camposDeTipo("asistido_reps").join(","), distancia: camposDeTipo("distancia_duracion").join(","), reps: camposDeTipo("reps").join(",") },
+          { asistido: "kg,reps", distancia: "km,seg", reps: "reps" }
+        ),
+      },
+      {
+        nombre: "Búsqueda: sin tilde, por prefijos, con una errata y sin resultados",
+        ejecutar: () => comparar(
+          {
+            jalon: buscarEjercicios(lista, "jalon", nombrePrueba).some((e) => e.id === "ex_jalon_pecho"),
+            pressInclin: ids(buscarEjercicios(lista, "press inclin", nombrePrueba)),
+            errata: buscarEjercicios(lista, "jalon pexho", nombrePrueba).map((e) => e.id)[0],
+            nada: buscarEjercicios(lista, "xyz", nombrePrueba).length,
+          },
+          { jalon: true, pressInclin: "ex_press_inclinado_barra,ex_press_inclinado_mancuernas", errata: "ex_jalon_pecho", nada: 0 }
+        ),
+      },
+      {
+        nombre: "Filtro por músculo principal: bíceps devuelve 6",
+        ejecutar: () => comparar({ n: buscarEjercicios(lista, "", nombrePrueba, { musculo: "biceps" }).length }, { n: 6 }),
+      },
+      {
+        nombre: "posibleDuplicado(«Jalon al pecho») avisa del jalón de la biblioteca",
+        ejecutar: () => {
+          const d = posibleDuplicado("Jalon al pecho", lista, nombrePrueba);
+          const n = posibleDuplicado("Remo en mi máquina rara", lista, nombrePrueba);
+          return comparar({ duplicado: d && d.id, nuevo: n }, { duplicado: "ex_jalon_pecho", nuevo: null });
+        },
+      },
+      {
+        nombre: "listaEjercicios oculta un propio archivado y aplica el favorito de personalizados",
+        ejecutar: () => {
+          const l = listaEjercicios({
+            propios: [
+              { id: "exp_1", nombre: "Remo en mi máquina", tipo: "peso_reps", musculo: "espalda_alta", secundarios: [], equipo: "maquina", archivado: false },
+              { id: "exp_2", nombre: "Viejo", tipo: "reps", musculo: "pecho", secundarios: [], equipo: "otro", archivado: true },
+            ],
+            personalizados: { ex_jalon_pecho: { favorito: true, notaFija: "Agarre abierto" } },
+          });
+          const jalon = l.find((e) => e.id === "ex_jalon_pecho");
+          return comparar(
+            { total: l.length, propio: l.some((e) => e.id === "exp_1" && e.propio), archivado: l.some((e) => e.id === "exp_2"), favorito: jalon.favorito, nota: jalon.notaFija },
+            { total: 81, propio: true, archivado: false, favorito: true, nota: "Agarre abierto" }
+          );
+        },
+      },
+    ],
+  };
+}
+
+function grupoEntrenoNombres() {
+  const lista = listaEjercicios(null);
+  return {
+    grupo: "Entreno: nombres de los ejercicios",
+    casos: [
+      {
+        nombre: "Todo ejercicio de la semilla tiene nombre en los cinco idiomas (y no sobra ninguno)",
+        ejecutar: () => {
+          const faltan = [];
+          IDIOMAS_DISPONIBLES.forEach(({ key }) => EJERCICIOS_SEMILLA.forEach((e) => {
+            if (!NOMBRES_EJERCICIOS[key] || !NOMBRES_EJERCICIOS[key][e.id]) faltan.push(`${key}:${e.id}`);
+          }));
+          const sobran = Object.keys(NOMBRES_EJERCICIOS.es).filter((id) => !EJERCICIOS_SEMILLA.some((e) => e.id === id));
+          return comparar({ faltan: faltan.join(","), sobran: sobran.join(",") }, { faltan: "", sobran: "" });
+        },
+      },
+      {
+        nombre: "nombreEjercicio: propio, de la semilla en euskera, id inexistente en euskera y desconocido",
+        ejecutar: () => comparar(
+          {
+            propio: nombreEjercicio({ id: "exp_1", nombre: "Remo en mi máquina", propio: true }, "en"),
+            eu: nombreEjercicio("ex_plancha", "eu"),
+            cae: nombreEjercicio("ex_plancha", "xx"),
+            desconocido: nombreEjercicio("ex_no_existe", "eu"),
+          },
+          { propio: "Remo en mi máquina", eu: "Plantxa", cae: "Plancha", desconocido: "ex_no_existe" }
+        ),
+      },
+      {
+        nombre: "Búsqueda con los nombres reales: «press inclin» encuentra los dos press inclinados",
+        ejecutar: () => {
+          const r = buscarEjercicios(lista, "press inclin", (e) => nombreEjercicio(e, "es")).map((e) => e.id).sort();
+          return comparar({ r: r.join(",") }, { r: "ex_press_inclinado_barra,ex_press_inclinado_mancuernas" });
+        },
+      },
+    ],
+  };
+}
+
+// `ejercicioDe` sintético para los cálculos (no depende de la biblioteca).
+const EJERCICIOS_PRUEBA = {
+  banca: { tipo: "peso_reps", musculo: "pecho", secundarios: ["triceps", "hombros"] },
+  curl: { tipo: "peso_reps", musculo: "biceps", secundarios: ["antebrazos"] },
+  cinta: { tipo: "distancia_duracion", musculo: "cardio", secundarios: [] },
+};
+const ejercicioPrueba = (id) => EJERCICIOS_PRUEBA[id] || null;
+const serieP = (tipo, kg, reps, hecha = true, extra = {}) => ({ id: Math.random().toString(36).slice(2), tipo, kg, reps, seg: null, km: null, rir: null, hecha, ...extra });
+
+function grupoEntrenoCalculos() {
+  return {
+    grupo: "Entreno: cálculos",
+    casos: [
+      {
+        nombre: "1RM estimado (Epley, con RIR) y fiabilidad",
+        ejecutar: () => comparar(
+          { uno: e1rm(100, 1), cinco: e1rm(100, 5), conRir: e1rm(59, 11, 2), cero: e1rm(60, 0), fiable: e1rmFiable(10, 2), noFiable: e1rmFiable(11, 2) },
+          // 100 × (1 + 5/30) = 116,67 → 116,7; 59 × (1 + 13/30) = 84,57 → 84,6.
+          { uno: 100, cinco: 116.7, conRir: 84.6, cero: null, fiable: true, noFiable: false }
+        ),
+      },
+      {
+        nombre: "Volumen: solo series hechas que no son de calentamiento",
+        ejecutar: () => {
+          const sesion = { ejercicios: [{ ejercicioId: "banca", series: [serieP("normal", 60, 10), serieP("calentamiento", 40, 10), serieP("normal", 60, 8, false)] }] };
+          return comparar({ v: volumenSesion(sesion, ejercicioPrueba, 80) }, { v: 600 });
+        },
+      },
+      {
+        nombre: "Volumen por tipo: peso corporal, lastre, asistido y duración",
+        ejecutar: () => comparar(
+          {
+            reps: volumenSerie(serieP("normal", null, 10), "reps", 80),
+            repsSinPeso: volumenSerie(serieP("normal", null, 10), "reps", null),
+            lastre: volumenSerie(serieP("normal", 10, 5), "lastre_reps", 80),
+            asistido: volumenSerie(serieP("normal", 30, 8), "asistido_reps", 80),
+            asistidoDeMas: volumenSerie(serieP("normal", 100, 8), "asistido_reps", 80),
+            duracion: volumenSerie(serieP("normal", null, null, true, { seg: 60 }), "duracion", 80),
+          },
+          // (80 + 10) × 5 = 450; (80 − 30) × 8 = 400; máx(0, 80 − 100) × 8 = 0.
+          { reps: 800, repsSinPeso: 0, lastre: 450, asistido: 400, asistidoDeMas: 0, duracion: 0 }
+        ),
+      },
+      {
+        nombre: "duracionEfectiva descuenta las pausas (también una aún abierta)",
+        ejecutar: () => {
+          const h = (hm) => `2026-10-23T${hm}:00.000Z`;
+          const s1 = { inicio: h("10:00"), fin: null, pausas: [{ inicio: h("10:20"), fin: h("10:30") }] };
+          const s2 = { ...s1, pausas: [...s1.pausas, { inicio: h("10:50"), fin: null }] };
+          return comparar({ una: duracionEfectiva(s1, h("11:00")), dos: duracionEfectiva(s2, h("11:00")) }, { una: 3000, dos: 2400 });
+        },
+      },
+      {
+        nombre: "Series por músculo: principal 1, secundarios 0,5, sin calentamiento ni cardio",
+        ejecutar: () => {
+          const sesion = {
+            inicio: "2026-10-23T17:00:00.000Z",
+            ejercicios: [
+              { ejercicioId: "banca", series: [serieP("normal", 60, 10), serieP("normal", 60, 10), serieP("fallo", 60, 8), serieP("calentamiento", 40, 10)] },
+              { ejercicioId: "curl", series: [serieP("normal", 30, 10), serieP("normal", 30, 9)] },
+              { ejercicioId: "cinta", series: [serieP("normal", null, null, true, { km: 3, seg: 1200 })] },
+            ],
+          };
+          const r = seriesPorMusculo([sesion], ejercicioPrueba, null, null);
+          return comparar({ ...r, cardio: r.cardio ?? 0 }, { pecho: 3, triceps: 1.5, hombros: 1.5, biceps: 2, antebrazos: 1, cardio: 0 });
+        },
+      },
+      {
+        nombre: "validarSerie: peso alto con y sin histórico, repeticiones de más y a cero",
+        ejecutar: () => {
+          const avisos = (v, h) => validarSerie(v, "peso_reps", h).avisos.join(",");
+          return comparar(
+            {
+              a250: avisos({ kg: 250, reps: 5 }, { pesoMax: 100 }), a251: avisos({ kg: 251, reps: 5 }, { pesoMax: 100 }),
+              a1005: avisos({ kg: 1005, reps: 5 }, { pesoMax: 100 }), s400: avisos({ kg: 400, reps: 5 }, {}),
+              s401: avisos({ kg: 401, reps: 5 }, {}), reps101: avisos({ kg: 60, reps: 101 }, { pesoMax: 100 }),
+              reps0: avisos({ kg: 60, reps: 0 }, { pesoMax: 100 }),
+            },
+            { a250: "", a251: "peso_alto", a1005: "peso_alto", s400: "", s401: "peso_alto", reps101: "reps_altas", reps0: "sin_reps" }
+          );
+        },
+      },
+      {
+        nombre: "Récords: 62,5 × 6 bate solo el peso máximo; 62,5 × 12 bate también el 1RM",
+        ejecutar: () => {
+          const previos = { pesoMax: 60, e1rm: 80 };
+          const batidos = (reps) => recordsBatidos(previos, mejoresDeEjercicioEnSesion({ series: [serieP("normal", 62.5, reps)] }, "peso_reps", 80)).map((r) => r.clave).join(",");
+          // 1RM de 62,5 × 6 = 62,5 × 1,2 = 75 (< 80); de 62,5 × 12 = 62,5 × 1,4 = 87,5 (> 80).
+          return comparar({ seis: batidos(6), doce: batidos(12) }, { seis: "pesoMax", doce: "pesoMax,e1rm" });
+        },
+      },
+      {
+        nombre: "Récord en vivo: 62,5 × 6 bate el peso máximo; la siguiente, 62,5 × 12, solo el 1RM",
+        ejecutar: () => {
+          const ej = { series: [serieP("normal", 62.5, 6), serieP("normal", 62.5, 12)] };
+          const previos = { pesoMax: { valor: 60 }, e1rm: { valor: 80 } };
+          const claves = (i) => recordsEnVivo(ej, ej.series[i].id, "peso_reps", 80, previos).map((r) => r.clave).join(",");
+          // La 2.ª no bate el peso máximo (62,5 = 62,5 de la serie anterior), pero su 1RM (87,5) sí supera a 80 y a 75.
+          return comparar({ primera: claves(0), segunda: claves(1), sinPrevios: recordsEnVivo(ej, ej.series[0].id, "peso_reps", 80, {}).length }, { primera: "pesoMax", segunda: "e1rm", sinPrevios: 0 });
+        },
+      },
+      {
+        nombre: "Medallas del historial: la serie que tiene hoy el récord de su sesión",
+        ejecutar: () => {
+          const ej = { series: [serieP("normal", 60, 10), serieP("normal", 65, 8)] };
+          const registro = { records: { pesoMax: { valor: 65, sesionId: "s1" }, mejorSerie: { kg: 60, reps: 12, valor: 720, sesionId: "s3" } } };
+          const enS1 = seriesConRecord(registro, "s1", ej, "peso_reps", 80);
+          return comparar({ n: enS1.size, esLa65: enS1.has(ej.series[1].id), enOtra: seriesConRecord(registro, "s9", ej, "peso_reps", 80).size }, { n: 1, esLa65: true, enOtra: 0 });
+        },
+      },
+      {
+        nombre: "anteriorDe: las series de la última vez, o nada sin historial",
+        ejecutar: () => {
+          const indice = { ejercicios: { banca: { ultima: { sesionId: "s1", fecha: "2026-10-21", series: [{ tipo: "normal", kg: 60, reps: 10 }] } } } };
+          return comparar({ con: anteriorDe(indice, "banca").length, kg: anteriorDe(indice, "banca")[0].kg, sin: anteriorDe(indice, "curl").length }, { con: 1, kg: 60, sin: 0 });
+        },
+      },
+      {
+        nombre: "semanasRecientes: entrenos y volumen de las 3 últimas semanas (lunes como inicio)",
+        ejecutar: () => {
+          const ses = (dia, kg) => ({ inicio: `2026-10-${dia}T17:00:00.000Z`, ejercicios: [{ ejercicioId: "banca", series: [serieP("normal", kg, 10)] }] });
+          // Hoy viernes 23: semanas del 5, del 12 y del 19. El 4 (domingo) es de la semana del 28-9 y queda fuera.
+          const r = semanasRecientes([ses("04", 50), ses("06", 60), ses("13", 60), ses("15", 62), ses("20", 65)], ejercicioPrueba, 80, 1, "2026-10-23", 3);
+          return comparar(
+            { semanas: r.map((s) => s.semana).join(","), entrenos: r.map((s) => s.entrenos).join(","), volumen: r.map((s) => s.volumen).join(",") },
+            { semanas: "2026-10-05,2026-10-12,2026-10-19", entrenos: "1,2,1", volumen: "600,1220,650" }
+          );
+        },
+      },
+      {
+        nombre: "Libras y millas: conversión y vuelta sin perder lo tecleado",
+        ejecutar: () => comparar(
+          {
+            cienKgEnLb: pesoAPantalla(100, "lb"), lb135EnKg: pesoDePantalla(135, "lb"), idaYVuelta: pesoAPantalla(pesoDePantalla(135, "lb"), "lb"),
+            enKg: pesoAPantalla(61.3, "kg"), cincoMi: distanciaDePantalla(5, "mi"), vueltaMi: distanciaAPantalla(distanciaDePantalla(5, "mi"), "mi"),
+            vacio: pesoDePantalla("", "lb"),
+          },
+          // 100 / 0,45359237 = 220,46 → 220,5; 135 × 0,45359237 = 61,2350 kg; 5 × 1,609344 = 8,047 km.
+          { cienKgEnLb: 220.5, lb135EnKg: 61.235, idaYVuelta: 135, enKg: 61.3, cincoMi: 8.047, vueltaMi: 5, vacio: null },
+          0.0001
+        ),
+      },
+      {
+        nombre: "resumenEntrenoMes: entrenos, días, volumen, tiempo, récords del mes y músculos más trabajados",
+        ejecutar: () => {
+          const ses = (inicio, fin, ejercicios) => ({ inicio, fin, pausas: [], ejercicios });
+          const sesiones = [
+            ses("2026-10-05T17:00:00.000Z", "2026-10-05T18:00:00.000Z", [{ ejercicioId: "banca", series: [serieP("normal", 60, 10), serieP("normal", 60, 10)] }]),
+            ses("2026-10-05T19:00:00.000Z", "2026-10-05T19:30:00.000Z", [{ ejercicioId: "curl", series: [serieP("normal", 20, 10)] }]),
+            ses("2026-10-07T17:00:00.000Z", "2026-10-07T17:45:00.000Z", [{ ejercicioId: "banca", series: [serieP("normal", 62.5, 8)] }]),
+          ];
+          const indice = { ejercicios: { banca: { records: { pesoMax: { valor: 62.5, fecha: "2026-10-07" }, e1rm: { valor: 80, fecha: "2026-09-20" } } } } };
+          const r = resumenEntrenoMes(sesiones, ejercicioPrueba, 80, { indice, mes: "2026-10" });
+          // Volumen: 1200 + 200 + 500 = 1900. Tiempo: 60 + 30 + 45 min = 8100 s. Pecho 3, tríceps y hombros 1,5, bíceps 1.
+          return comparar(
+            { sesiones: r.sesiones, dias: r.dias, volumen: r.volumen, duracion: r.duracionSeg, records: r.records, primero: r.topMusculos[0].musculo, series: r.topMusculos[0].series, n: r.topMusculos.length },
+            { sesiones: 3, dias: 2, volumen: 1900, duracion: 8100, records: 1, primero: "pecho", series: 3, n: 3 }
+          );
+        },
+      },
+      {
+        nombre: "Calculadora de discos: 100 kg = 25 + 15 por lado; 62,5 = 20 + 1,25; 101 deja 1 kg; 15 no llega a la barra",
+        ejecutar: () => {
+          const lado = (kg) => discosPorLado(kg).porLado.join("+");
+          // (100 − 20) / 2 = 40 = 25 + 15; (62,5 − 20) / 2 = 21,25 = 20 + 1,25; (101 − 20) / 2 = 40,5 → 25 + 15 y sobra 0,5 por lado.
+          return comparar(
+            { cien: lado(100), sesenta: lado(62.5), barra: lado(20), cientoUno: lado(101), restoCientoUno: discosPorLado(101).resto, quince: discosPorLado(15).posible },
+            { cien: "25+15", sesenta: "20+1.25", barra: "", cientoUno: "25+15", restoCientoUno: 1, quince: false }
+          );
+        },
+      },
+      {
+        nombre: "semanaDe: el viernes 23-10-2026 es de la semana del lunes 19 (o del domingo 18)",
+        ejecutar: () => comparar({ lunes: semanaDe("2026-10-23", 1), domingo: semanaDe("2026-10-23", 0), elPropioLunes: semanaDe("2026-10-19", 1) }, { lunes: "2026-10-19", domingo: "2026-10-18", elPropioLunes: "2026-10-19" }),
+      },
+    ],
+  };
+}
+
+// Rutina de prueba: press de banca con 1 calentamiento + 3 normales, y jalón con 3 normales y su propio
+// descanso de 105 s. Hora fija: 23-10-2026 a las 18:00 UTC.
+const AHORA_SESION = Date.UTC(2026, 9, 23, 18, 0, 0);
+const RUTINA_PRUEBA = {
+  id: "rt_torso", nombre: "Torso", actualizado: "2026-10-20",
+  ejercicios: [
+    { ejercicioId: "ex_press_banca_barra", descansoSeg: null, nota: "", series: [{ tipo: "calentamiento" }, { tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }] },
+    { ejercicioId: "ex_jalon_pecho", descansoSeg: 105, nota: "", series: [{ tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }] },
+  ],
+};
+const AJUSTES_PRUEBA = { precargar: true, descansoSeg: 120, descansoCalentamientoSeg: 60 };
+const ANTERIOR_BANCA = [{ kg: 32, reps: 8 }, { kg: 61.3, reps: 10 }, { kg: 59, reps: 6 }, { kg: 54.3, reps: 7 }];
+const anteriorPrueba = (id) => (id === "ex_press_banca_barra" ? ANTERIOR_BANCA : []);
+
+// La sesión de la rutina con todas sus series marcadas (como si se hubiera hecho entera).
+function sesionCompleta() {
+  let s = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+  s.ejercicios.forEach((ej) => ej.series.forEach((sr) => { s = marcarHecha(s, ej.inst, sr.id, AHORA_SESION, AJUSTES_PRUEBA); }));
+  return s;
+}
+
+function grupoEntrenoSesion() {
+  return {
+    grupo: "Entreno: sesión en curso",
+    casos: [
+      {
+        nombre: "nuevaSesion desde una rutina: 2 ejercicios, 7 series sin hacer; precarga en orden o vacía",
+        ejecutar: () => {
+          const con = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const sin = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: { ...AJUSTES_PRUEBA, precargar: false }, anteriorDe: anteriorPrueba });
+          const series = con.ejercicios.flatMap((e) => e.series);
+          return comparar(
+            {
+              ejercicios: con.ejercicios.length, series: series.length, hechas: series.filter((x) => x.hecha).length,
+              precargadas: con.ejercicios[0].series.map((x) => `${x.kg}x${x.reps}`).join(" "),
+              vacias: sin.ejercicios[0].series.every((x) => x.kg === null && x.reps === null),
+              nombre: con.nombre, rutinaId: con.rutinaId,
+            },
+            { ejercicios: 2, series: 7, hechas: 0, precargadas: "32x8 61.3x10 59x6 54.3x7", vacias: true, nombre: "Torso", rutinaId: "rt_torso" }
+          );
+        },
+      },
+      {
+        nombre: "marcarHecha arranca el descanso (60 s calentamiento, 105 s del ejercicio); ±15, saltar y desmarcar",
+        ejecutar: () => {
+          const s0 = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const [banca, jalon] = s0.ejercicios;
+          const sW = marcarHecha(s0, banca.inst, banca.series[0].id, AHORA_SESION, AJUSTES_PRUEBA);
+          const sJ = marcarHecha(s0, jalon.inst, jalon.series[0].id, AHORA_SESION, AJUSTES_PRUEBA);
+          const sMas = ajustarDescanso(sJ, 15);
+          const sDes = desmarcar(sW, banca.inst, banca.series[0].id);
+          return comparar(
+            {
+              calentamiento: sW.descanso.hasta - AHORA_SESION, ejercicio: sJ.descanso.hasta - AHORA_SESION, mas15: sMas.descanso.hasta - AHORA_SESION,
+              saltado: saltarDescanso(sJ).descanso, desmarcada: sDes.ejercicios[0].series[0].hecha, conserva: sDes.ejercicios[0].series[0].kg,
+            },
+            { calentamiento: 60000, ejercicio: 105000, mas15: 120000, saltado: null, desmarcada: false, conserva: 32 }
+          );
+        },
+      },
+      {
+        nombre: "sustituirHoy cambia el ejercicio, recuerda el original y conserva las series",
+        ejecutar: () => {
+          const s0 = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const s1 = sustituirHoy(s0, s0.ejercicios[1].inst, "ex_jalon_estrecho");
+          return comparar(
+            { id: s1.ejercicios[1].ejercicioId, original: s1.ejercicios[1].sustituyeA, series: s1.ejercicios[1].series.length },
+            { id: "ex_jalon_estrecho", original: "ex_jalon_pecho", series: 3 }
+          );
+        },
+      },
+      {
+        nombre: "terminarSesion quita lo no hecho, pone el fin y cierra la pausa abierta",
+        ejecutar: () => {
+          let s = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          const banca = s.ejercicios[0];
+          s = marcarHecha(s, banca.inst, banca.series[1].id, AHORA_SESION, AJUSTES_PRUEBA);
+          s = marcarHecha(s, banca.inst, banca.series[2].id, AHORA_SESION, AJUSTES_PRUEBA);
+          s = pausar(s, AHORA_SESION + 30 * 60000);
+          const fin = AHORA_SESION + 45 * 60000;
+          const t = terminarSesion(s, fin, { nombre: "Torso corto", esfuerzo: 3 });
+          return comparar(
+            { ejercicios: t.ejercicios.length, series: t.ejercicios[0].series.length, fin: t.fin, pausaCerrada: t.pausas[0].fin, nombre: t.nombre, descanso: t.descanso },
+            { ejercicios: 1, series: 2, fin: new Date(fin).toISOString(), pausaCerrada: new Date(fin).toISOString(), nombre: "Torso corto", descanso: undefined }
+          );
+        },
+      },
+      {
+        nombre: "cambiosEstructurales: igual → no; una serie más → sí; sustituido solo hoy → no",
+        ejecutar: () => {
+          const s = sesionCompleta();
+          const conSerie = anadirSerie(s, s.ejercicios[0].inst);
+          const sustituida = sustituirHoy(s, s.ejercicios[1].inst, "ex_jalon_estrecho");
+          return comparar(
+            { igual: cambiosEstructurales(s, RUTINA_PRUEBA), serieMas: cambiosEstructurales(conSerie, RUTINA_PRUEBA), sustituida: cambiosEstructurales(sustituida, RUTINA_PRUEBA) },
+            { igual: false, serieMas: true, sustituida: false }
+          );
+        },
+      },
+      {
+        nombre: "aplicarARutina copia ejercicios y series (sin el sustituido solo hoy); rutinaDesdeSesion",
+        ejecutar: () => {
+          let s = sesionCompleta();
+          s = anadirSerie(s, s.ejercicios[0].inst);
+          s = sustituirHoy(s, s.ejercicios[1].inst, "ex_jalon_estrecho");
+          const r = aplicarARutina(RUTINA_PRUEBA, s, "2026-10-23");
+          const nueva = rutinaDesdeSesion(sesionCompleta(), "Mi torso", "2026-10-23");
+          return comparar(
+            {
+              seriesBanca: r.ejercicios[0].series.length, segundo: r.ejercicios[1].ejercicioId, descansoJalon: r.ejercicios[1].descansoSeg,
+              plantillaKg: r.ejercicios[0].series[1].kg, nueva: nueva.nombre, nuevaEjercicios: nueva.ejercicios.length, nuevaSeries: nueva.ejercicios[0].series.length,
+            },
+            { seriesBanca: 5, segundo: "ex_jalon_pecho", descansoJalon: 105, plantillaKg: 61.3, nueva: "Mi torso", nuevaEjercicios: 2, nuevaSeries: 4 }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// Sesión mínima terminada para los casos del almacén: un ejercicio con sus series (todas hechas).
+function sesionAlmacen(id, inicio, series, { actualizado = 1, ejercicioId = "banca", nombre = "Torso" } = {}) {
+  return { id, nombre, inicio, fin: inicio, pausas: [], actualizado, ejercicios: [{ inst: "ei_" + id, ejercicioId, nota: "", series: series.map(([kg, reps]) => serieP("normal", kg, reps)) }] };
+}
+
+function grupoEntrenoAlmacen() {
+  const septiembre = { version: 1, mes: "2026-09", sesiones: [sesionAlmacen("s1", "2026-09-10T17:00:00.000Z", [[60, 10], [65, 8]])] };
+  const octubre = { version: 1, mes: "2026-10", sesiones: [sesionAlmacen("s2", "2026-10-05T17:00:00.000Z", [[62.5, 8]]), sesionAlmacen("s3", "2026-10-20T17:00:00.000Z", [[60, 12]])] };
+  return {
+    grupo: "Entreno: almacén",
+    casos: [
+      {
+        nombre: "claveMes y mesDe (hora local)",
+        ejecutar: () => comparar(
+          { clave: claveMes("2026-10"), mes: mesDe("2026-10-23T17:55:00.000Z") },
+          { clave: "rueda-de-platos:entreno-2026-10-v1", mes: "2026-10" }
+        ),
+      },
+      {
+        nombre: "migrarCatalogo: vacío con ajustes por defecto; completa sin pisar lo elegido",
+        ejecutar: () => {
+          const vacio = migrarCatalogo(null);
+          const viejo = migrarCatalogo({ version: 1, propios: [], personalizados: {}, rutinas: [], ajustes: { precargar: false, descansoSeg: 90 }, aviso: {} });
+          return comparar(
+            { changed: vacio.changed, precargar: vacio.valor.ajustes.precargar, descanso: vacio.valor.ajustes.descansoSeg, inicioViejo: viejo.valor.ajustes.inicioSemana, precargarViejo: viejo.valor.ajustes.precargar, descansoViejo: viejo.valor.ajustes.descansoSeg, cambioViejo: viejo.changed },
+            { changed: true, precargar: true, descanso: 120, inicioViejo: 1, precargarViejo: false, descansoViejo: 90, cambioViejo: true }
+          );
+        },
+      },
+      {
+        nombre: "anadirSesionAMes ordena por inicio y, con el mismo id, gana el actualizado mayor",
+        ejecutar: () => {
+          let m = { version: 1, mes: "2026-10", sesiones: [] };
+          m = anadirSesionAMes(m, sesionAlmacen("b", "2026-10-20T17:00:00.000Z", [[60, 10]], { actualizado: 5 }));
+          m = anadirSesionAMes(m, sesionAlmacen("a", "2026-10-05T17:00:00.000Z", [[60, 10]]));
+          const masNueva = anadirSesionAMes(m, sesionAlmacen("b", "2026-10-20T17:00:00.000Z", [[70, 10]], { actualizado: 9 }));
+          const masVieja = anadirSesionAMes(m, sesionAlmacen("b", "2026-10-20T17:00:00.000Z", [[50, 10]], { actualizado: 2 }));
+          return comparar(
+            { orden: m.sesiones.map((x) => x.id).join(","), nueva: masNueva.sesiones[1].ejercicios[0].series[0].kg, vieja: masVieja.sesiones[1].ejercicios[0].series[0].kg, total: masNueva.sesiones.length },
+            { orden: "a,b", nueva: 70, vieja: 60, total: 2 }
+          );
+        },
+      },
+      {
+        nombre: "fusionarMeses une por id y gana el actualizado mayor",
+        ejecutar: () => {
+          const a = { version: 1, mes: "2026-10", sesiones: [sesionAlmacen("x", "2026-10-01T10:00:00.000Z", [[40, 10]], { actualizado: 1 }), sesionAlmacen("y", "2026-10-03T10:00:00.000Z", [[40, 10]])] };
+          const b = { version: 1, mes: "2026-10", sesiones: [sesionAlmacen("x", "2026-10-01T10:00:00.000Z", [[45, 10]], { actualizado: 3 }), sesionAlmacen("z", "2026-10-02T10:00:00.000Z", [[40, 10]])] };
+          const f = fusionarMeses(a, b);
+          return comparar({ ids: f.sesiones.map((x) => x.id).join(","), x: f.sesiones[0].ejercicios[0].series[0].kg }, { ids: "x,z,y", x: 45 });
+        },
+      },
+      {
+        nombre: "reconstruirIndice: «anterior» de la sesión más reciente, récords máximos y sesiones por mes",
+        ejecutar: () => {
+          const ind = reconstruirIndice([septiembre, octubre], ejercicioPrueba, 80);
+          const b = ind.ejercicios.banca;
+          // Peso máximo 65 (s1); 1RM: 60 × 1,4 = 84 (s3) > 65 × (1 + 8/30) = 82,3 (s1); mejor serie 60 × 12 = 720 (s3);
+          // mejor volumen de sesión: s1 = 600 + 520 = 1120.
+          return comparar(
+            {
+              ultima: b.ultima.sesionId, kgUltima: b.ultima.series[0].kg, sesiones: b.sesiones, sep: ind.meses["2026-09"], oct: ind.meses["2026-10"],
+              pesoMax: b.records.pesoMax.valor, pesoMaxDe: b.records.pesoMax.sesionId, e1rm: b.records.e1rm.valor, mejorSerie: b.records.mejorSerie.valor, volumen: b.records.volumenSesion.valor,
+            },
+            { ultima: "s3", kgUltima: 60, sesiones: 3, sep: 1, oct: 2, pesoMax: 65, pesoMaxDe: "s1", e1rm: 84, mejorSerie: 720, volumen: 1120 }
+          );
+        },
+      },
+      {
+        nombre: "actualizarIndiceConSesion da lo mismo que reconstruir con esa sesión añadida",
+        ejecutar: () => {
+          const nueva = sesionAlmacen("s4", "2026-10-23T17:00:00.000Z", [[70, 5], [60, 10]]);
+          const incremental = actualizarIndiceConSesion(reconstruirIndice([septiembre, octubre], ejercicioPrueba, 80), nueva, ejercicioPrueba, 80);
+          const completo = reconstruirIndice([septiembre, anadirSesionAMes(octubre, nueva)], ejercicioPrueba, 80);
+          return comparar({ iguales: JSON.stringify(incremental) === JSON.stringify(completo), pesoMax: incremental.ejercicios.banca.records.pesoMax.valor }, { iguales: true, pesoMax: 70 });
+        },
+      },
+      {
+        nombre: "elegirBorrador y la cola de envíos pendientes",
+        ejecutar: () => {
+          const local = { id: "ses_1", actualizado: 200 };
+          const nube = { id: "ses_1", actualizado: 100 };
+          let cola = encolar([], local);
+          cola = encolar(cola, { ...local, actualizado: 300 });
+          return comparar(
+            { gana: elegirBorrador(local, nube).actualizado, soloNube: elegirBorrador(null, nube).actualizado, ninguno: elegirBorrador(null, null), cola: cola.length, ultima: cola[0].actualizado, vacia: quitarDeCola(cola, "ses_1").length },
+            { gana: 200, soloNube: 100, ninguno: null, cola: 1, ultima: 300, vacia: 0 }
+          );
+        },
+      },
+      {
+        nombre: "sesionesACSV: cabecera fija, una fila por serie y comillas si el nombre lleva «;»",
+        ejecutar: () => {
+          const s = sesionAlmacen("c1", "2026-10-23T17:00:00.000Z", [[61.3, 10], [59, 6]], { nombre: "Torso; día A" });
+          const csv = sesionesACSV([s], () => "Press banca", "es").split("\n");
+          return comparar(
+            { cabecera: csv[0], filas: csv.length - 1, entreno: csv[1].split(";")[1], kg: csv[1].includes(";61,3;10;") },
+            { cabecera: CABECERA_CSV, filas: 2, entreno: '"Torso', kg: true }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Informes cruzados (fase K2) ----------
+// Un mes de 30 días (septiembre de 2026, ya terminado): 12 sesiones de 1 h en 10 días distintos; peso
+// 80 kg; en el perfil, 4 sesiones de pesas de 1 h a la semana; 4 comidas al día, todas hechas los días con
+// entreno y 2 de 4 los demás.
+function escenarioInforme() {
+  const perfil = {
+    anioNacimiento: new Date().getFullYear() - 31, altura: 180, peso: 80, sexo: "hombre", palBase: "escritorio",
+    objetivo: "mantenimiento", entrenamientos: [{ tipo: "pesas", horas: 1, frecuenciaSemanal: 4 }], calibracionKcal: 0,
+    repartoComidas: { Desayuno: 0.2, Comida: 0.35, Merienda: 0.15, Cena: 0.3 },
+  };
+  const dia = (d) => `2026-09-${String(d).padStart(2, "0")}`;
+  const comidasCompletadas = {};
+  for (let d = 1; d <= 30; d++) {
+    comidasCompletadas[dia(d)] = d <= 10 ? { Desayuno: true, Comida: true, Merienda: true, Cena: true } : { Comida: true, Cena: true };
+  }
+  const sesion = (d, hora) => ({ id: `s${d}${hora}`, inicio: `${dia(d)}T${hora}:00:00.000Z`, fin: `${dia(d)}T${String(Number(hora) + 1).padStart(2, "0")}:00:00.000Z`, pausas: [], ejercicios: [] });
+  const sesiones = [...Array.from({ length: 10 }, (_, i) => sesion(i + 1, "08")), sesion(1, "17"), sesion(2, "17")];
+  return { data: { perfil, comidasCompletadas, pesoTracking: null }, sesiones };
+}
+
+function grupoInformes() {
+  return {
+    grupo: "Informes cruzados",
+    casos: [
+      {
+        nombre: "declaradoPorSemana suma solo las sesiones de pesas del perfil",
+        ejecutar: () => comparar(
+          { n: declaradoPorSemana({ entrenamientos: [{ tipo: "pesas", frecuenciaSemanal: 3 }, { tipo: "correr", frecuenciaSemanal: 2 }, { tipo: "pesas", frecuenciaSemanal: 1 }] }), vacio: declaradoPorSemana(null) },
+          { n: 4, vacio: 0 }
+        ),
+      },
+      {
+        nombre: "Declarado frente a real: 2,8 sesiones/semana registradas y 192 kcal/día frente a 274",
+        ejecutar: () => {
+          const { data, sesiones } = escenarioInforme();
+          const r = informeCruzadoMes({ data, sesionesMes: sesiones, sesionesMesAnterior: [], ejercicioDe: ejercicioPrueba, mesISO: "2026-09", hoy: "2026-10-05" });
+          // 12 ÷ 30 × 7 = 2,8; 12 h × 6 MET × 80 kg ÷ 30 días = 192; 6 × 80 × 1 h × 4 ÷ 7 = 274,3 → 274 (el objetivo redondea).
+          return comparar(
+            { dias: r.dias, sesiones: r.sesiones, horas: r.horas, declaradas: r.declarado.declaradasSemana, registradas: r.declarado.registradasSemana, estimadas: r.declarado.kcalEstimadas, declaradasKcal: r.declarado.kcalDeclaradas },
+            { dias: 30, sesiones: 12, horas: 12, declaradas: 4, registradas: 2.8, estimadas: 192, declaradasKcal: 274 }
+          );
+        },
+      },
+      {
+        nombre: "Constancia: 100 % de comidas hechas en días con entreno frente a 50 % sin entreno",
+        ejecutar: () => {
+          const { data, sesiones } = escenarioInforme();
+          const r = informeCruzadoMes({ data, sesionesMes: sesiones, sesionesMesAnterior: [], ejercicioDe: ejercicioPrueba, mesISO: "2026-09", hoy: "2026-10-05" });
+          return comparar({ con: r.constancia.conEntreno, sin: r.constancia.sinEntreno, diasCon: r.constancia.diasCon, diasSin: r.constancia.diasSin }, { con: 100, sin: 50, diasCon: 10, diasSin: 20 });
+        },
+      },
+      {
+        nombre: "Mes frente a mes: diferencia de sesiones respecto al mes anterior",
+        ejecutar: () => {
+          const { data, sesiones } = escenarioInforme();
+          const r = informeCruzadoMes({ data, sesionesMes: sesiones, sesionesMesAnterior: sesiones.slice(0, 9), ejercicioDe: ejercicioPrueba, mesISO: "2026-09", hoy: "2026-10-05" });
+          return comparar({ sesiones: r.variacion.sesiones, mesAnterior: r.anterior.mes, volumen: r.variacion.volumenPct }, { sesiones: 3, mesAnterior: "2026-08", volumen: null });
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Aviso de actividad (fase K3) ----------
+// Hoy: viernes 23-10-2026. Las 3 últimas semanas completas empiezan el 28-9, el 5-10 y el 12-10.
+const SEMANAS_AVISO = ["2026-09-28", "2026-10-05", "2026-10-12"];
+const semanasCon = (ns) => ns.map((n, i) => ({ inicio: SEMANAS_AVISO[i], n }));
+const avisoDe = (declarado, ns, extra = {}) => {
+  const r = evaluarAvisoActividad({ declaradoSemana: declarado, semanas: semanasCon(ns), totalRegistradas: 10, hoy: "2026-10-23", aviso: {}, ...extra });
+  return r ? r.tipo : "nada";
+};
+
+function grupoAvisoActividad() {
+  return {
+    grupo: "Aviso de actividad",
+    casos: [
+      {
+        nombre: "sesionesPorSemana: las 3 últimas semanas completas, sin cardio ni la semana actual",
+        ejecutar: () => {
+          const ej = (id) => ({ ejercicioId: id, series: [serieP("normal", 50, 10)] });
+          const ses = (dia, id) => ({ inicio: `2026-10-${dia}T17:00:00.000Z`, ejercicios: [ej(id)] });
+          // 6-10: banca (cuenta); 7-10: solo cinta (no cuenta); 13 y 15-10: banca; 20-10: semana actual (no cuenta).
+          const r = sesionesPorSemana([ses("06", "banca"), ses("07", "cinta"), ses("13", "banca"), ses("15", "curl"), ses("20", "banca")], ejercicioPrueba, 1, "2026-10-23", 3);
+          return comparar({ inicios: r.map((s) => s.inicio).join(","), n: r.map((s) => s.n).join(",") }, { inicios: SEMANAS_AVISO.join(","), n: "0,1,2" });
+        },
+      },
+      {
+        nombre: "«Menos»: declara 4 y registra [1,1,1]; con [1,3,1] no avisa",
+        ejecutar: () => comparar({ menos: avisoDe(4, [1, 1, 1]), mezcla: avisoDe(4, [1, 3, 1]) }, { menos: "menos", mezcla: "nada" }),
+      },
+      {
+        nombre: "No avisa con una pausa en la 2.ª semana, con 3 sesiones en total, silenciado o recién descartado",
+        ejecutar: () => comparar(
+          {
+            pausa: avisoDe(4, [1, 1, 1], { aviso: { pausa: { desde: "2026-10-07", hasta: "2026-10-09" } } }),
+            pocas: avisoDe(4, [1, 1, 1], { totalRegistradas: 3 }),
+            silenciado: avisoDe(4, [1, 1, 1], { aviso: { silenciadoHasta: "2026-10-24" } }),
+            descartado: avisoDe(4, [1, 1, 1], { aviso: { descartadoEl: "2026-10-15" } }),
+            descartadoHaceTiempo: avisoDe(4, [1, 1, 1], { aviso: { descartadoEl: "2026-10-01" } }),
+          },
+          { pausa: "nada", pocas: "nada", silenciado: "nada", descartado: "nada", descartadoHaceTiempo: "menos" }
+        ),
+      },
+      {
+        nombre: "«Más»: declara 2 y registra [4,4,4]; declara 0 y registra [2,3,2]; declara 4 y [2,2,2] no avisa",
+        ejecutar: () => comparar({ mas: avisoDe(2, [4, 4, 4]), ceroDeclarado: avisoDe(0, [2, 3, 2]), limite: avisoDe(4, [2, 2, 2]) }, { mas: "mas", ceroDeclarado: "mas", limite: "nada" }),
+      },
+    ],
+  };
 }

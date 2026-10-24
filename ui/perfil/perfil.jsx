@@ -82,7 +82,9 @@ export function PerfilView({ perfil, onSave, idioma }) {
 // Actividad diaria: destino propio en el menú lateral desde la Tanda 2 — antes vivía dentro de
 // Perfil. Mismo patrón de guardado que el resto de pantallas nacidas de partir Perfil (ver el
 // comentario de handleSave en PerfilView, arriba): siempre "...perfil" como base.
-export function ActividadDiariaView({ perfil, onSave, idioma }) {
+// `aviso` (opcional): el aviso de actividad del módulo de entreno (ui/entreno/aviso-actividad.jsx), que
+// llega ya montado desde ui/pantallas.jsx para que este archivo no dependa del entreno.
+export function ActividadDiariaView({ perfil, onSave, idioma, aviso }) {
   const [palBase, setPalBase] = useState(
     perfil?.palBase ?? (perfil?.actividad ? NIVELES_ACTIVIDAD_LEGACY[perfil.actividad]?.palBaseKey : null) ?? "escritorio"
   );
@@ -106,6 +108,7 @@ export function ActividadDiariaView({ perfil, onSave, idioma }) {
 
   return (
     <>
+      {aviso && <div style={{ maxWidth: 480 }}>{aviso}</div>}
       <SectionIntro text={t(idioma, "actividadDiaria.intro")} />
       <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", maxWidth: 480 }}>
         <ActividadDiariaFields

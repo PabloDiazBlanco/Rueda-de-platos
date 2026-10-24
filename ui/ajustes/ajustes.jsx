@@ -245,7 +245,7 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
 // Confirmación simple (sin reautenticación, a diferencia de eliminar cuenta): repetir el
 // cuestionario reemplaza los ingredientes/bloques actuales, pero no es una acción destructiva de
 // verdad — no borra cuenta ni datos de peso/menús, y siempre se puede volver a editar a mano desde
-// Configuración de comidas después. Por eso un solo paso de confirmación es suficiente.
+// Mis comidas después. Por eso un solo paso de confirmación es suficiente.
 function ConfirmRepetirCuestionarioModal({ onCancel, onConfirm, idioma }) {
   return (
     <ModalShell onClose={onCancel} title={t(idioma, "ajustes.repetirCuestionario.titulo")}>

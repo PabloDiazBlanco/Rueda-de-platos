@@ -4,9 +4,10 @@
 // destino es una entrada de PANTALLAS y el componente principal solo elige cuál pintar. `ctx` lleva
 // todo lo que necesitan: los datos, el idioma, premium, la navegación y los hooks de ui/estado/.
 import React from "react";
-import { Utensils, Package, CalendarDays, Database, Layers, Camera, Scale, Ruler, TrendingUp, PieChart, ListChecks } from "lucide-react";
+import { Utensils, Package, CalendarDays, Database, Layers, Camera, PieChart, ListChecks } from "lucide-react";
 import { t } from "i18n";
 import { defaultPesoTracking } from "peso";
+import { nombreEjercicio } from "entreno-nombres";
 import { CATEGORY_META, MACRO_CATS, ESPECIALES_CATS } from "./comun/categorias.js";
 import { BigCardGrid, BackLink } from "./comun/tarjetas.jsx";
 import { MenuView } from "./menu/menu-completo.jsx";
@@ -24,6 +25,16 @@ import { PremiumView, PremiumRequiredNotice } from "./premium/premium.jsx";
 import { SuggestMealsView } from "./premium/que-cocino.jsx";
 import { SettingsView } from "./ajustes/ajustes.jsx";
 import { CompartirView, FeedbackView, DocumentosView } from "./ajustes/compartir.jsx";
+import { EntrenarView } from "./entreno/inicio.jsx";
+import { EjerciciosView } from "./entreno/ejercicios.jsx";
+import { RutinasView } from "./entreno/rutinas.jsx";
+import { EditorRutinaView } from "./entreno/editor-rutina.jsx";
+import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
+import { AjustesEntrenoView } from "./entreno/ajustes.jsx";
+import { FichaEjercicioView } from "./entreno/ficha.jsx";
+import { ProgresoView } from "./entreno/progreso.jsx";
+import { InformesView } from "./cuerpo/informes.jsx";
+import { AvisoActividad } from "./entreno/aviso-actividad.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -156,27 +167,15 @@ const PANTALLAS = {
   ),
 
   // perfil-datos, perfil-documentos y perfil-premium se llegan directos desde el menú lateral
-  // (DrawerMenu) — el ☰ del Header, siempre visible, hace de "volver". peso-root sí tiene su propia
-  // tarjeta intermedia (mismo patrón que config-root con sus categorías): agrupa seguimiento de
-  // peso, medidas corporales y resumen mensual bajo un único destino "Seguimiento de peso" en el
-  // menú, con BackLink de vuelta desde cada uno.
+  // (DrawerMenu) — el ☰ del Header, siempre visible, hace de "volver". El seguimiento de peso, las
+  // medidas y el resumen mensual son del área Cuerpo (ui/marco/navegacion.js): su barra inferior hace
+  // el papel de la antigua tarjeta intermedia «Seguimiento de peso» (peso-root), que se quitó con la
+  // navegación por áreas (octubre de 2026), así que ya no llevan enlace de vuelta.
 
   "perfil-datos": ({ data, idioma, perfil }) => <PerfilView perfil={data.perfil} onSave={perfil.savePerfil} idioma={idioma} />,
 
-  "peso-root": ({ idioma, setTab, premium }) => (
-    <BigCardGrid
-      onSelect={setTab}
-      cards={[
-        { key: "perfil-peso", label: t(idioma, "drawer.registroPeso"), desc: premium.active ? t(idioma, "perfilRoot.seguimientoPeso.desc") : t(idioma, "perfilRoot.funcionPremium"), icon: Scale, color: "var(--coffee)" },
-        { key: "perfil-medidas", label: t(idioma, "perfilRoot.medidasCorporales"), desc: t(idioma, "perfilRoot.proximamente"), icon: Ruler, color: "var(--berry)" },
-        { key: "perfil-resumen", label: t(idioma, "perfilRoot.resumenMensual"), desc: t(idioma, "perfilRoot.resumenMensual.desc"), icon: TrendingUp, color: "var(--olive)" },
-      ]}
-    />
-  ),
-
   "perfil-peso": ({ data, idioma, setTab, premium, peso }) => (
     <>
-      <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
       {premium.active ? (
         <PesoView
           perfil={data.perfil}
@@ -202,23 +201,28 @@ const PANTALLAS = {
 
   "perfil-premium": ({ idioma, premium }) => <PremiumView premium={premium} idioma={idioma} />,
 
-  "perfil-resumen": ({ data, idioma, setTab, premium }) => (
-    <>
-      <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
-      <ResumenMensualView data={data} premium={premium} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
-    </>
+  "perfil-resumen": ({ data, idioma, setTab, premium, entreno }) => (
+    <ResumenMensualView data={data} premium={premium} entreno={entreno} onGoPremium={() => setTab("perfil-premium")} idioma={idioma} />
   ),
 
-  "perfil-medidas": ({ idioma, setTab }) => (
-    <>
-      <BackLink label={t(idioma, "perfilRoot.seguimientoPeso")} onClick={() => setTab("peso-root")} />
-      <MedidasPlaceholderView idioma={idioma} />
-    </>
+  "perfil-medidas": ({ idioma }) => <MedidasPlaceholderView idioma={idioma} />,
+
+  // Informes cruzados del área Cuerpo (premium): entreno, comida y peso juntos.
+  "cuerpo-informes": ({ data, idioma, setTab, premium, entreno }) => (
+    <InformesView data={data} premium={premium} entreno={entreno} idioma={idioma} onGoPremium={() => setTab("perfil-premium")} />
   ),
 
   "perfil-documentos": ({ idioma }) => <DocumentosView idioma={idioma} />,
 
-  "actividad-diaria": ({ data, idioma, perfil }) => <ActividadDiariaView perfil={data.perfil} onSave={perfil.savePerfil} idioma={idioma} />,
+  // Arriba, el aviso de actividad (si lo hay): lo registrado frente a lo declarado aquí.
+  "actividad-diaria": ({ data, idioma, perfil, entreno, navegar }) => (
+    <ActividadDiariaView
+      perfil={data.perfil}
+      onSave={perfil.savePerfil}
+      idioma={idioma}
+      aviso={<AvisoActividad entreno={entreno} data={data} idioma={idioma} navegar={navegar} enActividad />}
+    />
+  ),
 
   ajustes: ({ data, idioma, perfil }) => (
     <SettingsView perfil={data.perfil} data={data} onSave={perfil.savePerfil} onRepetirCuestionario={perfil.repetirCuestionarioCatalogo} idioma={idioma} />
@@ -226,7 +230,40 @@ const PANTALLAS = {
 
   compartir: ({ idioma }) => <CompartirView idioma={idioma} />,
 
-  feedback: ({ idioma }) => <FeedbackView idioma={idioma} />,
+  // Ayuda y comentarios. Desde la ficha de un ejercicio llega con `params: { categoria: "ejercicio",
+  // ejercicioId }`, y la pantalla ofrece arriba el correo ya rellenado con ese ejercicio.
+  feedback: ({ idioma, params, entreno }) => {
+    const id = params && params.categoria === "ejercicio" ? params.ejercicioId : null;
+    const e = id ? entreno.ejercicioDe(id) : null;
+    return <FeedbackView idioma={idioma} ejercicio={id ? { id, nombre: nombreEjercicio(e || id, idioma) } : null} />;
+  },
+
+  // ---------- Entrenamiento (octubre de 2026) ----------
+  // Las pantallas del área de entreno (ui/entreno/). La sesión en curso no está aquí: es una capa a
+  // pantalla completa que pinta app.jsx encima de cualquier pantalla.
+  entreno: ({ data, idioma, entreno, navegar }) => (
+    <EntrenarView entreno={entreno} idioma={idioma} navegar={navegar} aviso={<AvisoActividad entreno={entreno} data={data} idioma={idioma} navegar={navegar} />} />
+  ),
+  "entreno-rutinas": ({ idioma, entreno, navegar }) => <RutinasView entreno={entreno} idioma={idioma} navegar={navegar} />,
+  // Editor de una rutina: `params.id` (null = nueva). Se monta de nuevo para cada rutina (key), así no
+  // se arrastra la copia que se estaba editando de otra.
+  "entreno-rutina": ({ idioma, entreno, navegar, params }) => (
+    <EditorRutinaView key={(params && params.id) || "nueva"} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
+  ),
+  "entreno-ejercicios": ({ idioma, entreno, navegar }) => (
+    <EjerciciosView entreno={entreno} idioma={idioma} onAbrir={(id) => navegar("entreno-ejercicio", { id })} />
+  ),
+  // Ficha de un ejercicio: `params.id`.
+  "entreno-ejercicio": ({ idioma, entreno, navegar, params }) => (
+    <FichaEjercicioView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} />
+  ),
+  "entreno-historial": ({ idioma, entreno, navegar }) => <HistorialView entreno={entreno} idioma={idioma} navegar={navegar} />,
+  // Detalle de una sesión terminada: `params` = { id, inicio } (el inicio dice en qué mes buscarla).
+  "entreno-sesion": ({ idioma, entreno, navegar, params }) => (
+    <DetalleSesionView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} onAbrirEjercicio={(id) => navegar("entreno-ejercicio", { id })} />
+  ),
+  "entreno-progreso": ({ idioma, entreno }) => <ProgresoView entreno={entreno} idioma={idioma} />,
+  "entreno-ajustes": ({ idioma, entreno, navegar }) => <AjustesEntrenoView entreno={entreno} idioma={idioma} navegar={navegar} />,
 };
 
 Object.keys(PANTALLAS_CATEGORIA).forEach((categoria) => {
@@ -234,6 +271,10 @@ Object.keys(PANTALLAS_CATEGORIA).forEach((categoria) => {
     <PantallaCategoria categoria={categoria} data={data} catalogo={catalogo} setTab={setTab} idioma={idioma} />
   );
 });
+
+// Todos los destinos que existen (después de añadir las categorías). Lo usa validacion/ para comprobar
+// que ninguno se queda fuera de la navegación por áreas (ui/marco/navegacion.js).
+export const DESTINOS = Object.keys(PANTALLAS);
 
 // «¿Qué cocino?»: la pantalla premium de sugerencias (o su aviso para quien no tiene premium), con un
 // enlace de vuelta que depende de desde dónde se llega (ver los destinos "cocinar" y

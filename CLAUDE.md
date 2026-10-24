@@ -40,8 +40,9 @@ index.html             → importmap + carga auth-bootstrap.jsx
 auth-bootstrap.jsx     → login/Firestore/App Check, puente con las Cloud Functions (window.*),
                           luego carga la interfaz con cargador-ui.js
 cargador-ui.js         → carga app.jsx y ui/ (Babel + registro de módulos propio, sin build)
-app.jsx                → componente principal (~100 líneas): reúne los hooks de ui/estado/, decide si
-                          toca carga, alta o app, y pinta la pantalla elegida
+app.jsx                → componente principal: reúne los hooks de ui/estado/, decide si toca carga,
+                          alta o app, lleva la navegación (destino, datos y última pantalla de cada
+                          área) y pinta la pantalla elegida con su cabecera y su barra inferior
 
 ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   archivos.json         lista de TODOS los archivos de ui/ (la usan el cargador y sw.js)
@@ -49,10 +50,11 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   pantallas.jsx         tabla destino del menú lateral (`tab`) → pantalla
   estado/               hooks: datos.js (useDatos, usePremium, useCargaInicial), menu.js (useMenu,
                           el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js,
-                          despensa.js (useDespensa)
+                          despensa.js (useDespensa), entreno.js (useEntreno)
   comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores)
-  marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral
-  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/   una carpeta por área
+  marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral,
+                          navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
+  menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/ cuerpo/   una carpeta por área
 
 logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
 logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
@@ -73,6 +75,16 @@ logica/despensa.js             → stock de la despensa: zonas, menú confirmado
                                   fecha de cambio (sellarCambios), migrarDespensa
 logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
 logica/nevera.js               → colocación de la nevera dibujada: huecoDe, formaDe, esBebida, repartirEnHuecos
+logica/entreno-ejercicios.js   → tipos de ejercicio y de serie, músculos, equipos, biblioteca semilla (80),
+                                  listaEjercicios, ejercicioPorId, buscarEjercicios, posibleDuplicado
+logica/entreno-nombres.js      → nombres de los 80 ejercicios en ES/EN/CA/GL/EU y nombreEjercicio
+logica/entreno-calculo.js      → 1RM (Epley), volumen, duración con pausas, récords, «anterior», series
+                                  por músculo, validarSerie, semanas
+logica/entreno-sesion.js       → operaciones puras de la sesión en curso (series, descanso, sustituir hoy,
+                                  pausa, terminar) y de rutinas (aplicarARutina, rutinaDesdeSesion)
+logica/entreno-almacen.js      → claves, migraciones, meses, índice, borrador, cola de envíos y CSV
+logica/informes.js             → informes cruzados del área Cuerpo (informeCruzadoMes, declaradoPorSemana)
+                                  y aviso de actividad (sesionesPorSemana, evaluarAvisoActividad)
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
@@ -80,7 +92,11 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 `evaluarTendencia` y meses de `formatFechaCorta`), `datos-iniciales.js` → `peso.js`,
 `cuestionario.js` → `comun.js` y `datos-iniciales.js`, `migraciones.js` → `datos-iniciales.js`,
 `objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js` y `datos-iniciales.js`, y `lista-compra-neta.js` →
-`macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). La interfaz importa `logica/` por **nombre corto** y otros
+`macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). Del entreno:
+`entreno-sesion.js` → `comun.js`, `entreno-almacen.js` → `entreno-calculo.js` e `informes.js` →
+`entreno-calculo.js`, `resumen-mensual.js` y `objetivos.js` (solo lee de él); `entreno-ejercicios.js`,
+`entreno-nombres.js` y `entreno-calculo.js` no importan nada (reciben `ejercicioDe(id)` y `nombreDe` como
+funciones, para no depender de la biblioteca ni de los nombres). La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
 arranque se quedan en la raíz (`index.html`, `auth-bootstrap.jsx`, `cargador-ui.js`, `sw.js`,
 `manifest.json`, `icon.svg`): `sw.js` en concreto necesita estar ahí para que su "scope" cubra toda
@@ -131,6 +147,46 @@ la misma interfaz que la app. Reglas al escribir en `ui/`:
 - Coste de arranque: Babel transforma toda la interfaz en cada carga (~0,5 s en escritorio, medido
   en octubre de 2026; más en móvil). Una mejora pendiente es guardar el resultado transformado
   entre visitas — no está hecho porque hay que invalidarlo bien tras cada despliegue.
+
+## Navegación por áreas
+
+Desde octubre de 2026 la app es «muchas aplicaciones en una»: tres **áreas** — **FoodDraft**
+(nutrición), **Entrenamiento** y **Cuerpo** (peso, medidas, actividad diaria, resúmenes) — y una zona
+**común** sin área (Compartir, Ayuda y comentarios, Documentos, Premium, Ajustes, Perfil). El porqué y
+el aspecto de cada pieza están en `local/ideas/gimnasio/03-diseno-modulo-entreno.md` (§3).
+
+- **`ui/marco/navegacion.js`** (sin JSX) es la única descripción: `AREAS` (cada una con sus `pestanas`
+  y su `menu`) y `COMUNES`. Una pestaña tiene un destino raíz y la lista de destinos que cuelgan de ella
+  (`incluye`), escrita a mano. `areaDe(destino)` y `pestanaDe(destino)` dicen dónde cae cualquier
+  pantalla. De aquí leen el menú lateral, la barra inferior y la cabecera.
+- **Los destinos son los `tab` de siempre** (las claves de `PANTALLAS` en `ui/pantallas.jsx`): ninguna
+  pantalla cambia por dentro. `app.jsx` guarda `{ tab, params }`: `navegar(destino, params)` permite
+  abrir una pantalla con datos (la ficha de un ejercicio concreto...), y `setTab(destino)` sigue siendo
+  lo que usan las pantallas de siempre (navegar sin datos). Las dos van en `ctx`, junto con `params`.
+- **Última pantalla de cada área**: al tocar un área en el menú lateral se vuelve adonde se estaba
+  (`localStorage`, `fooddraft:ultima-pantalla`, comodidad del dispositivo); si no hay, a su primera
+  pestaña. La app sigue abriendo en `menu`.
+- **Menú lateral**: arriba las áreas, desplegables con todas sus funciones (el área actual sale
+  resaltada y desplegada); abajo lo común, con Premium en mostaza. Un área sin pantallas no se lista.
+- **Barra inferior** (`ui/marco/barra-inferior.jsx`): píldora flotante de cristal claro (fondo
+  `--cristal` al 72 % con desenfoque; fondo sólido sin `backdrop-filter` o con «reducir transparencia»),
+  solo en las pantallas de un área. Solo la pestaña activa enseña su nombre (las demás, como
+  `aria-label` y `title`); tocar una pestaña lleva a su raíz. Se esconde mientras hay un campo de texto
+  con el foco (el teclado del móvil la subiría encima), y `<main>` deja libre abajo lo que ocupa
+  (`RELLENO_BARRA`). Las variables del cristal están en `Shell`.
+- **Cabecera**: el título grande dice el área («Tu recetario», «Tu entreno», «Tu cuerpo»; «Tu cuenta» en
+  la zona común); el rótulo pequeño sigue siendo «FoodDraft».
+- **Capas (`z-index`)**: barra inferior 30 · pastilla de entreno en curso 31 · menú lateral 40/41 ·
+  sesión de entreno y paneles de la nevera 45 · modales 50 · botón «Cerrar sesión» de
+  `auth-bootstrap.jsx` 9999, arriba a la derecha: cualquier barra superior a pantalla completa deja
+  libres ~110 px a la derecha (como `MarcoPanel`).
+
+**Al añadir una pantalla**: su destino en `PANTALLAS`, y su sitio en `navegacion.js` — en el `incluye` de
+una pestaña, en el `menu` de un área o en `COMUNES`. Si se olvida, `validacion/` (grupo «Navegación por
+áreas») la marca en rojo como huérfana. **Al añadir una pestaña**: su entrada en `pestanas` con icono
+de `lucide-react` (monocromo, de línea) y su etiqueta `barra.*` en los cinco idiomas; caben cinco por
+área. Ese mismo grupo comprueba que todas las claves de la navegación (y las de los prefijos nuevos:
+`area.`, `barra.`, `entreno.`, `cuerpo.`...) existen en los cinco diccionarios.
 
 ## Al añadir un archivo `.js`/`.jsx` nuevo que la app carga siempre
 
@@ -262,6 +318,114 @@ Reglas de esta parte:
 - La vista elegida (Dibujo o Lista) se recuerda en `localStorage` (`fooddraft:vista-despensa`), como
   comodidad del dispositivo, no como dato de la cuenta.
 
+## Entrenamiento
+
+Módulo de entreno al estilo Hevy/Lyfta con la estética de FoodDraft (octubre de 2026), en el área
+Entrenamiento. Diseño y porqué: `local/ideas/gimnasio/03-diseno-modulo-entreno.md`; plan de construcción
+y decisiones cerradas: `04-plan-de-ejecucion.md` (§3 y §4.3). Toda la lógica está en los cinco módulos
+`logica/entreno-*.js`, con sus casos en `validacion/` (grupos «Entreno: …»).
+
+**Modelo de datos** (claves nuevas, cada una con su `version` y su migración en `entreno-almacen.js`; como la
+despensa, **no pasan por `migrateData`**):
+
+| Clave | Contenido |
+|---|---|
+| `rueda-de-platos:entreno-catalogo-v1` | ejercicios propios, personalización de los de fábrica (favorito, nota fija, descanso), rutinas, ajustes, estado del aviso de actividad |
+| `rueda-de-platos:entreno-AAAA-MM-v1` | las sesiones **terminadas** de ese mes |
+| `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes y, por ejercicio, la última vez y sus récords |
+| `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion }`: la sesión en curso (o `null`) |
+| `localStorage` `fooddraft:entreno-borrador` / `fooddraft:entreno-pendientes` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube |
+
+Una sesión es `{ id, nombre, rutinaId, inicio, fin, pausas, esfuerzo, nota, origen, lote, ejercicios:
+[{ inst, ejercicioId, sustituyeA, nota, descansoSeg, series: [{ id, tipo, kg, reps, seg, km, rir, hecha }] }],
+actualizado }` (el borrador añade `descanso: { inicio, hasta, inst, avisado }`). Los ejercicios de la
+biblioteca tienen **ids fijos** (`ex_…`, no se cambian nunca) y su nombre vive en `entreno-nombres.js`; los
+propios (`exp_…`) llevan su `nombre` y no se traducen. Siempre se guarda en **kg y km**; libras y millas son
+solo de pantalla.
+
+**Reglas de guardado** (que un entreno no se pierda nunca):
+1. Cada cambio del borrador va al instante a `localStorage` y, con 2,5 s de retraso y al ocultarse la app,
+   a la nube. Al cargar, si hay borrador en los dos sitios gana el de `actualizado` mayor.
+2. Al terminar, la sesión entra en la cola; se escribe en su mes (leer → fusionar por `id` → escribir) y,
+   si va bien, se actualiza el índice, se borra el borrador y sale de la cola. Si falla, se reintenta al
+   cargar la app y con el evento `online`.
+3. Editar o borrar una sesión pasada reescribe su mes y **reconstruye el índice**; también se reconstruye
+   si el nº de sesiones del mes actual no cuadra con `indice.meses`.
+4. **Nunca `window.storage.list()`** (en Firestore lee la colección entera): los meses se conocen por el índice.
+
+**Cálculos** (decisiones del plan, con sus casos): 1RM de Epley con r = repeticiones + RIR («fiable» hasta
+12); volumen = kg × reps de las series hechas que no son de calentamiento (peso corporal del perfil en los
+de peso corporal, lastre sumado, ayuda restada; 0 si falta el peso); series por músculo: el principal 1 y
+cada secundario 0,5 (el cardio no cuenta); récords por tipo de ejercicio (`RECORDS_POR_TIPO`), que solo se
+«baten» si había uno anterior; `validarSerie` avisa, sin bloquear, de errores de dedo (más de 2,5 × el
+máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0, más de 4 horas).
+
+**Interfaz** (`ui/entreno/` y `ui/estado/entreno.js`):
+- **`useEntreno(data)`** lleva todo: catálogo, índice, borrador, meses (se leen **bajo demanda** con
+  `cargarMes`; `sesionesDeMes` junta los del mes con los que esperan en la cola), cola y las acciones, que
+  envuelven las operaciones puras de `entreno-sesion.js`. Todo cambio del borrador pasa por
+  `fijarBorrador` (sella `actualizado`, guarda en `localStorage` y programa la subida). Si la carga del
+  catálogo o del índice falla (sin conexión al abrir), no se escribe encima hasta haberlos leído bien. No
+  crea ningún documento hasta que se usa. `nube === "pendiente"` solo si una subida falló.
+- **Pantallas** (destinos del área Entrenamiento en `ui/pantallas.jsx`): `entreno` (inicio.jsx: empezar
+  vacío o con una rutina, seguir uno a medias, últimos entrenos), `entreno-rutinas` y `entreno-rutina`
+  (`params: { id }`, editor), `entreno-ejercicios` (biblioteca), `entreno-historial` y `entreno-sesion`
+  (`params: { id, inicio }`, detalle corregible), `entreno-ajustes` (unidades, interruptores, descansos,
+  exportar CSV/JSON, recalcular el índice).
+- **El entreno en curso no es un destino**: es una capa a pantalla completa (`sesion.jsx`, z-index 45) que
+  pinta `app.jsx` cuando `entreno.sesionVisible`; ˅ la minimiza y queda la **pastilla** (`pastilla.jsx`,
+  z-index 31, encima de la barra o abajo del todo en la zona común). Mientras se ve: Wake Lock, cronómetro y
+  descanso repintados cada segundo en piezas aparte (la tabla no), y la pantalla de debajo inmóvil.
+- **La tabla** (`fila-serie.jsx`): columnas según `camposDeTipo`; cada campo guarda su propio texto mientras
+  se escribe (coma decimal, unidades de pantalla) y manda el valor convertido en cada cambio; ✓ valida con
+  `validarSerie` (aviso con «Corregir» / «Es correcto»), marca, arranca el descanso y pasa el foco a la
+  siguiente serie. El descanso (`descanso.jsx`) se calcula con `descanso.hasta` y avisa una vez con un
+  pitido de Web Audio (el contexto se crea con el primer toque) y vibración donde exista.
+- **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca), récords
+  batidos, «actualizar la rutina» si cambió su estructura, guardar, compartir (`documentoSesion` con
+  `BotonCompartir`) y descartar con confirmación.
+- **Comodidad y progreso** (fase C): en el ⋮ de cada ejercicio de la sesión, sustituir solo hoy
+  (`sustituyeA`, no cambia la rutina), subir/bajar, nota de hoy, ver ficha y quitar; ⏸ pausa el cronómetro
+  (no el descanso). Al marcar una serie que bate un récord sale una línea discreta (`recordsEnVivo`), y en el
+  historial una medalla junto a las series que **tienen hoy** un récord (`seriesConRecord`, a partir del
+  índice: se recolocan solas al corregir). Ficha de cada ejercicio (`ficha.jsx`, destino
+  `entreno-ejercicio`): Resumen · Historial · Progreso · Récords, con gráficas propias en SVG
+  (`graficas.jsx`, reutilizables: `GraficaLineas`, `GraficaBarras`) y rangos 3 meses / 1 año / todo, todos
+  gratis; lee todos los meses al abrirse (`useTodasLasSesiones`). El historial tiene calendario con puntos
+  en los días entrenados. «Progreso» (`progreso.jsx`, quinta pestaña): series por músculo de esta semana
+  frente a la media de las 4 anteriores, y entrenos y volumen de las últimas 12 semanas
+  (`semanasRecientes`), sin «zona recomendada». Libras y millas: las conversiones están en
+  `entreno-calculo.js` (con sus pruebas) y `comun.jsx` las reexporta. «¿Datos erróneos o que faltan?» de la
+  ficha navega a `feedback` con `params: { categoria: "ejercicio", ejercicioId }`, y `FeedbackView` ofrece
+  arriba el correo ya rellenado (nunca lo abre solo).
+- **Opcionales hechos**: calculadora de discos (`discos.jsx` y `discosPorLado`, desde el ⋮ de los ejercicios
+  con barra; barra de 20 kg o 45 lb) y carpetas de rutinas (`rutina.carpeta`, texto opcional que solo agrupa
+  la lista; sin migración, porque una rutina sin carpeta se ve como siempre). Quedan sin hacer las
+  superseries y el mapa corporal.
+- **Capas a pantalla completa y hojas inferiores** del módulo: `CapaCompleta` y `HojaInferior` en
+  `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
+  de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).
+
+## Área Cuerpo: resumen, informes cruzados y aviso de actividad
+
+- **Resumen mensual** (`ui/peso/resumen-mensual.jsx`, gratis): un mes cualquiera en tres apartados —
+  Nutrición (comidas hechas y objetivo), Entreno (`resumenEntrenoMes`: entrenos, días, volumen, tiempo,
+  récords del mes, músculos más trabajados y comparación con el mes anterior) y Peso (premium, porque sale
+  del seguimiento de peso).
+- **Informes cruzados** (`ui/cuerpo/informes.jsx`, destino `cuerpo-informes`, premium; cálculos en
+  `informes.js`, grupo «Informes cruzados» de `validacion/`): entreno y peso, constancia en la comida en días
+  con y sin entreno (solo lo marcado como hecho: la app no sabe qué plato se comió), declarado frente a
+  registrado (sesiones por semana y kcal de entrenamiento al día, con la misma fórmula MET del objetivo) y
+  mes frente a mes. Cada tarjeta, con su gráfica y una frase prudente; **solo lectura**: nunca cambian los
+  objetivos (alimentar el gasto con lo registrado tocaría `calcularObjetivosPerfil` y necesitaría antes su
+  estudio en los PDFs explicativos).
+- **Aviso de actividad** (`ui/entreno/aviso-actividad.jsx`, en Entrenar y arriba de Actividad diaria; regla
+  en `evaluarAvisoActividad`, grupo «Aviso de actividad»): mira las 3 últimas semanas completas; «menos» si en
+  todas se registra menos de la mitad de lo declarado, «más» si en todas al menos 1,5 veces y 2 sesiones
+  más. No avisa con menos de 4 sesiones registradas en total, en semanas de pausa, si está silenciado (28
+  días) o si se cerró hace menos de 14 días. El estado vive en `catalogo.aviso` (`pausa`, `silenciadoHasta`,
+  `descartadoEl`). Sin push.
+
 ## Internacionalización
 
 La interfaz existe en 5 idiomas: español (por defecto), inglés, catalán, gallego y euskera.
@@ -302,8 +466,10 @@ Puntos que hay que saber antes de tocarlas:
   Convenio obligatorio al crear un Checkout: `client_reference_id: uid` y
   `subscription_data.metadata.firebaseUID: uid` — sin eso el webhook no sabe de qué usuario es el
   evento y lo descarta. Gratis: generador de menús, objetivos, catálogo, Menú simple, lista de la
-  compra y resumen mensual básico. Premium: seguimiento de peso, las dos funciones de Gemini y el
-  resumen mensual ampliado.
+  compra, despensa, todo el módulo de entreno (sin límites: rutinas, ejercicios propios, historial,
+  gráficas, récords, exportar) y el resumen mensual (nutrición y entreno). Premium: seguimiento de peso
+  (y con él el apartado de peso del resumen), las dos funciones de Gemini y los **informes cruzados** del
+  área Cuerpo. Desde octubre de 2026 el resumen ampliado dejó de ser premium (decisión del 23-oct).
 - **Secretos** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `GEMINI_API_KEY`): viven en Firebase,
   nunca en el repo. Las funciones callable exigen App Check (`enforceAppCheck: true`); el webhook no,
   porque quien llama es Stripe, no la app.
