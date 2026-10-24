@@ -81,12 +81,14 @@ export const AREAS = [
         incluye: ["perfil-peso", "perfil-medidas"] },
       { clave: "actividad", destino: "actividad-diaria", etiqueta: "barra.actividad", icono: Activity, incluye: ["actividad-diaria"] },
       { clave: "resumen", destino: "perfil-resumen", etiqueta: "barra.resumen", icono: PieChart, incluye: ["perfil-resumen"] },
+      { clave: "informes", destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles, incluye: ["cuerpo-informes"] },
     ],
     menu: [
       { destino: "perfil-peso", etiqueta: "drawer.registroPeso", icono: Scale },
       { destino: "perfil-medidas", etiqueta: "perfilRoot.medidasCorporales", icono: Ruler },
       { destino: "actividad-diaria", etiqueta: "drawer.actividadDiaria", icono: Activity },
       { destino: "perfil-resumen", etiqueta: "perfilRoot.resumenMensual", icono: PieChart },
+      { destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles },
     ],
   },
 ];

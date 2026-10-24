@@ -8,6 +8,7 @@ const FILES_TO_CACHE = [
   "./logica/migraciones.js", "./logica/despensa.js", "./logica/lista-compra-neta.js",
   "./logica/nevera.js", "./logica/entreno-ejercicios.js", "./logica/entreno-nombres.js",
   "./logica/entreno-calculo.js", "./logica/entreno-sesion.js", "./logica/entreno-almacen.js",
+  "./logica/informes.js",
 ];
 
 // ---------- Notificaciones push en segundo plano (Fase 6) ----------

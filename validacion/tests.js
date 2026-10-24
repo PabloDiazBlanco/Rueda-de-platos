@@ -34,6 +34,7 @@ import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
   elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV,
 } from "entreno-almacen";
+import { declaradoPorSemana, informeCruzadoMes } from "informes";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1092,6 +1093,7 @@ export function crearGrupos(mod, carga) {
     grupoEntrenoCalculos(),
     grupoEntrenoSesion(),
     grupoEntrenoAlmacen(),
+    grupoInformes(),
   ];
 }
 
@@ -1806,6 +1808,69 @@ function grupoEntrenoAlmacen() {
             { cabecera: csv[0], filas: csv.length - 1, entreno: csv[1].split(";")[1], kg: csv[1].includes(";61,3;10;") },
             { cabecera: CABECERA_CSV, filas: 2, entreno: '"Torso', kg: true }
           );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Informes cruzados (fase K2) ----------
+// Un mes de 30 días (septiembre de 2026, ya terminado): 12 sesiones de 1 h en 10 días distintos; peso
+// 80 kg; en el perfil, 4 sesiones de pesas de 1 h a la semana; 4 comidas al día, todas hechas los días con
+// entreno y 2 de 4 los demás.
+function escenarioInforme() {
+  const perfil = {
+    anioNacimiento: new Date().getFullYear() - 31, altura: 180, peso: 80, sexo: "hombre", palBase: "escritorio",
+    objetivo: "mantenimiento", entrenamientos: [{ tipo: "pesas", horas: 1, frecuenciaSemanal: 4 }], calibracionKcal: 0,
+    repartoComidas: { Desayuno: 0.2, Comida: 0.35, Merienda: 0.15, Cena: 0.3 },
+  };
+  const dia = (d) => `2026-09-${String(d).padStart(2, "0")}`;
+  const comidasCompletadas = {};
+  for (let d = 1; d <= 30; d++) {
+    comidasCompletadas[dia(d)] = d <= 10 ? { Desayuno: true, Comida: true, Merienda: true, Cena: true } : { Comida: true, Cena: true };
+  }
+  const sesion = (d, hora) => ({ id: `s${d}${hora}`, inicio: `${dia(d)}T${hora}:00:00.000Z`, fin: `${dia(d)}T${String(Number(hora) + 1).padStart(2, "0")}:00:00.000Z`, pausas: [], ejercicios: [] });
+  const sesiones = [...Array.from({ length: 10 }, (_, i) => sesion(i + 1, "08")), sesion(1, "17"), sesion(2, "17")];
+  return { data: { perfil, comidasCompletadas, pesoTracking: null }, sesiones };
+}
+
+function grupoInformes() {
+  return {
+    grupo: "Informes cruzados",
+    casos: [
+      {
+        nombre: "declaradoPorSemana suma solo las sesiones de pesas del perfil",
+        ejecutar: () => comparar(
+          { n: declaradoPorSemana({ entrenamientos: [{ tipo: "pesas", frecuenciaSemanal: 3 }, { tipo: "correr", frecuenciaSemanal: 2 }, { tipo: "pesas", frecuenciaSemanal: 1 }] }), vacio: declaradoPorSemana(null) },
+          { n: 4, vacio: 0 }
+        ),
+      },
+      {
+        nombre: "Declarado frente a real: 2,8 sesiones/semana registradas y 192 kcal/día frente a 274",
+        ejecutar: () => {
+          const { data, sesiones } = escenarioInforme();
+          const r = informeCruzadoMes({ data, sesionesMes: sesiones, sesionesMesAnterior: [], ejercicioDe: ejercicioPrueba, mesISO: "2026-09", hoy: "2026-10-05" });
+          // 12 ÷ 30 × 7 = 2,8; 12 h × 6 MET × 80 kg ÷ 30 días = 192; 6 × 80 × 1 h × 4 ÷ 7 = 274,3 → 274 (el objetivo redondea).
+          return comparar(
+            { dias: r.dias, sesiones: r.sesiones, horas: r.horas, declaradas: r.declarado.declaradasSemana, registradas: r.declarado.registradasSemana, estimadas: r.declarado.kcalEstimadas, declaradasKcal: r.declarado.kcalDeclaradas },
+            { dias: 30, sesiones: 12, horas: 12, declaradas: 4, registradas: 2.8, estimadas: 192, declaradasKcal: 274 }
+          );
+        },
+      },
+      {
+        nombre: "Constancia: 100 % de comidas hechas en días con entreno frente a 50 % sin entreno",
+        ejecutar: () => {
+          const { data, sesiones } = escenarioInforme();
+          const r = informeCruzadoMes({ data, sesionesMes: sesiones, sesionesMesAnterior: [], ejercicioDe: ejercicioPrueba, mesISO: "2026-09", hoy: "2026-10-05" });
+          return comparar({ con: r.constancia.conEntreno, sin: r.constancia.sinEntreno, diasCon: r.constancia.diasCon, diasSin: r.constancia.diasSin }, { con: 100, sin: 50, diasCon: 10, diasSin: 20 });
+        },
+      },
+      {
+        nombre: "Mes frente a mes: diferencia de sesiones respecto al mes anterior",
+        ejecutar: () => {
+          const { data, sesiones } = escenarioInforme();
+          const r = informeCruzadoMes({ data, sesionesMes: sesiones, sesionesMesAnterior: sesiones.slice(0, 9), ejercicioDe: ejercicioPrueba, mesISO: "2026-09", hoy: "2026-10-05" });
+          return comparar({ sesiones: r.variacion.sesiones, mesAnterior: r.anterior.mes, volumen: r.variacion.volumenPct }, { sesiones: 3, mesAnterior: "2026-08", volumen: null });
         },
       },
     ],

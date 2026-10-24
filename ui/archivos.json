@@ -11,6 +11,7 @@
   "ui/comun/idioma.jsx",
   "ui/comun/modal.jsx",
   "ui/comun/tarjetas.jsx",
+  "ui/cuerpo/informes.jsx",
   "ui/despensa/anadir.jsx",
   "ui/despensa/cocina.jsx",
   "ui/despensa/despensa.jsx",

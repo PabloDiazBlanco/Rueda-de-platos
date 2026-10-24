@@ -33,6 +33,7 @@ import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
 import { AjustesEntrenoView } from "./entreno/ajustes.jsx";
 import { FichaEjercicioView } from "./entreno/ficha.jsx";
 import { ProgresoView } from "./entreno/progreso.jsx";
+import { InformesView } from "./cuerpo/informes.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -204,6 +205,11 @@ const PANTALLAS = {
   ),
 
   "perfil-medidas": ({ idioma }) => <MedidasPlaceholderView idioma={idioma} />,
+
+  // Informes cruzados del área Cuerpo (premium): entreno, comida y peso juntos.
+  "cuerpo-informes": ({ data, idioma, setTab, premium, entreno }) => (
+    <InformesView data={data} premium={premium} entreno={entreno} idioma={idioma} onGoPremium={() => setTab("perfil-premium")} />
+  ),
 
   "perfil-documentos": ({ idioma }) => <DocumentosView idioma={idioma} />,
 
