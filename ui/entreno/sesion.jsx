@@ -12,7 +12,7 @@
 // Mientras la sesión está a la vista: la pantalla no se apaga (Wake Lock, donde exista), el cronómetro y
 // el descanso se repintan cada segundo (solo esas piezas, no la tabla) y la pantalla de debajo no se mueve.
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal, BookOpen } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal, BookOpen, Calculator } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
 import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
@@ -27,6 +27,7 @@ import { FilaSerie, HojaTipoSerie, etiquetasSeries, plantillaColumnas, columnasD
 import { BarraDescanso, prepararAudio } from "./descanso.jsx";
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
 import { TerminarEntreno, textoRecord } from "./terminar.jsx";
+import { HojaDiscos } from "./discos.jsx";
 
 // Pide que la pantalla no se apague mientras la sesión está a la vista, y lo vuelve a pedir al volver a
 // la app (el navegador lo suelta solo al ocultarse). Donde no existe la API, no hace nada.
@@ -87,6 +88,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const [menuEjercicio, setMenuEjercicio] = useState(null); // inst
   const [avisos, setAvisos] = useState({}); // id de serie → [avisos]
   const [terminando, setTerminando] = useState(false);
+  const [discos, setDiscos] = useState(null); // kg de partida de la calculadora de discos, si está abierta
   const onTerminar = () => setTerminando(true);
 
   usePantallaEncendida();
@@ -353,6 +355,8 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
         />
       )}
 
+      {discos && <HojaDiscos kg={discos.kg} ajustes={ajustes} idioma={idioma} onCerrar={() => setDiscos(null)} />}
+
       {terminando && <TerminarEntreno entreno={entreno} idioma={idioma} onVolver={() => setTerminando(false)} onGuardado={onGuardado} />}
 
       {menuEjercicio && (
@@ -373,6 +377,16 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
           <OpcionHoja icono={BookOpen} onClick={() => { const ej = s.ejercicios.find((e) => e.inst === menuEjercicio); setMenuEjercicio(null); entreno.ocultarSesion(); navegar("entreno-ejercicio", { id: ej.ejercicioId }); }}>
             {t(idioma, "entreno.ficha.verFicha")}
           </OpcionHoja>
+          {(entreno.ejercicioDe((s.ejercicios.find((e) => e.inst === menuEjercicio) || {}).ejercicioId) || {}).equipo === "barra" && (
+            <OpcionHoja icono={Calculator} onClick={() => {
+              const ej = s.ejercicios.find((e) => e.inst === menuEjercicio);
+              const serie = ej.series.find((x) => !x.hecha && x.kg) || [...ej.series].reverse().find((x) => x.kg);
+              setDiscos({ kg: serie ? serie.kg : null });
+              setMenuEjercicio(null);
+            }}>
+              {t(idioma, "entreno.discos.titulo")}
+            </OpcionHoja>
+          )}
           <OpcionHoja icono={StickyNote} onClick={() => { const ej = s.ejercicios.find((e) => e.inst === menuEjercicio); setNota({ inst: menuEjercicio, texto: (ej && ej.nota) || "" }); setMenuEjercicio(null); }}>
             {t(idioma, "entreno.sesion.notaHoy")}
           </OpcionHoja>

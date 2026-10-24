@@ -350,3 +350,25 @@ export function resumenEntrenoMes(sesiones, ejercicioDe, pesoCorporal, { indice 
   const topMusculos = Object.entries(porMusculo).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([musculo, series]) => ({ musculo, series }));
   return { sesiones: lista.length, dias: dias.size, volumen, duracionSeg, records, topMusculos };
 }
+
+// ---------- Calculadora de discos (opcional C10) ----------
+// Qué discos poner en cada lado de la barra para llegar a un peso, con los discos habituales de un
+// gimnasio (de mayor a menor, cogiendo siempre el más grande que quepa). Si el peso no se puede hacer
+// exacto, `resto` dice cuánto falta; si es menor que la barra sola, `posible` es false.
+export const DISCOS_KG = [25, 20, 15, 10, 5, 2.5, 1.25];
+export const DISCOS_LB = [45, 35, 25, 10, 5, 2.5];
+
+export function discosPorLado(objetivo, barra = 20, discos = DISCOS_KG) {
+  const peso = Number(objetivo) || 0;
+  if (peso < barra) return { posible: false, porLado: [], total: barra, resto: 0 };
+  let falta = Math.round(((peso - barra) / 2) * 1000) / 1000;
+  const porLado = [];
+  discos.forEach((d) => {
+    while (falta + 1e-9 >= d) {
+      porLado.push(d);
+      falta = Math.round((falta - d) * 1000) / 1000;
+    }
+  });
+  const total = Math.round((barra + 2 * porLado.reduce((t, d) => t + d, 0)) * 1000) / 1000;
+  return { posible: true, porLado, total, resto: Math.round((peso - total) * 1000) / 1000 };
+}

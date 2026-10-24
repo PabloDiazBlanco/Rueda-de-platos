@@ -1252,6 +1252,14 @@ const TEXTOS = {
     "entreno.aviso.cerrar": "Cerrar el aviso",
     "entreno.aviso.dePausa": "Estás de pausa desde el {fecha}: mientras dure, no se compara lo que anotas con tu perfil.",
     "entreno.aviso.terminarPausa": "Terminar la pausa",
+
+    "entreno.discos.titulo": "Calculadora de discos",
+    "entreno.discos.peso": "Peso total ({unidad})",
+    "entreno.discos.barra": "Con una barra de {barra}.",
+    "entreno.discos.porLado": "Por lado: {discos} {unidad}",
+    "entreno.discos.soloBarra": "Solo la barra.",
+    "entreno.discos.menosQueBarra": "Es menos de lo que pesa la barra.",
+    "entreno.discos.resto": "Con estos discos llegas a {total}; faltan {resto} que no se pueden poner.",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2443,6 +2451,14 @@ const TEXTOS = {
     "entreno.aviso.cerrar": "Close the notice",
     "entreno.aviso.dePausa": "You’ve been on a break since {fecha}: while it lasts, your logs aren’t compared with your profile.",
     "entreno.aviso.terminarPausa": "End the break",
+
+    "entreno.discos.titulo": "Plate calculator",
+    "entreno.discos.peso": "Total weight ({unidad})",
+    "entreno.discos.barra": "With a {barra} bar.",
+    "entreno.discos.porLado": "Each side: {discos} {unidad}",
+    "entreno.discos.soloBarra": "Just the bar.",
+    "entreno.discos.menosQueBarra": "That’s less than the bar weighs.",
+    "entreno.discos.resto": "These plates get you to {total}; {resto} can’t be added.",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3634,6 +3650,14 @@ const TEXTOS = {
     "entreno.aviso.cerrar": "Tancar l’avís",
     "entreno.aviso.dePausa": "Estàs de pausa des del {fecha}: mentre duri, no es compara el que anotes amb el teu perfil.",
     "entreno.aviso.terminarPausa": "Acabar la pausa",
+
+    "entreno.discos.titulo": "Calculadora de discos",
+    "entreno.discos.peso": "Pes total ({unidad})",
+    "entreno.discos.barra": "Amb una barra de {barra}.",
+    "entreno.discos.porLado": "Per costat: {discos} {unidad}",
+    "entreno.discos.soloBarra": "Només la barra.",
+    "entreno.discos.menosQueBarra": "És menys del que pesa la barra.",
+    "entreno.discos.resto": "Amb aquests discos arribes a {total}; en falten {resto} que no es poden posar.",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4825,6 +4849,14 @@ const TEXTOS = {
     "entreno.aviso.cerrar": "Pechar o aviso",
     "entreno.aviso.dePausa": "Estás en pausa desde o {fecha}: mentres dure, non se compara o que anotas co teu perfil.",
     "entreno.aviso.terminarPausa": "Rematar a pausa",
+
+    "entreno.discos.titulo": "Calculadora de discos",
+    "entreno.discos.peso": "Peso total ({unidad})",
+    "entreno.discos.barra": "Cunha barra de {barra}.",
+    "entreno.discos.porLado": "Por lado: {discos} {unidad}",
+    "entreno.discos.soloBarra": "Só a barra.",
+    "entreno.discos.menosQueBarra": "É menos do que pesa a barra.",
+    "entreno.discos.resto": "Con estes discos chegas a {total}; faltan {resto} que non se poden poñer.",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6016,6 +6048,14 @@ const TEXTOS = {
     "entreno.aviso.cerrar": "Itxi abisua",
     "entreno.aviso.dePausa": "{fecha}(e)tik atsedenaldian zaude: irauten duen bitartean, ez da idazten duzuna zure profilarekin alderatzen.",
     "entreno.aviso.terminarPausa": "Amaitu atsedenaldia",
+
+    "entreno.discos.titulo": "Disko-kalkulagailua",
+    "entreno.discos.peso": "Pisu osoa ({unidad})",
+    "entreno.discos.barra": "{barra}ko barra batekin.",
+    "entreno.discos.porLado": "Alde bakoitzean: {discos} {unidad}",
+    "entreno.discos.soloBarra": "Barra bakarrik.",
+    "entreno.discos.menosQueBarra": "Barrak pisatzen duena baino gutxiago da.",
+    "entreno.discos.resto": "Disko hauekin {total}ra iristen zara; ezin diren {resto} falta dira.",
   },
 };
 

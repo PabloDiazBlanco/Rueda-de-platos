@@ -24,7 +24,7 @@ import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
 import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
-  pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes,
+  pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes, discosPorLado,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -1579,6 +1579,17 @@ function grupoEntrenoCalculos() {
           return comparar(
             { sesiones: r.sesiones, dias: r.dias, volumen: r.volumen, duracion: r.duracionSeg, records: r.records, primero: r.topMusculos[0].musculo, series: r.topMusculos[0].series, n: r.topMusculos.length },
             { sesiones: 3, dias: 2, volumen: 1900, duracion: 8100, records: 1, primero: "pecho", series: 3, n: 3 }
+          );
+        },
+      },
+      {
+        nombre: "Calculadora de discos: 100 kg = 25 + 15 por lado; 62,5 = 20 + 1,25; 101 deja 1 kg; 15 no llega a la barra",
+        ejecutar: () => {
+          const lado = (kg) => discosPorLado(kg).porLado.join("+");
+          // (100 − 20) / 2 = 40 = 25 + 15; (62,5 − 20) / 2 = 21,25 = 20 + 1,25; (101 − 20) / 2 = 40,5 → 25 + 15 y sobra 0,5 por lado.
+          return comparar(
+            { cien: lado(100), sesenta: lado(62.5), barra: lado(20), cientoUno: lado(101), restoCientoUno: discosPorLado(101).resto, quince: discosPorLado(15).posible },
+            { cien: "25+15", sesenta: "20+1.25", barra: "", cientoUno: "25+15", restoCientoUno: 1, quince: false }
           );
         },
       },
