@@ -24,6 +24,7 @@ import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
 import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
+  pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -1546,6 +1547,19 @@ function grupoEntrenoCalculos() {
             { semanas: "2026-10-05,2026-10-12,2026-10-19", entrenos: "1,2,1", volumen: "600,1220,650" }
           );
         },
+      },
+      {
+        nombre: "Libras y millas: conversión y vuelta sin perder lo tecleado",
+        ejecutar: () => comparar(
+          {
+            cienKgEnLb: pesoAPantalla(100, "lb"), lb135EnKg: pesoDePantalla(135, "lb"), idaYVuelta: pesoAPantalla(pesoDePantalla(135, "lb"), "lb"),
+            enKg: pesoAPantalla(61.3, "kg"), cincoMi: distanciaDePantalla(5, "mi"), vueltaMi: distanciaAPantalla(distanciaDePantalla(5, "mi"), "mi"),
+            vacio: pesoDePantalla("", "lb"),
+          },
+          // 100 / 0,45359237 = 220,46 → 220,5; 135 × 0,45359237 = 61,2350 kg; 5 × 1,609344 = 8,047 km.
+          { cienKgEnLb: 220.5, lb135EnKg: 61.235, idaYVuelta: 135, enKg: 61.3, cincoMi: 8.047, vueltaMi: 5, vacio: null },
+          0.0001
+        ),
       },
       {
         nombre: "semanaDe: el viernes 23-10-2026 es de la semana del lunes 19 (o del domingo 18)",

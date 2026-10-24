@@ -7,6 +7,7 @@ import React, { useEffect } from "react";
 import { X, ArrowLeft } from "lucide-react";
 import { t } from "i18n";
 import { nombreEjercicio } from "entreno-nombres";
+import { pesoAPantalla, distanciaAPantalla } from "entreno-calculo";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // ---------- Capa a pantalla completa ----------
@@ -123,34 +124,9 @@ export function formatoNumero(n, idioma, decimales = 1) {
 }
 
 // ---------- Unidades ----------
-// Se guarda siempre en kg y km; libras y millas son solo de pantalla (ajuste «unidades»). Las
-// equivalencias son las exactas por definición internacional.
-export const KG_POR_LB = 0.45359237;
-export const KM_POR_MI = 1.609344;
-
-// Peso guardado (kg) → número a enseñar en la unidad elegida, redondeado a 0,1.
-export function pesoAPantalla(kg, unidad) {
-  if (kg === null || kg === undefined || kg === "") return null;
-  const v = unidad === "lb" ? Number(kg) / KG_POR_LB : Number(kg);
-  return Math.round(v * 10) / 10;
-}
-// Lo tecleado en la unidad elegida → kg para guardar (sin redondear de más, para que ida y vuelta dé lo mismo).
-export function pesoDePantalla(valor, unidad) {
-  if (valor === null || valor === undefined || valor === "") return null;
-  const v = Number(valor);
-  return unidad === "lb" ? Math.round(v * KG_POR_LB * 1000) / 1000 : v;
-}
-export function distanciaAPantalla(km, unidad) {
-  if (km === null || km === undefined || km === "") return null;
-  const v = unidad === "mi" ? Number(km) / KM_POR_MI : Number(km);
-  return Math.round(v * 100) / 100;
-}
-export function distanciaDePantalla(valor, unidad) {
-  if (valor === null || valor === undefined || valor === "") return null;
-  const v = Number(valor);
-  return unidad === "mi" ? Math.round(v * KM_POR_MI * 1000) / 1000 : v;
-}
-
+// Las conversiones viven en logica/entreno-calculo.js (con sus pruebas); aquí se reexportan para las
+// pantallas.
+export { KG_POR_LB, KM_POR_MI, pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla } from "entreno-calculo";
 // Peso con su unidad, para textos («61,3 kg», «135 lb»).
 export function textoPeso(kg, ajustes, idioma) {
   const unidad = (ajustes && ajustes.unidadPeso) || "kg";

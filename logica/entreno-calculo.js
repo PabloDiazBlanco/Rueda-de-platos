@@ -298,3 +298,34 @@ export function semanasRecientes(sesiones, ejercicioDe, pesoCorporal, inicioSema
   });
   return semanas;
 }
+
+// ---------- Unidades ----------
+// Se guarda siempre en kg y km; libras y millas son solo de pantalla (ajuste de Ajustes de entreno), así
+// se puede cambiar de unidad en cualquier momento sin tocar nada guardado. Equivalencias exactas por
+// definición internacional. Lo que se enseña se redondea (0,1 lb / 0,01 mi); lo que se guarda, a la
+// milésima, para que ida y vuelta dé lo mismo que se tecleó.
+export const KG_POR_LB = 0.45359237;
+export const KM_POR_MI = 1.609344;
+
+const vacio = (v) => v === null || v === undefined || v === "";
+
+export function pesoAPantalla(kg, unidad) {
+  if (vacio(kg)) return null;
+  const v = unidad === "lb" ? Number(kg) / KG_POR_LB : Number(kg);
+  return Math.round(v * 10) / 10;
+}
+export function pesoDePantalla(valor, unidad) {
+  if (vacio(valor)) return null;
+  const v = Number(valor);
+  return unidad === "lb" ? Math.round(v * KG_POR_LB * 1000) / 1000 : v;
+}
+export function distanciaAPantalla(km, unidad) {
+  if (vacio(km)) return null;
+  const v = unidad === "mi" ? Number(km) / KM_POR_MI : Number(km);
+  return Math.round(v * 100) / 100;
+}
+export function distanciaDePantalla(valor, unidad) {
+  if (vacio(valor)) return null;
+  const v = Number(valor);
+  return unidad === "mi" ? Math.round(v * KM_POR_MI * 1000) / 1000 : v;
+}
