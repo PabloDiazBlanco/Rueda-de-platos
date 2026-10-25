@@ -35,6 +35,10 @@ import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
   elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV, migrarIndice,
 } from "entreno-almacen";
+import {
+  lineasComida, redondearRazonable, propuestaGramos, opcionesCambio, comidaReal, registroComida, necesidadesComidaReal,
+  estaHecha, registroDeSlot, totalesDiaReal,
+} from "comida-real";
 import { declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad, ultimaVezPorGrupo, gruposSinEntrenar } from "informes";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
@@ -1134,6 +1138,7 @@ export function crearGrupos(mod, carga) {
     grupoEntrenoAlmacen(),
     grupoInformes(),
     grupoAvisoActividad(),
+    grupoComidaReal(),
   ];
 }
 
@@ -2123,6 +2128,164 @@ function grupoAvisoActividad() {
               pausaVieja: grupos({ pausa: { desde: "2026-08-01", hasta: "2026-08-15" } }),
             },
             { cerradoAyer: "brazos", cerradoHace14: "pierna,brazos", pausaAbierta: "", pausaVieja: "pierna,brazos" }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Lo comido de verdad (B1 + B3, 25-oct-2026) ----------
+// Una comida con pollo (150 g), pasta (80 g) y ensalada (150 g, la verdura: no cuenta en las kcal), y un
+// desayuno compuesto de pan de molde (60 g) y pavo (40 g). Kcal del catálogo semilla: pollo 165, pasta
+// 357, ensalada 25, ñoquis 156, patata 77, tomate 18, pavo 90, jamón 212 (por 100 g).
+function escenarioComidaReal() {
+  const data = {
+    foods: FOODS_SEED.map((f) => ({ ...f })),
+    ingredients: [
+      { id: "i_pollo", name: "Pollo", category: "proteina", foodId: "f_pechuga_pollo", gramos: 150 },
+      { id: "i_pasta", name: "Pasta", category: "carbo", foodId: "f_pasta", gramos: 80 },
+      { id: "i_ensalada", name: "Ensalada", category: "verdura", foodId: "f_ensalada", gramos: 150 },
+      { id: "i_tostadas", name: "Tostadas", category: "desayuno", composicion: [{ id: "c1", foodId: "f_pan_molde", gramos: 60 }, { id: "c2", foodId: "f_pavo", gramos: 40 }] },
+    ],
+    comidasCompletadas: {},
+  };
+  const comida = { id: "m1", week: 1, day: "Lunes", mealType: "Comida", protein: "Pollo", carbo: "Pasta", verdura: "Ensalada" };
+  const desayuno = { id: "m2", week: 1, day: "Lunes", mealType: "Desayuno", item: "Tostadas" };
+  return { data, comida, desayuno };
+}
+
+function grupoComidaReal() {
+  return {
+    grupo: "Lo comido de verdad (B1 + B3)",
+    casos: [
+      {
+        nombre: "Líneas de una comida (la verdura no cuenta) y, sin cambios, lo comido es lo del menú: 247,5 + 285,6 = 533,1 kcal",
+        ejecutar: () => {
+          const { data, comida, desayuno } = escenarioComidaReal();
+          const l = lineasComida(data, comida);
+          const real = comidaReal(data, comida, {});
+          return comparar(
+            {
+              claves: l.map((x) => x.clave).join(","), gramos: l.map((x) => x.gramos).join(","), cuentan: l.map((x) => x.cuenta).join(","),
+              kcal: real.macros.kcal, menu: real.planificadas.kcal, hayCambios: real.hayCambios,
+              desayuno: lineasComida(data, desayuno).map((x) => `${x.clave}=${x.foodId}`).join(","),
+            },
+            { claves: "protein,carbo,verdura", gramos: "150,80,150", cuentan: "true,true,false", kcal: 533.1, menu: 533.1, hayCambios: false, desayuno: "item:0=f_pan_molde,item:1=f_pavo" }
+          );
+        },
+      },
+      {
+        nombre: "Cantidad propuesta con las mismas kcal, redondeada sin pasar del ±10 %",
+        ejecutar: () => {
+          const { data, comida, desayuno } = escenarioComidaReal();
+          const [, pasta, verdura] = lineasComida(data, comida);
+          const [, pavo] = lineasComida(data, desayuno);
+          // Pasta: 285,6 kcal ÷ 1,56 (ñoquis) = 183,1 g → de 10 en 10: 180. Ensalada: 37,5 kcal ÷ 0,77 (patata) =
+          // 48,7 g → de 5 en 5: 50. Pavo: 36 kcal ÷ 2,12 (jamón) = 17,0 g → al gramo: 17.
+          return comparar(
+            {
+              nyoquis: propuestaGramos(data, pasta, "f_gnocchi"), patata: propuestaGramos(data, verdura, "f_patata"), jamon: propuestaGramos(data, pavo, "f_jamon"),
+              r8: redondearRazonable(8.4), r47: redondearRazonable(47), r183: redondearRazonable(183), r312: redondearRazonable(312), r0: redondearRazonable(0),
+            },
+            { nyoquis: 180, patata: 50, jamon: 17, r8: 8, r47: 45, r183: 180, r312: 300, r0: 0 }
+          );
+        },
+      },
+      {
+        nombre: "Cambios: 300 g de ñoquis por la pasta = 715,5 kcal; sin el pollo = 285,6; la verdura por patata cuenta y por tomate no",
+        ejecutar: () => {
+          const { data, comida } = escenarioComidaReal();
+          const kcal = (cambios) => Math.round(comidaReal(data, comida, cambios).macros.kcal * 10) / 10;
+          return comparar(
+            {
+              nyoquis: kcal({ carbo: { foodId: "f_gnocchi", gramos: 300 } }),
+              sinPollo: kcal({ protein: { omitido: true } }),
+              patata: kcal({ verdura: { foodId: "f_patata", gramos: 50 } }),
+              tomate: kcal({ verdura: { foodId: "f_tomate", gramos: 150 } }),
+            },
+            { nyoquis: 715.5, sinPollo: 285.6, patata: 571.6, tomate: 533.1 }
+          );
+        },
+      },
+      {
+        nombre: "Para elegir: primero la misma carpeta y después el resto, sin repetir el propio alimento",
+        ejecutar: () => {
+          const { data, comida } = escenarioComidaReal();
+          const pasta = lineasComida(data, comida)[1];
+          const o = opcionesCambio(data, pasta);
+          const total = o.mismaCarpeta.length + o.resto.length;
+          return comparar(
+            { primera: o.mismaCarpeta.every((f) => f.categoria === "carbohidratos"), sinPasta: ![...o.mismaCarpeta, ...o.resto].some((f) => f.id === "f_pasta"), total, todos: data.foods.length - 1 },
+            { primera: true, sinPasta: true, total: data.foods.length - 1, todos: data.foods.length - 1 }
+          );
+        },
+      },
+      {
+        nombre: "registroComida guarda la comida, sus macros y solo los cambios de verdad; la despensa descuenta lo comido",
+        ejecutar: () => {
+          const { data, comida } = escenarioComidaReal();
+          const sinCambios = registroComida(data, comida);
+          const igual = registroComida(data, comida, { carbo: { foodId: "f_pasta", gramos: 80 } });
+          const cambiado = registroComida(data, comida, { carbo: { foodId: "f_gnocchi", gramos: 300 }, protein: { omitido: true } });
+          const nec = necesidadesComidaReal(data, comida, cambiado.cambios);
+          return comparar(
+            {
+              hecha: sinCambios.hecha, slot: sinCambios.slotId, kcal: sinCambios.macros.kcal, sinClave: sinCambios.cambios === undefined, igualSinCambios: igual.cambios === undefined,
+              kcalCambiado: cambiado.macros.kcal, claves: Object.keys(cambiado.cambios).sort().join(","),
+              necesidades: nec.map((n) => `${n.foodId}:${n.gramos}`).join(","),
+            },
+            {
+              hecha: true, slot: "m1", kcal: 533, sinClave: true, igualSinCambios: true, kcalCambiado: 468, claves: "carbo,protein",
+              necesidades: "f_gnocchi:300,f_ensalada:null",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Despensa: al guardar los cambios devuelve lo de la pasta y descuenta los ñoquis; al desmarcar, todo vuelve",
+        ejecutar: () => {
+          const { data, comida } = escenarioComidaReal();
+          let d = conItems([{ id: "a", foodId: "f_pasta", zona: "despensa", gramos: 500 }, { id: "b", foodId: "f_gnocchi", zona: "nevera", gramos: 400 }, { id: "c", foodId: "f_pechuga_pollo", zona: "nevera", gramos: 600 }]);
+          d = descontarComida(d, { fecha: HOY, mealType: "Comida", slotId: "m1", necesidades: necesidadesComida(data, comida) });
+          const trasHecha = d.items.map((i) => i.gramos).join(",");
+          const cambios = registroComida(data, comida, { carbo: { foodId: "f_gnocchi", gramos: 300 } }).cambios;
+          d = descontarComida(d, { fecha: HOY, mealType: "Comida", slotId: "m1", necesidades: necesidadesComidaReal(data, comida, cambios) });
+          const trasCambios = d.items.map((i) => i.gramos).join(",");
+          d = devolverComida(d, { fecha: HOY, mealType: "Comida" });
+          return comparar(
+            { trasHecha, trasCambios, trasDesmarcar: d.items.map((i) => i.gramos).join(",") },
+            { trasHecha: "420,400,450", trasCambios: "500,100,450", trasDesmarcar: "500,400,600" }
+          );
+        },
+      },
+      {
+        nombre: "Las kcal del día del menú usan lo comido de verdad en la comida cambiada (715,5 + 195 del desayuno)",
+        ejecutar: () => {
+          const { data, comida, desayuno } = escenarioComidaReal();
+          // Desayuno: pan 265 × 0,6 = 159 + pavo 90 × 0,4 = 36 → 195 kcal.
+          data.comidasCompletadas = { "2026-10-25": { Comida: registroComida(data, comida, { carbo: { foodId: "f_gnocchi", gramos: 300 } }) } };
+          const t = totalesDiaReal(data, [comida, desayuno], 1, "Lunes");
+          const sinNada = totalesDiaReal({ ...data, comidasCompletadas: {} }, [comida, desayuno], 1, "Lunes");
+          return comparar(
+            { kcal: Math.round(t.kcal * 10) / 10, cambiadas: t.cambiadas, menu: Math.round(sinNada.kcal * 10) / 10, encontrado: registroDeSlot(data.comidasCompletadas, "m1").slotId },
+            { kcal: 910.5, cambiadas: 1, menu: 728.1, encontrado: "m1" }
+          );
+        },
+      },
+      {
+        nombre: "migrateData: cada comida hecha `true` pasa a { hecha: true } sin tocar las que ya son registros; dos pasadas, igual",
+        ejecutar: () => {
+          const registro = { hecha: true, slotId: "x", macros: { kcal: 500, prot: 30, fat: 10, carb: 60 } };
+          const { data, changed } = migrateData({ comidasCompletadas: { "2026-10-20": { Comida: true, Cena: registro }, "2026-10-21": { Desayuno: true } } });
+          const segunda = migrateData(JSON.parse(JSON.stringify(data)));
+          return comparar(
+            {
+              changed, comida: JSON.stringify(data.comidasCompletadas["2026-10-20"].Comida), cena: data.comidasCompletadas["2026-10-20"].Cena.slotId,
+              desayuno: JSON.stringify(data.comidasCompletadas["2026-10-21"].Desayuno), segunda: segunda.changed, hecha: estaHecha(data.comidasCompletadas["2026-10-21"].Desayuno),
+              viejoHecho: estaHecha(true), nada: estaHecha(undefined),
+            },
+            { changed: true, comida: '{"hecha":true}', cena: "x", desayuno: '{"hecha":true}', segunda: false, hecha: true, viejoHecho: true, nada: false }
           );
         },
       },

@@ -5,8 +5,8 @@
 // las comidas completadas descuentan de la despensa (ver useDespensa, ui/estado/despensa.js).
 import React, { useState } from "react";
 import { Shuffle, Undo2, Check } from "lucide-react";
-import { mealTotals } from "comida-calculo";
 import { DAYS } from "comun";
+import { registroComida, indiceRegistros, totalesComidaReal } from "comida-real";
 import { fechaISO } from "peso";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
@@ -26,7 +26,11 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
   // Se busca la comida por id en cada render en vez de guardar una copia en el estado:
   // así, al cambiar las raciones, el modal refleja el valor nuevo inmediatamente.
   const selectedMeal = selectedMealId && menu ? menu.find((s) => s.id === selectedMealId) : null;
-  const completadaHoy = !!selectedMeal && !!(((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType]);
+  // Lo marcado hoy para ese tipo de comida (como siempre, la comida se marca para HOY, no para el día del
+  // menú) y lo guardado de cada comida del menú, por su id (B1+B3: para enseñar las kcal de verdad).
+  const registroHoy = selectedMeal ? ((data.comidasCompletadas || {})[fechaISO(new Date())] || {})[selectedMeal.mealType] : null;
+  const completadaHoy = !!registroHoy;
+  const registros = indiceRegistros(data.comidasCompletadas);
 
   // La línea que explica, en el detalle de la comida, qué pasa con la despensa al marcarla.
   function avisoDespensa() {
@@ -176,7 +180,8 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
                   <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {dayMeals.map((m) => {
-                      const totales = mealTotals(data, m);
+                      // Las kcal de verdad si la comida se marcó con cambios (B1+B3); si no, las del menú.
+                      const totales = totalesComidaReal(data, m, registros);
                       const ajustada = m.raciones && Object.values(m.raciones).some((v) => Number(v) !== 1);
                       return (
                       <div
@@ -225,6 +230,11 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
                               {t(idioma, "menu.ajustada")}
                             </span>
                           )}
+                          {totales.cambiada && (
+                            <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--mustard-dark)", background: "var(--mustard-soft)", padding: "2px 6px", borderRadius: 20 }}>
+                              {t(idioma, "menu.cambiada")}
+                            </span>
+                          )}
                           {totales.kcal > 0 && (
                             <span style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 700 }}>
                               {t(idioma, "menu.kcal", { n: Math.round(totales.kcal) })}
@@ -252,9 +262,19 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
           onUpsertRule={onUpsertRule}
           onClose={() => setSelectedMealId(null)}
           completadaHoy={completadaHoy}
+          registro={registros.get(selectedMeal.id) || null}
+          cambiosHoy={registroHoy && registroHoy.slotId === selectedMeal.id && registroHoy.cambios ? registroHoy.cambios : null}
           onToggleCompletada={() => {
-            onToggleComidaCompletada(selectedMeal.mealType);
+            // «Hecha»: guarda qué comida era y sus macros (lo del menú, tal cual); quitarla la borra.
+            onToggleComidaCompletada(selectedMeal.mealType, completadaHoy ? null : registroComida(data, selectedMeal));
             despensa.alMarcarComida(selectedMeal, !completadaHoy);
+          }}
+          onGuardarCambios={(cambios) => {
+            // «Cambié algo»: la comida queda hecha con lo comido de verdad, y la despensa devuelve lo que
+            // hubiera descontado y descuenta eso (sin tocar el menú ni el ciclo).
+            const registro = registroComida(data, selectedMeal, cambios);
+            onToggleComidaCompletada(selectedMeal.mealType, registro);
+            despensa.alMarcarComida(selectedMeal, true, registro.cambios || null);
           }}
           avisoDespensa={avisoDespensa()}
           idioma={idioma}

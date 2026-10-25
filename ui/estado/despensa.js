@@ -15,6 +15,7 @@ import {
   sellarCambios, alertasStock, anadirLimpieza, alternarLimpieza, quitarLimpieza, quitarLimpiezaComprada,
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
+import { necesidadesComidaReal } from "comida-real";
 import { repartirEnHuecos } from "nevera";
 
 // Documento aparte de los datos principales (STORAGE_KEY en datos.js), con su propia versión: ver
@@ -75,12 +76,14 @@ export function useDespensa(data, menu) {
   // del Menú completo como hecha hoy. Descontar, solo con el menú confirmado (un borrador no toca la
   // despensa); devolver, siempre que se hubiera descontado algo para esa comida, aunque entretanto
   // se haya quitado la confirmación — lo descontado salió de verdad y tiene que poder volver.
-  function alMarcarComida(meal, hecha) {
+  // `cambios` (B1+B3): lo que se cambió al comerla («Cambié algo»). Entonces se descuenta lo comido de
+  // verdad, no lo del menú; si ya estaba descontada, descontarComida devuelve antes lo de la otra vez.
+  function alMarcarComida(meal, hecha, cambios = null) {
     if (!meal) return;
     const fecha = hoy();
     if (!hecha) cambiar((d) => devolverComida(d, { fecha, mealType: meal.mealType }));
     else if (confirmado) {
-      const necesidades = necesidadesComida(data, meal);
+      const necesidades = cambios ? necesidadesComidaReal(data, meal, cambios) : necesidadesComida(data, meal);
       cambiar((d) => descontarComida(d, { fecha, mealType: meal.mealType, slotId: meal.id, necesidades }));
     }
   }

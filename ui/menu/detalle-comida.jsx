@@ -1,8 +1,10 @@
 // ---------- ui/menu/detalle-comida.jsx ----------
 // Detalle de una comida del menú (modal): componentes, raciones ajustables, comida completada y
-// afinidad de la combinación (me gusta / no me gusta, que crea o cambia reglas).
+// afinidad de la combinación (me gusta / no me gusta, que crea o cambia reglas). Desde B1+B3 (25-oct-2026),
+// junto a «Hecha» está «Cambié algo» (ui/menu/cambie-algo.jsx), y si la comida se marcó con cambios se
+// enseñan sus kcal de verdad junto a las del menú.
 import React, { useState } from "react";
-import { Check, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Check, ThumbsUp, ThumbsDown, Pencil } from "lucide-react";
 import { fmt } from "macros";
 import { RULE_LEVELS } from "seleccion";
 import { mealComponents, mealTotals } from "comida-calculo";
@@ -11,6 +13,7 @@ import { t } from "i18n";
 import { ModalShell } from "../comun/modal.jsx";
 import { MacroPill } from "../comun/tarjetas.jsx";
 import { ruleItemLabel } from "../catalogo/reglas.jsx";
+import { CambieAlgo } from "./cambie-algo.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // Ids de los alimentos que forman la combinación "de sabor" de una comida (proteína, carbo,
@@ -122,9 +125,30 @@ function ComboAfinidad({ meal, data, onUpsertRule, idioma }) {
 // `avisoDespensa` (opcional): una línea bajo el botón de completada que explica qué pasa con la
 // despensa al marcarla (se descuenta, ya se descontó, o no se toca porque el menú no está
 // confirmado). La decide quien abre el modal (MenuView), que es quien conoce la despensa.
-export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, completadaHoy, onToggleCompletada, avisoDespensa, idioma }) {
+// `registro`: lo guardado de esta comida si se marcó (ver logica/comida-real.js); `cambiosHoy`: los
+// cambios con que se marcó hoy este tipo de comida, para volver a abrir «Cambié algo» con ellos.
+// `onGuardarCambios(cambios)`: la marca como hecha con esos cambios.
+export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClose, completadaHoy, onToggleCompletada, onGuardarCambios, registro, cambiosHoy, avisoDespensa, idioma }) {
+  const [cambiando, setCambiando] = useState(false);
   const components = mealComponents(data, meal);
   const totals = mealTotals(data, meal);
+  const titulo = `${t(idioma, "dia." + meal.day)} · ${t(idioma, "mealType." + meal.mealType)}`;
+  const conCambios = !!(registro && registro.cambios && Object.keys(registro.cambios).length);
+
+  if (cambiando) {
+    return (
+      <ModalShell onClose={onClose} title={titulo}>
+        <CambieAlgo
+          data={data}
+          meal={meal}
+          cambiosIniciales={cambiosHoy}
+          onCancelar={() => setCambiando(false)}
+          onGuardar={(cambios) => { onGuardarCambios(cambios); setCambiando(false); }}
+          idioma={idioma}
+        />
+      </ModalShell>
+    );
+  }
 
   function setRaciones(slotKey, value) {
     const v = Math.max(0, Math.round(Number(value) * 100) / 100);
@@ -134,7 +158,7 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
   const anyChanged = components.some((c) => c.raciones !== 1);
 
   return (
-    <ModalShell onClose={onClose} title={`${t(idioma, "dia." + meal.day)} · ${t(idioma, "mealType." + meal.mealType)}`}>
+    <ModalShell onClose={onClose} title={titulo}>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {components.map((c) => (
           <div
@@ -194,6 +218,13 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
             P {fmt(totals.prot)} · G {fmt(totals.fat)} · C {fmt(totals.carb)}
           </span>
         </div>
+        {/* Si se comió con cambios, lo de verdad (sin tocar el menú: las cifras de arriba siguen siendo
+            las planificadas). */}
+        {conCambios && (
+          <div style={{ fontSize: 12, marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.2)" }}>
+            {t(idioma, "mealDetail.comidoReal", { kcal: Math.round(registro.macros.kcal), prot: fmt(registro.macros.prot), fat: fmt(registro.macros.fat), carb: fmt(registro.macros.carb) })}
+          </div>
+        )}
       </div>
 
       <ComboAfinidad meal={meal} data={data} onUpsertRule={onUpsertRule} idioma={idioma} />
@@ -238,18 +269,32 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
         )}
       </div>
 
-      <button
-        onClick={onToggleCompletada}
-        style={{
-          width: "100%", marginTop: 14, fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700,
-          color: completadaHoy ? "#fff" : "var(--green-dark)",
-          background: completadaHoy ? "var(--green)" : "var(--green-soft)",
-          border: "none", borderRadius: 9, padding: "11px",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer",
-        }}
-      >
-        <Check size={15} /> {completadaHoy ? t(idioma, "mealDetail.completadaHoy") : t(idioma, "mealDetail.marcarCompletada")}
-      </button>
+      {/* «Hecha» sigue siendo lo principal (da todo por bueno); al lado, «Cambié algo» para decir qué se
+          comió de verdad. */}
+      <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+        <button
+          onClick={onToggleCompletada}
+          style={{
+            flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700,
+            color: completadaHoy ? "#fff" : "var(--green-dark)",
+            background: completadaHoy ? "var(--green)" : "var(--green-soft)",
+            border: "none", borderRadius: 9, padding: "11px",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6, cursor: "pointer",
+          }}
+        >
+          <Check size={15} /> {completadaHoy ? t(idioma, cambiosHoy ? "mealDetail.completadaConCambios" : "mealDetail.completadaHoy") : t(idioma, "mealDetail.marcarCompletada")}
+        </button>
+        <button
+          onClick={() => setCambiando(true)}
+          style={{
+            flexShrink: 0, fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)",
+            background: "transparent", border: "1px solid var(--line)", borderRadius: 9, padding: "10px 12px",
+            display: "flex", alignItems: "center", gap: 5, cursor: "pointer",
+          }}
+        >
+          <Pencil size={13} /> {t(idioma, "cambieAlgo.boton")}
+        </button>
+      </div>
       {avisoDespensa && (
         <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", textAlign: "center", marginTop: 7, lineHeight: 1.4 }}>
           {avisoDespensa}

@@ -120,6 +120,26 @@ export function migrateData(rawData) {
   if (!data.comidasCompletadas) {
     data.comidasCompletadas = {};
     changed = true;
+  } else {
+    // B1+B3 (25-oct-2026): cada comida hecha pasa de ser `true` a un registro `{ hecha: true, ... }`, que
+    // al marcarla desde ahora lleva además qué comida del menú era, sus macros y lo que se cambió (ver
+    // logica/comida-real.js). Las de antes se quedan como `{ hecha: true }`, sin detalle: siguen contando
+    // como hechas en todas partes (resumen mensual, informes), que solo miran si hay algo. Se copia cada
+    // día que se toca, sin mutar lo cargado.
+    let tocado = false;
+    const completadas = {};
+    Object.entries(data.comidasCompletadas).forEach(([fecha, delDia]) => {
+      if (!delDia || typeof delDia !== "object") { completadas[fecha] = delDia; return; }
+      if (!Object.values(delDia).some((v) => v === true)) { completadas[fecha] = delDia; return; }
+      const nuevo = {};
+      Object.entries(delDia).forEach(([tipo, v]) => { nuevo[tipo] = v === true ? { hecha: true } : v; });
+      completadas[fecha] = nuevo;
+      tocado = true;
+    });
+    if (tocado) {
+      data.comidasCompletadas = completadas;
+      changed = true;
+    }
   }
 
   // Reparto de comidas (Fase 4, reparto de comidas configurable): antes era la constante global

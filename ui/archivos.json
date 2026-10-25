@@ -55,6 +55,7 @@
   "ui/marco/cabecera.jsx",
   "ui/marco/menu-lateral.jsx",
   "ui/marco/navegacion.js",
+  "ui/menu/cambie-algo.jsx",
   "ui/menu/detalle-comida.jsx",
   "ui/menu/estadisticas.jsx",
   "ui/menu/exportar.js",

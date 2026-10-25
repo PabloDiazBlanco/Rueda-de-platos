@@ -4,7 +4,7 @@
 import React, { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { fmt } from "macros";
-import { dayTotals } from "comida-calculo";
+import { totalesDiaReal } from "comida-real";
 import { OBJETIVO_ETAPAS, calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
 import { DAYS } from "comun";
 import { resumenNutrientesSemana } from "salud-publica";
@@ -14,9 +14,11 @@ import { MacroPill } from "../comun/tarjetas.jsx";
 import { NivelBadge } from "../peso/seguimiento.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
+// Las kcal y macros del día son las de verdad (B1+B3): en las comidas que se marcaron con cambios, lo
+// que se comió; en el resto, lo del menú. Se avisa debajo cuando hay alguna cambiada.
 export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
   const [day, setDay] = useState(DAYS[0]);
-  const totals = dayTotals(data, menu, week, day);
+  const totals = totalesDiaReal(data, menu, week, day);
 
   const segments = [
     { key: "prot", kcal: totals.prot * 4, color: "var(--green)" },
@@ -92,6 +94,12 @@ export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
         <MacroPill label="G" value={`${fmt(totals.fat)}g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
         <MacroPill label="C" value={`${fmt(totals.carb)}g`} color="var(--coffee)" bg="var(--coffee-soft)" />
       </div>
+
+      {totals.cambiadas > 0 && (
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--mustard-dark)", marginTop: 10, textAlign: "center" }}>
+          {t(idioma, totals.cambiadas === 1 ? "dayStats.conCambiosUna" : "dayStats.conCambios", { n: totals.cambiadas })}
+        </div>
+      )}
 
       {!objetivos?.kcal && (
         <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 13, textAlign: "center" }}>

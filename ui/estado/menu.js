@@ -125,14 +125,17 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
 // momento en que de verdad comes, no que quede ligado a una casilla del menú que puede cambiar
 // si regeneras. Vive en data.comidasCompletadas (persistente, como cualquier otro dato de la
 // app), completamente aparte de "menu" — regenerar el menú nunca borra este historial.
+// `registro` (B1+B3, 25-oct-2026): lo que se guarda (registroComida en logica/comida-real.js: qué
+// comida del menú era, sus macros y lo cambiado); `null` la desmarca. Sin registro, alterna como antes
+// (marca `{ hecha: true }` o desmarca).
 export function useComidasCompletadas(setData) {
-  return function toggleComidaCompletada(mealType) {
+  return function toggleComidaCompletada(mealType, registro) {
     const hoy = fechaISO(new Date());
     setData((prev) => {
       const actual = prev.comidasCompletadas || {};
       const delDia = { ...(actual[hoy] || {}) };
-      if (delDia[mealType]) delete delDia[mealType];
-      else delDia[mealType] = true;
+      if (registro === null || (registro === undefined && delDia[mealType])) delete delDia[mealType];
+      else delDia[mealType] = registro || { hecha: true };
       return { ...prev, comidasCompletadas: { ...actual, [hoy]: delDia } };
     });
   };
