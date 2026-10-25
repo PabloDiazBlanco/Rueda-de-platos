@@ -36,6 +36,7 @@
   "ui/entreno/fila-serie.jsx",
   "ui/entreno/graficas.jsx",
   "ui/entreno/historial.jsx",
+  "ui/entreno/importar.jsx",
   "ui/entreno/inicio.jsx",
   "ui/entreno/pastilla.jsx",
   "ui/entreno/progreso.jsx",

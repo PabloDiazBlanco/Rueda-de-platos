@@ -41,6 +41,8 @@ export function catalogoVacio() {
     ajustes: { ...AJUSTES_POR_DEFECTO },
     // `grupos` (G8): por grupo muscular, el día en que se cerró su aviso de «sin entrenar».
     aviso: { pausa: null, silenciadoHasta: null, descartadoEl: null, grupos: {} },
+    // G10: las importaciones hechas ({ lote, app, fecha, sesiones }), para poder deshacer una entera.
+    importaciones: [],
   };
 }
 
@@ -53,7 +55,7 @@ export function migrarCatalogo(guardado) {
   const base = catalogoVacio();
   let changed = false;
   const valor = { ...guardado };
-  ["propios", "rutinas"].forEach((k) => { if (!Array.isArray(valor[k])) { valor[k] = []; changed = true; } });
+  ["propios", "rutinas", "importaciones"].forEach((k) => { if (!Array.isArray(valor[k])) { valor[k] = []; changed = true; } });
   if (!valor.personalizados || typeof valor.personalizados !== "object") { valor.personalizados = {}; changed = true; }
   const ajustes = { ...(valor.ajustes || {}) };
   Object.keys(base.ajustes).forEach((k) => { if (ajustes[k] === undefined) { ajustes[k] = base.ajustes[k]; changed = true; } });

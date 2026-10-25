@@ -20,7 +20,8 @@ import {
   EJERCICIOS_SEMILLA, TIPOS_EJERCICIO, GRUPOS_MUSCULARES, EQUIPOS, camposDeTipo, listaEjercicios, buscarEjercicios,
   posibleDuplicado,
 } from "entreno-ejercicios";
-import { NOMBRES_EJERCICIOS, nombreEjercicio } from "entreno-nombres";
+import { NOMBRES_EJERCICIOS, nombreEjercicio, nombresParaEmparejar } from "entreno-nombres";
+import { leerCSV, detectarFormato, fechaHevy, fechaLyfta, segundosDeTexto, prepararImportacion, construirImportacion } from "entreno-importar";
 import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
@@ -1139,6 +1140,7 @@ export function crearGrupos(mod, carga) {
     grupoInformes(),
     grupoAvisoActividad(),
     grupoComidaReal(),
+    grupoImportar(),
   ];
 }
 
@@ -2286,6 +2288,126 @@ function grupoComidaReal() {
               viejoHecho: estaHecha(true), nada: estaHecha(undefined),
             },
             { changed: true, comida: '{"hecha":true}', cena: "x", desayuno: '{"hecha":true}', segunda: false, hecha: true, viejoHecho: true, nada: false }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Importar de Hevy y Lyfta (G10, 25-oct-2026) ----------
+// CSV **inventados** con el mismo formato que las exportaciones reales (que nunca se copian al repositorio):
+// cabeceras, fechas, tipos de serie, RPE/RIR, superseries, comas dentro de comillas y cardio.
+const CSV_HEVY = [
+  '"title","start_time","end_time","description","exercise_title","superset_id","exercise_notes","set_index","set_type","weight_kg","reps","distance_km","duration_seconds","rpe"',
+  '"Pierna","Mar 3, 2026, 6:30 PM","Mar 3, 2026, 7:40 PM","Buen día","Squat (Barbell)",,"",0,"warmup",40,10,,,',
+  '"Pierna","Mar 3, 2026, 6:30 PM","Mar 3, 2026, 7:40 PM","Buen día","Squat (Barbell)",,"",1,"normal",80,8,,,8',
+  '"Pierna","Mar 3, 2026, 6:30 PM","Mar 3, 2026, 7:40 PM","Buen día","Leg Extension (Machine)",0,"",0,"normal",50,12,,,',
+  '"Pierna","Mar 3, 2026, 6:30 PM","Mar 3, 2026, 7:40 PM","Buen día","Lying Leg Curl (Machine)",0,"",0,"failure",40,10,,,10',
+  '"Pierna","Mar 3, 2026, 6:30 PM","Mar 3, 2026, 7:40 PM","Buen día","Zancada inventada, con coma",,"",0,"normal",20,10,,,',
+  '"Cardio","Mar 5, 2026, 12:10 AM","Mar 5, 2026, 12:40 AM","","Treadmill",,"",0,"normal",,,3.2,1800,',
+].join("\n");
+
+const CSV_LYFTA = [
+  "Title,Date,Duration,Description,Notes,Exercise,Exercise Note,Superset id,Weight,Reps,RIR/RPE,Distance,Time,Set Type,RecordLevel: gold/silver/bronze,RecordType: 1RM / max_weight / volume / reps",
+  "Torso,2026-09-10 07:15:00,01:05:30,,,Pulldown,,,30.000,10,,,,WARMUP_SET,,",
+  'Torso,2026-09-10 07:15:00,01:05:30,,,Pulldown,,,55.500,9,1,,,NORMAL_SET,"2,1","1,3"',
+  "Torso,2026-09-10 07:15:00,01:05:30,,,Lever Seated Fly,,2,50.000,12,8,,,NORMAL_SET,,",
+  "Torso,2026-09-10 07:15:00,01:05:30,,,Cable one arm row,,2,12.000,12,0,,,NORMAL_SET,,",
+  "Torso,2026-09-10 07:15:00,01:05:30,,,Captains Chair Straight Leg Raise,,,,15,0,,,NORMAL_SET,,",
+  "Torso,2026-09-10 07:15:00,01:05:30,,,Walking,,,,,,2.5,15:00,NORMAL_SET,,",
+].join("\r\n");
+
+const opcionesImportar = (existentes = []) => ({ lista: listaEjercicios(null), nombresDe: nombresParaEmparejar, existentes });
+const horaLocal = (iso) => { const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`; };
+
+function grupoImportar() {
+  return {
+    grupo: "Entreno: importar de Hevy y Lyfta (G10)",
+    casos: [
+      {
+        nombre: "leerCSV: BOM, «;», comillas dobladas, separador dentro de comillas y CRLF; detectarFormato",
+        ejecutar: () => {
+          const filas = leerCSV("﻿a;b\r\n\"x;y\";\"di \"\"hola\"\"\"\r\n");
+          return comparar(
+            {
+              filas: JSON.stringify(filas), hevy: detectarFormato(leerCSV(CSV_HEVY)[0]), lyfta: detectarFormato(leerCSV(CSV_LYFTA)[0]),
+              otro: detectarFormato(["fecha", "entreno", "ejercicio"]),
+            },
+            { filas: JSON.stringify([["a", "b"], ["x;y", 'di "hola"']]), hevy: "hevy", lyfta: "lyfta", otro: null }
+          );
+        },
+      },
+      {
+        nombre: "Fechas y duraciones: «Mar 3, 2026, 6:30 PM», «12:10 AM», «2026-09-10 07:15:00», «01:23:33» y «15:00»",
+        ejecutar: () => comparar(
+          {
+            tarde: horaLocal(fechaHevy("Mar 3, 2026, 6:30 PM")), medianoche: horaLocal(fechaHevy("Mar 5, 2026, 12:10 AM")),
+            mediodia: horaLocal(fechaHevy("Jun 14, 2026, 12:05 PM")), europeo: horaLocal(fechaHevy("14 Jun 2026, 09:03")),
+            lyfta: horaLocal(fechaLyfta("2026-09-10 07:15:00")), largo: segundosDeTexto("01:23:33"), corto: segundosDeTexto("15:00"), malo: fechaHevy("ayer"),
+          },
+          { tarde: "3/3 18:30", medianoche: "3/5 0:10", mediodia: "6/14 12:05", europeo: "6/14 9:03", lyfta: "9/10 7:15", largo: 5013, corto: 900, malo: null }
+        ),
+      },
+      {
+        nombre: "Hevy: sesiones, series (calentamiento, al fallo), RIR = 10 − RPE, superserie y emparejamiento con la biblioteca",
+        ejecutar: () => {
+          const p = prepararImportacion(CSV_HEVY, opcionesImportar());
+          const [pierna, cardio] = p.entrenos;
+          const id = (n) => (p.ejercicios.find((x) => x.nombre === n) || {}).ejercicioId;
+          return comparar(
+            {
+              formato: p.formato, entrenos: p.entrenos.length, series: p.series, inicio: horaLocal(pierna.inicio), fin: horaLocal(pierna.fin),
+              tipos: pierna.ejercicios[0].series.map((s) => s.tipo).join(","), rir: pierna.ejercicios[0].series[1].rir, fallo: `${pierna.ejercicios[2].series[0].tipo}:${pierna.ejercicios[2].series[0].rir}`,
+              superserie: pierna.ejercicios.map((e) => e.superserie || "-").join(","), cardio: `${cardio.ejercicios[0].series[0].km}km ${cardio.ejercicios[0].series[0].seg}s`,
+              sentadilla: id("Squat (Barbell)"), extension: id("Leg Extension (Machine)"), femoral: id("Lying Leg Curl (Machine)"), cinta: id("Treadmill"),
+              inventado: id("Zancada inventada, con coma"),
+            },
+            {
+              formato: "hevy", entrenos: 2, series: 6, inicio: "3/3 18:30", fin: "3/3 19:40", tipos: "calentamiento,normal", rir: 2, fallo: "fallo:0",
+              superserie: "-,0,0,-", cardio: "3.2km 1800s", sentadilla: "ex_sentadilla", extension: "ex_extension_cuadriceps", femoral: "ex_femoral_tumbado",
+              cinta: "ex_cinta", inventado: null,
+            }
+          );
+        },
+      },
+      {
+        nombre: "Lyfta: fin = inicio + duración, RIR tal cual (y RPE ≥ 6 convertido), «Time» en minutos, alias de Lyfta y ejercicio propio nuevo",
+        ejecutar: () => {
+          const p = prepararImportacion(CSV_LYFTA, opcionesImportar());
+          const [s] = p.entrenos;
+          const id = (n) => (p.ejercicios.find((x) => x.nombre === n) || {}).ejercicioId;
+          const r = construirImportacion(p, { lote: "lot_prueba", ahora: 1, hoy: "2026-10-25" });
+          const sesion = r.sesiones[0];
+          return comparar(
+            {
+              entrenos: p.entrenos.length, inicio: horaLocal(s.inicio), finMin: (new Date(s.fin) - new Date(s.inicio)) / 1000,
+              rir: s.ejercicios[0].series[1].rir, rpe8: s.ejercicios[1].series[0].rir, caminar: `${s.ejercicios[4].series[0].km}km ${s.ejercicios[4].series[0].seg}s`,
+              jalon: id("Pulldown"), aperturas: id("Lever Seated Fly"), piernas: id("Captains Chair Straight Leg Raise"), andar: id("Walking"), nuevo: id("Cable one arm row"),
+              propios: r.propios.map((e) => `${e.nombre}:${e.tipo}:${e.lote}`).join(","), origen: sesion.origen, lote: sesion.lote,
+              superserie: sesion.ejercicios.map((e) => e.superserie || "-").join(","), ejercicioNuevo: sesion.ejercicios[2].ejercicioId === r.propios[0].id,
+              todasHechas: sesion.ejercicios.every((e) => e.series.every((x) => x.hecha)),
+            },
+            {
+              entrenos: 1, inicio: "9/10 7:15", finMin: 3930, rir: 1, rpe8: 2, caminar: "2.5km 900s",
+              jalon: "ex_jalon_pecho", aperturas: "ex_aperturas_maquina", piernas: "ex_elevacion_piernas", andar: "ex_caminar", nuevo: null,
+              propios: "Cable one arm row:peso_reps:lot_prueba", origen: "importado:lyfta", lote: "lot_prueba",
+              superserie: "-,ss_lot_prueba_2,ss_lot_prueba_2,-,-", ejercicioNuevo: true, todasHechas: true,
+            }
+          );
+        },
+      },
+      {
+        nombre: "Reimportar no duplica (mismo nombre y misma hora, ±5 min); elegir un ejercicio de la biblioteca en vez de crear uno",
+        ejecutar: () => {
+          const p = prepararImportacion(CSV_LYFTA, opcionesImportar());
+          const r = construirImportacion(p, { lote: "lot_a", decisiones: { "Cable one arm row": "ex_remo_mancuerna" } });
+          const otraVez = prepararImportacion(CSV_LYFTA, opcionesImportar(r.sesiones));
+          const casiIgual = prepararImportacion(CSV_LYFTA, opcionesImportar([{ nombre: "torso", inicio: new Date(new Date(r.sesiones[0].inicio).getTime() + 3 * 60000).toISOString() }]));
+          const otraHora = prepararImportacion(CSV_LYFTA, opcionesImportar([{ nombre: "Torso", inicio: new Date(new Date(r.sesiones[0].inicio).getTime() + 60 * 60000).toISOString() }]));
+          return comparar(
+            { propios: r.propios.length, elegido: r.sesiones[0].ejercicios[2].ejercicioId, otraVez: `${otraVez.entrenos.length}/${otraVez.repetidos}`, casiIgual: casiIgual.repetidos, otraHora: otraHora.repetidos },
+            { propios: 0, elegido: "ex_remo_mancuerna", otraVez: "0/1", casiIgual: 1, otraHora: 0 }
           );
         },
       },

@@ -14,6 +14,7 @@ import { fechaLocal } from "entreno-calculo";
 import { Field, inputStyle } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 import { BotonSecundario, Chip, TextoSuave, TituloSeccion, nombreDe, reloj } from "./comun.jsx";
+import { ImportarEntrenos } from "./importar.jsx";
 
 const DESCANSOS = [30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
 
@@ -129,6 +130,8 @@ export function SeccionAjustesEntreno({ entreno, idioma }) {
         <BotonSecundario onClick={() => exportar("csv")}><Download size={14} /> {t(idioma, "entreno.ajustes.exportarCSV")}</BotonSecundario>
         <BotonSecundario onClick={() => exportar("json")}><Download size={14} /> {t(idioma, "entreno.ajustes.exportarJSON")}</BotonSecundario>
       </div>
+      {/* Importar de Hevy o Lyfta (G10). */}
+      <ImportarEntrenos entreno={entreno} idioma={idioma} />
       <div style={{ marginTop: 14 }}>
         <BotonSecundario onClick={reconstruir}><RefreshCw size={14} /> {t(idioma, "entreno.ajustes.reconstruir")}</BotonSecundario>
         <TextoSuave style={{ fontSize: 12, marginTop: 4 }}>{t(idioma, "entreno.ajustes.reconstruirAyuda")}</TextoSuave>

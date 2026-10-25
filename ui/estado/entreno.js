@@ -149,8 +149,9 @@ export function useEntreno(data) {
   }
 
   // Todos los meses que tienen entrenos (exportar, gráficas de todo el periodo, reconstruir el índice).
-  async function cargarTodosLosMeses() {
-    const lista = [...new Set([...mesesDelIndice(ref.current.indice), mesActual()])].sort();
+  // `extra`: meses que aún no están en el índice (los que acaba de escribir una importación).
+  async function cargarTodosLosMeses(extra = []) {
+    const lista = [...new Set([...mesesDelIndice(ref.current.indice), mesActual(), ...extra])].sort();
     const docs = [];
     for (const mes of lista) docs.push(await cargarMes(mes));
     return docs;
@@ -166,8 +167,8 @@ export function useEntreno(data) {
     try { await escribirNube(CLAVE_INDICE, nuevo); } catch (e) { /* se corrige solo: ver comprobarIndice */ }
   }
 
-  async function reconstruir() {
-    const docs = await cargarTodosLosMeses();
+  async function reconstruir(extra = []) {
+    const docs = await cargarTodosLosMeses(extra);
     const nuevo = reconstruirIndice(docs, ejercicioDe, ref.current.pesoCorporal);
     await guardarIndice(nuevo);
     return nuevo;
@@ -434,6 +435,53 @@ export function useEntreno(data) {
     // Un propio no se borra: se archiva, para que las sesiones antiguas sigan sabiendo cómo se llamaba.
     archivarPropio: (id) => cambiarCatalogo((c) => ({ ...c, propios: c.propios.map((e) => (e.id === id ? { ...e, archivado: true } : e)) })),
     personalizar: (id, cambios) => cambiarCatalogo((c) => ({ ...c, personalizados: { ...c.personalizados, [id]: { ...(c.personalizados[id] || {}), ...cambios } } })),
+
+    // Importar de Hevy o Lyfta (G10): `resultado` es el de construirImportacion (logica/entreno-importar.js).
+    // Primero los ejercicios propios nuevos (también en ref, porque reconstruir el índice los necesita ya),
+    // después cada mes (leer → añadir → escribir, como al terminar un entreno) y al final el índice entero.
+    async importar(resultado, app) {
+      const { lote, propios, sesiones } = resultado;
+      const actual = ref.current.catalogo;
+      const nuevo = {
+        ...actual,
+        propios: [...actual.propios, ...propios],
+        importaciones: [...(actual.importaciones || []), { lote, app, fecha: fechaLocal(Date.now()), sesiones: sesiones.length }],
+      };
+      ref.current.catalogo = nuevo;
+      setCatalogo(nuevo);
+      const porMes = {};
+      sesiones.forEach((s) => { (porMes[mesDe(s.inicio)] = porMes[mesDe(s.inicio)] || []).push(s); });
+      for (const [mes, lista] of Object.entries(porMes)) {
+        let doc = migrarMes(await leerNube(claveMes(mes)), mes).valor;
+        lista.forEach((s) => { doc = anadirSesionAMes(doc, s); });
+        await escribirNube(claveMes(mes), doc);
+        ref.current.meses = { ...ref.current.meses, [mes]: doc };
+        setMeses((m) => ({ ...m, [mes]: doc }));
+      }
+      await reconstruir(Object.keys(porMes));
+    },
+    // Deshacer una importación entera: quita de cada mes las sesiones de ese lote, archiva los ejercicios
+    // propios que creó (no se borran: alguna sesión hecha después en la app podría usarlos) y reconstruye.
+    async deshacerImportacion(lote) {
+      const docs = await cargarTodosLosMeses();
+      for (const doc of docs) {
+        const quedan = (doc.sesiones || []).filter((s) => s.lote !== lote);
+        if (quedan.length === (doc.sesiones || []).length) continue;
+        const limpio = { ...doc, sesiones: quedan };
+        await escribirNube(claveMes(doc.mes), limpio);
+        ref.current.meses = { ...ref.current.meses, [doc.mes]: limpio };
+        setMeses((m) => ({ ...m, [doc.mes]: limpio }));
+      }
+      const actual = ref.current.catalogo;
+      const nuevo = {
+        ...actual,
+        propios: actual.propios.map((e) => (e.lote === lote ? { ...e, archivado: true } : e)),
+        importaciones: (actual.importaciones || []).filter((i) => i.lote !== lote),
+      };
+      ref.current.catalogo = nuevo;
+      setCatalogo(nuevo);
+      await reconstruir();
+    },
 
     cambiarAjustes: (cambios) => cambiarCatalogo((c) => ({ ...c, ajustes: { ...c.ajustes, ...cambios } })),
     cambiarAviso: (cambios) => cambiarCatalogo((c) => ({ ...c, aviso: { ...c.aviso, ...cambios } })),

@@ -109,3 +109,103 @@ export function nombreEjercicio(ejercicio, idioma) {
   const dict = NOMBRES_EJERCICIOS[idioma] || NOMBRES_EJERCICIOS.es;
   return dict[id] || NOMBRES_EJERCICIOS.es[id] || id;
 }
+
+// ---------- Alias para importar (G10, 25-oct-2026) ----------
+// Otros nombres con que otras apps llaman a los ejercicios de la biblioteca, para emparejarlos al importar
+// (logica/entreno-importar.js). Los nombres en inglés de arriba ya siguen el estilo de Hevy («Bench Press
+// (Barbell)»), así que aquí van sobre todo los de Lyfta, que usa los de ExerciseDB («Lever Chest Press»,
+// «Barbell Bench Press»), y variantes de Hevy que no coinciden con el nuestro. Se comparan sin tildes ni
+// mayúsculas y, si no hay coincidencia exacta, sin lo que va entre paréntesis y en cualquier orden.
+// **Al añadir un ejercicio a la biblioteca, añade aquí sus alias**: el importador usa siempre la biblioteca
+// entera que haya, sin tocarlo. Los que salen en las exportaciones reales del usuario están todos.
+export const ALIAS_EJERCICIOS = {
+  ex_press_banca_barra: ["Barbell Bench Press", "Bench Press"],
+  ex_press_inclinado_barra: ["Barbell Incline Bench Press", "Incline Bench Press"],
+  ex_press_declinado_barra: ["Barbell Decline Bench Press"],
+  ex_press_banca_mancuernas: ["Dumbbell Bench Press", "Dumbbell Press"],
+  ex_press_inclinado_mancuernas: ["Dumbbell Incline Bench Press", "Incline Dumbbell Press"],
+  ex_press_pecho_maquina: ["Lever Chest Press", "Machine Chest Press", "Chest Press", "Lever Seated Chest Press"],
+  ex_aperturas_maquina: ["Lever Seated Fly", "Pec Deck", "Chest Fly (Machine)", "Machine Fly", "Lever Pec Deck Fly"],
+  ex_aperturas_mancuernas: ["Dumbbell Fly", "Dumbbell Chest Fly"],
+  ex_cruce_poleas: ["Cable Crossover", "Cable Fly", "Cable Standing Fly"],
+  ex_fondos_paralelas: ["Chest Dip", "Dips", "Triceps Dip"],
+  ex_flexiones: ["Push-up", "Push Ups", "Pushup"],
+  ex_dominadas: ["Pull-up", "Pull Ups", "Pullup", "Chin Up"],
+  ex_dominadas_lastradas: ["Weighted Pull-up", "Weighted Pull Up"],
+  ex_dominadas_asistidas: ["Assisted Pull-up", "Assisted Pull Up", "Lever Assisted Pull-up"],
+  ex_jalon_pecho: ["Pulldown", "Lat Pulldown", "Cable Pulldown", "Cable Lat Pulldown", "Lat Pulldown (Machine)", "Lever Front Pulldown"],
+  ex_jalon_estrecho: ["Close Grip Lat Pulldown", "Cable Close Grip Pulldown", "Narrow Grip Lat Pulldown"],
+  ex_remo_barra: ["Barbell Bent Over Row", "Bent Over Row", "Barbell Row"],
+  ex_remo_mancuerna: ["Dumbbell Bent Over Row", "One Arm Dumbbell Row", "Dumbbell One Arm Row"],
+  ex_remo_sentado_polea: ["Cable Seated Row", "Seated Cable Row", "Seated Row (Cable)", "Cable Low Seated Row"],
+  ex_remo_maquina: ["Lever Seated Row", "Lever Alternating Narrow Grip Seated Row", "Machine Row", "Seated Row", "Lever Narrow Grip Seated Row", "Iso-Lateral Row (Machine)"],
+  ex_remo_landmine: ["T Bar Row", "Lever T Bar Row", "T-Bar Row"],
+  ex_pullover_polea: ["Cable Straight Arm Pulldown", "Straight Arm Pulldown"],
+  ex_peso_muerto: ["Barbell Deadlift", "Deadlift"],
+  ex_hiperextensiones: ["Hyperextension", "Back Extension", "45 Degree Hyperextension"],
+  ex_encogimientos: ["Dumbbell Shrug", "Barbell Shrug", "Shrug"],
+  ex_press_militar: ["Barbell Overhead Press", "Barbell Standing Military Press", "Military Press", "Overhead Press"],
+  ex_press_hombro_mancuernas: ["Dumbbell Shoulder Press", "Dumbbell Seated Shoulder Press", "Seated Dumbbell Press"],
+  ex_press_hombro_maquina: ["Lever Shoulder Press", "Machine Shoulder Press", "Shoulder Press (Machine Plates)", "Seated Shoulder Press (Machine)"],
+  ex_laterales_mancuernas: ["Dumbbell Lateral Raise", "Lateral Raise", "Side Lateral Raise", "Seated Lateral Raise (Dumbbell)"],
+  ex_laterales_polea: ["Cable Lateral Raise", "Cable One Arm Lateral Raise"],
+  ex_laterales_maquina: ["Lever Lateral Raise", "Machine Lateral Raise"],
+  ex_frontales: ["Dumbbell Front Raise", "Front Raise"],
+  ex_pajaros_mancuernas: ["Dumbbell Rear Fly", "Rear Delt Fly", "Dumbbell Rear Delt Raise"],
+  ex_contractor_inverso: ["Lever Seated Reverse Fly", "Reverse Pec Deck", "Rear Delt Machine"],
+  ex_face_pull: ["Cable Face Pull", "Face Pull (Cable)"],
+  ex_curl_barra: ["Barbell Curl", "Barbell Biceps Curl", "EZ Bar Curl", "EZ Barbell Curl", "EZ Bar Biceps Curl"],
+  ex_curl_mancuernas: ["Dumbbell Curl", "Dumbbell Biceps Curl", "Dumbbell Alternate Biceps Curl"],
+  ex_curl_martillo: ["Dumbbell Hammer Curl", "Hammer Curl"],
+  ex_curl_polea: ["Cable Curl", "Cable Biceps Curl"],
+  ex_curl_predicador: ["Lever Preacher Curl", "Preacher Curl", "EZ Bar Preacher Curl"],
+  ex_curl_inclinado: ["Dumbbell Incline Curl", "Incline Dumbbell Curl"],
+  ex_triceps_cuerda: ["Cable Pushdown (with rope attachment)", "Rope Pushdown", "Cable Rope Pushdown", "Triceps Pushdown (Rope)"],
+  ex_triceps_barra_polea: ["Cable Pushdown", "Cable Triceps Pushdown", "Cable Triceps Pushdown (V-bar)", "Triceps Pushdown (Cable)"],
+  ex_press_frances: ["Barbell Lying Triceps Extension", "EZ Barbell Lying Triceps Extension", "Skull Crusher", "Lying Triceps Extension"],
+  ex_triceps_sobre_cabeza: ["Cable Overhead Triceps Extension", "Overhead Triceps Extension", "Triceps Extension (Cable)"],
+  ex_fondos_maquina: ["Lever Seated Dip", "Seated Dip (Machine)", "Lever Triceps Dip"],
+  ex_press_cerrado: ["Barbell Close Grip Bench Press", "Close Grip Bench Press"],
+  ex_curl_muneca: ["Dumbbell Wrist Curl", "Barbell Wrist Curl", "Wrist Curl"],
+  ex_plancha: ["Front Plank", "Plank Hold", "Weighted Front Plank"],
+  ex_plancha_lateral: ["Side Plank Hold", "Side Bridge"],
+  ex_crunch: ["Crunch Floor", "Sit-up", "Sit Up", "Abdominal Crunch"],
+  ex_crunch_polea: ["Cable Kneeling Crunch", "Kneeling Cable Crunch"],
+  ex_crunch_maquina: ["Lever Crunch", "Machine Crunch", "Crunch abdominal en máquina"],
+  ex_elevacion_piernas: ["Captains Chair Straight Leg Raise", "Captain's Chair Leg Raise", "Hanging Straight Leg Raise", "Leg Raise", "Knee Raise (Captain's Chair)", "Leg Raise Parallel Bars"],
+  ex_rueda_abdominal: ["Wheel Rollout", "Ab Roller", "Ab Wheel Rollout"],
+  ex_sentadilla: ["Barbell Full Squat", "Barbell Squat", "Back Squat", "Squat"],
+  ex_sentadilla_frontal: ["Barbell Front Squat", "Front Squat (Barbell)"],
+  ex_sentadilla_goblet: ["Dumbbell Goblet Squat", "Kettlebell Goblet Squat", "Goblet Squat (Kettlebell)"],
+  ex_prensa: ["Sled 45° Leg Press", "Sled 45 Leg Press", "Leg Press", "Lever Leg Press", "Sled Leg Press", "Leg Press Horizontal (Machine)"],
+  ex_hack: ["Sled Hack Squat", "Lever Hack Squat", "Hack Squat"],
+  ex_extension_cuadriceps: ["Lever Leg Extension", "Leg Extension"],
+  ex_zancadas: ["Dumbbell Lunge", "Lunge", "Walking Lunge", "Dumbbell Walking Lunge"],
+  ex_bulgara: ["Dumbbell Bulgarian Split Squat", "Bulgarian Split Squat (Dumbbell)", "Split Squat"],
+  ex_peso_muerto_rumano: ["Barbell Romanian Deadlift", "Romanian Deadlift", "Romanian Deadlift (Dumbbell)", "Dumbbell Romanian Deadlift", "Stiff Leg Deadlift"],
+  ex_femoral_tumbado: ["Lever Lying Leg Curl", "Lying Leg Curl", "Leg Curl"],
+  ex_femoral_sentado: ["Lever Seated Leg Curl", "Seated Leg Curl"],
+  ex_hip_thrust: ["Barbell Hip Thrust", "Hip Thrust", "Barbell Glute Bridge"],
+  ex_hip_thrust_maquina: ["Lever Hip Thrust", "Glute Drive (Machine)"],
+  ex_patada_gluteo: ["Cable Kickback", "Cable Glute Kickback", "Cable Hip Extension"],
+  ex_abductores: ["Lever Seated Hip Abduction", "Hip Abductor", "Seated Hip Abduction"],
+  ex_aductores: ["Lever Seated Hip Adduction", "Hip Adductor", "Seated Hip Adduction"],
+  ex_gemelos_pie: ["Lever Standing Calf Raise", "Standing Calf Raise", "Calf Raise", "Calf Press (Machine)", "Calf Press on Leg Press"],
+  ex_gemelos_sentado: ["Lever Seated Calf Raise", "Seated Calf Raise (Machine)"],
+  ex_cinta: ["Treadmill Running", "Running (Treadmill)", "Run", "Running", "Walking on Treadmill"],
+  ex_bicicleta: ["Stationary Bike", "Cycling", "Bike", "Indoor Cycling", "Stationary Bike (Machine)"],
+  ex_eliptica: ["Elliptical", "Elliptical Machine", "Cross Trainer"],
+  ex_remo_ergometro: ["Rowing", "Rower", "Rowing (Machine)"],
+  ex_escaladora: ["Stair Climber", "Stairmaster", "Stair Climber (Machine)"],
+  ex_comba: ["Jump Rope", "Skipping Rope"],
+  ex_caminar: ["Walk", "Walking (Outdoor)"],
+};
+
+// Todos los nombres con que se puede reconocer un ejercicio al importar: los de los cinco idiomas y sus alias
+// si es de la biblioteca; su nombre (y sus alias, si algún día los tiene) si es propio.
+export function nombresParaEmparejar(ejercicio) {
+  if (!ejercicio) return [];
+  if (ejercicio.nombre) return [ejercicio.nombre, ...(ejercicio.alias || [])];
+  const id = ejercicio.id;
+  return [...ORDEN_IDIOMAS.map((i) => NOMBRES_EJERCICIOS[i][id]).filter(Boolean), ...(ALIAS_EJERCICIOS[id] || [])];
+}
