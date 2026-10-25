@@ -75,7 +75,8 @@ logica/cuestionario.js         → opciones del cuestionario de alta y construir
 logica/migraciones.js          → migrateData
 logica/despensa.js             → stock de la despensa: zonas, menú confirmado, descontar/devolver comidas,
                                   tachar/destachar compras, queda poco (alertasStock), limpieza,
-                                  fecha de cambio (sellarCambios), migrarDespensa
+                                  fecha de cambio (sellarCambios), migrarDespensa, lo que se manda a
+                                  «¿Qué cocino?» (resumenDespensaParaIA)
 logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
 logica/comida-real.js          → lo comido de verdad («Cambié algo»): lineasComida, propuestaGramos,
                                   comidaReal, registroComida, totalesDiaReal, necesidadesComidaReal
@@ -553,7 +554,8 @@ Cada función vive en su archivo y `functions/index.js` solo las reexporta:
 |---|---|---|
 | `stripeWebhook` | HTTP (lo llama Stripe) | Única pieza que escribe `users/{uid}.premium`; verifica la firma de Stripe |
 | `createCheckoutSession` / `createPortalSession` | callable | Devuelven la URL de pago o de gestión de la suscripción |
-| `analyzeFoodPhoto` / `suggestMeals` | callable | Gemini con premium + cuota (ver "Servicios de IA") |
+| `analyzeFoodPhoto` / `suggestRecipes` | callable | Gemini con premium + cuota (ver "Servicios de IA") |
+| `suggestMeals` | callable | La versión anterior de «¿Qué cocino?» (combinaciones del catálogo); se conserva para las copias de la app sin actualizar |
 | `sendWeighInReminders` | programada, 09:00 Europe/Madrid | Push diario de recordatorio de pesaje (no a quien lo tenga desactivado) |
 | `sendDefrostReminders` | programada, 21:30 Europe/Madrid | Push nocturno «revisa las comidas de mañana por si tienes que descongelar algo o comprar» a quien tenga `perfil.avisoDescongelar` (C8, gratis; no lee el menú) |
 
@@ -567,7 +569,7 @@ Puntos que hay que saber antes de tocarlas:
   evento y lo descarta. Gratis: generador de menús, objetivos, catálogo, Menú simple, lista de la
   compra, despensa, todo el módulo de entreno (sin límites: rutinas, ejercicios propios, historial,
   gráficas, récords, exportar) y el resumen mensual (nutrición y entreno). Premium: seguimiento de peso
-  (y con él el apartado de peso del resumen), las dos funciones de Gemini y los **informes cruzados** del
+  (y con él el apartado de peso del resumen), las funciones de Gemini y los **informes cruzados** del
   área Cuerpo. Desde octubre de 2026 el resumen ampliado dejó de ser premium (decisión del 23-oct).
 - **Secretos** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `GEMINI_API_KEY`): viven en Firebase,
   nunca en el repo. Las funciones callable exigen App Check (`enforceAppCheck: true`); el webhook no,
@@ -615,8 +617,8 @@ fuente a mano en un componente nuevo.
 
 ## Servicios de IA (Gemini)
 
-Hay dos funciones que salen a un servicio de IA; el resto de la app es cálculo puramente local.
-Ambas son Cloud Functions "callable" (ver la sección "Backend: `functions/`" más abajo), no llamadas
+Hay dos funciones de la app que salen a un servicio de IA (tres Cloud Functions, contando la versión
+anterior de «¿Qué cocino?»); el resto de la app es cálculo puramente local. Todas son Cloud Functions "callable" (ver la sección "Backend: `functions/`" más abajo), no llamadas
 directas desde el navegador — hasta septiembre de 2026 el lector de etiquetas sí salía directo del
 cliente (Firebase AI Logic), pero un límite comprobado solo en el navegador no protege nada cuando
 hay varios usuarios y la IA cuesta dinero, así que se movió al servidor:
@@ -624,16 +626,29 @@ hay varios usuarios y la IA cuesta dinero, así que se movió al servidor:
 - **Lector de etiquetas por foto** (`functions/analyzeFoodPhoto.js`, expuesta al cliente como
   `window.analyzeFoodPhoto` en `auth-bootstrap.jsx`): lee una tabla nutricional de una foto.
   Premium, 20 al mes.
-- **"¿Qué puedo cocinar con lo que tengo?"** (`functions/suggestMeals.js`, `window.suggestMeals`):
-  foto y/o texto de ingredientes → combinaciones hechas solo con alimentos del catálogo del propio
-  usuario. Premium, 10 al mes. La IA solo identifica alimentos (por `foodId`, y el servidor descarta
-  cualquiera que no exista en el catálogo enviado); las macros las calcula siempre la app con
-  `composedMacros`, nunca vienen de la IA.
+- **«¿Qué cocino?»** (`functions/suggestRecipes.js`, `window.suggestRecipes`; pantalla
+  `ui/premium/que-cocino.jsx`): desde octubre de 2026 (E2) devuelve **recetas con ingredientes y pasos, sin
+  macros**, en dos modos que **comparten la cuota** (premium, 10 al mes, contador `usoCocinar`):
+  - **Con lo que tengo**: solo con lo que hay en casa (más sal, aceite y especias), eligiendo con sentido
+    gastronómico una combinación coherente en vez de mezclarlo todo.
+  - **Tipo restaurante**: parte de lo que hay y sugiere comprar una a tres cosas más elaboradas (una especia,
+    una salsa, un queso...); lo que hay que comprar llega marcado (`comprar`).
 
-Las dos usan `@google/genai` con la clave `GEMINI_API_KEY` guardada como secreto de Firebase (no
-está en el repo). **El nombre del modelo (`gemini-3.1-flash-lite`) está hardcodeado en los dos
-archivos** — si Google lo retira, hay que cambiarlo en ambos. La cuota mensual se reserva en una
-transacción de Firestore *antes* de llamar a Gemini y se devuelve si la llamada falla.
+  Puede mandar, si el usuario lo deja marcado, **la despensa entera** (`resumenDespensaParaIA` en
+  `logica/despensa.js`: solo nombre del alimento y cantidad aproximada, nada más), además de la foto y del
+  texto. Las recetas pueden llevar ingredientes que no están en el catálogo (lo que hay que comprar, los
+  básicos); cuando uno sí es del catálogo o de la despensa trae su `foodId` (el servidor descarta cualquiera
+  que no estuviera en lo enviado) y gramos aproximados, y solo con esos se ofrece «Guardar como plato
+  cerrado»: las macros, si se guarda, las calcula la app con `composedMacros`, nunca vienen de la IA.
+  `functions/suggestMeals.js` (la versión anterior: combinaciones solo con alimentos del catálogo, misma
+  cuota) se conserva para las copias de la app que aún no se hayan actualizado; el cliente ya no la llama.
+
+Las tres usan `@google/genai` con la clave `GEMINI_API_KEY` guardada como secreto de Firebase (no
+está en el repo). **El nombre del modelo (`gemini-3.1-flash-lite`) está hardcodeado en los tres
+archivos** — si Google lo retira, hay que cambiarlo en todos. La cuota mensual se reserva en una
+transacción de Firestore *antes* de llamar a Gemini y se devuelve si la llamada falla. **Al cambiar lo que
+recibe una función, despliégala antes de subir la app** (`firebase deploy --only functions`): si el cliente
+nuevo llega a producción sin su función, la pantalla da error al usarla.
 
 ## Cómo verificar un cambio antes de darlo por bueno
 
