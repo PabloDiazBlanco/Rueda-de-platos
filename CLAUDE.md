@@ -554,7 +554,8 @@ Cada función vive en su archivo y `functions/index.js` solo las reexporta:
 | `stripeWebhook` | HTTP (lo llama Stripe) | Única pieza que escribe `users/{uid}.premium`; verifica la firma de Stripe |
 | `createCheckoutSession` / `createPortalSession` | callable | Devuelven la URL de pago o de gestión de la suscripción |
 | `analyzeFoodPhoto` / `suggestMeals` | callable | Gemini con premium + cuota (ver "Servicios de IA") |
-| `sendWeighInReminders` | programada, 09:00 Europe/Madrid | Push diario de recordatorio de pesaje |
+| `sendWeighInReminders` | programada, 09:00 Europe/Madrid | Push diario de recordatorio de pesaje (no a quien lo tenga desactivado) |
+| `sendDefrostReminders` | programada, 21:30 Europe/Madrid | Push nocturno «revisa las comidas de mañana por si tienes que descongelar algo o comprar» a quien tenga `perfil.avisoDescongelar` (C8, gratis; no lee el menú) |
 
 Puntos que hay que saber antes de tocarlas:
 
@@ -580,7 +581,10 @@ Puntos que hay que saber antes de tocarlas:
   `collectionGroup` sobre `keys` y filtrando en memoria — barato hoy, pero habría que mantener un
   índice propio si el proyecto llega a tener muchos usuarios.
 - **Notificaciones push**: el cliente pide permiso y guarda el token con `window.requestPushPermission`
-  (`auth-bootstrap.jsx`); `sw.js` muestra la notificación con la app cerrada (`onBackgroundMessage`).
+  (`auth-bootstrap.jsx`); `sw.js` muestra la notificación con la app cerrada (`onBackgroundMessage`, con la
+  etiqueta que mande la función en `data.tag`). Hay dos avisos que comparten permiso y token, cada uno con su
+  interruptor en Ajustes: el recordatorio de pesaje (`perfil.notificacionesPush`) y el aviso para descongelar
+  (`perfil.avisoDescongelar`, C8); el token solo se borra cuando los dos están desactivados.
   En iPhone/Safari solo llegan si la PWA está instalada de verdad — no se puede evitar con código.
 - **Despliegue de las funciones**: manual, `firebase deploy --only functions` (a diferencia de la
   app, que se despliega sola — ver la sección siguiente). `functions/node_modules` no se versiona.
