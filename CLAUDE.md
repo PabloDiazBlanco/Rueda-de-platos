@@ -51,7 +51,8 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   estado/               hooks: datos.js (useDatos, usePremium, useCargaInicial), menu.js (useMenu,
                           el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js,
                           despensa.js (useDespensa), entreno.js (useEntreno)
-  comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores)
+  comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores),
+                          cerrar-sesion (tarjeta de Ajustes y botón de la pantalla de alta)
   marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral,
                           navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
   menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/ cuerpo/   una carpeta por área
@@ -177,9 +178,13 @@ el aspecto de cada pieza están en `local/ideas/gimnasio/03-diseno-modulo-entren
 - **Cabecera**: el título grande dice el área («Tu recetario», «Tu entreno», «Tu cuerpo»; «Tu cuenta» en
   la zona común); el rótulo pequeño sigue siendo «FoodDraft».
 - **Capas (`z-index`)**: barra inferior 30 · pastilla de entreno en curso 31 · menú lateral 40/41 ·
-  sesión de entreno y paneles de la nevera 45 · modales 50 · botón «Cerrar sesión» de
-  `auth-bootstrap.jsx` 9999, arriba a la derecha: cualquier barra superior a pantalla completa deja
-  libres ~110 px a la derecha (como `MarcoPanel`).
+  sesión de entreno y paneles de la nevera 45 · modales 50 · `HistoriaScreen` de `auth-bootstrap.jsx`
+  9999.
+- **Cerrar sesión** (`ui/comun/cerrar-sesion.jsx`, con una confirmación breve) está en **Ajustes** y,
+  en pequeño arriba a la derecha, en la **pantalla de alta** (asistente de perfil y cuestionario), por si
+  se ha entrado con otra cuenta. Lo cierra `window.signOutUser` (`auth-bootstrap.jsx`). Hasta octubre de
+  2026 era un botón flotante que `auth-bootstrap.jsx` pegaba fuera de React en todas las pantallas y que
+  obligaba a dejar ~110 px libres a la derecha en las barras a pantalla completa: ya no hace falta.
 
 **Al añadir una pantalla**: su destino en `PANTALLAS`, y su sitio en `navegacion.js` — en el `incluye` de
 una pestaña, en el `menu` de un área o en `COMUNES`. Si se olvida, `validacion/` (grupo «Navegación por
@@ -313,8 +318,6 @@ Reglas de esta parte:
   desborda, todo aparece ya en el suelo, y al recogerlo vuelve de golpe).
 - Todo se coloca en unidades del dibujo de la cocina (`ESCENA_ANCHO` × `ESCENA_ALTO`) sobre un
   contenedor con esa misma proporción, así que la escena se escala entera con el ancho de la pantalla.
-- El panel deja libre la esquina de arriba a la derecha, donde flota el botón de cerrar sesión que añade
-  `auth-bootstrap.jsx` fuera de React.
 - La vista elegida (Dibujo o Lista) se recuerda en `localStorage` (`fooddraft:vista-despensa`), como
   comodidad del dispositivo, no como dato de la cuenta.
 
