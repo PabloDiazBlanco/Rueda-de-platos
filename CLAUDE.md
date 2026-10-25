@@ -487,10 +487,14 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
 
 ## Área Cuerpo: resumen, informes cruzados y aviso de actividad
 
-- **Resumen mensual** (`ui/peso/resumen-mensual.jsx`, gratis): un mes cualquiera en tres apartados —
-  Nutrición (comidas hechas y objetivo), Entreno (`resumenEntrenoMes`: entrenos, días, volumen, tiempo,
-  récords del mes, músculos más trabajados y comparación con el mes anterior) y Peso (premium, porque sale
-  del seguimiento de peso).
+- **Resúmenes** (`ui/peso/resumen-mensual.jsx`, gratis; pestaña «Resúmenes»): un mes cualquiera con un
+  selector **Nutrición / Entreno** (B2, 25-oct-2026; el lado elegido se recuerda en `localStorage`,
+  `fooddraft:resumen-lado`). Nutrición: comidas hechas y objetivo, **cumplimiento de macros**
+  (`cumplimientoMacrosMes`, `logica/resumen-mensual.js`: de los días con todas las comidas marcadas y sus
+  macros guardadas —desde B1+B3—, en cuántos se llegó al 90 % del objetivo de proteína, carbohidratos y grasa)
+  y Peso (premium, porque sale del seguimiento de peso). Entreno (`resumenEntrenoMes`): entrenos, días,
+  volumen, tiempo, récords del mes, músculos más trabajados, comparación con el mes anterior y las series por
+  músculo del mes.
 - **Informes cruzados** (`ui/cuerpo/informes.jsx`, destino `cuerpo-informes`, premium; cálculos en
   `informes.js`, grupo «Informes cruzados» de `validacion/`): entreno y peso, constancia en la comida en días
   con y sin entreno (solo lo marcado como hecho: la app no sabe qué plato se comió), declarado frente a
