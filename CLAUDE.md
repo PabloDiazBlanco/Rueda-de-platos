@@ -79,6 +79,7 @@ logica/despensa.js             → stock de la despensa: zonas, menú confirmado
 logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
 logica/comida-real.js          → lo comido de verdad («Cambié algo»): lineasComida, propuestaGramos,
                                   comidaReal, registroComida, totalesDiaReal, necesidadesComidaReal
+logica/periodo.js              → período (I1): inicios de regla y predicción del siguiente (no importa nada)
 logica/nevera.js               → colocación de la nevera dibujada: huecoDe, formaDe, esBebida, repartirEnHuecos
 logica/entreno-ejercicios.js   → tipos de ejercicio y de serie, músculos, equipos, biblioteca semilla (80),
                                   listaEjercicios, ejercicioPorId, buscarEjercicios, posibleDuplicado
@@ -508,6 +509,13 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   más. No avisa con menos de 4 sesiones registradas en total, en semanas de pausa, si está silenciado (28
   días) o si se cerró hace menos de 14 días. El estado vive en `catalogo.aviso` (`pausa`, `silenciadoHasta`,
   `descartadoEl`). Sin push.
+- **Período** (I1, 25-oct-2026; `ui/cuerpo/periodo.jsx`, destino `cuerpo-periodo`, gratis): quinta pestaña de
+  Cuerpo, **solo si el perfil tiene sexo femenino** (`soloMujer` en `navegacion.js`; la barra y el menú lateral
+  filtran con `visibleCon(item, perfil)`). Calendario del mes para marcar días de regla y de relaciones, y
+  siguiente inicio previsto = último inicio + distancia entre los dos últimos (28 días con uno solo), sin más
+  cálculo (`logica/periodo.js`). **Los datos solo viven en el dispositivo** (`localStorage`,
+  `fooddraft:periodo-v1:<uid>`, con el `window.cuentaId` que pone `auth-bootstrap.jsx` para que otra cuenta del
+  mismo móvil no los vea); nunca en la nube. Aviso de que no es un método anticonceptivo.
 - **Grupos sin entrenar** (G8, 25-oct-2026; `ui/entreno/aviso-grupos.jsx`, solo en Entrenar; regla en
   `gruposSinEntrenar`, grupo «Aviso de actividad» de `validacion/`): pecho, espalda, pierna, hombros y brazos
   (`GRUPO_DE_MUSCULO`; cuenta solo el músculo principal; abdomen y cardio, ninguno). Sale un grupo que se
