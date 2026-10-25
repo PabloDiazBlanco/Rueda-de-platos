@@ -49,3 +49,35 @@ export function pesoEnMes(pesoTracking, mesISO) {
   const fin = todas[todas.length - 1].peso;
   return { entradas: todas, inicio, fin, delta: Math.round((fin - inicio) * 10) / 10 };
 }
+
+// ---------- Cumplimiento de macros (B2, 25-oct-2026) ----------
+// Primera versión del resumen de nutrición por macros: de los días del mes en que se marcaron **todas** las
+// comidas del reparto, en cuántos se llegó al objetivo de proteína, de carbohidratos y de grasa. Usa las macros
+// que guarda cada comida al marcarla desde B1+B3 (`registro.macros`: lo del menú con «Hecha», o lo comido de
+// verdad con «Cambié algo»). Por qué así:
+// - Un día con alguna comida sin marcar no se puede juzgar (¿no se comió o no se marcó?): no cuenta.
+// - Las comidas marcadas antes de B1+B3 (y las migradas, `{ hecha: true }`) no guardan macros: esos días
+//   tampoco cuentan, y se dice cuántos son, para que el porcentaje no engañe.
+// - «Llegar» es alcanzar al menos el 90 % del objetivo del día (el mismo margen que el «dentro del objetivo»
+//   del panel del menú, que marca en verde del 90 al 110 %). Pasarse cuenta como llegar: el resumen dice si
+//   se llega, no si se clava. Decisión provisional, a revisar con el usuario.
+// La verdura y la fruta quedan para más adelante (la verdura no tiene macros en el menú).
+export const UMBRAL_LLEGAR = 0.9;
+
+export function cumplimientoMacrosMes(comidasCompletadas, mesISO, objetivos, comidasDelDia) {
+  const tipos = comidasDelDia && comidasDelDia.length ? comidasDelDia : ["Desayuno", "Comida", "Merienda", "Cena"];
+  const r = { dias: 0, sinDetalle: 0, incompletos: 0, prot: { llega: 0, pct: null }, carb: { llega: 0, pct: null }, fat: { llega: 0, pct: null } };
+  if (!objetivos) return r;
+  Object.keys(comidasCompletadas || {}).sort().forEach((fecha) => {
+    if (fecha.slice(0, 7) !== mesISO) return;
+    const delDia = comidasCompletadas[fecha] || {};
+    if (!tipos.every((m) => delDia[m])) { if (Object.values(delDia).some(Boolean)) r.incompletos += 1; return; }
+    const registros = tipos.map((m) => delDia[m]);
+    if (!registros.every((x) => x && typeof x === "object" && x.macros)) { r.sinDetalle += 1; return; }
+    const suma = registros.reduce((acc, x) => ({ prot: acc.prot + (x.macros.prot || 0), carb: acc.carb + (x.macros.carb || 0), fat: acc.fat + (x.macros.fat || 0) }), { prot: 0, carb: 0, fat: 0 });
+    r.dias += 1;
+    ["prot", "carb", "fat"].forEach((k) => { if (objetivos[k] && suma[k] >= UMBRAL_LLEGAR * objetivos[k]) r[k].llega += 1; });
+  });
+  if (r.dias) ["prot", "carb", "fat"].forEach((k) => { r[k].pct = Math.round((r[k].llega / r.dias) * 100); });
+  return r;
+}

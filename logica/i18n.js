@@ -510,7 +510,7 @@ const TEXTOS = {
     "perfilRoot.seguimientoPeso": "Seguimiento de peso",
     "perfilRoot.seguimientoPeso.desc": "pesadas y tendencia",
     "perfilRoot.funcionPremium": "función premium",
-    "perfilRoot.resumenMensual": "Resumen mensual",
+    "perfilRoot.resumenMensual": "Resúmenes",
     "perfilRoot.resumenMensual.desc": "comidas completadas",
     "perfilRoot.medidasCorporales": "Medidas corporales",
     "perfilRoot.proximamente": "próximamente",
@@ -906,7 +906,7 @@ const TEXTOS = {
     "barra.alimentos": "Alimentos",
     "barra.peso": "Peso",
     "barra.actividad": "Actividad",
-    "barra.resumen": "Resumen",
+    "barra.resumen": "Resúmenes",
 
     // Módulo de entreno (oct. 2026)
     "barra.entrenar": "Entrenar",
@@ -1394,6 +1394,16 @@ const TEXTOS = {
     "cuestionario.proteinas.cuentaConBase": "{n} de {max} comidas a la semana con frecuencia fija; las otras {resto}, con la predeterminada.",
     "cuestionario.proteinas.cuentaSinBase": "{n} de {max} comidas a la semana con frecuencia fija; las otras {resto} quedarán sin proteína hasta que elijas una predeterminada.",
     "cuestionario.proteinas.sinPredeterminado": "No quiero ninguna predeterminada",
+
+    "cuerpo.resumen.diasLlega": "{pct} % · {n} días",
+    "cuerpo.resumen.macrosTitulo": "¿Llegas a tus macros?",
+    "cuerpo.resumen.macrosIntro": "De los {n} días con todas las comidas marcadas, en cuántos llegaste al menos al 90 % del objetivo:",
+    "cuerpo.resumen.macrosIntroUno": "Del único día con todas las comidas marcadas, si llegaste al menos al 90 % del objetivo:",
+    "cuerpo.resumen.macrosSinDias": "Aún no hay días con todas las comidas marcadas este mes. Márcalas como hechas (o con «Cambié algo») en el detalle de cada comida y aquí verás en cuántos días llegas a tu proteína, tus carbohidratos y tu grasa.",
+    "cuerpo.resumen.macrosNoCuentan": "No cuentan los días con alguna comida sin marcar ({incompletos}) ni los marcados antes de que la app guardara las macros de cada comida ({sinDetalle}).",
+    "cuerpo.resumen.sinObjetivos": "Completa tu perfil para tener objetivos con los que comparar.",
+    "cuerpo.resumen.porMusculo": "Series por músculo",
+    "cuerpo.resumen.porMusculoAyuda": "Cada serie suma 1 al músculo principal y 0,5 a cada secundario (sin calentamiento ni cardio).",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -1846,7 +1856,7 @@ const TEXTOS = {
     "perfilRoot.seguimientoPeso": "Weight tracking",
     "perfilRoot.seguimientoPeso.desc": "weigh-ins and trend",
     "perfilRoot.funcionPremium": "premium feature",
-    "perfilRoot.resumenMensual": "Monthly summary",
+    "perfilRoot.resumenMensual": "Summaries",
     "perfilRoot.resumenMensual.desc": "completed meals",
     "perfilRoot.medidasCorporales": "Body measurements",
     "perfilRoot.proximamente": "coming soon",
@@ -2239,7 +2249,7 @@ const TEXTOS = {
     "barra.alimentos": "Foods",
     "barra.peso": "Weight",
     "barra.actividad": "Activity",
-    "barra.resumen": "Summary",
+    "barra.resumen": "Summaries",
 
     // Módulo de entreno (oct. 2026)
     "barra.entrenar": "Train",
@@ -2727,6 +2737,16 @@ const TEXTOS = {
     "cuestionario.proteinas.cuentaConBase": "{n} of {max} meals a week with a fixed frequency; the other {resto}, with the default.",
     "cuestionario.proteinas.cuentaSinBase": "{n} of {max} meals a week with a fixed frequency; the other {resto} will have no protein until you choose a default.",
     "cuestionario.proteinas.sinPredeterminado": "I don’t want a default",
+
+    "cuerpo.resumen.diasLlega": "{pct}% · {n} days",
+    "cuerpo.resumen.macrosTitulo": "Are you reaching your macros?",
+    "cuerpo.resumen.macrosIntro": "Out of the {n} days with every meal marked, on how many you reached at least 90% of your target:",
+    "cuerpo.resumen.macrosIntroUno": "On the only day with every meal marked, whether you reached at least 90% of your target:",
+    "cuerpo.resumen.macrosSinDias": "There are no days with every meal marked this month yet. Mark them as done (or with “I changed something”) in each meal’s detail and you’ll see here on how many days you reach your protein, carbs and fat.",
+    "cuerpo.resumen.macrosNoCuentan": "Days with a meal left unmarked ({incompletos}) and days marked before the app saved each meal’s macros ({sinDetalle}) don’t count.",
+    "cuerpo.resumen.sinObjetivos": "Complete your profile to have targets to compare with.",
+    "cuerpo.resumen.porMusculo": "Sets per muscle",
+    "cuerpo.resumen.porMusculoAyuda": "Each set adds 1 to the main muscle and 0.5 to each secondary one (no warm-ups or cardio).",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3179,7 +3199,7 @@ const TEXTOS = {
     "perfilRoot.seguimientoPeso": "Seguiment de pes",
     "perfilRoot.seguimientoPeso.desc": "pesades i tendència",
     "perfilRoot.funcionPremium": "funció premium",
-    "perfilRoot.resumenMensual": "Resum mensual",
+    "perfilRoot.resumenMensual": "Resums",
     "perfilRoot.resumenMensual.desc": "àpats completats",
     "perfilRoot.medidasCorporales": "Mesures corporals",
     "perfilRoot.proximamente": "properament",
@@ -3572,7 +3592,7 @@ const TEXTOS = {
     "barra.alimentos": "Aliments",
     "barra.peso": "Pes",
     "barra.actividad": "Activitat",
-    "barra.resumen": "Resum",
+    "barra.resumen": "Resums",
 
     // Módulo de entreno (oct. 2026)
     "barra.entrenar": "Entrenar",
@@ -4060,6 +4080,16 @@ const TEXTOS = {
     "cuestionario.proteinas.cuentaConBase": "{n} de {max} àpats a la setmana amb freqüència fixa; els altres {resto}, amb el predeterminat.",
     "cuestionario.proteinas.cuentaSinBase": "{n} de {max} àpats a la setmana amb freqüència fixa; els altres {resto} quedaran sense proteïna fins que en triïs un de predeterminat.",
     "cuestionario.proteinas.sinPredeterminado": "No en vull cap de predeterminat",
+
+    "cuerpo.resumen.diasLlega": "{pct} % · {n} dies",
+    "cuerpo.resumen.macrosTitulo": "Arribes als teus macros?",
+    "cuerpo.resumen.macrosIntro": "Dels {n} dies amb tots els àpats marcats, en quants vas arribar com a mínim al 90 % de l’objectiu:",
+    "cuerpo.resumen.macrosIntroUno": "De l’únic dia amb tots els àpats marcats, si vas arribar com a mínim al 90 % de l’objectiu:",
+    "cuerpo.resumen.macrosSinDias": "Encara no hi ha dies amb tots els àpats marcats aquest mes. Marca’ls com a fets (o amb «He canviat alguna cosa») al detall de cada àpat i aquí veuràs en quants dies arribes a la teva proteïna, als carbohidrats i al greix.",
+    "cuerpo.resumen.macrosNoCuentan": "No compten els dies amb algun àpat sense marcar ({incompletos}) ni els marcats abans que l’app desés els macros de cada àpat ({sinDetalle}).",
+    "cuerpo.resumen.sinObjetivos": "Completa el teu perfil per tenir objectius amb què comparar.",
+    "cuerpo.resumen.porMusculo": "Sèries per múscul",
+    "cuerpo.resumen.porMusculoAyuda": "Cada sèrie suma 1 al múscul principal i 0,5 a cada secundari (sense escalfament ni cardio).",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4512,7 +4542,7 @@ const TEXTOS = {
     "perfilRoot.seguimientoPeso": "Seguimento de peso",
     "perfilRoot.seguimientoPeso.desc": "pesadas e tendencia",
     "perfilRoot.funcionPremium": "función premium",
-    "perfilRoot.resumenMensual": "Resumo mensual",
+    "perfilRoot.resumenMensual": "Resumos",
     "perfilRoot.resumenMensual.desc": "comidas completadas",
     "perfilRoot.medidasCorporales": "Medidas corporais",
     "perfilRoot.proximamente": "proximamente",
@@ -4905,7 +4935,7 @@ const TEXTOS = {
     "barra.alimentos": "Alimentos",
     "barra.peso": "Peso",
     "barra.actividad": "Actividade",
-    "barra.resumen": "Resumo",
+    "barra.resumen": "Resumos",
 
     // Módulo de entreno (oct. 2026)
     "barra.entrenar": "Adestrar",
@@ -5393,6 +5423,16 @@ const TEXTOS = {
     "cuestionario.proteinas.cuentaConBase": "{n} de {max} comidas á semana con frecuencia fixa; as outras {resto}, coa predeterminada.",
     "cuestionario.proteinas.cuentaSinBase": "{n} de {max} comidas á semana con frecuencia fixa; as outras {resto} quedarán sen proteína ata que escollas unha predeterminada.",
     "cuestionario.proteinas.sinPredeterminado": "Non quero ningunha predeterminada",
+
+    "cuerpo.resumen.diasLlega": "{pct} % · {n} días",
+    "cuerpo.resumen.macrosTitulo": "Chegas aos teus macros?",
+    "cuerpo.resumen.macrosIntro": "Dos {n} días con todas as comidas marcadas, en cantos chegaches polo menos ao 90 % do obxectivo:",
+    "cuerpo.resumen.macrosIntroUno": "Do único día con todas as comidas marcadas, se chegaches polo menos ao 90 % do obxectivo:",
+    "cuerpo.resumen.macrosSinDias": "Aínda non hai días con todas as comidas marcadas este mes. Márcaas como feitas (ou con «Cambiei algo») no detalle de cada comida e aquí verás en cantos días chegas á túa proteína, aos hidratos e á graxa.",
+    "cuerpo.resumen.macrosNoCuentan": "Non contan os días con algunha comida sen marcar ({incompletos}) nin os marcados antes de que a app gardase os macros de cada comida ({sinDetalle}).",
+    "cuerpo.resumen.sinObjetivos": "Completa o teu perfil para ter obxectivos cos que comparar.",
+    "cuerpo.resumen.porMusculo": "Series por músculo",
+    "cuerpo.resumen.porMusculoAyuda": "Cada serie suma 1 ao músculo principal e 0,5 a cada secundario (sen quecemento nin cardio).",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -5845,7 +5885,7 @@ const TEXTOS = {
     "perfilRoot.seguimientoPeso": "Pisuaren jarraipena",
     "perfilRoot.seguimientoPeso.desc": "pisatzeak eta joera",
     "perfilRoot.funcionPremium": "premium eginbidea",
-    "perfilRoot.resumenMensual": "Hilabeteko laburpena",
+    "perfilRoot.resumenMensual": "Laburpenak",
     "perfilRoot.resumenMensual.desc": "bete diren otorduak",
     "perfilRoot.medidasCorporales": "Gorputz-neurriak",
     "perfilRoot.proximamente": "laster",
@@ -6238,7 +6278,7 @@ const TEXTOS = {
     "barra.alimentos": "Elikagaiak",
     "barra.peso": "Pisua",
     "barra.actividad": "Jarduera",
-    "barra.resumen": "Laburpena",
+    "barra.resumen": "Laburpenak",
 
     // Módulo de entreno (oct. 2026)
     "barra.entrenar": "Entrenatu",
@@ -6726,6 +6766,16 @@ const TEXTOS = {
     "cuestionario.proteinas.cuentaConBase": "Asteko {max} otorduetatik {n} maiztasun finkoarekin; beste {resto}ak, lehenetsiarekin.",
     "cuestionario.proteinas.cuentaSinBase": "Asteko {max} otorduetatik {n} maiztasun finkoarekin; beste {resto}ak proteinarik gabe geratuko dira lehenetsi bat aukeratu arte.",
     "cuestionario.proteinas.sinPredeterminado": "Ez dut lehenetsirik nahi",
+
+    "cuerpo.resumen.diasLlega": "% {pct} · {n} egun",
+    "cuerpo.resumen.macrosTitulo": "Zure makroetara iristen zara?",
+    "cuerpo.resumen.macrosIntro": "Otordu guztiak markatuta dituzten {n} egunetatik, zenbatetan iritsi zinen helburuaren % 90era gutxienez:",
+    "cuerpo.resumen.macrosIntroUno": "Otordu guztiak markatuta dituen egun bakarrean, helburuaren % 90era gutxienez iritsi zinen ala ez:",
+    "cuerpo.resumen.macrosSinDias": "Hilabete honetan oraindik ez dago otordu guztiak markatuta dituen egunik. Markatu eginda gisa (edo «Zerbait aldatu dut» erabiliz) otordu bakoitzaren xehetasunean eta hemen ikusiko duzu zenbat egunetan iristen zaren zure proteinara, karbohidratoetara eta koipera.",
+    "cuerpo.resumen.macrosNoCuentan": "Ez dira zenbatzen otorduren bat markatu gabe duten egunak ({incompletos}) ezta aplikazioak otordu bakoitzaren makroak gorde aurretik markatutakoak ere ({sinDetalle}).",
+    "cuerpo.resumen.sinObjetivos": "Osatu zure profila alderatzeko helburuak izateko.",
+    "cuerpo.resumen.porMusculo": "Serieak giharreko",
+    "cuerpo.resumen.porMusculoAyuda": "Serie bakoitzak 1 gehitzen dio gihar nagusiari eta 0,5 bigarren mailako bakoitzari (berotzerik eta kardiorik gabe).",
   },
 };
 

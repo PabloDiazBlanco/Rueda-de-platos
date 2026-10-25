@@ -4,6 +4,7 @@
 // los mismos resultados conocidos. Los valores "esperado" de aquí abajo se verificaron a mano
 // antes de guardarlos como referencia (agosto de 2026).
 import { DAYS, primerEmoji } from "comun";
+import { cumplimientoMacrosMes } from "resumen-mensual";
 import { objetivosPorComida, recomendacionPreentreno } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
@@ -428,6 +429,33 @@ export function crearGrupos(mod, carga) {
                 nada: tipo({ repartoComidas: reparto, horaEntreno: null, entrenoComida: null }), sinPerfil: tipo(null),
               },
               { despues: "noHace:Comida", antes: "comer:Cena", franja: "general", comidaQueYaNoEsta: "general", nada: "nada", sinPerfil: "nada" }
+            );
+          },
+        },
+      ],
+    },
+    {
+      // B2 (25-oct-2026): días del mes con todas las comidas marcadas y macros guardadas; «llegar» = al
+      // menos el 90 % del objetivo del día. Objetivo: 150 g de proteína, 200 de carbohidratos y 70 de grasa.
+      grupo: "Resúmenes: cumplimiento de macros (B2)",
+      casos: [
+        {
+          nombre: "3 días válidos: proteína 2 de 3 (67 %), carbohidratos 3 de 3, grasa 1 de 3; sin detalle e incompletos no cuentan",
+          ejecutar: () => {
+            const reg = (prot, carb, fat) => ({ hecha: true, slotId: "x", macros: { kcal: 0, prot, carb, fat } });
+            const dia = (p, c, g) => ({ Comida: reg(p / 2, c / 2, g / 2), Cena: reg(p / 2, c / 2, g / 2) });
+            const comidasCompletadas = {
+              "2026-10-01": dia(140, 190, 60),   // prot 140 ≥ 135 ✓, carb 190 ≥ 180 ✓, grasa 60 < 63 ✗
+              "2026-10-02": dia(120, 250, 80),   // prot 120 < 135 ✗, carb ✓, grasa 80 ≥ 63 ✓
+              "2026-10-03": dia(160, 180, 40),   // prot ✓, carb 180 = 180 ✓ (justo el 90 %), grasa ✗
+              "2026-10-04": { Comida: { hecha: true }, Cena: reg(70, 90, 30) },   // sin detalle
+              "2026-10-05": { Comida: reg(70, 90, 30) },                           // incompleto
+              "2026-09-30": dia(150, 200, 70),   // otro mes
+            };
+            const r = cumplimientoMacrosMes(comidasCompletadas, "2026-10", { prot: 150, carb: 200, fat: 70 }, ["Comida", "Cena"]);
+            return comparar(
+              { dias: r.dias, sinDetalle: r.sinDetalle, incompletos: r.incompletos, prot: r.prot.pct, carb: r.carb.pct, fat: r.fat.pct, sinObjetivos: cumplimientoMacrosMes(comidasCompletadas, "2026-10", null, ["Comida", "Cena"]).dias },
+              { dias: 3, sinDetalle: 1, incompletos: 1, prot: 67, carb: 100, fat: 33, sinObjetivos: 0 }
             );
           },
         },
