@@ -57,7 +57,7 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
                           navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
   menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/ cuerpo/   una carpeta por área
 
-logica/comun.js               → uid(), DAYS — utilidades mínimas compartidas
+logica/comun.js               → uid(), DAYS, primerEmoji — utilidades mínimas compartidas
 logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
 logica/seleccion.js            → sorteo ponderado + reglas de combinación (weightedPick, pickWithRules...)
 logica/comida-calculo.js       → mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra
@@ -281,6 +281,12 @@ Además, dentro de la misma clave:
   fuera del catálogo y del menú. Se ve debajo del fregadero de la cocina dibujada
   (`ui/despensa/fregadero.jsx`), en la vista de lista y al final de la lista de la compra del Menú
   completo.
+- **Emoji de cada alimento** (F3, 25-oct-2026): `food.emoji`, opcional. Los de `FOODS_SEED` traen uno
+  distinto cada uno (lo completa `migrateData` en las cuentas existentes, sin pisar uno cambiado ni uno
+  borrado a propósito, que se guarda como `""`); el usuario lo cambia al editar el alimento (se queda el
+  primer emoji de lo que escriba, `primerEmoji`). Sin emoji, el de su carpeta (`emojiDe` en
+  `ui/despensa/piezas.jsx`). En la Lista sale en lugar del de la carpeta; en el Dibujo, como una pegatina
+  encima del dibujo de siempre.
 - **Fecha de cambio** (`actualizado` en cada entrada): la pone `sellarCambios` en `useDespensa` con cada
   cambio, nunca cada operación por su cuenta. Hoy no la usa nada: es para el futuro aviso de revisar lo
   que lleva mucho sin tocarse (idea F2).
