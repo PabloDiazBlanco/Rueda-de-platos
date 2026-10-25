@@ -84,8 +84,9 @@ logica/entreno-calculo.js      → 1RM (Epley), volumen, duración con pausas, r
 logica/entreno-sesion.js       → operaciones puras de la sesión en curso (series, descanso, sustituir hoy,
                                   pausa, terminar) y de rutinas (aplicarARutina, rutinaDesdeSesion)
 logica/entreno-almacen.js      → claves, migraciones, meses, índice, borrador, cola de envíos y CSV
-logica/informes.js             → informes cruzados del área Cuerpo (informeCruzadoMes, declaradoPorSemana)
-                                  y aviso de actividad (sesionesPorSemana, evaluarAvisoActividad)
+logica/informes.js             → informes cruzados del área Cuerpo (informeCruzadoMes, declaradoPorSemana),
+                                  aviso de actividad (sesionesPorSemana, evaluarAvisoActividad) y de grupos
+                                  musculares sin entrenar (ultimaVezPorGrupo, gruposSinEntrenar)
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
@@ -450,6 +451,13 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   más. No avisa con menos de 4 sesiones registradas en total, en semanas de pausa, si está silenciado (28
   días) o si se cerró hace menos de 14 días. El estado vive en `catalogo.aviso` (`pausa`, `silenciadoHasta`,
   `descartadoEl`). Sin push.
+- **Grupos sin entrenar** (G8, 25-oct-2026; `ui/entreno/aviso-grupos.jsx`, solo en Entrenar; regla en
+  `gruposSinEntrenar`, grupo «Aviso de actividad» de `validacion/`): pecho, espalda, pierna, hombros y brazos
+  (`GRUPO_DE_MUSCULO`; cuenta solo el músculo principal; abdomen y cardio, ninguno). Sale un grupo que se
+  entrenaba y lleva 21 días o más sin hacerse, sacando la última vez del índice (y de la cola), sin leer
+  meses. No avisa si no se ha entrenado nada en esas 3 semanas ni con una pausa en ellas. La ✕ guarda en
+  `catalogo.aviso.grupos[grupo]` el día y ese grupo no vuelve en 14 días. Tarjeta provisional: la
+  ilustración es de la parte estética.
 
 ## Internacionalización
 
