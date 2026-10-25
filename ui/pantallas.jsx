@@ -30,7 +30,6 @@ import { EjerciciosView } from "./entreno/ejercicios.jsx";
 import { RutinasView } from "./entreno/rutinas.jsx";
 import { EditorRutinaView } from "./entreno/editor-rutina.jsx";
 import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
-import { AjustesEntrenoView } from "./entreno/ajustes.jsx";
 import { FichaEjercicioView } from "./entreno/ficha.jsx";
 import { ProgresoView } from "./entreno/progreso.jsx";
 import { InformesView } from "./cuerpo/informes.jsx";
@@ -224,8 +223,10 @@ const PANTALLAS = {
     />
   ),
 
-  ajustes: ({ data, idioma, perfil }) => (
-    <SettingsView perfil={data.perfil} data={data} onSave={perfil.savePerfil} onRepetirCuestionario={perfil.repetirCuestionarioCatalogo} idioma={idioma} />
+  // Con `params: { seccion: "entreno" }` se abre ya en los ajustes de entreno (que viven aquí desde el
+  // 25-oct-2026; antes eran el destino `entreno-ajustes`, que ya no existe).
+  ajustes: ({ data, idioma, perfil, entreno, params }) => (
+    <SettingsView perfil={data.perfil} data={data} onSave={perfil.savePerfil} onRepetirCuestionario={perfil.repetirCuestionarioCatalogo} entreno={entreno} params={params} idioma={idioma} />
   ),
 
   compartir: ({ idioma }) => <CompartirView idioma={idioma} />,
@@ -263,7 +264,6 @@ const PANTALLAS = {
     <DetalleSesionView key={params && params.id} entreno={entreno} idioma={idioma} navegar={navegar} params={params} onAbrirEjercicio={(id) => navegar("entreno-ejercicio", { id })} />
   ),
   "entreno-progreso": ({ idioma, entreno }) => <ProgresoView entreno={entreno} idioma={idioma} />,
-  "entreno-ajustes": ({ idioma, entreno, navegar }) => <AjustesEntrenoView entreno={entreno} idioma={idioma} navegar={navegar} />,
 };
 
 Object.keys(PANTALLAS_CATEGORIA).forEach((categoria) => {

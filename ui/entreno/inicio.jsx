@@ -99,7 +99,9 @@ export function EntrenarView({ entreno, idioma, navegar, aviso }) {
       )}
 
       <div style={{ marginTop: 24 }}>
-        <BotonTexto onClick={() => navegar("entreno-ajustes")} color="var(--ink-soft)">
+        {/* Los ajustes de entreno son una sección de Ajustes (zona común): este enlace abre Ajustes ya
+            desplazado hasta ella. */}
+        <BotonTexto onClick={() => navegar("ajustes", { seccion: "entreno" })} color="var(--ink-soft)">
           <Settings size={14} /> {t(idioma, "entreno.ajustes.titulo")}
         </BotonTexto>
       </div>

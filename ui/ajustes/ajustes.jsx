@@ -1,7 +1,7 @@
 // ---------- ui/ajustes/ajustes.jsx ----------
-// Ajustes: idioma, notificaciones, descarga de datos, repetir el cuestionario, cerrar sesión y eliminar
-// la cuenta.
-import React, { useState } from "react";
+// Ajustes: idioma, notificaciones, descarga de datos, repetir el cuestionario, los ajustes de entreno,
+// cerrar sesión y eliminar la cuenta.
+import React, { useState, useEffect, useRef } from "react";
 import { Download } from "lucide-react";
 import { descargarDatosJSON } from "peso";
 import { t, guardarIdiomaLocal } from "i18n";
@@ -9,7 +9,8 @@ import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { LanguageDropdown } from "../comun/idioma.jsx";
 import { TarjetaCerrarSesion } from "../comun/cerrar-sesion.jsx";
-import { FUENTE_TEXTO } from "../estilos.js";
+import { SeccionAjustesEntreno } from "../entreno/ajustes.jsx";
+import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Requiere reautenticación (contraseña, o pop-up de Google si la cuenta usa ese login) antes de
 // borrar nada — así window.deleteAccount (auth-bootstrap.jsx) nunca se encuentra a mitad de
@@ -97,7 +98,15 @@ function DeleteAccountModal({ onClose, idioma }) {
 // cero — savePerfil (en el componente raíz) sustituye el perfil entero por lo que se le pase, así
 // que si esta pantalla mandara solo el campo que toca, borraría sin querer todo lo demás (nombre,
 // reparto de comidas...) que vive en otras pantallas.
-export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idioma }) {
+// Los ajustes de entreno van como sección propia antes de lo de la cuenta (cerrar sesión, eliminarla), que
+// queda siempre lo último. Con `params.seccion === "entreno"` (el enlace «Ajustes de entreno» de la
+// pantalla Entrenar) la pantalla se abre ya desplazada hasta esa sección.
+export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entreno, params, idioma }) {
+  const refEntreno = useRef(null);
+  const irAEntreno = params && params.seccion === "entreno";
+  useEffect(() => {
+    if (irAEntreno && refEntreno.current) refEntreno.current.scrollIntoView({ block: "start" });
+  }, [irAEntreno]);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [showRepetirCuestionario, setShowRepetirCuestionario] = useState(false);
   const [notifEstado, setNotifEstado] = useState(""); // "" | "pidiendo" | "error"
@@ -209,6 +218,13 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
           {t(idioma, "ajustes.repetirCuestionario.boton")}
         </button>
       </div>
+
+      {entreno && (
+        <div ref={refEntreno} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 18px 20px", marginTop: 16, maxWidth: 480, scrollMarginTop: 16 }}>
+          <h2 style={{ margin: 0, fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 19, color: "var(--green-dark)" }}>{t(idioma, "area.entreno")}</h2>
+          <SeccionAjustesEntreno entreno={entreno} idioma={idioma} />
+        </div>
+      )}
 
       <TarjetaCerrarSesion idioma={idioma} />
 

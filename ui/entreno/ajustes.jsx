@@ -1,15 +1,18 @@
 // ---------- ui/entreno/ajustes.jsx ----------
-// «Ajustes de entreno» (diseño, §4.9), una pantalla propia del área Entrenamiento para no mezclarla con
-// los Ajustes generales. Cada gusto, un interruptor (principio 6): las reseñas muestran preferencias
-// opuestas (precargar valores, columna de esfuerzo...), así que nada es obligatorio. Aquí también está la
-// salvaguarda del usuario: exportar todos sus entrenos en CSV o JSON, gratis.
+// «Ajustes de entreno» (diseño, §4.9). Nació como una pantalla propia del área Entrenamiento; desde el
+// 25 de octubre de 2026 es una sección al final de los Ajustes generales (ui/ajustes/ajustes.jsx), a
+// petición del usuario: un único sitio para todos los ajustes. «Ajustes de entreno», en la pantalla
+// Entrenar, lleva ahí directamente (`navegar("ajustes", { seccion: "entreno" })`).
+// Cada gusto, un interruptor (principio 6): las reseñas muestran preferencias opuestas (precargar valores,
+// columna de esfuerzo...), así que nada es obligatorio. Aquí también está la salvaguarda del usuario:
+// exportar todos sus entrenos en CSV o JSON, gratis.
 import React, { useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { t } from "i18n";
 import { sesionesACSV } from "entreno-almacen";
 import { fechaLocal } from "entreno-calculo";
 import { Field, inputStyle } from "../comun/modal.jsx";
-import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
+import { FUENTE_TEXTO } from "../estilos.js";
 import { BotonSecundario, Chip, TextoSuave, TituloSeccion, nombreDe, reloj } from "./comun.jsx";
 
 const DESCANSOS = [30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
@@ -38,7 +41,7 @@ function descargar(texto, nombre, tipo) {
   URL.revokeObjectURL(url);
 }
 
-export function AjustesEntrenoView({ entreno, idioma, navegar }) {
+export function SeccionAjustesEntreno({ entreno, idioma }) {
   const a = entreno.ajustes;
   const cambiar = (cambios) => entreno.cambiarAjustes(cambios);
   const [estado, setEstado] = useState("");
@@ -80,8 +83,6 @@ export function AjustesEntrenoView({ entreno, idioma, navegar }) {
 
   return (
     <div>
-      <h2 style={{ margin: "0 0 4px", fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 21, color: "var(--green-dark)" }}>{t(idioma, "entreno.ajustes.titulo")}</h2>
-
       <TituloSeccion>{t(idioma, "entreno.ajustes.unidades")}</TituloSeccion>
       <Field label={t(idioma, "entreno.ajustes.peso")}>
         <div style={{ display: "flex", gap: 6 }}>

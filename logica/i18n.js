@@ -125,7 +125,7 @@ const TEXTOS = {
 
     "actividadDiaria.intro": "Tu tipo de día a día, tus entrenamientos habituales y tu objetivo actual — se usan para calcular tus calorías y macros.",
 
-    "ajustes.intro": "Idioma, notificaciones y todo lo relacionado con tu cuenta.",
+    "ajustes.intro": "Idioma, notificaciones, entrenamiento y todo lo relacionado con tu cuenta.",
     "ajustes.repetirCuestionario.titulo": "Repetir el cuestionario de alimentos",
     "ajustes.repetirCuestionario.desc": "Vuelve a pasar por el cuestionario de alta para elegir de nuevo tus proteínas, carbohidratos, verduras y grasas habituales.",
     "ajustes.repetirCuestionario.boton": "Repetir cuestionario",
@@ -1341,7 +1341,7 @@ const TEXTOS = {
 
     "actividadDiaria.intro": "Your day-to-day activity type, your usual training, and your current goal — used to calculate your calories and macros.",
 
-    "ajustes.intro": "Language, notifications, and everything related to your account.",
+    "ajustes.intro": "Language, notifications, training, and everything related to your account.",
     "ajustes.repetirCuestionario.titulo": "Redo the food questionnaire",
     "ajustes.repetirCuestionario.desc": "Go through the sign-up questionnaire again to choose your usual proteins, carbs, veggies and fats from scratch.",
     "ajustes.repetirCuestionario.boton": "Redo questionnaire",
@@ -2550,7 +2550,7 @@ const TEXTOS = {
 
     "actividadDiaria.intro": "El teu tipus de dia a dia, els teus entrenaments habituals i el teu objectiu actual — es fan servir per calcular les teves calories i macros.",
 
-    "ajustes.intro": "Idioma, notificacions i tot el relacionat amb el teu compte.",
+    "ajustes.intro": "Idioma, notificacions, entrenament i tot el relacionat amb el teu compte.",
     "ajustes.repetirCuestionario.titulo": "Repetir el qüestionari d'aliments",
     "ajustes.repetirCuestionario.desc": "Torna a passar pel qüestionari d'alta per triar de nou les teves proteïnes, carbohidrats, verdures i greixos habituals.",
     "ajustes.repetirCuestionario.boton": "Repetir qüestionari",
@@ -3759,7 +3759,7 @@ const TEXTOS = {
 
     "actividadDiaria.intro": "O teu tipo de día a día, os teus adestramentos habituais e o teu obxectivo actual — úsanse para calcular as túas calorías e macros.",
 
-    "ajustes.intro": "Idioma, notificacións e todo o relacionado coa túa conta.",
+    "ajustes.intro": "Idioma, notificacións, adestramento e todo o relacionado coa túa conta.",
     "ajustes.repetirCuestionario.titulo": "Repetir o cuestionario de alimentos",
     "ajustes.repetirCuestionario.desc": "Volve pasar polo cuestionario de alta para elixir de novo as túas proteínas, carbohidratos, verduras e graxas habituais.",
     "ajustes.repetirCuestionario.boton": "Repetir cuestionario",
@@ -4968,7 +4968,7 @@ const TEXTOS = {
 
     "actividadDiaria.intro": "Zure eguneroko jarduera mota, ohiko entrenamenduak eta uneko helburua — zure kaloriak eta makroak kalkulatzeko erabiltzen dira.",
 
-    "ajustes.intro": "Hizkuntza, jakinarazpenak eta zure kontuarekin lotutako guztia.",
+    "ajustes.intro": "Hizkuntza, jakinarazpenak, entrenamendua eta zure kontuarekin lotutako guztia.",
     "ajustes.repetirCuestionario.titulo": "Elikagaien galdetegia errepikatu",
     "ajustes.repetirCuestionario.desc": "Alta-galdetegia berriro egin zure ohiko proteinak, karbohidratoak, barazkiak eta gantzak berriro aukeratzeko.",
     "ajustes.repetirCuestionario.boton": "Galdetegia errepikatu",

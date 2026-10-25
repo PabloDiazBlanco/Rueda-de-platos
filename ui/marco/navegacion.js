@@ -53,7 +53,8 @@ export const AREAS = [
   },
   {
     // El módulo de entreno (octubre de 2026). El entreno en curso no es ninguna pestaña: es una capa a
-    // pantalla completa (ui/entreno/sesion.jsx) que se abre desde cualquier sitio con la pastilla.
+    // pantalla completa (ui/entreno/sesion.jsx) que se abre desde cualquier sitio con la pastilla. Sus
+    // ajustes no están aquí: son una sección de Ajustes (zona común) desde el 25-oct-2026.
     clave: "entreno", etiqueta: "area.entreno", titulo: "header.tuEntreno", icono: Dumbbell,
     pestanas: [
       { clave: "entrenar", destino: "entreno", etiqueta: "barra.entrenar", icono: Dumbbell, incluye: ["entreno"] },
@@ -68,7 +69,6 @@ export const AREAS = [
       { destino: "entreno-ejercicios", etiqueta: "barra.ejercicios", icono: BookOpen },
       { destino: "entreno-historial", etiqueta: "barra.historial", icono: History },
       { destino: "entreno-progreso", etiqueta: "barra.progreso", icono: TrendingUp },
-      { destino: "entreno-ajustes", etiqueta: "entreno.ajustes.titulo", icono: Settings },
     ],
   },
   {

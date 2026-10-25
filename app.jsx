@@ -77,11 +77,13 @@ export default function RuedaDePlatos() {
   }
   const setTab = (destino) => navegar(destino);
   // Tocar un área en el menú lateral: a la última pantalla visitada en ella o, si no hay, a su primera
-  // pestaña.
+  // pestaña. La recordada solo vale si sigue siendo de esa área: un destino que ya no existe (como
+  // `entreno-ajustes`, que pasó a ser una sección de Ajustes) dejaría la pantalla en blanco.
   function irAArea(clave) {
     const a = AREAS.find((x) => x.clave === clave);
     if (!a) return;
-    const destino = ultimaPantalla[clave] || (a.pestanas[0] && a.pestanas[0].destino) || (a.menu[0] && a.menu[0].destino);
+    const recordada = ultimaPantalla[clave] && areaDe(ultimaPantalla[clave]) === clave ? ultimaPantalla[clave] : null;
+    const destino = recordada || (a.pestanas[0] && a.pestanas[0].destino) || (a.menu[0] && a.menu[0].destino);
     if (destino) navegar(destino);
   }
   const [drawerOpen, setDrawerOpen] = useState(false);
