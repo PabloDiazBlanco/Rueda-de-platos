@@ -373,8 +373,11 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
 - **Pantallas** (destinos del área Entrenamiento en `ui/pantallas.jsx`): `entreno` (inicio.jsx: empezar
   vacío o con una rutina, seguir uno a medias, últimos entrenos), `entreno-rutinas` y `entreno-rutina`
   (`params: { id }`, editor), `entreno-ejercicios` (biblioteca), `entreno-historial` y `entreno-sesion`
-  (`params: { id, inicio }`, detalle corregible), `entreno-ajustes` (unidades, interruptores, descansos,
-  exportar CSV/JSON, recalcular el índice).
+  (`params: { id, inicio }`, detalle corregible). Los **ajustes de entreno** (unidades, interruptores,
+  descansos, exportar CSV/JSON, recalcular el índice) no son un destino del área desde el 25-oct-2026: son
+  una sección de Ajustes (`SeccionAjustesEntreno`, `ui/entreno/ajustes.jsx`), antes de cerrar sesión y
+  eliminar la cuenta; el enlace de Entrenar abre Ajustes con `params: { seccion: "entreno" }`, que la
+  desplaza hasta ella. `app.jsx` ignora una «última pantalla» recordada que ya no sea de su área.
 - **El entreno en curso no es un destino**: es una capa a pantalla completa (`sesion.jsx`, z-index 45) que
   pinta `app.jsx` cuando `entreno.sesionVisible`; ˅ la minimiza y queda la **pastilla** (`pastilla.jsx`,
   z-index 31, encima de la barra o abajo del todo en la zona común). Mientras se ve: Wake Lock, cronómetro y
