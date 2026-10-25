@@ -27,6 +27,14 @@ export function IconBtn({ children, onClick }) {
   );
 }
 
+// La caja de todos los modales de la app (añadir o editar un alimento, un plato, una regla, los objetivos,
+// el detalle de una comida, las confirmaciones...). C1 (25-oct-2026): en el móvil, un modal más alto que la
+// pantalla (el de alimento, el de un plato con varios ingredientes, el de los objetivos con el teclado
+// abierto) quedaba cortado por arriba y por abajo, centrado y sin poder desplazarse, y su botón de Guardar
+// era inalcanzable. Ahora el fondo oscuro es el que se desplaza (`overflowY: auto`) y la caja se centra
+// con `margin: auto` en vez de con `alignItems: center`: si cabe, sale centrada como siempre; si no, empieza
+// arriba y se baja con el dedo hasta el último botón. `overscrollBehavior: contain` evita que, al llegar al
+// final, se arrastre la pantalla de debajo. Los márgenes respetan la muesca y la barra del sistema.
 export function ModalShell({ children, onClose, title }) {
   return (
     <div
@@ -36,10 +44,11 @@ export function ModalShell({ children, onClose, title }) {
         inset: 0,
         background: "rgba(31,77,56,0.35)",
         display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 20,
+        padding: "max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom))",
         zIndex: 50,
+        overflowY: "auto",
+        overscrollBehavior: "contain",
+        WebkitOverflowScrolling: "touch",
       }}
     >
       <div
@@ -50,6 +59,8 @@ export function ModalShell({ children, onClose, title }) {
           padding: "20px 22px 22px",
           width: "100%",
           maxWidth: 360,
+          margin: "auto",
+          flexShrink: 0,
           boxShadow: "0 20px 50px rgba(0,0,0,0.25)",
         }}
       >
