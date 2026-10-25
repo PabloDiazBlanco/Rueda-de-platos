@@ -1764,6 +1764,22 @@ function grupoEntrenoSesion() {
           );
         },
       },
+      // ---------- Gimnasio (G2, 25-oct-2026) ----------
+      {
+        nombre: "G2: terminarSesion guarda el gimnasio sin espacios de más; vacío es null; sin pasarlo, conserva el que tenía",
+        ejecutar: () => {
+          const s = nuevaSesion({ rutina: RUTINA_PRUEBA, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA });
+          const fin = AHORA_SESION + 3600000;
+          const conGym = terminarSesion(s, fin, { gimnasio: "  Basic-Fit   Gran Vía " });
+          return comparar(
+            {
+              gym: conGym.gimnasio, vacio: terminarSesion(s, fin, { gimnasio: "   " }).gimnasio, sinPasar: terminarSesion({ ...s, gimnasio: "VivaGym" }, fin, {}).gimnasio,
+              nunca: terminarSesion(s, fin).gimnasio, ajusteDefecto: migrarCatalogo(null).valor.ajustes.gimnasio,
+            },
+            { gym: "Basic-Fit Gran Vía", vacio: null, sinPasar: "VivaGym", nunca: null, ajusteDefecto: "" }
+          );
+        },
+      },
       // ---------- Superseries (G11, 25-oct-2026) ----------
       {
         nombre: "G11: unir con el siguiente, sumar un tercero, separar; solo los seguidos forman grupo",

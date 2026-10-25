@@ -33,6 +33,8 @@ const VERSION = 1;
 export const AJUSTES_POR_DEFECTO = {
   unidadPeso: "kg", unidadDistancia: "km", precargar: true, mostrarEsfuerzo: false,
   descansoSeg: 120, descansoCalentamientoSeg: 60, inicioSemana: 1, sonido: true, vibracion: true,
+  // G2: el gimnasio habitual, que sale ya puesto al terminar un entreno ("" = ninguno).
+  gimnasio: "",
 };
 
 export function catalogoVacio() {

@@ -1356,6 +1356,12 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Se hacen alternando, por rondas: una serie de cada uno y vuelta a empezar. Cada uno conserva su descanso.",
     "entreno.superserie.separar": "Sacar de la superserie",
     "entreno.superserie.separarCorto": "Separar",
+
+    "entreno.gimnasio.campo": "Gimnasio (opcional)",
+    "entreno.gimnasio.placeholder": "Cadena o nombre del sitio",
+    "entreno.gimnasio.habitual": "Gimnasio habitual",
+    "entreno.gimnasio.ayuda": "Sale ya puesto al terminar cada entreno, y puedes cambiarlo. Si entrenas en varios sitios, el historial te deja ver los de cada uno.",
+    "entreno.gimnasio.todos": "Todos",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2651,6 +2657,12 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Done alternately, in rounds: one set of each and back to the start. Each keeps its own rest.",
     "entreno.superserie.separar": "Remove from superset",
     "entreno.superserie.separarCorto": "Split",
+
+    "entreno.gimnasio.campo": "Gym (optional)",
+    "entreno.gimnasio.placeholder": "Chain or place name",
+    "entreno.gimnasio.habitual": "Usual gym",
+    "entreno.gimnasio.ayuda": "It comes pre-filled when you finish each workout, and you can change it. If you train in several places, the history lets you see each one’s workouts.",
+    "entreno.gimnasio.todos": "All",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3946,6 +3958,12 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Es fan alternant, per rondes: una sèrie de cadascun i tornar a començar. Cadascun conserva el seu descans.",
     "entreno.superserie.separar": "Treure de la supersèrie",
     "entreno.superserie.separarCorto": "Separar",
+
+    "entreno.gimnasio.campo": "Gimnàs (opcional)",
+    "entreno.gimnasio.placeholder": "Cadena o nom del lloc",
+    "entreno.gimnasio.habitual": "Gimnàs habitual",
+    "entreno.gimnasio.ayuda": "Surt ja posat en acabar cada entrenament, i el pots canviar. Si entrenes en diversos llocs, l’historial et deixa veure els de cadascun.",
+    "entreno.gimnasio.todos": "Tots",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5241,6 +5259,12 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Fanse alternando, por roldas: unha serie de cada un e volta a empezar. Cada un conserva o seu descanso.",
     "entreno.superserie.separar": "Sacar da superserie",
     "entreno.superserie.separarCorto": "Separar",
+
+    "entreno.gimnasio.campo": "Ximnasio (opcional)",
+    "entreno.gimnasio.placeholder": "Cadea ou nome do sitio",
+    "entreno.gimnasio.habitual": "Ximnasio habitual",
+    "entreno.gimnasio.ayuda": "Sae xa posto ao rematar cada adestramento, e podes cambialo. Se adestras en varios sitios, o historial déixache ver os de cada un.",
+    "entreno.gimnasio.todos": "Todos",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6536,6 +6560,12 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Txandaka egiten dira, errondaka: bakoitzaren serie bat eta berriro hasieratik. Bakoitzak bere atsedena mantentzen du.",
     "entreno.superserie.separar": "Atera superserietik",
     "entreno.superserie.separarCorto": "Banandu",
+
+    "entreno.gimnasio.campo": "Gimnasioa (aukerakoa)",
+    "entreno.gimnasio.placeholder": "Katea edo lekuaren izena",
+    "entreno.gimnasio.habitual": "Ohiko gimnasioa",
+    "entreno.gimnasio.ayuda": "Entrenamendu bakoitza amaitzean jarrita agertzen da, eta alda dezakezu. Hainbat lekutan entrenatzen baduzu, historialak bakoitzekoak ikusten uzten dizu.",
+    "entreno.gimnasio.todos": "Guztiak",
   },
 };
 

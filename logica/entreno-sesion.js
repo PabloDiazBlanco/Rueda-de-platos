@@ -223,8 +223,9 @@ export const estaPausada = (s) => (s.pausas || []).some((p) => p.fin === null);
 // ---------- Terminar ----------
 // Lo que se guarda: solo las series hechas y los ejercicios que tienen alguna; cierra una pausa abierta,
 // pone la hora de fin y quita el descanso (que solo tiene sentido en curso). `inicio` (opcional) cambia la
-// fecha y hora del entreno (por si se apunta después): se mueve todo, conservando la duración.
-export function terminarSesion(s, ahora, { nombre, esfuerzo, nota, inicio } = {}) {
+// fecha y hora del entreno (por si se apunta después): se mueve todo, conservando la duración. `gimnasio`
+// (G2, opcional): dónde se entrenó, texto libre (vacío = null).
+export function terminarSesion(s, ahora, { nombre, esfuerzo, nota, inicio, gimnasio } = {}) {
   let t = ms(ahora);
   let cerrada = reanudar(s, ahora);
   let pausas = cerrada.pausas || [];
@@ -244,6 +245,7 @@ export function terminarSesion(s, ahora, { nombre, esfuerzo, nota, inicio } = {}
     nombre: nombre !== undefined ? nombre : s.nombre,
     esfuerzo: esfuerzo !== undefined ? esfuerzo : s.esfuerzo,
     nota: nota !== undefined ? nota : s.nota,
+    gimnasio: gimnasio !== undefined ? (String(gimnasio || "").replace(/\s+/g, " ").trim() || null) : s.gimnasio || null,
     inicio: inicioFinal, fin: iso(t), pausas, ejercicios,
     actualizado: ms(ahora),
   };

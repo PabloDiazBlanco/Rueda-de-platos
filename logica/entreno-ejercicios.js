@@ -270,3 +270,13 @@ export function posibleDuplicado(nombre, lista, nombreDe) {
   }
   return null;
 }
+
+// ---------- Gimnasios (G2, 25-oct-2026) ----------
+// Al terminar un entreno se puede apuntar dónde se hizo (opcional): para poder ver solo los entrenos de un
+// sitio si se entrena en varios (filtro del historial) y como dato para posibles estudios. Se sugieren las
+// cadenas más habituales en España (por orden alfabético) y se puede escribir cualquier otro; el habitual,
+// en los ajustes, sale ya puesto. Es texto libre: no hay ubicación ni ninguna fuente de datos de gimnasios.
+export const GIMNASIOS_HABITUALES = [
+  "Altafit", "Anytime Fitness", "Basic-Fit", "DiR", "Fitness Park", "Forus", "GO fit", "Holmes Place", "McFIT",
+  "Metropolitan", "Sano Center", "Supera", "Synergym", "VivaGym",
+];

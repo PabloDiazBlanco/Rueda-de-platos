@@ -8,7 +8,7 @@
 import React, { useState, useMemo } from "react";
 import { Medal } from "lucide-react";
 import { t } from "i18n";
-import { camposDeTipo } from "entreno-ejercicios";
+import { camposDeTipo, GIMNASIOS_HABITUALES } from "entreno-ejercicios";
 import { resumenSesion, mejoresDeEjercicioEnSesion, recordsBatidos } from "entreno-calculo";
 import { terminarSesion, cambiosEstructurales } from "entreno-sesion";
 import { Field, inputStyle, ModalShell, ModalBtn } from "../comun/modal.jsx";
@@ -90,6 +90,8 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
   const [esfuerzo, setEsfuerzo] = useState(s.esfuerzo || null);
   const [nota, setNota] = useState(s.nota || "");
   const [inicio, setInicio] = useState(aLocal(s.inicio));
+  // G2: dónde se entrenó; sale ya puesto el habitual de los ajustes.
+  const [gimnasio, setGimnasio] = useState(s.gimnasio || entreno.ajustes.gimnasio || "");
   const [descartar, setDescartar] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const rutina = s.rutinaId ? ((entreno.catalogo && entreno.catalogo.rutinas) || []).find((r) => r.id === s.rutinaId) : null;
@@ -102,7 +104,7 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
     return Number.isNaN(d.getTime()) ? s.inicio : d.toISOString();
   }, [inicio]);
   // Cómo quedaría guardada: sin las series sin hacer ni los ejercicios vacíos.
-  const final = terminarSesion(s, Date.now(), { nombre, esfuerzo, nota, inicio: inicioISO });
+  const final = terminarSesion(s, Date.now(), { nombre, esfuerzo, nota, inicio: inicioISO, gimnasio });
   const resumen = resumenSesion(final, entreno.ejercicioDe, entreno.pesoCorporal);
   const records = recordsDeSesion(final, entreno);
   const hayCambios = !!rutina && cambiosEstructurales(final, rutina);
@@ -111,7 +113,7 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
 
   async function guardar() {
     setGuardando(true);
-    const guardada = await entreno.terminar({ nombre, esfuerzo, nota, inicio: inicioISO }, { actualizarRutina: hayCambios && actualizarRutina });
+    const guardada = await entreno.terminar({ nombre, esfuerzo, nota, inicio: inicioISO, gimnasio }, { actualizarRutina: hayCambios && actualizarRutina });
     if (onGuardado) onGuardado(guardada);
   }
 
@@ -177,6 +179,19 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
 
       <Field label={t(idioma, "entreno.terminar.nota")}>
         <textarea value={nota} onChange={(e) => setNota(e.target.value)} rows={3} placeholder={t(idioma, "entreno.terminar.notaPlaceholder")} style={{ ...inputStyle, fontSize: 16, resize: "vertical", fontFamily: FUENTE_TEXTO }} />
+      </Field>
+
+      <Field label={t(idioma, "entreno.gimnasio.campo")}>
+        <input
+          value={gimnasio}
+          onChange={(e) => setGimnasio(e.target.value)}
+          list="gimnasios-terminar"
+          placeholder={t(idioma, "entreno.gimnasio.placeholder")}
+          style={{ ...inputStyle, minHeight: 44, fontSize: 16 }}
+        />
+        <datalist id="gimnasios-terminar">
+          {[...new Set([entreno.ajustes.gimnasio, ...GIMNASIOS_HABITUALES].filter(Boolean))].map((g) => <option key={g} value={g} />)}
+        </datalist>
       </Field>
 
       <Field label={t(idioma, "entreno.terminar.fecha")}>

@@ -16,7 +16,7 @@ import { BotonCompartir } from "../comun/compartir.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
   BotonPrincipal, BotonSecundario, BotonTexto, TextoSuave, duracionTexto, textoPeso, nombreDe, nombreMes, fechaLarga,
-  formatoNumero, pesoAPantalla, distanciaAPantalla, fechaDia, DIAS_CORTOS,
+  formatoNumero, pesoAPantalla, distanciaAPantalla, fechaDia, DIAS_CORTOS, Chip,
 } from "./comun.jsx";
 import { FilaSesion } from "./inicio.jsx";
 import { textoSerie, documentoSesion } from "./terminar.jsx";
@@ -33,6 +33,8 @@ export function HistorialView({ entreno, idioma, navegar }) {
   const [mes, setMes] = useState(actual);
   const [cargando, setCargando] = useState(false);
   const [dia, setDia] = useState(null); // «AAAA-MM-DD» elegido en el calendario, o null (todo el mes)
+  // G2: si el mes tiene entrenos en más de un gimnasio, unas fichas para ver solo los de uno.
+  const [gimnasio, setGimnasio] = useState(null);
 
   useEffect(() => {
     let vivo = true;
@@ -44,7 +46,9 @@ export function HistorialView({ entreno, idioma, navegar }) {
     return () => { vivo = false; };
   }, [mes]);
 
-  const sesiones = entreno.sesionesDeMes(mes);
+  const todasDelMes = entreno.sesionesDeMes(mes);
+  const gimnasios = [...new Set(todasDelMes.map((s) => s.gimnasio).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const sesiones = gimnasio && gimnasios.includes(gimnasio) ? todasDelMes.filter((s) => s.gimnasio === gimnasio) : todasDelMes;
   const delDia = dia ? sesiones.filter((s) => fechaLocal(s.inicio) === dia) : sesiones;
   const flecha = { width: 44, height: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", cursor: "pointer", color: "var(--green-dark)" };
 
@@ -55,6 +59,13 @@ export function HistorialView({ entreno, idioma, navegar }) {
         <h2 style={{ margin: 0, fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 19, color: "var(--green-dark)" }}>{nombreMes(mes, idioma)}</h2>
         <button onClick={() => setMes(sumarMes(mes, 1))} disabled={mes >= actual} aria-label={t(idioma, "entreno.historial.mesSiguiente")} style={{ ...flecha, opacity: mes >= actual ? 0.3 : 1, cursor: mes >= actual ? "default" : "pointer" }}><ChevronRight size={20} /></button>
       </div>
+
+      {gimnasios.length > 1 && (
+        <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6, marginBottom: 4 }}>
+          <Chip activo={!gimnasio || !gimnasios.includes(gimnasio)} onClick={() => setGimnasio(null)}>{t(idioma, "entreno.gimnasio.todos")}</Chip>
+          {gimnasios.map((g) => <Chip key={g} activo={gimnasio === g} onClick={() => setGimnasio(gimnasio === g ? null : g)}>{g}</Chip>)}
+        </div>
+      )}
 
       <Calendario mes={mes} sesiones={sesiones} inicioSemana={entreno.ajustes.inicioSemana} dia={dia} onDia={(d) => setDia(dia === d ? null : d)} idioma={idioma} />
 
@@ -193,7 +204,7 @@ export function DetalleSesionView({ entreno, idioma, navegar, params, onAbrirEje
       ) : (
         <h2 style={{ margin: 0, fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 22, color: "var(--green-dark)" }}>{sesion.nombre || t(idioma, "entreno.comun.sinNombre")}</h2>
       )}
-      <TextoSuave style={{ marginTop: 4 }}>{fechaLarga(sesion.inicio, idioma)}</TextoSuave>
+      <TextoSuave style={{ marginTop: 4 }}>{[fechaLarga(sesion.inicio, idioma), sesion.gimnasio].filter(Boolean).join(" · ")}</TextoSuave>
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", margin: "8px 0 4px", fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)" }}>
         <span>{t(idioma, "entreno.sesion.duracion")} <b style={{ color: "var(--ink)" }}>{duracionTexto(r.duracionSeg, idioma)}</b></span>
         <span>{t(idioma, "entreno.sesion.volumen")} <b style={{ color: "var(--ink)" }}>{textoPeso(r.volumen, ajustes, idioma)}</b></span>

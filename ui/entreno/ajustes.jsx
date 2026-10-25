@@ -10,6 +10,7 @@ import React, { useState } from "react";
 import { Download, RefreshCw } from "lucide-react";
 import { t } from "i18n";
 import { sesionesACSV } from "entreno-almacen";
+import { GIMNASIOS_HABITUALES } from "entreno-ejercicios";
 import { fechaLocal } from "entreno-calculo";
 import { Field, inputStyle } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
@@ -105,6 +106,21 @@ export function SeccionAjustesEntreno({ entreno, idioma }) {
           <Chip activo={a.inicioSemana === 1} onClick={() => cambiar({ inicioSemana: 1 })}>{t(idioma, "entreno.ajustes.lunes")}</Chip>
           <Chip activo={a.inicioSemana === 0} onClick={() => cambiar({ inicioSemana: 0 })}>{t(idioma, "entreno.ajustes.domingo")}</Chip>
         </div>
+      </Field>
+
+      {/* G2: el gimnasio habitual, que sale ya puesto al terminar cada entreno. */}
+      <Field label={t(idioma, "entreno.gimnasio.habitual")}>
+        <input
+          value={a.gimnasio || ""}
+          onChange={(e) => cambiar({ gimnasio: e.target.value })}
+          list="gimnasios-ajustes"
+          placeholder={t(idioma, "entreno.gimnasio.placeholder")}
+          style={{ ...inputStyle, minHeight: 44, fontSize: 16 }}
+        />
+        <datalist id="gimnasios-ajustes">
+          {GIMNASIOS_HABITUALES.map((g) => <option key={g} value={g} />)}
+        </datalist>
+        <TextoSuave style={{ fontSize: 12, marginTop: 4 }}>{t(idioma, "entreno.gimnasio.ayuda")}</TextoSuave>
       </Field>
 
       <TituloSeccion>{t(idioma, "entreno.sesion.descanso")}</TituloSeccion>
