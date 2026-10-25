@@ -35,7 +35,7 @@ import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
   elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV, migrarIndice,
 } from "entreno-almacen";
-import { declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad } from "informes";
+import { declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad, ultimaVezPorGrupo, gruposSinEntrenar } from "informes";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -2077,6 +2077,54 @@ function grupoAvisoActividad() {
       {
         nombre: "«Más»: declara 2 y registra [4,4,4]; declara 0 y registra [2,3,2]; declara 4 y [2,2,2] no avisa",
         ejecutar: () => comparar({ mas: avisoDe(2, [4, 4, 4]), ceroDeclarado: avisoDe(0, [2, 3, 2]), limite: avisoDe(4, [2, 2, 2]) }, { mas: "mas", ceroDeclarado: "mas", limite: "nada" }),
+      },
+      // ---------- Grupos sin entrenar (G8, 25-oct-2026) ----------
+      // Hoy: 25-10-2026. 21 días antes es el 4-10.
+      {
+        nombre: "G8: última vez por grupo desde el índice y la cola (solo el músculo principal; abdomen y cardio no cuentan)",
+        ejecutar: () => {
+          const musculos = { banca: "pecho", curl: "biceps", cinta: "cardio", sentadilla: "cuadriceps", remo: "dorsales", plancha: "abdomen" };
+          const ejercicioDe = (id) => (musculos[id] ? { musculo: musculos[id] } : null);
+          const indice = { ejercicios: {
+            banca: { ultima: { fecha: "2026-10-20" } }, curl: { ultima: { fecha: "2026-09-30" } }, cinta: { ultima: { fecha: "2026-10-24" } },
+            sentadilla: { ultima: { fecha: "2026-09-01" } }, remo: { ultima: { fecha: "2026-10-01" } }, plancha: { ultima: { fecha: "2026-10-24" } },
+          } };
+          const cola = [{ inicio: "2026-10-03T17:00:00.000Z", ejercicios: [{ ejercicioId: "remo", series: [{ hecha: true }] }, { ejercicioId: "curl", series: [{ hecha: false }] }] }];
+          const u = ultimaVezPorGrupo(indice, ejercicioDe, cola);
+          return comparar(
+            { pecho: u.pecho, brazos: u.brazos, pierna: u.pierna, espalda: u.espalda, hombros: u.hombros, grupos: Object.keys(u).sort().join(",") },
+            { pecho: "2026-10-20", brazos: "2026-09-30", pierna: "2026-09-01", espalda: "2026-10-03", hombros: undefined, grupos: "brazos,espalda,pecho,pierna" }
+          );
+        },
+      },
+      {
+        nombre: "G8: avisa de los grupos con 21 días o más, del más olvidado al menos; nunca entrenado o sin nada reciente no avisa",
+        ejecutar: () => {
+          const ultimaVez = { pecho: "2026-10-20", brazos: "2026-09-30", pierna: "2026-09-01", espalda: "2026-10-04", hombros: "2026-10-05" };
+          const r = gruposSinEntrenar({ ultimaVez, hoy: "2026-10-25", aviso: {} });
+          // pierna 54 días, brazos 25, espalda justo 21; hombros 20 (aún no); pecho 5.
+          const todoViejo = gruposSinEntrenar({ ultimaVez: { pecho: "2026-09-01", pierna: "2026-09-02" }, hoy: "2026-10-25", aviso: {} });
+          return comparar(
+            { grupos: r.map((x) => x.grupo).join(","), dias: r.map((x) => x.dias).join(","), todoViejo: todoViejo.length, nunca: gruposSinEntrenar({ ultimaVez: {}, hoy: "2026-10-25" }).length },
+            { grupos: "pierna,brazos,espalda", dias: "54,25,21", todoViejo: 0, nunca: 0 }
+          );
+        },
+      },
+      {
+        nombre: "G8: un grupo cerrado no vuelve a salir en 14 días; una pausa en esas 3 semanas no avisa",
+        ejecutar: () => {
+          const ultimaVez = { pecho: "2026-10-20", pierna: "2026-09-01", brazos: "2026-09-30" };
+          const grupos = (aviso, hoy = "2026-10-25") => gruposSinEntrenar({ ultimaVez, hoy, aviso }).map((x) => x.grupo).join(",");
+          return comparar(
+            {
+              cerradoAyer: grupos({ grupos: { pierna: "2026-10-24" } }),
+              cerradoHace14: grupos({ grupos: { pierna: "2026-10-11" } }),
+              pausaAbierta: grupos({ pausa: { desde: "2026-10-22", hasta: null } }),
+              pausaVieja: grupos({ pausa: { desde: "2026-08-01", hasta: "2026-08-15" } }),
+            },
+            { cerradoAyer: "brazos", cerradoHace14: "pierna,brazos", pausaAbierta: "", pausaVieja: "pierna,brazos" }
+          );
+        },
       },
     ],
   };

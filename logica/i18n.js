@@ -1281,6 +1281,17 @@ const TEXTOS = {
 
     "foodEditModal.emoji": "Emoji (opcional)",
     "foodEditModal.emojiAyuda": "Escribe o pega un emoji del teclado; si pegas varios, se queda el primero. Vacío: {emoji}, el de su carpeta.",
+
+    "entreno.grupos.titulo": "Hace tiempo que no entrenas",
+    "entreno.grupos.ayuda": "Solo es un recordatorio: cuenta el músculo principal de cada ejercicio. Con la ✕ no vuelve a salir en 14 días.",
+    "entreno.grupos.cerrar": "Cerrar el aviso durante 14 días",
+    "entreno.grupos.dias": "hace {n} días",
+    "entreno.grupos.semanas": "hace {n} semanas",
+    "entreno.grupo.pecho": "Pecho",
+    "entreno.grupo.espalda": "Espalda",
+    "entreno.grupo.pierna": "Pierna",
+    "entreno.grupo.hombros": "Hombros",
+    "entreno.grupo.brazos": "Brazos",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2501,6 +2512,17 @@ const TEXTOS = {
 
     "foodEditModal.emoji": "Emoji (optional)",
     "foodEditModal.emojiAyuda": "Type or paste an emoji from your keyboard; if you paste several, the first one is kept. Empty: {emoji}, its folder’s.",
+
+    "entreno.grupos.titulo": "It’s been a while since you trained",
+    "entreno.grupos.ayuda": "Just a reminder: it counts each exercise’s main muscle. Tap ✕ and it won’t show again for 14 days.",
+    "entreno.grupos.cerrar": "Dismiss for 14 days",
+    "entreno.grupos.dias": "{n} days ago",
+    "entreno.grupos.semanas": "{n} weeks ago",
+    "entreno.grupo.pecho": "Chest",
+    "entreno.grupo.espalda": "Back",
+    "entreno.grupo.pierna": "Legs",
+    "entreno.grupo.hombros": "Shoulders",
+    "entreno.grupo.brazos": "Arms",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3721,6 +3743,17 @@ const TEXTOS = {
 
     "foodEditModal.emoji": "Emoji (opcional)",
     "foodEditModal.emojiAyuda": "Escriu o enganxa un emoji del teclat; si n’enganxes diversos, es queda el primer. Buit: {emoji}, el de la seva carpeta.",
+
+    "entreno.grupos.titulo": "Fa temps que no entrenes",
+    "entreno.grupos.ayuda": "Només és un recordatori: compta el múscul principal de cada exercici. Amb la ✕ no torna a sortir en 14 dies.",
+    "entreno.grupos.cerrar": "Tancar l’avís durant 14 dies",
+    "entreno.grupos.dias": "fa {n} dies",
+    "entreno.grupos.semanas": "fa {n} setmanes",
+    "entreno.grupo.pecho": "Pit",
+    "entreno.grupo.espalda": "Esquena",
+    "entreno.grupo.pierna": "Cama",
+    "entreno.grupo.hombros": "Espatlles",
+    "entreno.grupo.brazos": "Braços",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4941,6 +4974,17 @@ const TEXTOS = {
 
     "foodEditModal.emoji": "Emoji (opcional)",
     "foodEditModal.emojiAyuda": "Escribe ou pega un emoji do teclado; se pegas varios, quédase o primeiro. Baleiro: {emoji}, o do seu cartafol.",
+
+    "entreno.grupos.titulo": "Hai tempo que non adestras",
+    "entreno.grupos.ayuda": "Só é un recordatorio: conta o músculo principal de cada exercicio. Coa ✕ non volve saír en 14 días.",
+    "entreno.grupos.cerrar": "Pechar o aviso durante 14 días",
+    "entreno.grupos.dias": "hai {n} días",
+    "entreno.grupos.semanas": "hai {n} semanas",
+    "entreno.grupo.pecho": "Peito",
+    "entreno.grupo.espalda": "Costas",
+    "entreno.grupo.pierna": "Perna",
+    "entreno.grupo.hombros": "Ombros",
+    "entreno.grupo.brazos": "Brazos",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6161,6 +6205,17 @@ const TEXTOS = {
 
     "foodEditModal.emoji": "Emojia (aukerakoa)",
     "foodEditModal.emojiAyuda": "Idatzi edo itsatsi teklatuko emoji bat; hainbat itsasten badituzu, lehena geratzen da. Hutsik: {emoji}, bere karpetakoa.",
+
+    "entreno.grupos.titulo": "Aspaldi ez duzu entrenatu",
+    "entreno.grupos.ayuda": "Gogorarazpen bat besterik ez da: ariketa bakoitzaren gihar nagusia zenbatzen du. ✕ sakatuz gero, ez da berriro agertuko 14 egunean.",
+    "entreno.grupos.cerrar": "Itxi abisua 14 egunez",
+    "entreno.grupos.dias": "duela {n} egun",
+    "entreno.grupos.semanas": "duela {n} aste",
+    "entreno.grupo.pecho": "Bularra",
+    "entreno.grupo.espalda": "Bizkarra",
+    "entreno.grupo.pierna": "Hankak",
+    "entreno.grupo.hombros": "Sorbaldak",
+    "entreno.grupo.brazos": "Besoak",
   },
 };
 

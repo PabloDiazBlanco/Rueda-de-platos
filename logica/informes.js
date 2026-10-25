@@ -156,3 +156,74 @@ export function evaluarAvisoActividad({ declaradoSemana, semanas, totalRegistrad
   if (ns.every((n) => n >= 1.5 * d && n - d >= 2)) return { tipo: "mas", declarado: d, media };
   return null;
 }
+
+// ---------- Grupos musculares sin entrenar (G8, 25-oct-2026) ----------
+// Si un grupo muscular que se entrenaba lleva 3 semanas sin trabajarse, la pantalla Entrenar lo dice en
+// una tarjeta que se cierra con un toque (y entonces ese grupo no vuelve a salir en 14 días, como el aviso
+// de actividad). Solo informa: no cambia rutinas ni objetivos. La parte visual definitiva (telaraña,
+// bocadillo) es de la propuesta estética; aquí solo está la regla, con sus casos en validacion/.
+//
+// Los grupos son los cinco que el usuario reconoce al planificar: pecho, espalda, pierna, hombros y
+// brazos («torso» es un tipo de día, no un grupo). Cada músculo de la biblioteca cae en uno; abdomen y
+// cardio en ninguno. Cuenta solo el **músculo principal** de cada ejercicio: un press de banca trabaja el
+// tríceps, pero no es «haber entrenado brazos» (decisión provisional del 25-oct, a revisar).
+export const GRUPOS_AVISO = ["pecho", "espalda", "pierna", "hombros", "brazos"];
+export const GRUPO_DE_MUSCULO = {
+  pecho: "pecho",
+  dorsales: "espalda", espalda_alta: "espalda", lumbar: "espalda",
+  hombros: "hombros",
+  biceps: "brazos", triceps: "brazos", antebrazos: "brazos",
+  gluteos: "pierna", cuadriceps: "pierna", isquios: "pierna", gemelos: "pierna", aductores: "pierna",
+};
+export const DIAS_SIN_GRUPO = 21;
+export const SILENCIO_GRUPO_DIAS = 14;
+
+// Días de diferencia entre dos fechas «AAAA-MM-DD» (b − a), sin que el cambio de hora estorbe.
+function diasEntre(a, b) {
+  const utc = (d) => Date.UTC(Number(d.slice(0, 4)), Number(d.slice(5, 7)) - 1, Number(d.slice(8, 10)));
+  return Math.round((utc(b) - utc(a)) / 86400000);
+}
+
+// La última fecha en que se entrenó cada grupo: { pecho: "AAAA-MM-DD", ... } (solo los que se han entrenado
+// alguna vez). Sale del índice, que ya guarda la última vez de cada ejercicio (así no hay que leer todos los
+// meses), más las sesiones que aún esperan en la cola de envíos.
+export function ultimaVezPorGrupo(indice, ejercicioDe, sesionesExtra = []) {
+  const ultima = {};
+  const anotar = (ejercicioId, fecha) => {
+    const e = ejercicioDe(ejercicioId);
+    const grupo = e && GRUPO_DE_MUSCULO[e.musculo];
+    if (grupo && fecha && (!ultima[grupo] || fecha > ultima[grupo])) ultima[grupo] = fecha;
+  };
+  Object.entries((indice && indice.ejercicios) || {}).forEach(([id, info]) => {
+    if (info && info.ultima) anotar(id, info.ultima.fecha || fechaLocal(info.ultima.inicio));
+  });
+  (sesionesExtra || []).forEach((s) => {
+    (s.ejercicios || []).forEach((ej) => {
+      if ((ej.series || []).some((sr) => sr.hecha)) anotar(ej.ejercicioId, fechaLocal(s.inicio));
+    });
+  });
+  return ultima;
+}
+
+// Los grupos que toca avisar, del más olvidado al menos: [{ grupo, dias, desde }]. No avisa:
+// - de un grupo que no se ha entrenado nunca;
+// - si no se ha entrenado **nada** en esas 3 semanas (eso no es olvidar un grupo, es una pausa; para eso
+//   está el aviso de actividad), ni si una pausa declarada toca esas 3 semanas;
+// - de un grupo cerrado hace menos de 14 días (`aviso.grupos[grupo]` = día en que se cerró).
+export function gruposSinEntrenar({ ultimaVez, hoy, aviso }) {
+  const hoyISO = typeof hoy === "string" ? hoy : fechaLocal(hoy);
+  const estado = aviso || {};
+  const fechas = Object.values(ultimaVez || {});
+  if (!fechas.length) return [];
+  const masReciente = fechas.reduce((a, b) => (b > a ? b : a));
+  if (diasEntre(masReciente, hoyISO) >= DIAS_SIN_GRUPO) return [];
+  const pausa = estado.pausa;
+  if (pausa && pausa.desde && pausa.desde <= hoyISO && (!pausa.hasta || pausa.hasta >= sumarDias(hoyISO, -DIAS_SIN_GRUPO))) return [];
+  const cerrados = estado.grupos || {};
+  return GRUPOS_AVISO
+    .filter((g) => ultimaVez[g])
+    .map((g) => ({ grupo: g, desde: ultimaVez[g], dias: diasEntre(ultimaVez[g], hoyISO) }))
+    .filter((x) => x.dias >= DIAS_SIN_GRUPO)
+    .filter((x) => !(cerrados[x.grupo] && hoyISO < sumarDias(cerrados[x.grupo], SILENCIO_GRUPO_DIAS)))
+    .sort((a, b) => b.dias - a.dias);
+}

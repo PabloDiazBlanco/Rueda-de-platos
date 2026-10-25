@@ -25,6 +25,7 @@
   "ui/despensa/tema.js",
   "ui/entreno/ajustes.jsx",
   "ui/entreno/aviso-actividad.jsx",
+  "ui/entreno/aviso-grupos.jsx",
   "ui/entreno/comun.jsx",
   "ui/entreno/descanso.jsx",
   "ui/entreno/discos.jsx",

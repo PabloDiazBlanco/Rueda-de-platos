@@ -39,7 +39,8 @@ export function catalogoVacio() {
   return {
     version: VERSION, propios: [], personalizados: {}, rutinas: [],
     ajustes: { ...AJUSTES_POR_DEFECTO },
-    aviso: { pausa: null, silenciadoHasta: null, descartadoEl: null },
+    // `grupos` (G8): por grupo muscular, el día en que se cerró su aviso de «sin entrenar».
+    aviso: { pausa: null, silenciadoHasta: null, descartadoEl: null, grupos: {} },
   };
 }
 

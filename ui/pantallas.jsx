@@ -34,6 +34,7 @@ import { FichaEjercicioView } from "./entreno/ficha.jsx";
 import { ProgresoView } from "./entreno/progreso.jsx";
 import { InformesView } from "./cuerpo/informes.jsx";
 import { AvisoActividad } from "./entreno/aviso-actividad.jsx";
+import { AvisoGrupos } from "./entreno/aviso-grupos.jsx";
 
 const PANTALLAS = {
   "menus-root": ({ idioma, setTab }) => (
@@ -242,8 +243,15 @@ const PANTALLAS = {
   // ---------- Entrenamiento (octubre de 2026) ----------
   // Las pantallas del área de entreno (ui/entreno/). La sesión en curso no está aquí: es una capa a
   // pantalla completa que pinta app.jsx encima de cualquier pantalla.
+  // Arriba, los avisos: el de actividad (lo registrado frente a lo declarado) y el de grupos musculares
+  // que llevan 3 semanas sin entrenarse (G8).
   entreno: ({ data, idioma, entreno, navegar }) => (
-    <EntrenarView entreno={entreno} idioma={idioma} navegar={navegar} aviso={<AvisoActividad entreno={entreno} data={data} idioma={idioma} navegar={navegar} />} />
+    <EntrenarView
+      entreno={entreno}
+      idioma={idioma}
+      navegar={navegar}
+      aviso={<><AvisoActividad entreno={entreno} data={data} idioma={idioma} navegar={navegar} /><AvisoGrupos entreno={entreno} idioma={idioma} /></>}
+    />
   ),
   "entreno-rutinas": ({ idioma, entreno, navegar }) => <RutinasView entreno={entreno} idioma={idioma} navegar={navegar} />,
   // Editor de una rutina: `params.id` (null = nueva). Se monta de nuevo para cada rutina (key), así no
