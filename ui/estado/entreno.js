@@ -349,6 +349,9 @@ export function useEntreno(data) {
     desmarcar: (inst, id) => cambiar((s) => S.desmarcar(s, inst, id)),
     ajustarDescanso: (seg) => cambiar((s) => S.ajustarDescanso(s, seg)),
     descansoEjercicio: (inst, seg) => cambiar((s) => S.descansoEjercicio(s, inst, seg)),
+    // Superseries (G11): unir un ejercicio con el siguiente o sacarlo de su superserie.
+    unirSuperserie: (inst) => cambiar((s) => ({ ...s, ejercicios: S.unirSuperserie(s.ejercicios, s.ejercicios.findIndex((e) => e.inst === inst)) })),
+    separarSuperserie: (inst) => cambiar((s) => ({ ...s, ejercicios: S.separarSuperserie(s.ejercicios, s.ejercicios.findIndex((e) => e.inst === inst)) })),
     saltarDescanso: () => cambiar(S.saltarDescanso),
     // Descanso a mano (botón ⏱ de la barra de la sesión), sin marcar ninguna serie.
     iniciarDescanso: (segundos) => cambiar((s) => {

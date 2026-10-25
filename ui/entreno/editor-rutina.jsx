@@ -5,10 +5,13 @@
 // pulsar «Guardar», para poder salir sin tocar nada.
 // El descanso es de cada ejercicio (G3, 25-oct-2026): al añadirlo entra con el de su ficha o el de los
 // ajustes, y se cambia con el botón del reloj de su tarjeta (BotonDescanso / HojaDescanso).
+// Superseries (G11): entre dos tarjetas, «Superserie con el siguiente» los une (o suma el siguiente al
+// grupo); dentro de un grupo, «Separar» saca al ejercicio. Los del grupo llevan una franja mostaza.
 import React, { useState } from "react";
-import { Plus, ArrowUp, ArrowDown, X } from "lucide-react";
+import { Plus, ArrowUp, ArrowDown, X, Link2, Link2Off } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo, TIPOS_SERIE, LETRA_SERIE } from "entreno-ejercicios";
+import { grupoDe, unirSuperserie, separarSuperserie } from "entreno-sesion";
 import { Field, inputStyle } from "../comun/modal.jsx";
 import { BackLink } from "../comun/tarjetas.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
@@ -109,8 +112,19 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
       {rutina.ejercicios.map((re, i) => {
         const tipo = (entreno.ejercicioDe(re.ejercicioId) || {}).tipo || "peso_reps";
         const campos = camposDeTipo(tipo);
+        const grupo = grupoDe(rutina.ejercicios, i);
+        const unidoConSiguiente = grupo && i < grupo.fin;
         return (
-          <section key={i + re.ejercicioId} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "8px 10px 10px", marginBottom: 10 }}>
+          <React.Fragment key={i + re.ejercicioId}>
+          <section style={{ background: "var(--card)", border: "1px solid var(--line)", borderLeft: grupo ? "5px solid var(--mustard)" : "1px solid var(--line)", borderRadius: 10, padding: "8px 10px 10px", marginBottom: 4 }}>
+            {grupo && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 2 }}>
+                <Link2 size={12} /> {t(idioma, "entreno.superserie.etiqueta", { n: grupo.numero })}
+                <button onClick={() => setRutina((r) => ({ ...r, ejercicios: separarSuperserie(r.ejercicios, i) }))} style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 3, background: "none", border: "none", cursor: "pointer", fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--ink-soft)", textTransform: "none", letterSpacing: 0 }}>
+                  <Link2Off size={12} /> {t(idioma, "entreno.superserie.separarCorto")}
+                </button>
+              </div>
+            )}
             <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <div style={{ flex: 1, minWidth: 0, fontFamily: FUENTE_TEXTO, fontSize: 15, fontWeight: 700, color: "var(--green-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {nombreDe(entreno, re.ejercicioId, idioma)}
@@ -167,6 +181,18 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
               </label>
             </div>
           </section>
+          {/* Entre esta tarjeta y la siguiente: unirlas en superserie (si aún no lo están). */}
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: unidoConSiguiente ? 4 : 10, minHeight: i < rutina.ejercicios.length - 1 ? 0 : 6 }}>
+            {i < rutina.ejercicios.length - 1 && !unidoConSiguiente && (
+              <button
+                onClick={() => setRutina((r) => ({ ...r, ejercicios: unirSuperserie(r.ejercicios, i) }))}
+                style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700, color: "var(--mustard-dark)", padding: "4px 8px", minHeight: 32 }}
+              >
+                <Link2 size={13} /> {t(idioma, "entreno.superserie.unir")}
+              </button>
+            )}
+          </div>
+          </React.Fragment>
         );
       })}
 

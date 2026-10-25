@@ -48,7 +48,7 @@ function precargarSeries(series, anterior) {
 }
 
 function nuevoEjercicio(ejercicioId, series, { descansoSeg = null, nota = "" } = {}) {
-  return { inst: "ei_" + uid(), ejercicioId, sustituyeA: null, nota, descansoSeg, series };
+  return { inst: "ei_" + uid(), ejercicioId, sustituyeA: null, nota, descansoSeg, superserie: null, series };
 }
 
 // Cambia un ejercicio de la sesión por su `inst` (la instancia: el mismo ejercicio puede salir dos veces).
@@ -87,7 +87,7 @@ export function nuevaSesion({ rutina = null, ahora, ajustes = {}, anteriorDe = (
   const ejercicios = deRutina.map((re, i) => {
     let series = (re.series && re.series.length ? re.series : [{ tipo: "normal" }]).map((p) => serieVacia(p.tipo || "normal"));
     if (ajustes.precargar) series = precargarSeries(series, anteriorDe(re.ejercicioId, { rutinaId: rutina.id, ocurrencia: ocurrenciaDe(deRutina, re.ejercicioId, i) }));
-    return nuevoEjercicio(re.ejercicioId, series, { descansoSeg: re.descansoSeg ?? descansoInicial(re.ejercicioId, { ajustes, descansoDe }), nota: re.nota || "" });
+    return { ...nuevoEjercicio(re.ejercicioId, series, { descansoSeg: re.descansoSeg ?? descansoInicial(re.ejercicioId, { ajustes, descansoDe }), nota: re.nota || "" }), superserie: re.superserie || null };
   });
   return {
     id: "ses_" + uid(),
@@ -252,8 +252,24 @@ export function terminarSesion(s, ahora, { nombre, esfuerzo, nota, inicio } = {}
 // ---------- Rutinas ----------
 // La «huella» de una sesión frente a su rutina: qué ejercicios (los sustituidos solo hoy cuentan como el
 // original), en qué orden y cuántas series. Si cambia, al terminar se ofrece actualizar la rutina.
-const huellaSesion = (s) => s.ejercicios.map((ej) => `${ej.sustituyeA || ej.ejercicioId}:${ej.series.length}`).join("|");
-const huellaRutina = (r) => (r.ejercicios || []).map((re) => `${re.ejercicioId}:${(re.series || []).length}`).join("|");
+// La superserie entra en la huella por su forma (qué ejercicios van juntos), no por su id: en la sesión y en
+// la rutina el mismo grupo puede tener ids distintos.
+const formaSuperseries = (lista) => {
+  const bloques = gruposSuperserie(lista);
+  return lista.map((_, i) => {
+    const b = bloques.find((x) => i >= x.inicio && i <= x.fin);
+    return b && b.fin > b.inicio ? `+${b.inicio}` : "";
+  });
+};
+const huellaSesion = (s) => {
+  const forma = formaSuperseries(s.ejercicios);
+  return s.ejercicios.map((ej, i) => `${ej.sustituyeA || ej.ejercicioId}:${ej.series.length}${forma[i]}`).join("|");
+};
+const huellaRutina = (r) => {
+  const lista = r.ejercicios || [];
+  const forma = formaSuperseries(lista);
+  return lista.map((re, i) => `${re.ejercicioId}:${(re.series || []).length}${forma[i]}`).join("|");
+};
 
 // También cuenta como cambio el descanso de un ejercicio retocado durante el entreno (G3). Solo se mira
 // con la misma estructura (entonces el ejercicio i de la sesión es el i de la rutina), en los que no se
@@ -286,11 +302,12 @@ export function aplicarARutina(rutina, s, hoy) {
     const i = previos.findIndex((re, k) => re.ejercicioId === id && !usados.has(k));
     const previo = i >= 0 ? previos[i] : null;
     if (i >= 0) usados.add(i);
-    if (ej.sustituyeA && previo) return previo;
+    if (ej.sustituyeA && previo) return { ...previo, superserie: ej.superserie || null };
     return {
       ejercicioId: id,
       descansoSeg: ej.descansoSeg ?? (previo ? previo.descansoSeg ?? null : null),
       nota: previo ? previo.nota || "" : "",
+      superserie: ej.superserie || null,
       series: ej.series.map(plantillaSerie),
     };
   });
@@ -304,7 +321,86 @@ export function rutinaDesdeSesion(s, nombre, hoy) {
     nombre: nombre || s.nombre || "",
     actualizado: hoy || null,
     ejercicios: s.ejercicios
-      .map((ej) => ({ ejercicioId: ej.ejercicioId, descansoSeg: ej.descansoSeg ?? null, nota: "", series: ej.series.filter((sr) => sr.hecha).map(plantillaSerie) }))
+      .map((ej) => ({ ejercicioId: ej.ejercicioId, descansoSeg: ej.descansoSeg ?? null, nota: "", superserie: ej.superserie || null, series: ej.series.filter((sr) => sr.hecha).map(plantillaSerie) }))
       .filter((re) => re.series.length),
   };
+}
+
+// ---------- Superseries (G11, 25-oct-2026) ----------
+// Una superserie son dos o más ejercicios seguidos que se hacen alternando: una serie de A, una de B (y de C,
+// si hay), y vuelta a A. Se guardan en cada ejercicio, de la rutina o de la sesión, como `superserie: id`:
+// los ejercicios **seguidos** con el mismo id forman el grupo (así, al reordenar, un ejercicio que se aleja
+// del grupo deja de estar en él sin tener que limpiar nada). Cada ejercicio conserva su propio descanso,
+// como si no hubiera superserie (decisión del usuario): para pasar de A a B sin esperar, A lleva «Sin
+// descanso». Estas funciones valen igual para `rutina.ejercicios` que para `sesion.ejercicios`.
+
+// Los bloques de una lista: [{ inicio, fin, superserie }] (índices incluidos). Un ejercicio suelto es un
+// bloque de uno; un id que solo lleva un ejercicio (o que no se repite seguido) no forma grupo.
+export function gruposSuperserie(lista) {
+  const bloques = [];
+  (lista || []).forEach((ej, i) => {
+    const ultimo = bloques[bloques.length - 1];
+    if (ej.superserie && ultimo && ultimo.superserie === ej.superserie && ultimo.fin === i - 1) ultimo.fin = i;
+    else bloques.push({ inicio: i, fin: i, superserie: ej.superserie || null });
+  });
+  return bloques;
+}
+
+// ¿En qué grupo está el ejercicio i? { inicio, fin, numero } si está en uno de dos o más (numero: 1, 2... por
+// orden de aparición), o null.
+export function grupoDe(lista, i) {
+  let numero = 0;
+  for (const b of gruposSuperserie(lista)) {
+    if (b.fin > b.inicio) numero += 1;
+    if (i >= b.inicio && i <= b.fin) return b.fin > b.inicio ? { inicio: b.inicio, fin: b.fin, numero } : null;
+  }
+  return null;
+}
+
+// Une el ejercicio i con el siguiente: si alguno ya está en un grupo, el otro se suma a él; si no, se crea uno.
+export function unirSuperserie(lista, i) {
+  if (i < 0 || i >= lista.length - 1) return lista;
+  const id = lista[i].superserie || lista[i + 1].superserie || "ss_" + uid();
+  // Si el siguiente ya tenía su propio grupo, todo ese grupo pasa al id común.
+  const deSiguiente = lista[i + 1].superserie;
+  return lista.map((ej, k) => {
+    if (k === i || k === i + 1) return { ...ej, superserie: id };
+    if (deSiguiente && deSiguiente !== id && ej.superserie === deSiguiente) return { ...ej, superserie: id };
+    return ej;
+  });
+}
+
+// Saca el ejercicio i de su superserie (los demás siguen juntos si quedan dos o más seguidos).
+export function separarSuperserie(lista, i) {
+  if (!lista[i] || !lista[i].superserie) return lista;
+  return lista.map((ej, k) => (k === i ? { ...ej, superserie: null } : ej));
+}
+
+// El orden en que se hacen las series: en un ejercicio suelto, una tras otra; en una superserie, por rondas
+// (la 1.ª de A, la 1.ª de B, la 2.ª de A, la 2.ª de B...; si uno tiene más series, sigue solo al final).
+export function ordenDeSeries(s) {
+  const lista = s.ejercicios || [];
+  const orden = [];
+  gruposSuperserie(lista).forEach((b) => {
+    const ejercicios = lista.slice(b.inicio, b.fin + 1);
+    const rondas = Math.max(0, ...ejercicios.map((ej) => ej.series.length));
+    if (b.fin === b.inicio) ejercicios[0].series.forEach((sr) => orden.push({ inst: ejercicios[0].inst, id: sr.id }));
+    else for (let k = 0; k < rondas; k++) ejercicios.forEach((ej) => { if (ej.series[k]) orden.push({ inst: ej.inst, id: ej.series[k].id }); });
+  });
+  return orden;
+}
+
+// Tras marcar una serie, a cuál pasa el foco: la primera sin hacer que viene después en ese orden (en una
+// superserie, la equivalente del siguiente ejercicio, y al acabar la ronda, la siguiente del primero). null
+// si ya no queda ninguna por delante.
+export function siguienteSerie(s, inst, id) {
+  const orden = ordenDeSeries(s);
+  const i = orden.findIndex((x) => x.inst === inst && x.id === id);
+  const hecha = (x) => {
+    const ej = s.ejercicios.find((e) => e.inst === x.inst);
+    const sr = ej && ej.series.find((y) => y.id === x.id);
+    return !sr || sr.hecha;
+  };
+  for (let k = i + 1; k < orden.length; k++) if (!hecha(orden[k])) return orden[k];
+  return null;
 }

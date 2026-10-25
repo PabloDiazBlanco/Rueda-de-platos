@@ -31,6 +31,7 @@ import {
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
   terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion, anadirEjercicios, descansoEjercicio,
+  gruposSuperserie, grupoDe, unirSuperserie, separarSuperserie, ordenDeSeries, siguienteSerie,
 } from "entreno-sesion";
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
@@ -1760,6 +1761,54 @@ function grupoEntrenoSesion() {
               plantillaKg: r.ejercicios[0].series[1].kg, nueva: nueva.nombre, nuevaEjercicios: nueva.ejercicios.length, nuevaSeries: nueva.ejercicios[0].series.length,
             },
             { seriesBanca: 5, segundo: "ex_jalon_pecho", descansoJalon: 105, plantillaKg: 61.3, nueva: "Mi torso", nuevaEjercicios: 2, nuevaSeries: 4 }
+          );
+        },
+      },
+      // ---------- Superseries (G11, 25-oct-2026) ----------
+      {
+        nombre: "G11: unir con el siguiente, sumar un tercero, separar; solo los seguidos forman grupo",
+        ejecutar: () => {
+          const lista = ["a", "b", "c", "d"].map((x) => ({ ejercicioId: x, superserie: null }));
+          const ab = unirSuperserie(lista, 0);
+          const abc = unirSuperserie(ab, 1);
+          const sinB = separarSuperserie(abc, 1);
+          const forma = (l) => gruposSuperserie(l).map((g) => (g.fin > g.inicio ? `[${l.slice(g.inicio, g.fin + 1).map((e) => e.ejercicioId).join("")}]` : l[g.inicio].ejercicioId)).join(" ");
+          return comparar(
+            { ab: forma(ab), abc: forma(abc), sinB: forma(sinB), mismoId: abc[0].superserie === abc[2].superserie, grupoD: grupoDe(abc, 3), numero: grupoDe(abc, 2).numero, ultimoSinSiguiente: unirSuperserie(lista, 3) === lista },
+            { ab: "[ab] c d", abc: "[abc] d", sinB: "a b c d", mismoId: true, grupoD: null, numero: 1, ultimoSinSiguiente: true }
+          );
+        },
+      },
+      {
+        nombre: "G11: orden por rondas (A1 B1 A2 B2 A3 y luego el siguiente ejercicio) y a dónde salta el foco al marcar",
+        ejecutar: () => {
+          const ej = (inst, n, superserie = null) => ({ inst, ejercicioId: inst, superserie, series: Array.from({ length: n }, (_, k) => ({ id: `${inst}${k + 1}`, hecha: false })) });
+          const s = { ejercicios: [ej("A", 3, "ss1"), ej("B", 2, "ss1"), ej("C", 2)] };
+          const orden = ordenDeSeries(s).map((x) => x.id).join(" ");
+          const trasA1 = siguienteSerie(s, "A", "A1").id;
+          const trasB1 = siguienteSerie(s, "B", "B1").id;
+          const trasA3 = siguienteSerie(s, "A", "A3").id;
+          // Si B2 ya estaba hecha, tras A2 se salta a A3.
+          const conB2 = { ejercicios: [ej("A", 3, "ss1"), { ...ej("B", 2, "ss1"), series: [{ id: "B1", hecha: false }, { id: "B2", hecha: true }] }, ej("C", 2)] };
+          const sinSuperserie = { ejercicios: [ej("A", 2), ej("B", 2)] };
+          return comparar(
+            { orden, trasA1, trasB1, trasA3, saltaHecha: siguienteSerie(conB2, "A", "A2").id, normal: ordenDeSeries(sinSuperserie).map((x) => x.id).join(" "), alFinal: siguienteSerie(s, "C", "C2") },
+            { orden: "A1 B1 A2 B2 A3 C1 C2", trasA1: "B1", trasB1: "A2", trasA3: "C1", saltaHecha: "A3", normal: "A1 A2 B1 B2", alFinal: null }
+          );
+        },
+      },
+      {
+        nombre: "G11: la superserie viaja de la rutina a la sesión y vuelve con aplicarARutina; crearla durante el entreno es un cambio de la rutina",
+        ejecutar: () => {
+          const rutina = { ...RUTINA_PRUEBA, ejercicios: RUTINA_PRUEBA.ejercicios.map((re) => ({ ...re, descansoSeg: re.descansoSeg ?? 120 })) };
+          let s = nuevaSesion({ rutina, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          s.ejercicios.forEach((e) => e.series.forEach((sr) => { s = marcarHecha(s, e.inst, sr.id, AHORA_SESION, AJUSTES_PRUEBA); }));
+          const unida = { ...s, ejercicios: unirSuperserie(s.ejercicios, 0) };
+          const r = aplicarARutina(rutina, unida, "2026-10-25");
+          const s2 = nuevaSesion({ rutina: r, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA });
+          return comparar(
+            { antes: cambiosEstructurales(s, rutina), despues: cambiosEstructurales(unida, rutina), enRutina: !!r.ejercicios[0].superserie && r.ejercicios[0].superserie === r.ejercicios[1].superserie, enSesion: !!grupoDe(s2.ejercicios, 1), igualTrasAplicar: cambiosEstructurales(unida, r) },
+            { antes: false, despues: true, enRutina: true, enSesion: true, igualTrasAplicar: false }
           );
         },
       },

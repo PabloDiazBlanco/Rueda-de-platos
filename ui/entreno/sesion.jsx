@@ -12,11 +12,11 @@
 // Mientras la sesión está a la vista: la pantalla no se apaga (Wake Lock, donde exista), el cronómetro y
 // el descanso se repintan cada segundo (solo esas piezas, no la tabla) y la pantalla de debajo no se mueve.
 import React, { useState, useEffect } from "react";
-import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal, BookOpen, Calculator } from "lucide-react";
+import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal, BookOpen, Calculator, Link2, Link2Off } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
 import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
-import { estaPausada } from "entreno-sesion";
+import { estaPausada, siguienteSerie, grupoDe } from "entreno-sesion";
 import { inputStyle } from "../comun/modal.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
@@ -104,19 +104,16 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const tipoDe = (id) => (entreno.ejercicioDe(id) || {}).tipo || "peso_reps";
   const todas = s.ejercicios.flatMap((ej) => ej.series);
   const todoHecho = todas.length > 0 && todas.every((x) => x.hecha);
+  // El ejercicio del menú ⋮ abierto (si lo hay) y su superserie, para ofrecer unirlo o separarlo (G11).
+  const idxMenu = menuEjercicio ? s.ejercicios.findIndex((e) => e.inst === menuEjercicio) : -1;
+  const grupoMenu = idxMenu >= 0 ? grupoDe(s.ejercicios, idxMenu) : null;
 
-  // Tras marcar una serie, el foco salta a la siguiente sin hacer (de este ejercicio o de los siguientes).
+  // Tras marcar una serie, el foco salta a la siguiente sin hacer (de este ejercicio o de los siguientes). En
+  // una superserie (G11), a la equivalente del siguiente ejercicio del grupo y, al acabar la ronda, a la
+  // siguiente del primero: el orden lo decide siguienteSerie (logica/entreno-sesion.js).
   function enfocarSiguiente(inst, serieId) {
-    let pasada = false;
-    for (const ej of s.ejercicios) {
-      for (const sr of ej.series) {
-        if (pasada && !sr.hecha) {
-          setTimeout(() => { const el = document.getElementById(`campo-${sr.id}`); if (el) el.focus(); }, 60);
-          return;
-        }
-        if (ej.inst === inst && sr.id === serieId) pasada = true;
-      }
-    }
+    const sig = siguienteSerie(s, inst, serieId);
+    if (sig) setTimeout(() => { const el = document.getElementById(`campo-${sig.id}`); if (el) el.focus(); }, 60);
   }
 
   function confirmarSerie(ej, serie) {
@@ -202,6 +199,8 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
           {!s.ejercicios.length && <TextoSuave style={{ padding: "18px 4px" }}>{t(idioma, "entreno.sesion.vacia")}</TextoSuave>}
 
           {s.ejercicios.map((ej, posicion) => {
+            // Superserie (G11): una franja mostaza a la izquierda y su número en la cabecera.
+            const grupo = grupoDe(s.ejercicios, posicion);
             const tipo = tipoDe(ej.ejercicioId);
             const campos = camposDeTipo(tipo);
             // «Anterior» equivalente (G4): en un entreno de rutina, lo de la última sesión de esa rutina en
@@ -219,7 +218,19 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
             let iCal = 0, iResto = 0;
             const anteriorDeSerie = ej.series.map((sr) => (sr.tipo === "calentamiento" ? antCal[iCal++] : antResto[iResto++]) || null);
             return (
-              <section key={ej.inst} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, marginBottom: 10, overflow: "hidden" }}>
+              <section
+                key={ej.inst}
+                style={{
+                  background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden",
+                  borderLeft: grupo ? "5px solid var(--mustard)" : "1px solid var(--line)",
+                  marginBottom: grupo && posicion < grupo.fin ? 4 : 10,
+                }}
+              >
+                {grupo && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, padding: "4px 10px 0", fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    <Link2 size={12} /> {t(idioma, "entreno.superserie.etiqueta", { n: grupo.numero })}
+                  </div>
+                )}
                 <div style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 4px 4px 6px" }}>
                   <button
                     onClick={() => setPlegados((p) => ({ ...p, [ej.inst]: !plegado }))}
@@ -407,6 +418,16 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
               setMenuEjercicio(null);
             }}>
               {t(idioma, "entreno.discos.titulo")}
+            </OpcionHoja>
+          )}
+          {idxMenu < s.ejercicios.length - 1 && !(grupoMenu && idxMenu < grupoMenu.fin) && (
+            <OpcionHoja icono={Link2} onClick={() => { entreno.unirSuperserie(menuEjercicio); setMenuEjercicio(null); }} detalle={t(idioma, "entreno.superserie.unirAyuda")}>
+              {t(idioma, "entreno.superserie.unir")}
+            </OpcionHoja>
+          )}
+          {grupoMenu && (
+            <OpcionHoja icono={Link2Off} onClick={() => { entreno.separarSuperserie(menuEjercicio); setMenuEjercicio(null); }}>
+              {t(idioma, "entreno.superserie.separar")}
             </OpcionHoja>
           )}
           <OpcionHoja icono={StickyNote} onClick={() => { const ej = s.ejercicios.find((e) => e.inst === menuEjercicio); setNota({ inst: menuEjercicio, texto: (ej && ej.nota) || "" }); setMenuEjercicio(null); }}>

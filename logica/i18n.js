@@ -1350,6 +1350,12 @@ const TEXTOS = {
     "entreno.importar.resumenUno": "1 entreno nuevo, con {series} series.",
     "entreno.importar.confirmarUno": "Importar 1 entreno",
     "entreno.importar.hechoUno": "Hecho: 1 entreno importado de {app}.",
+
+    "entreno.superserie.etiqueta": "Superserie {n}",
+    "entreno.superserie.unir": "Superserie con el siguiente",
+    "entreno.superserie.unirAyuda": "Se hacen alternando, por rondas: una serie de cada uno y vuelta a empezar. Cada uno conserva su descanso.",
+    "entreno.superserie.separar": "Sacar de la superserie",
+    "entreno.superserie.separarCorto": "Separar",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2639,6 +2645,12 @@ const TEXTOS = {
     "entreno.importar.resumenUno": "1 new workout, with {series} sets.",
     "entreno.importar.confirmarUno": "Import 1 workout",
     "entreno.importar.hechoUno": "Done: 1 workout imported from {app}.",
+
+    "entreno.superserie.etiqueta": "Superset {n}",
+    "entreno.superserie.unir": "Superset with the next one",
+    "entreno.superserie.unirAyuda": "Done alternately, in rounds: one set of each and back to the start. Each keeps its own rest.",
+    "entreno.superserie.separar": "Remove from superset",
+    "entreno.superserie.separarCorto": "Split",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3928,6 +3940,12 @@ const TEXTOS = {
     "entreno.importar.resumenUno": "1 entrenament nou, amb {series} sèries.",
     "entreno.importar.confirmarUno": "Importar 1 entrenament",
     "entreno.importar.hechoUno": "Fet: 1 entrenament importat de {app}.",
+
+    "entreno.superserie.etiqueta": "Supersèrie {n}",
+    "entreno.superserie.unir": "Supersèrie amb el següent",
+    "entreno.superserie.unirAyuda": "Es fan alternant, per rondes: una sèrie de cadascun i tornar a començar. Cadascun conserva el seu descans.",
+    "entreno.superserie.separar": "Treure de la supersèrie",
+    "entreno.superserie.separarCorto": "Separar",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5217,6 +5235,12 @@ const TEXTOS = {
     "entreno.importar.resumenUno": "1 adestramento novo, con {series} series.",
     "entreno.importar.confirmarUno": "Importar 1 adestramento",
     "entreno.importar.hechoUno": "Feito: 1 adestramento importado de {app}.",
+
+    "entreno.superserie.etiqueta": "Superserie {n}",
+    "entreno.superserie.unir": "Superserie co seguinte",
+    "entreno.superserie.unirAyuda": "Fanse alternando, por roldas: unha serie de cada un e volta a empezar. Cada un conserva o seu descanso.",
+    "entreno.superserie.separar": "Sacar da superserie",
+    "entreno.superserie.separarCorto": "Separar",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6506,6 +6530,12 @@ const TEXTOS = {
     "entreno.importar.resumenUno": "Entrenamendu berri 1, {series} seriekin.",
     "entreno.importar.confirmarUno": "Inportatu entrenamendu 1",
     "entreno.importar.hechoUno": "Eginda: entrenamendu 1 inportatu da {app}tik.",
+
+    "entreno.superserie.etiqueta": "{n}. superseriea",
+    "entreno.superserie.unir": "Superseriea hurrengoarekin",
+    "entreno.superserie.unirAyuda": "Txandaka egiten dira, errondaka: bakoitzaren serie bat eta berriro hasieratik. Bakoitzak bere atsedena mantentzen du.",
+    "entreno.superserie.separar": "Atera superserietik",
+    "entreno.superserie.separarCorto": "Banandu",
   },
 };
 
