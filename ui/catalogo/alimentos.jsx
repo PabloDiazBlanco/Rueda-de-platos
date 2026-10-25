@@ -4,12 +4,13 @@
 import React, { useState, useRef } from "react";
 import { Plus, Trash2, Pencil, AlertCircle, Search, Link2, Download, Camera, ChevronDown } from "lucide-react";
 import { fmt } from "macros";
-import { uid } from "comun";
+import { uid, primerEmoji } from "comun";
 import { fechaISO, formatFechaCorta } from "peso";
 import { t } from "i18n";
 import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
+import { emojiCarpeta } from "../despensa/piezas.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto, idioma }) {
@@ -170,7 +171,7 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
                           <div style={{ minWidth: 0 }}>
-                            <div style={{ fontSize: 14.5, lineHeight: 1.3 }}>{f.name}</div>
+                            <div style={{ fontSize: 14.5, lineHeight: 1.3 }}>{f.emoji ? `${f.emoji} ` : ""}{f.name}</div>
                             <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 3 }}>
                               {f.fuente}
                               {uses > 0 && (
@@ -306,6 +307,9 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
   const [fibra, setFibra] = useState(existing?.fibra ?? "");
   const [sal, setSal] = useState(existing?.sal ?? "");
   const [fuente, setFuente] = useState(existing ? existing.fuente || "" : "");
+  // Emoji propio (F3): se escribe o se pega lo que se quiera y al guardar se queda solo el primero
+  // (primerEmoji). Vacío = el de la carpeta.
+  const [emoji, setEmoji] = useState(existing ? existing.emoji || "" : "");
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState("");
   const [analyzed, setAnalyzed] = useState(false);
@@ -349,6 +353,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
       id: existing ? existing.id : "f_" + uid(),
       name: name.trim(),
       categoria,
+      emoji: primerEmoji(emoji),
       kcal: Number(kcal) || 0,
       prot: Number(prot) || 0,
       fat: Number(fat) || 0,
@@ -428,6 +433,22 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
             <option key={c.key} value={c.key}>{c.emoji} {t(idioma, c.labelKey)}</option>
           ))}
         </select>
+      </Field>
+
+      <Field label={t(idioma, "foodEditModal.emoji")}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <input
+            value={emoji}
+            onChange={(e) => setEmoji(e.target.value)}
+            onBlur={() => setEmoji((v) => primerEmoji(v))}
+            aria-label={t(idioma, "foodEditModal.emoji")}
+            placeholder={emojiCarpeta(categoria)}
+            style={{ ...inputStyle, width: 64, textAlign: "center", fontSize: 22, padding: "4px 6px" }}
+          />
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", lineHeight: 1.4 }}>
+            {t(idioma, "foodEditModal.emojiAyuda", { emoji: emojiCarpeta(categoria) })}
+          </div>
+        </div>
       </Field>
 
       <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginBottom: 8 }}>

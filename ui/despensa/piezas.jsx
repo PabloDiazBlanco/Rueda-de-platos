@@ -1,7 +1,7 @@
 // ---------- ui/despensa/piezas.jsx ----------
 // Piezas pequeñas que comparten las vistas de la despensa (la de lista, la dibujada y sus modales):
-// el icono de cada zona, el emoji de cada carpeta del catálogo, cómo se acorta un nombre o se escribe
-// una cantidad, y el selector de zona.
+// el icono de cada zona, el emoji de cada alimento, cómo se acorta un nombre o se escribe una cantidad,
+// y el selector de zona.
 import React from "react";
 import { Archive, Refrigerator, Snowflake } from "lucide-react";
 import { t } from "i18n";
@@ -11,7 +11,9 @@ import { FUENTE_TEXTO } from "../estilos.js";
 
 export const ICONO_ZONA = { despensa: Archive, nevera: Refrigerator, congelador: Snowflake };
 
-export const emojiDe = (food) => (CATEGORIAS_ALIMENTOS.find((c) => c.key === (food && food.categoria)) || { emoji: "🗂️" }).emoji;
+// El emoji propio del alimento (F3) o, si no tiene, el de su carpeta del catálogo.
+export const emojiCarpeta = (categoria) => (CATEGORIAS_ALIMENTOS.find((c) => c.key === categoria) || { emoji: "🗂️" }).emoji;
+export const emojiDe = (food) => (food && food.emoji) || emojiCarpeta(food && food.categoria);
 
 // Nombre sin lo que va entre paréntesis («Pechuga de pollo (cruda)» → «Pechuga de pollo»): en las
 // fichas de la nevera hay sitio para dos líneas cortas, y la marca o el «crudo» no ayudan a reconocerlo.

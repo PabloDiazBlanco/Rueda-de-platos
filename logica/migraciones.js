@@ -42,9 +42,12 @@ export function migrateData(rawData) {
     // Alimentos que ya existían antes de añadir sal/azúcares/fibra/grasa saturada (y, en esta
     // tanda, categoria) al catálogo: se completan solo esos campos nuevos si faltan, sin tocar
     // kcal/proteína/grasa/carbohidratos por si el usuario ya los había editado a mano.
+    // El emoji propio (F3, 25-oct-2026) entra igual: solo si el alimento no tiene el campo. Un emoji
+    // que el usuario haya cambiado, o borrado a propósito (se guarda "" para usar el de la carpeta), no
+    // se toca.
     const seedById = {};
     FOODS_SEED.forEach((f) => { seedById[f.id] = f; });
-    const EXTRA_FIELDS = ["sal", "azucares", "fibra", "grasaSaturada", "categoria"];
+    const EXTRA_FIELDS = ["sal", "azucares", "fibra", "grasaSaturada", "categoria", "emoji"];
     data.foods.forEach((food) => {
       const seed = seedById[food.id];
       if (!seed) return;

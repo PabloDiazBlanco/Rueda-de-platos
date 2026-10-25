@@ -3,7 +3,7 @@
 // mantenimiento para comprobar, tras cualquier cambio en app.jsx, que los cálculos siguen dando
 // los mismos resultados conocidos. Los valores "esperado" de aquí abajo se verificaron a mano
 // antes de guardarlos como referencia (agosto de 2026).
-import { DAYS } from "comun";
+import { DAYS, primerEmoji } from "comun";
 import { objetivosPorComida } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
@@ -562,6 +562,44 @@ export function crearGrupos(mod, carga) {
             const segunda = migrateData(JSON.parse(antes));
             return comparar({ changed: segunda.changed, igual: JSON.stringify(segunda.data) === antes }, { changed: false, igual: true });
           },
+        },
+        {
+          nombre: "F3: los alimentos de la semilla sin emoji reciben el suyo; uno cambiado o borrado a propósito, o uno propio, no se tocan",
+          ejecutar: () => {
+            const { data, changed } = migrateData({
+              foods: [
+                { id: "f_huevo", name: "Huevo entero (crudo)", categoria: "proteinas", kcal: 140, prot: 12.7, fat: 9.5, carb: 0.3 },
+                { id: "f_atun", name: "Atún", categoria: "proteinas", kcal: 105, prot: 22.5, fat: 1.2, carb: 0, emoji: "🐟" },
+                { id: "f_pasta", name: "Pasta", categoria: "carbohidratos", kcal: 357, prot: 11, fat: 1.5, carb: 70, emoji: "" },
+                { id: "f_mio", name: "Mi bizcocho", categoria: "snacks_procesados", kcal: 400, prot: 6, fat: 20, carb: 50 },
+              ],
+            });
+            const de = (id) => data.foods.find((f) => f.id === id).emoji;
+            return comparar(
+              { changed, huevo: de("f_huevo"), atun: de("f_atun"), pasta: de("f_pasta"), mio: de("f_mio"), platano: de("f_platano") },
+              { changed: true, huevo: "🥚", atun: "🐟", pasta: "", mio: undefined, platano: "🍌" }
+            );
+          },
+        },
+        {
+          nombre: "F3: cada alimento de la semilla trae su emoji y no se repite ninguno",
+          ejecutar: () => {
+            const emojis = FOODS_SEED.map((f) => f.emoji);
+            return comparar(
+              { todos: emojis.every((e) => typeof e === "string" && e.length > 0), distintos: new Set(emojis).size === emojis.length, n: emojis.length },
+              { todos: true, distintos: true, n: FOODS_SEED.length }
+            );
+          },
+        },
+        {
+          nombre: "F3: primerEmoji guarda el primero completo (tono de piel, unidos, bandera, tecla) e ignora letras",
+          ejecutar: () => comparar(
+            {
+              varios: primerEmoji("abc 🍕🍔"), tono: primerEmoji("👍🏽x"), unidos: primerEmoji("🧑‍🍳"), bandera: primerEmoji("🇪🇸🇫🇷"),
+              tecla: primerEmoji("1️⃣"), letras: primerEmoji("hola"), vacio: primerEmoji(""), nulo: primerEmoji(null),
+            },
+            { varios: "🍕", tono: "👍🏽", unidos: "🧑‍🍳", bandera: "🇪🇸", tecla: "1️⃣", letras: "", vacio: "", nulo: "" }
+          ),
         },
       ],
     },

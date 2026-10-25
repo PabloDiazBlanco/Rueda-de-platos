@@ -1278,6 +1278,9 @@ const TEXTOS = {
     "entreno.descanso.ayudaRutina": "El descanso entre series de este ejercicio en la rutina. Tras una serie de calentamiento se usa el de Ajustes.",
     "entreno.descanso.ayudaSesion": "Para las próximas series de este ejercicio.",
     "entreno.descanso.ayudaSesionRutina": "Para las próximas series de este ejercicio. Al terminar podrás guardarlo en la rutina.",
+
+    "foodEditModal.emoji": "Emoji (opcional)",
+    "foodEditModal.emojiAyuda": "Escribe o pega un emoji del teclado; si pegas varios, se queda el primero. Vacío: {emoji}, el de su carpeta.",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2495,6 +2498,9 @@ const TEXTOS = {
     "entreno.descanso.ayudaRutina": "The rest between sets for this exercise in the routine. After a warm-up set, the one in Settings is used.",
     "entreno.descanso.ayudaSesion": "For the next sets of this exercise.",
     "entreno.descanso.ayudaSesionRutina": "For the next sets of this exercise. When you finish you can save it to the routine.",
+
+    "foodEditModal.emoji": "Emoji (optional)",
+    "foodEditModal.emojiAyuda": "Type or paste an emoji from your keyboard; if you paste several, the first one is kept. Empty: {emoji}, its folder’s.",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3712,6 +3718,9 @@ const TEXTOS = {
     "entreno.descanso.ayudaRutina": "El descans entre sèries d’aquest exercici a la rutina. Després d’una sèrie d’escalfament s’usa el d’Ajustos.",
     "entreno.descanso.ayudaSesion": "Per a les properes sèries d’aquest exercici.",
     "entreno.descanso.ayudaSesionRutina": "Per a les properes sèries d’aquest exercici. En acabar el podràs desar a la rutina.",
+
+    "foodEditModal.emoji": "Emoji (opcional)",
+    "foodEditModal.emojiAyuda": "Escriu o enganxa un emoji del teclat; si n’enganxes diversos, es queda el primer. Buit: {emoji}, el de la seva carpeta.",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4929,6 +4938,9 @@ const TEXTOS = {
     "entreno.descanso.ayudaRutina": "O descanso entre series deste exercicio na rutina. Tras unha serie de quecemento úsase o de Axustes.",
     "entreno.descanso.ayudaSesion": "Para as próximas series deste exercicio.",
     "entreno.descanso.ayudaSesionRutina": "Para as próximas series deste exercicio. Ao rematar poderás gardalo na rutina.",
+
+    "foodEditModal.emoji": "Emoji (opcional)",
+    "foodEditModal.emojiAyuda": "Escribe ou pega un emoji do teclado; se pegas varios, quédase o primeiro. Baleiro: {emoji}, o do seu cartafol.",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6146,6 +6158,9 @@ const TEXTOS = {
     "entreno.descanso.ayudaRutina": "Ariketa honen serieen arteko atsedena errutinan. Berotze-serie baten ondoren, Ezarpenetakoa erabiltzen da.",
     "entreno.descanso.ayudaSesion": "Ariketa honen hurrengo serieetarako.",
     "entreno.descanso.ayudaSesionRutina": "Ariketa honen hurrengo serieetarako. Amaitzean errutinan gorde ahal izango duzu.",
+
+    "foodEditModal.emoji": "Emojia (aukerakoa)",
+    "foodEditModal.emojiAyuda": "Idatzi edo itsatsi teklatuko emoji bat; hainbat itsasten badituzu, lehena geratzen da. Hutsik: {emoji}, bere karpetakoa.",
   },
 };
 

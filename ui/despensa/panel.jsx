@@ -289,7 +289,23 @@ function Ficha({ entrada, onTocar, idioma, tema, pequena, alertaDe }) {
         fontFamily: FUENTE_TEXTO,
       }}
     >
-      <IconoAlimento forma={entrada.forma} tamano={pequena ? 34 : 46} />
+      {/* El dibujo de siempre (bote, bandeja, botella...) y, encima, como una pegatina, el emoji propio del
+          alimento (F3): con solo el dibujo, todas las proteínas o todos los yogures se veían iguales. Sin
+          emoji propio, solo el dibujo, como antes. */}
+      <span style={{ position: "relative", display: "block" }}>
+        <IconoAlimento forma={entrada.forma} tamano={pequena ? 34 : 46} />
+        {food && food.emoji && (
+          <span
+            aria-hidden="true"
+            style={{
+              position: "absolute", right: pequena ? -4 : -6, bottom: -2, fontSize: pequena ? 15 : 20, lineHeight: 1,
+              filter: "drop-shadow(0 1px 1px rgba(0,0,0,0.25))",
+            }}
+          >
+            {food.emoji}
+          </span>
+        )}
+      </span>
       <span
         style={{
           width: "100%", fontSize: pequena ? 9.5 : 10.5, lineHeight: 1.15, color: "var(--ink)", textAlign: "center",
