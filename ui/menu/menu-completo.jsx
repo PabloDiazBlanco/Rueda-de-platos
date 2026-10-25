@@ -17,6 +17,7 @@ import { documentoMenu } from "./exportar.js";
 import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
 import { GenerandoMenu } from "./generando.jsx";
+import { LineaPreentreno } from "../perfil/preentreno.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 export function MenuView({ menu, onGenerate, generando, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onUpsertRule, onToggleComidaCompletada, despensa, idioma }) {
@@ -184,6 +185,8 @@ export function MenuView({ menu, onGenerate, generando, onUndo, menuWeek, setMen
               return (
                 <div key={day} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
                   <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
+                  {/* D3: en los días de entreno, la recomendación de preentreno en una línea. */}
+                  <LineaPreentreno perfil={data.perfil} day={day} idioma={idioma} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {dayMeals.map((m) => {
                       // Las kcal de verdad si la comida se marcó con cambios (B1+B3); si no, las del menú.

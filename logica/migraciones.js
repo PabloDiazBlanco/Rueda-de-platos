@@ -168,5 +168,13 @@ export function migrateData(rawData) {
     changed = true;
   }
 
+  // Preentreno (D3, 25-oct-2026): cuándo se entrena. Los perfiles de antes no lo han contestado: sin
+  // respuesta (null y ningún día), que es lo mismo que no saberlo; nunca se inventa una hora.
+  if (data.perfil) {
+    if (data.perfil.horaEntreno === undefined) { data.perfil.horaEntreno = null; changed = true; }
+    if (data.perfil.entrenoComida === undefined) { data.perfil.entrenoComida = null; changed = true; }
+    if (!Array.isArray(data.perfil.diasEntreno)) { data.perfil.diasEntreno = []; changed = true; }
+  }
+
   return { data, changed };
 }

@@ -70,6 +70,7 @@
   "ui/pantallas.jsx",
   "ui/perfil/campos.jsx",
   "ui/perfil/perfil.jsx",
+  "ui/perfil/preentreno.jsx",
   "ui/perfil/reparto-comidas.jsx",
   "ui/peso/grafica.jsx",
   "ui/peso/medidas.jsx",

@@ -314,3 +314,32 @@ export function objetivosPorComida(objetivosDiarios, mealType, repartoComidas) {
     carb: Math.round(objetivosDiarios.carb * pct),
   };
 }
+
+// ---------- Preentreno (D3, 25-oct-2026) ----------
+// Versión mínima, acordada con el usuario: se pregunta cuándo se entrena (mañana / tarde / noche y, si se
+// sabe, antes o después de qué comida del reparto) y se da una **recomendación**, no una regla: **no cambia
+// el reparto de macros ni ninguna fórmula** de este archivo (cualquier cambio de macros entre comidas
+// necesitaría antes su estudio en los PDFs explicativos). Lo que se recomienda (comer algo 30-60 min antes,
+// un hidrato de absorción rápida y con poca grasa, como un plátano o unas tortitas de maíz, y consultar a un
+// profesional para algo a medida) es la pauta general y prudente; el texto está en logica/i18n.js
+// («preentreno.recomendacion.*»).
+// - Después de una comida → no hace falta preentreno («noHace»).
+// - Antes de una comida → puede venir bien comer algo antes («comer»).
+// - Solo la franja (sin comida) → la recomendación general, condicionada a llevar horas sin comer («general»).
+// - Sin respuesta → nada.
+// Se guarda en el perfil: `horaEntreno` ("manana" | "tarde" | "noche" | null), `entrenoComida`
+// ({ momento: "antes" | "despues", comida: tipo de comida } | null) y `diasEntreno` (nombres de DAYS: el menú
+// enseña una línea en esos días).
+export const FRANJAS_ENTRENO = ["manana", "tarde", "noche"];
+
+export function recomendacionPreentreno(perfil) {
+  if (!perfil) return null;
+  const ec = perfil.entrenoComida;
+  const comidas = perfil.repartoComidas ? Object.keys(perfil.repartoComidas) : null;
+  // Una comida que ya no está en el reparto (se cambió de preset) no vale como referencia.
+  const comidaValida = ec && ec.comida && (!comidas || comidas.includes(ec.comida));
+  if (comidaValida && ec.momento === "despues") return { tipo: "noHace", comida: ec.comida };
+  if (comidaValida && ec.momento === "antes") return { tipo: "comer", comida: ec.comida };
+  if (perfil.horaEntreno && FRANJAS_ENTRENO.includes(perfil.horaEntreno)) return { tipo: "general", franja: perfil.horaEntreno };
+  return null;
+}

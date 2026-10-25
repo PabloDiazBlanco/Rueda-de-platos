@@ -4,7 +4,7 @@
 // los mismos resultados conocidos. Los valores "esperado" de aquí abajo se verificaron a mano
 // antes de guardarlos como referencia (agosto de 2026).
 import { DAYS, primerEmoji } from "comun";
-import { objetivosPorComida } from "objetivos";
+import { objetivosPorComida, recomendacionPreentreno } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
 import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario } from "cuestionario";
@@ -414,6 +414,23 @@ export function crearGrupos(mod, carga) {
             return comparar({ esNull: r === null }, { esNull: true });
           },
         },
+        {
+          nombre: "D3: preentreno — después de una comida no hace falta; antes, comer algo; solo la franja, la general; sin respuesta, nada",
+          ejecutar: () => {
+            const reparto = { Desayuno: 0.2, Comida: 0.35, Merienda: 0.15, Cena: 0.3 };
+            const tipo = (p) => { const r = recomendacionPreentreno(p); return r ? `${r.tipo}${r.comida ? ":" + r.comida : ""}` : "nada"; };
+            return comparar(
+              {
+                despues: tipo({ repartoComidas: reparto, entrenoComida: { momento: "despues", comida: "Comida" }, horaEntreno: "tarde" }),
+                antes: tipo({ repartoComidas: reparto, entrenoComida: { momento: "antes", comida: "Cena" } }),
+                franja: tipo({ repartoComidas: reparto, horaEntreno: "manana", entrenoComida: null }),
+                comidaQueYaNoEsta: tipo({ repartoComidas: { Comida: 0.5, Cena: 0.5 }, entrenoComida: { momento: "antes", comida: "Merienda" }, horaEntreno: "noche" }),
+                nada: tipo({ repartoComidas: reparto, horaEntreno: null, entrenoComida: null }), sinPerfil: tipo(null),
+              },
+              { despues: "noHace:Comida", antes: "comer:Cena", franja: "general", comidaQueYaNoEsta: "general", nada: "nada", sinPerfil: "nada" }
+            );
+          },
+        },
       ],
     },
     {
@@ -567,6 +584,17 @@ export function crearGrupos(mod, carga) {
             const antes = JSON.stringify(primera.data);
             const segunda = migrateData(JSON.parse(antes));
             return comparar({ changed: segunda.changed, igual: JSON.stringify(segunda.data) === antes }, { changed: false, igual: true });
+          },
+        },
+        {
+          nombre: "D3: el perfil de antes queda sin respuesta de preentreno (null, null, sin días) sin tocar lo contestado",
+          ejecutar: () => {
+            const viejo = migrateData({ perfil: { nombre: "X", repartoComidas: { Comida: 0.5, Cena: 0.5 } } }).data.perfil;
+            const contestado = migrateData({ perfil: { nombre: "Y", repartoComidas: { Comida: 1 }, horaEntreno: "tarde", entrenoComida: { momento: "antes", comida: "Comida" }, diasEntreno: ["Lunes"] } }).data.perfil;
+            return comparar(
+              { hora: viejo.horaEntreno, comida: viejo.entrenoComida, dias: JSON.stringify(viejo.diasEntreno), horaY: contestado.horaEntreno, diasY: contestado.diasEntreno.join(","), comidaY: contestado.entrenoComida.comida },
+              { hora: null, comida: null, dias: "[]", horaY: "tarde", diasY: "Lunes", comidaY: "Comida" }
+            );
           },
         },
         {

@@ -6,6 +6,7 @@ import { uid } from "comun";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { DatosPersonalesFields, ActividadDiariaFields } from "./campos.jsx";
+import { MomentoEntrenoFields } from "./preentreno.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // Pestaña "Perfil": desde la Tanda 2 del rediseño de navegación, solo datos personales — actividad
@@ -92,11 +93,16 @@ export function ActividadDiariaView({ perfil, onSave, idioma, aviso }) {
     (perfil?.entrenamientos || []).map((e) => ({ id: uid(), ...e }))
   );
   const [objetivo, setObjetivo] = useState(perfil?.objetivo ?? "mantenimiento");
+  // D3: cuándo se entrena (para la recomendación de preentreno).
+  const [momentoEntreno, setMomentoEntreno] = useState({
+    diasEntreno: perfil?.diasEntreno || [], horaEntreno: perfil?.horaEntreno ?? null, entrenoComida: perfil?.entrenoComida ?? null,
+  });
   const [saved, setSaved] = useState(false);
 
   function handleSave() {
     onSave({
       ...perfil,
+      ...momentoEntreno,
       palBase,
       entrenamientos: entrenamientos
         .filter((e) => e.horas && e.frecuenciaSemanal)
@@ -116,6 +122,12 @@ export function ActividadDiariaView({ perfil, onSave, idioma, aviso }) {
           entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos}
           objetivo={objetivo} setObjetivo={setObjetivo}
           sexo={perfil?.sexo} anioNacimiento={perfil?.anioNacimiento} altura={perfil?.altura} peso={perfil?.peso}
+          idioma={idioma}
+        />
+        <MomentoEntrenoFields
+          valor={{ ...momentoEntreno, repartoComidas: perfil?.repartoComidas }}
+          onCambio={(parcial) => { setMomentoEntreno((v) => ({ ...v, ...parcial })); setSaved(false); }}
+          comidas={Object.keys(perfil?.repartoComidas || {})}
           idioma={idioma}
         />
       </div>

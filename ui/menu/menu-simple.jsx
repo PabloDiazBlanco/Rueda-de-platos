@@ -10,6 +10,7 @@ import { documentoMenu } from "./exportar.js";
 import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
 import { GenerandoMenu } from "./generando.jsx";
+import { LineaPreentreno } from "../perfil/preentreno.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // Menú simple (Tanda 3 del rediseño): la misma idea de "organizar la semana" que Menú completo,
@@ -135,6 +136,7 @@ export function MenuSimpleView({ menu, onGenerate, generando, onUndo, menuWeek, 
               return (
                 <div key={day} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
                   <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
+                  <LineaPreentreno perfil={data.perfil} day={day} idioma={idioma} />
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {dayMeals.map((m) => {
                       const combinacion = m.closedDish

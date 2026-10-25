@@ -5,6 +5,7 @@ import { PRESETS_COMIDAS, repartoUniforme } from "objetivos";
 import { t, leerIdiomaGuardado } from "i18n";
 import { DatosPersonalesFields, EstiloVidaFields, EntrenamientosFields, ObjetivoFields } from "../perfil/campos.jsx";
 import { RepartoComidasFields } from "../perfil/reparto-comidas.jsx";
+import { MomentoEntrenoFields } from "../perfil/preentreno.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Asistente de alta por pasos (Bloque 2 del rediseño, Tanda 3): antes era un único formulario
@@ -25,6 +26,8 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
   const [entrenamientos, setEntrenamientos] = useState([]);
   const [objetivo, setObjetivo] = useState("mantenimiento");
   const [presetId, setPresetId] = useState("clasico-4");
+  // D3: cuándo se entrena (opcional), al final, junto al reparto, porque depende de qué comidas hay.
+  const [momentoEntreno, setMomentoEntreno] = useState({ diasEntreno: [], horaEntreno: null, entrenoComida: null });
   const presetActual = PRESETS_COMIDAS.find((p) => p.id === presetId) || PRESETS_COMIDAS[0];
   const [pesos, setPesos] = useState(() =>
     presetActual.pesosPorDefecto ? { ...presetActual.pesosPorDefecto } : repartoUniforme(presetActual.meals)
@@ -58,6 +61,10 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
       objetivo,
       presetComidas: presetId,
       repartoComidas,
+      diasEntreno: momentoEntreno.diasEntreno,
+      horaEntreno: momentoEntreno.horaEntreno,
+      // Una comida elegida antes de cambiar de preset puede no estar en el reparto final.
+      entrenoComida: momentoEntreno.entrenoComida && presetActual.meals.includes(momentoEntreno.entrenoComida.comida) ? momentoEntreno.entrenoComida : null,
       // El idioma elegido (o detectado) antes de iniciar sesión, en la pantalla de bienvenida —
       // así un perfil nuevo no empieza en español por defecto si ya se había puesto en inglés ahí.
       idioma: leerIdiomaGuardado(),
@@ -108,6 +115,14 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
           <RepartoComidasFields
             presetId={presetId} presetActual={presetActual} pesos={pesos} setPesos={setPesos}
             onSelectPreset={selectPreset} sumaPesos={sumaPesos} repartoValido={repartoValido} idioma={idioma}
+          />
+        )}
+        {paso === 4 && (
+          <MomentoEntrenoFields
+            valor={{ ...momentoEntreno, repartoComidas: Object.fromEntries(presetActual.meals.map((m) => [m, 1])) }}
+            onCambio={(parcial) => setMomentoEntreno((v) => ({ ...v, ...parcial }))}
+            comidas={presetActual.meals}
+            idioma={idioma}
           />
         )}
 
