@@ -236,6 +236,12 @@ El estado de los dos lo lleva el mismo hook, `useMenu` (`ui/estado/menu.js`), co
 distinta para cada uno (`MENU_COMPLETO` y `MENU_SIMPLE`: claves de almacenamiento y campo de la
 lista de la compra) — así es imposible que una mejora llegue a uno y se olvide en el otro.
 
+**Generar no es instantáneo** (C11, 25-oct-2026): `useMenu.generar` calcula el menú igual que siempre pero lo
+enseña tras una espera al azar de 3 a 6 s (`ESPERA_GENERAR_MIN_MS`/`MAX_MS`), con la animación de
+`ui/menu/generando.jsx` en el sitio del menú y el botón desactivado; la misma en los dos menús. Con «reducir
+movimiento» se genera al momento. La animación es **provisional** (pendiente de elegir la definitiva entre las
+propuestas estéticas): para cambiarla basta con sustituir ese componente, que solo recibe `{ inicio, duracion }`.
+
 **Hecha y «Cambié algo»** (B1+B3, 25-oct-2026; solo Menú completo, que es el único que marca comidas):
 en el detalle de una comida, «Hecha» la da por buena tal cual y «Cambié algo» (`ui/menu/cambie-algo.jsx`)
 deja cambiar cada alimento por otro del catálogo propio (primero su carpeta, luego el resto; cantidad
