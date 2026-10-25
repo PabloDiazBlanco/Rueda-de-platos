@@ -119,6 +119,21 @@ window.suggestMeals = async function ({ photoDataUrl, especias, otrosIngrediente
   }
 };
 
+// ---------- «¿Qué cocino?» con dos modos: recetas (E2, 25-oct-2026) ----------
+// La pantalla nueva llama a esta (functions/suggestRecipes.js): recetas con ingredientes y pasos, sin macros,
+// en modo «con lo que tengo» o «tipo restaurante», con la despensa si el usuario la incluye. Comparte la cuota
+// de suggestMeals. Hay que desplegar la función antes de subir la app (ver suggestRecipes.js).
+const suggestRecipesCallable = httpsCallable(functions, "suggestRecipes");
+
+window.suggestRecipes = async function ({ modo, photoDataUrl, especias, otrosIngredientes, despensa, catalogo, idioma }) {
+  try {
+    const respuesta = await suggestRecipesCallable({ modo, photoDataUrl, especias, otrosIngredientes, despensa, catalogo, idioma });
+    return respuesta.data.recetas;
+  } catch (err) {
+    throw new Error(err.message || "No se han podido generar sugerencias. Inténtalo de nuevo.");
+  }
+};
+
 // ---------- Notificaciones push: recordatorio de pesaje (Fase 6) ----------
 // Clave pública VAPID del proyecto de Firebase — no es secreta (viaja en el propio navegador,
 // igual que firebaseConfig de arriba), pero hay que generarla a mano una sola vez en la consola

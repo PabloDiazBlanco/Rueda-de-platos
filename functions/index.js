@@ -16,5 +16,6 @@ exports.analyzeFoodPhoto = require("./analyzeFoodPhoto").analyzeFoodPhoto;
 exports.createCheckoutSession = require("./createCheckoutSession").createCheckoutSession;
 exports.createPortalSession = require("./createPortalSession").createPortalSession;
 exports.suggestMeals = require("./suggestMeals").suggestMeals;
+exports.suggestRecipes = require("./suggestRecipes").suggestRecipes;
 exports.sendWeighInReminders = require("./sendWeighInReminders").sendWeighInReminders;
 exports.sendDefrostReminders = require("./sendDefrostReminders").sendDefrostReminders;

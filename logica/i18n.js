@@ -1419,6 +1419,20 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Aviso para descongelar",
     "ajustes.descongelar.ayuda": "Cada noche a las 21:30, una notificación para revisar las comidas de mañana por si tienes que descongelar algo o comprar. Usa el mismo permiso de notificaciones que el recordatorio de pesaje; en iPhone solo llega con la app instalada.",
+
+    "queCocino.intro": "Dinos qué tienes —tu despensa, una foto o una lista— y te proponemos recetas con ingredientes y pasos.",
+    "queCocino.modo.conLoQueTengo": "Con lo que tengo",
+    "queCocino.modo.restaurante": "Tipo restaurante",
+    "queCocino.modo.conLoQueTengoAyuda": "Recetas que puedes hacer ya, solo con lo que hay en casa (más sal, aceite y especias), eligiendo lo que combina bien en vez de mezclarlo todo.",
+    "queCocino.modo.restauranteAyuda": "Parte de lo que tienes y te sugiere comprar una a tres cosas más elaboradas (una especia, una salsa, un queso…) para un plato de restaurante. Lo que hay que comprar sale marcado.",
+    "queCocino.usarDespensa": "Incluir lo que hay en mi despensa ({n} cosas)",
+    "queCocino.despensaVacia": "Tu despensa está vacía: apunta lo que tienes en «¿Qué tengo?» para incluirla.",
+    "queCocino.otros": "Otros ingredientes (opcional)",
+    "queCocino.cuotaYPrivacidad": "Los dos modos comparten tus 10 sugerencias al mes. Lo que incluyas (despensa, foto y texto) se envía al asistente de IA de Google (Gemini) solo para preparar las recetas.",
+    "queCocino.sinResultados": "No hemos podido proponer ninguna receta con esto. Prueba a incluir tu despensa o a escribir más ingredientes.",
+    "queCocino.ingredientes": "Ingredientes",
+    "queCocino.pasos": "Pasos",
+    "queCocino.comprar": "Comprar",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2777,6 +2791,20 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Defrost reminder",
     "ajustes.descongelar.ayuda": "Every night at 21:30, a notification to check tomorrow’s meals in case you need to defrost something or buy anything. It uses the same notification permission as the weigh-in reminder; on iPhone it only arrives with the app installed.",
+
+    "queCocino.intro": "Tell us what you have — your pantry, a photo or a list — and we’ll suggest recipes with ingredients and steps.",
+    "queCocino.modo.conLoQueTengo": "With what I have",
+    "queCocino.modo.restaurante": "Restaurant style",
+    "queCocino.modo.conLoQueTengoAyuda": "Recipes you can make right now with only what’s at home (plus salt, oil and spices), picking what goes well together instead of mixing everything.",
+    "queCocino.modo.restauranteAyuda": "Starts from what you have and suggests buying one to three more elaborate things (a spice, a sauce, a cheese…) for a restaurant-style dish. What you need to buy is marked.",
+    "queCocino.usarDespensa": "Include what’s in my pantry ({n} items)",
+    "queCocino.despensaVacia": "Your pantry is empty: add what you have in “What do I have?” to include it.",
+    "queCocino.otros": "Other ingredients (optional)",
+    "queCocino.cuotaYPrivacidad": "Both modes share your 10 suggestions a month. Whatever you include (pantry, photo and text) is sent to Google’s AI assistant (Gemini) only to prepare the recipes.",
+    "queCocino.sinResultados": "We couldn’t suggest any recipe with this. Try including your pantry or typing more ingredients.",
+    "queCocino.ingredientes": "Ingredients",
+    "queCocino.pasos": "Steps",
+    "queCocino.comprar": "Buy",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -4135,6 +4163,20 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Avís per descongelar",
     "ajustes.descongelar.ayuda": "Cada nit a les 21:30, una notificació per revisar els àpats de demà per si has de descongelar alguna cosa o comprar. Fa servir el mateix permís de notificacions que el recordatori de pes; a l’iPhone només arriba amb l’app instal·lada.",
+
+    "queCocino.intro": "Digues-nos què tens —el teu rebost, una foto o una llista— i et proposem receptes amb ingredients i passos.",
+    "queCocino.modo.conLoQueTengo": "Amb el que tinc",
+    "queCocino.modo.restaurante": "Tipus restaurant",
+    "queCocino.modo.conLoQueTengoAyuda": "Receptes que pots fer ja, només amb el que hi ha a casa (més sal, oli i espècies), triant el que combina bé en lloc de barrejar-ho tot.",
+    "queCocino.modo.restauranteAyuda": "Parteix del que tens i et suggereix comprar d’una a tres coses més elaborades (una espècia, una salsa, un formatge…) per a un plat de restaurant. El que cal comprar surt marcat.",
+    "queCocino.usarDespensa": "Incloure el que hi ha al meu rebost ({n} coses)",
+    "queCocino.despensaVacia": "El teu rebost és buit: apunta el que tens a «Què tinc?» per incloure’l.",
+    "queCocino.otros": "Altres ingredients (opcional)",
+    "queCocino.cuotaYPrivacidad": "Els dos modes comparteixen els teus 10 suggeriments al mes. El que incloguis (rebost, foto i text) s’envia a l’assistent d’IA de Google (Gemini) només per preparar les receptes.",
+    "queCocino.sinResultados": "No hem pogut proposar cap recepta amb això. Prova d’incloure el rebost o d’escriure més ingredients.",
+    "queCocino.ingredientes": "Ingredients",
+    "queCocino.pasos": "Passos",
+    "queCocino.comprar": "Comprar",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5493,6 +5535,20 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Aviso para desconxelar",
     "ajustes.descongelar.ayuda": "Cada noite ás 21:30, unha notificación para revisar as comidas de mañá por se tes que desconxelar algo ou mercar. Usa o mesmo permiso de notificacións que o recordatorio de pesaxe; no iPhone só chega coa app instalada.",
+
+    "queCocino.intro": "Dinos que tes —a túa despensa, unha foto ou unha lista— e propoñémosche receitas con ingredientes e pasos.",
+    "queCocino.modo.conLoQueTengo": "Co que teño",
+    "queCocino.modo.restaurante": "Tipo restaurante",
+    "queCocino.modo.conLoQueTengoAyuda": "Receitas que podes facer xa, só co que hai na casa (máis sal, aceite e especias), escollendo o que combina ben en vez de mesturalo todo.",
+    "queCocino.modo.restauranteAyuda": "Parte do que tes e suxire mercar de unha a tres cousas máis elaboradas (unha especia, un molho, un queixo…) para un prato de restaurante. O que hai que mercar sae marcado.",
+    "queCocino.usarDespensa": "Incluír o que hai na miña despensa ({n} cousas)",
+    "queCocino.despensaVacia": "A túa despensa está baleira: apunta o que tes en «Que teño?» para incluíla.",
+    "queCocino.otros": "Outros ingredientes (opcional)",
+    "queCocino.cuotaYPrivacidad": "Os dous modos comparten as túas 10 suxestións ao mes. O que inclúas (despensa, foto e texto) envíase ao asistente de IA de Google (Gemini) só para preparar as receitas.",
+    "queCocino.sinResultados": "Non puidemos propoñer ningunha receita con isto. Proba a incluír a túa despensa ou a escribir máis ingredientes.",
+    "queCocino.ingredientes": "Ingredientes",
+    "queCocino.pasos": "Pasos",
+    "queCocino.comprar": "Mercar",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6851,6 +6907,20 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Desizozteko abisua",
     "ajustes.descongelar.ayuda": "Gauero 21:30ean, jakinarazpen bat biharko otorduak begiratzeko, zerbait desizoztu edo erosi behar baduzu ere. Pisatzeko gogorarazlearen jakinarazpen-baimen bera erabiltzen du; iPhonen aplikazioa instalatuta badago bakarrik iristen da.",
+
+    "queCocino.intro": "Esaiguzu zer duzun —zure jakitokia, argazki bat edo zerrenda bat— eta errezetak proposatuko dizkizugu, osagai eta urratsekin.",
+    "queCocino.modo.conLoQueTengo": "Daukadanarekin",
+    "queCocino.modo.restaurante": "Jatetxe estiloan",
+    "queCocino.modo.conLoQueTengoAyuda": "Orain egin ditzakezun errezetak, etxean dagoenarekin bakarrik (gehi gatza, olioa eta espeziak), ondo konbinatzen dena aukeratuz, dena nahastu beharrean.",
+    "queCocino.modo.restauranteAyuda": "Daukazunetik abiatzen da eta landuagoak diren bat edo hiru gauza erostea iradokitzen dizu (espezia bat, saltsa bat, gazta bat…) jatetxeko plater baterako. Erosi behar dena markatuta agertzen da.",
+    "queCocino.usarDespensa": "Sartu nire jakitokian dagoena ({n} gauza)",
+    "queCocino.despensaVacia": "Zure jakitokia hutsik dago: apuntatu daukazuna «Zer daukat?» atalean hura sartzeko.",
+    "queCocino.otros": "Beste osagai batzuk (aukerakoa)",
+    "queCocino.cuotaYPrivacidad": "Bi moduek hileko zure 10 iradokizunak partekatzen dituzte. Sartzen duzuna (jakitokia, argazkia eta testua) Googleren AA laguntzaileari (Gemini) bidaltzen zaio, errezetak prestatzeko bakarrik.",
+    "queCocino.sinResultados": "Ezin izan dugu errezetarik proposatu honekin. Saiatu zure jakitokia sartzen edo osagai gehiago idazten.",
+    "queCocino.ingredientes": "Osagaiak",
+    "queCocino.pasos": "Urratsak",
+    "queCocino.comprar": "Erosi",
   },
 };
 

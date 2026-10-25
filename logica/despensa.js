@@ -435,3 +435,29 @@ export function quitarLimpieza(despensa, id) {
 export function quitarLimpiezaComprada(despensa) {
   return { ...despensa, limpieza: (despensa.limpieza || []).filter((c) => !c.comprado) };
 }
+
+// ---------- Lo que hay en casa, para «¿Qué cocino?» (E2, 25-oct-2026) ----------
+// Una línea por alimento con algo en casa: { id (el foodId), nombre, cantidad }, con los gramos sumados de
+// todas sus zonas («800 g», «1,2 kg») o «sí» para lo que se apunta sin cantidad (verdura y fruta). Lo acabado
+// no sale. Es lo que «¿Qué cocino?» puede mandar a la Cloud Function (y por tanto a Gemini) si el usuario lo
+// deja marcado; por eso solo lleva el nombre del alimento y una cantidad aproximada, nada más.
+export function resumenDespensaParaIA(despensa, foods) {
+  const porId = new Map((foods || []).map((f) => [f.id, f]));
+  const vistos = new Map();
+  ((despensa && despensa.items) || []).forEach((i) => {
+    const previo = vistos.get(i.foodId) || { gramos: 0, tengo: false, conGramos: false };
+    if (tieneGramos(i)) { previo.gramos += i.gramos; previo.conGramos = true; }
+    else if (i.tengo) previo.tengo = true;
+    vistos.set(i.foodId, previo);
+  });
+  const lista = [];
+  vistos.forEach((v, foodId) => {
+    const food = porId.get(foodId);
+    if (!food) return;
+    if (v.conGramos && v.gramos > 0) {
+      const g = Math.round(v.gramos);
+      lista.push({ id: foodId, nombre: food.name, cantidad: g >= 1000 ? `${Math.round(g / 100) / 10} kg` : `${g} g` });
+    } else if (!v.conGramos && v.tengo) lista.push({ id: foodId, nombre: food.name, cantidad: "sí" });
+  });
+  return lista.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+}

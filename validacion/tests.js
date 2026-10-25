@@ -14,6 +14,7 @@ import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
   quitarConfirmacion, descontarComida, devolverComida, marcarComprado, desmarcarComprado,
   sellarCambios, racionMedia, alertasStock, anadirLimpieza, alternarLimpieza, quitarLimpieza, quitarLimpiezaComprada,
+  resumenDespensaParaIA,
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 import { esBebida, huecoDe, formaDe, repartirEnHuecos } from "nevera";
@@ -431,6 +432,28 @@ export function crearGrupos(mod, carga) {
               },
               { despues: "noHace:Comida", antes: "comer:Cena", franja: "general", comidaQueYaNoEsta: "general", nada: "nada", sinPerfil: "nada" }
             );
+          },
+        },
+      ],
+    },
+    {
+      grupo: "«¿Qué cocino?»: la despensa que se manda (E2)",
+      casos: [
+        {
+          nombre: "Una línea por alimento con algo en casa: gramos sumados de sus zonas (en kg desde 1000), «sí» sin cantidad, sin lo acabado ni lo que no está en el catálogo",
+          ejecutar: () => {
+            const foods = [
+              { id: "f_arroz", name: "Arroz", categoria: "carbohidratos" }, { id: "f_pollo", name: "Pollo", categoria: "proteinas" },
+              { id: "f_tomate", name: "Tomate", categoria: "vegetales" }, { id: "f_pera", name: "Pera", categoria: "frutas" },
+            ];
+            const despensa = { items: [
+              { id: "1", foodId: "f_arroz", zona: "despensa", gramos: 800 }, { id: "2", foodId: "f_arroz", zona: "despensa", gramos: 450 },
+              { id: "3", foodId: "f_pollo", zona: "nevera", gramos: 300 }, { id: "4", foodId: "f_pollo", zona: "congelador", gramos: 0 },
+              { id: "5", foodId: "f_tomate", zona: "nevera", tengo: true }, { id: "6", foodId: "f_pera", zona: "nevera", tengo: false },
+              { id: "7", foodId: "f_borrado", zona: "nevera", gramos: 100 },
+            ] };
+            const r = resumenDespensaParaIA(despensa, foods);
+            return comparar({ lineas: r.map((x) => `${x.nombre}:${x.cantidad}`).join(","), ids: r.map((x) => x.id).join(",") }, { lineas: "Arroz:1.3 kg,Pollo:300 g,Tomate:sí", ids: "f_arroz,f_pollo,f_tomate" });
           },
         },
       ],

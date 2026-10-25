@@ -293,13 +293,14 @@ export const DESTINOS = Object.keys(PANTALLAS);
 // «¿Qué cocino?»: la pantalla premium de sugerencias (o su aviso para quien no tiene premium), con un
 // enlace de vuelta que depende de desde dónde se llega (ver los destinos "cocinar" y
 // "cocinar-desde-cocina" en PANTALLAS).
-function PantallaCocinar({ data, idioma, setTab, premium, catalogo, volverA, etiquetaVolver }) {
+function PantallaCocinar({ data, idioma, setTab, premium, catalogo, despensa, volverA, etiquetaVolver }) {
   return (
     <div>
       <BackLink label={etiquetaVolver} onClick={() => setTab(volverA)} />
       {premium.active ? (
         <SuggestMealsView
           data={data}
+          despensa={despensa}
           onGuardarComoCerrado={(sugerencia) => {
             const bloqueCerrado = (data.blocks || []).find((b) => b.category === "cerrado");
             if (!bloqueCerrado) return; // no debería pasar: siempre hay un bloque de cerrados por defecto
