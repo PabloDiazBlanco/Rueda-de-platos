@@ -59,6 +59,7 @@
   "ui/menu/detalle-comida.jsx",
   "ui/menu/estadisticas.jsx",
   "ui/menu/exportar.js",
+  "ui/menu/generando.jsx",
   "ui/menu/historial.jsx",
   "ui/menu/lista-compra.jsx",
   "ui/menu/menu-completo.jsx",

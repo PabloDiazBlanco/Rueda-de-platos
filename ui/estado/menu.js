@@ -11,6 +11,19 @@ import { generateMenu, lastPicksFromHistory } from "menu-generador";
 import { fechaISO } from "peso";
 
 export const HISTORY_MAX = 8;
+
+// C11 (25-oct-2026): generar deja de ser instantáneo. El menú se calcula igual que siempre, pero se
+// enseña tras una espera al azar de entre 3 y 6 segundos con una animación (ui/menu/generando.jsx), la
+// misma en los dos menús. Con «reducir movimiento» en el sistema no hay espera ni animación.
+export const ESPERA_GENERAR_MIN_MS = 3000;
+export const ESPERA_GENERAR_MAX_MS = 6000;
+function prefiereMenosMovimiento() {
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (e) {
+    return false;
+  }
+}
 export const MENU_COMPLETO = {
   claveMenu: "rueda-de-platos:menu-v1",
   claveHistorial: "rueda-de-platos:history-v1",
@@ -29,6 +42,9 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
   const [semana, setSemana] = useState(1);
   const [historial, setHistorial] = useState([]);
   const menuSaveTimer = useRef(null);
+  // null | { inicio, duracion } (ms) mientras dura la espera de C11.
+  const [generando, setGenerando] = useState(null);
+  const temporizadorGenerar = useRef(null);
 
   async function cargar() {
     try {
@@ -45,11 +61,29 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
     }
   }
 
-  async function generar() {
+  // Pide un menú nuevo: con la espera de C11 o, con «reducir movimiento», al momento. Mientras se espera,
+  // un segundo toque no hace nada. El temporizador vive en este hook (en app.jsx), así que si se cambia de
+  // pantalla durante la espera el menú se genera igual.
+  function generar() {
+    if (temporizadorGenerar.current) return;
+    if (prefiereMenosMovimiento()) {
+      generarYa();
+      return;
+    }
+    const duracion = ESPERA_GENERAR_MIN_MS + Math.random() * (ESPERA_GENERAR_MAX_MS - ESPERA_GENERAR_MIN_MS);
+    setGenerando({ inicio: Date.now(), duracion });
+    temporizadorGenerar.current = setTimeout(() => {
+      temporizadorGenerar.current = null;
+      generarYa();
+    }, duracion);
+  }
+
+  async function generarYa() {
     const avoid = lastPicksFromHistory(historial, data);
     const result = generateMenu(data, avoid);
     setMenu(result);
     setSemana(1);
+    setGenerando(null);
     try {
       await window.storage.set(claveMenu, JSON.stringify(result), false);
     } catch (e) {
@@ -117,7 +151,7 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
     });
   }
 
-  return { menu, semana, setSemana, historial, cargar, generar, deshacer, toggleMarcadoCompra, updateMeal };
+  return { menu, semana, setSemana, historial, cargar, generar, generando, deshacer, toggleMarcadoCompra, updateMeal };
 }
 
 // Marca (o desmarca) el tipo de comida indicado como completado HOY — no para el día abstracto

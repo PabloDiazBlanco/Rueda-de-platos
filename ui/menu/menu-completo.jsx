@@ -16,9 +16,10 @@ import { ListaCompraNetaModal } from "./lista-compra.jsx";
 import { documentoMenu } from "./exportar.js";
 import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
+import { GenerandoMenu } from "./generando.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
-export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onUpsertRule, onToggleComidaCompletada, despensa, idioma }) {
+export function MenuView({ menu, onGenerate, generando, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onUpsertRule, onToggleComidaCompletada, despensa, idioma }) {
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
@@ -62,6 +63,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
         <button
           onClick={onGenerate}
+          disabled={!!generando}
           style={{
             fontFamily: FUENTE_TEXTO,
             fontSize: 13.5,
@@ -74,12 +76,13 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
             display: "flex",
             alignItems: "center",
             gap: 8,
+            opacity: generando ? 0.6 : 1,
           }}
         >
           <Shuffle size={15} />
           {menu ? t(idioma, "menu.generarOtro") : t(idioma, "menu.generarPrimero")}
         </button>
-        {history && history.length >= 2 && (
+        {history && history.length >= 2 && !generando && (
           <button
             onClick={onUndo}
             style={{
@@ -102,7 +105,10 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
         )}
       </div>
 
-      {!menu && (
+      {/* Mientras «se genera» (C11), la animación ocupa el sitio del menú. */}
+      {generando && <GenerandoMenu generando={generando} idioma={idioma} />}
+
+      {!menu && !generando && (
         <div
           style={{
             border: "1.5px dashed var(--line)",
@@ -118,7 +124,7 @@ export function MenuView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, hist
         </div>
       )}
 
-      {menu && (
+      {menu && !generando && (
         <>
           <AvisoConfirmacion despensa={despensa} idioma={idioma} />
 

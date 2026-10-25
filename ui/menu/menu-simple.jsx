@@ -9,6 +9,7 @@ import { ListaCompraModal } from "./lista-compra.jsx";
 import { documentoMenu } from "./exportar.js";
 import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
+import { GenerandoMenu } from "./generando.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // Menú simple (Tanda 3 del rediseño): la misma idea de "organizar la semana" que Menú completo,
@@ -18,7 +19,7 @@ import { FUENTE_TEXTO } from "../estilos.js";
 // motor nuevo: aquí sencillamente no se pide ni se muestra la parte de cantidades. Lleva su propio
 // ciclo, su propio historial y su propia lista de la compra, separados de Menú completo — las dos
 // pantallas conviven sin pisarse.
-export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek, history, data, onToggleMarcadoCompra, idioma }) {
+export function MenuSimpleView({ menu, onGenerate, generando, onUndo, menuWeek, setMenuWeek, history, data, onToggleMarcadoCompra, idioma }) {
   const [showListaCompra, setShowListaCompra] = useState(false);
 
   return (
@@ -28,6 +29,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
       <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 18 }}>
         <button
           onClick={onGenerate}
+          disabled={!!generando}
           style={{
             fontFamily: FUENTE_TEXTO,
             fontSize: 13.5,
@@ -40,12 +42,13 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
             display: "flex",
             alignItems: "center",
             gap: 8,
+            opacity: generando ? 0.6 : 1,
           }}
         >
           <Shuffle size={15} />
           {menu ? t(idioma, "menu.generarOtro") : t(idioma, "menu.generarPrimero")}
         </button>
-        {history && history.length >= 2 && (
+        {history && history.length >= 2 && !generando && (
           <button
             onClick={onUndo}
             style={{
@@ -68,7 +71,10 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
         )}
       </div>
 
-      {!menu && (
+      {/* Mientras «se genera» (C11), la animación ocupa el sitio del menú. */}
+      {generando && <GenerandoMenu generando={generando} idioma={idioma} />}
+
+      {!menu && !generando && (
         <div
           style={{
             border: "1.5px dashed var(--line)",
@@ -84,7 +90,7 @@ export function MenuSimpleView({ menu, onGenerate, onUndo, menuWeek, setMenuWeek
         </div>
       )}
 
-      {menu && (
+      {menu && !generando && (
         <>
           <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center", flexWrap: "wrap" }}>
             {[1, 2].map((w) => (

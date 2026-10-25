@@ -51,6 +51,7 @@ const PANTALLAS = {
     <MenuView
       menu={menuCompleto.menu}
       onGenerate={menuCompleto.generar}
+      generando={menuCompleto.generando}
       onUndo={menuCompleto.deshacer}
       menuWeek={menuCompleto.semana}
       setMenuWeek={menuCompleto.setSemana}
@@ -70,6 +71,7 @@ const PANTALLAS = {
     <MenuSimpleView
       menu={menuSimple.menu}
       onGenerate={menuSimple.generar}
+      generando={menuSimple.generando}
       onUndo={menuSimple.deshacer}
       menuWeek={menuSimple.semana}
       setMenuWeek={menuSimple.setSemana}

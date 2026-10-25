@@ -1318,6 +1318,10 @@ const TEXTOS = {
     "menu.cambiada": "con cambios",
     "dayStats.conCambiosUna": "Con lo comido de verdad en 1 comida con cambios.",
     "dayStats.conCambios": "Con lo comido de verdad en {n} comidas con cambios.",
+
+    "generando.titulo": "Preparando tu menú…",
+    "generando.texto": "Combinando tus platos para que no se repitan.",
+    "generando.faltan": "Faltan {n} s",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2575,6 +2579,10 @@ const TEXTOS = {
     "menu.cambiada": "with changes",
     "dayStats.conCambiosUna": "Using what you actually ate in 1 meal with changes.",
     "dayStats.conCambios": "Using what you actually ate in {n} meals with changes.",
+
+    "generando.titulo": "Putting your menu together…",
+    "generando.texto": "Mixing your dishes so they don’t repeat.",
+    "generando.faltan": "{n} s left",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3832,6 +3840,10 @@ const TEXTOS = {
     "menu.cambiada": "amb canvis",
     "dayStats.conCambiosUna": "Amb el que has menjat de veritat en 1 àpat amb canvis.",
     "dayStats.conCambios": "Amb el que has menjat de veritat en {n} àpats amb canvis.",
+
+    "generando.titulo": "Preparant el teu menú…",
+    "generando.texto": "Combinant els teus plats perquè no es repeteixin.",
+    "generando.faltan": "Falten {n} s",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5089,6 +5101,10 @@ const TEXTOS = {
     "menu.cambiada": "con cambios",
     "dayStats.conCambiosUna": "Co comido de verdade en 1 comida con cambios.",
     "dayStats.conCambios": "Co comido de verdade en {n} comidas con cambios.",
+
+    "generando.titulo": "Preparando o teu menú…",
+    "generando.texto": "Combinando os teus pratos para que non se repitan.",
+    "generando.faltan": "Faltan {n} s",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6346,6 +6362,10 @@ const TEXTOS = {
     "menu.cambiada": "aldaketekin",
     "dayStats.conCambiosUna": "Benetan jandakoarekin, aldaketak dituen otordu 1ean.",
     "dayStats.conCambios": "Benetan jandakoarekin, aldaketak dituzten {n} otorduetan.",
+
+    "generando.titulo": "Zure menua prestatzen…",
+    "generando.texto": "Zure platerak konbinatzen, errepika ez daitezen.",
+    "generando.faltan": "{n} s falta dira",
   },
 };
 
