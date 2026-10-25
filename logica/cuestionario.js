@@ -77,7 +77,21 @@ export function pasosCuestionario(repartoComidas) {
 // Frecuencia semanal para proteínas (1/2/3), peso relativo Poco/Normal/Mucho para el resto —
 // mismas claves de i18n reutilizadas en las 4 pantallas de selección vía SeleccionAlimentosStep,
 // y también por los arquetipos de Desayuno (su "nivel" pesa igual que Poco/Normal/Mucho).
+// A9 (25-oct-2026): las proteínas ya no rotan 1 → 2 → 3 → 1 (se volvía a 1 sin querer al pasar de 3): llevan
+// botones − y + con tope en las comidas principales de la semana (huecosProteinaSemana). NIVELES_FRECUENCIA
+// se conserva por si otra pantalla lo usa.
 export const NIVELES_FRECUENCIA = ["cuestionario.nivel.freq1", "cuestionario.nivel.freq2", "cuestionario.nivel.freq3"];
+
+// Cuántos huecos de proteína hay a la semana: el motor (logica/menu-generador.js) solo sortea proteína en
+// Comida y Cena, así que son 7 por cada una que haya en el reparto (14 con las dos). Es el tope del + de la
+// frecuencia y la cuenta que se enseña («5 de 14 comidas; el resto, con el predeterminado»).
+export function huecosProteinaSemana(repartoComidas) {
+  const r = repartoComidas || { Comida: 1, Cena: 1 };
+  return ["Comida", "Cena"].filter((m) => r[m] !== undefined).length * 7;
+}
+
+// La proteína recomendada como predeterminada (A9): el pollo, la más versátil y barata de la lista.
+export const PROTEINA_PREDETERMINADA_RECOMENDADA = "f_pechuga_pollo";
 
 export const NIVELES_PESO = ["cuestionario.nivel.poco", "cuestionario.nivel.normal", "cuestionario.nivel.mucho"];
 
@@ -115,16 +129,23 @@ export const ARQUETIPOS_COMIDA_LIGERA = [
 ];
 
 // A partir de las respuestas, construye la lista de ingredients que arrancará el catálogo de la
-// cuenta nueva. Proteínas -> regla de frecuencia semanal directa (el nivel elegido, 1-3). Carbo/
+// cuenta nueva. Proteínas -> regla de frecuencia semanal directa (las veces elegidas). Carbo/
 // verdura/grasa -> regla de probabilidad, normalizando los pesos relativos (1-3) de lo elegido en
 // cada categoría para que sumen exactamente 100 (el último ajusta el redondeo, mismo método que
 // ya usa RepartoComidasFields con el reparto de comidas).
-export function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, comidasLigeras }) {
+// `predeterminado` (A9, opcional): el foodId de una de las proteínas elegidas, que pasa a ser la «base»
+// del motor (`ruleType: "base"`): rellena todos los huecos de proteína que no cubren las frecuencias de
+// las demás (si de 14 comidas las frecuencias cubren 5, las otras 9 son de ella). Su frecuencia no cuenta.
+export function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, comidasLigeras, predeterminado = null }) {
   const ingredients = [];
 
   Object.entries(frecuencias).forEach(([foodId, nivel]) => {
     const opt = CUESTIONARIO_PROTEINAS.find((o) => o.foodId === foodId);
     if (!opt) return;
+    if (foodId === predeterminado) {
+      ingredients.push({ id: uid(), name: opt.nombreEs, category: "proteina", ruleType: "base", active: true, foodId, gramos: opt.gramos });
+      return;
+    }
     ingredients.push({
       id: uid(), name: opt.nombreEs, category: "proteina", ruleType: "frecuencia",
       freqCantidad: nivel, freqPeriodo: "semana", active: true, foodId, gramos: opt.gramos,

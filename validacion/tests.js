@@ -7,7 +7,7 @@ import { DAYS, primerEmoji } from "comun";
 import { objetivosPorComida, recomendacionPreentreno } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
-import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario } from "cuestionario";
+import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario, huecosProteinaSemana } from "cuestionario";
 import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
   quitarConfirmacion, descontarComida, devolverComida, marcarComprado, desmarcarComprado,
@@ -670,6 +670,22 @@ export function crearGrupos(mod, carga) {
           ejecutar: () => {
             const [salmon] = construirIngredientesDesdeCuestionario({ frecuencias: { f_salmon: 2 }, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {} });
             return comparar(salmon, { name: "Salmón", category: "proteina", ruleType: "frecuencia", freqCantidad: 2, freqPeriodo: "semana", foodId: "f_salmon", gramos: 150, active: true });
+          },
+        },
+        {
+          nombre: "A9: más de 3 veces por semana; la predeterminada pasa a ser la «base» del motor; huecos de proteína según el reparto",
+          ejecutar: () => {
+            const r = construirIngredientesDesdeCuestionario({ frecuencias: { f_salmon: 5, f_pechuga_pollo: 2 }, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {}, predeterminado: "f_pechuga_pollo" });
+            const salmon = r.find((i) => i.foodId === "f_salmon");
+            const pollo = r.find((i) => i.foodId === "f_pechuga_pollo");
+            const sinBase = construirIngredientesDesdeCuestionario({ frecuencias: { f_salmon: 2 }, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {}, predeterminado: "f_pechuga_pollo" });
+            return comparar(
+              {
+                salmon: `${salmon.ruleType}:${salmon.freqCantidad}`, pollo: pollo.ruleType, polloSinFrecuencia: pollo.freqCantidad === undefined, sinBase: sinBase.map((i) => i.ruleType).join(","),
+                cuatro: huecosProteinaSemana({ Desayuno: 0.2, Comida: 0.35, Merienda: 0.15, Cena: 0.3 }), soloComida: huecosProteinaSemana({ Desayuno: 0.3, Comida: 0.7 }), sinReparto: huecosProteinaSemana(null),
+              },
+              { salmon: "frecuencia:5", pollo: "base", polloSinFrecuencia: true, sinBase: "frecuencia", cuatro: 14, soloComida: 7, sinReparto: 14 }
+            );
           },
         },
         {

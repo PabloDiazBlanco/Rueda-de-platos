@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { t } from "i18n";
 import { FOODS_SEED, CATEGORIAS_ALIMENTOS } from "datos-iniciales";
-import { CUESTIONARIO_PROTEINAS, CUESTIONARIO_CARBOS, CUESTIONARIO_VERDURAS, CUESTIONARIO_GRASAS, EXCLUSIONES_DISPONIBLES, pasosCuestionario, NIVELES_FRECUENCIA, NIVELES_PESO, ARQUETIPOS_COMIDA_LIGERA, construirIngredientesDesdeCuestionario } from "cuestionario";
+import { CUESTIONARIO_PROTEINAS, CUESTIONARIO_CARBOS, CUESTIONARIO_VERDURAS, CUESTIONARIO_GRASAS, EXCLUSIONES_DISPONIBLES, pasosCuestionario, NIVELES_PESO, ARQUETIPOS_COMIDA_LIGERA, construirIngredientesDesdeCuestionario, huecosProteinaSemana, PROTEINA_PREDETERMINADA_RECOMENDADA } from "cuestionario";
 import { PasosIndicador } from "./asistente-perfil.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
@@ -18,6 +18,8 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
   const [paso, setPaso] = useState(0);
   const [exclusiones, setExclusiones] = useState([]);
   const [frecuencias, setFrecuencias] = useState({});
+  // A9: la proteína que rellena los huecos que no cubren las frecuencias (el pollo, recomendado, si se elige).
+  const [predeterminado, setPredeterminado] = useState(PROTEINA_PREDETERMINADA_RECOMENDADA);
   const [pesosCarbo, setPesosCarbo] = useState({});
   const [pesosVerdura, setPesosVerdura] = useState({});
   const [pesosGrasa, setPesosGrasa] = useState({});
@@ -82,6 +84,7 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
   function confirmarCierre() {
     onComplete(construirIngredientesDesdeCuestionario({
       frecuencias, pesosCarbo, pesosVerdura, pesosGrasa,
+      predeterminado: predeterminado && predeterminado in frecuencias ? predeterminado : null,
       comidasLigeras: { desayuno: desayunoSeleccion, media_manana: mediaMananaSeleccion, merienda: meriendaSeleccion },
     }));
   }
@@ -178,13 +181,14 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
           </>
         )}
         {paso === 1 && (
-          <SeleccionAlimentosStep
-            tituloKey="cuestionario.proteinas.titulo"
+          <SeleccionProteinasStep
             opciones={CUESTIONARIO_PROTEINAS.filter((o) => !estaExcluido(o.foodId))}
-            seleccion={frecuencias}
-            nivelLabels={NIVELES_FRECUENCIA}
+            frecuencias={frecuencias}
+            maximo={huecosProteinaSemana(repartoComidas)}
+            predeterminado={predeterminado}
+            onPredeterminado={setPredeterminado}
             onToggle={(foodId) => alternarSeleccion(setFrecuencias, foodId, 1)}
-            onCiclarNivel={(foodId) => ciclarNivel(setFrecuencias, foodId)}
+            onCambiarVeces={(foodId, veces) => setFrecuencias((prev) => ({ ...prev, [foodId]: veces }))}
             idioma={idioma}
           />
         )}
@@ -334,6 +338,83 @@ function SeleccionAlimentosStep({ tituloKey, opciones, seleccion, nivelLabels, o
           );
         })}
       </div>
+    </>
+  );
+}
+
+// Paso de las proteínas (A9, 25-oct-2026): cada una elegida lleva sus veces por semana con − y + (de 1 al
+// número de comidas principales de la semana, sin volver a empezar), y una de ellas puede ser la
+// **predeterminada**: rellena los huecos que no cubren las demás (la «base» del motor). El pollo sale
+// recomendado. Debajo, la cuenta: cuántas comidas cubren las frecuencias y cuántas quedan para la
+// predeterminada (o sin proteína, si no hay ninguna).
+function SeleccionProteinasStep({ opciones, frecuencias, maximo, predeterminado, onPredeterminado, onToggle, onCambiarVeces, idioma }) {
+  const esPredeterminado = (foodId) => predeterminado === foodId && foodId in frecuencias;
+  const hayPredeterminado = Object.keys(frecuencias).some(esPredeterminado);
+  const cubiertas = Object.entries(frecuencias).filter(([id]) => !esPredeterminado(id)).reduce((s, [, n]) => s + n, 0);
+  const resto = Math.max(0, maximo - cubiertas);
+  const paso = { width: 34, height: 34, borderRadius: 8, border: "1px solid var(--green)", background: "#fff", color: "var(--green-dark)", fontSize: 18, fontWeight: 700, cursor: "pointer", flexShrink: 0 };
+  return (
+    <>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 4 }}>
+        {t(idioma, "cuestionario.proteinas.titulo")}
+      </div>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 12, lineHeight: 1.45 }}>
+        {t(idioma, "cuestionario.proteinas.ayudaVeces")}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+        {opciones.map((opt) => {
+          const veces = frecuencias[opt.foodId];
+          const activo = veces !== undefined;
+          const base = esPredeterminado(opt.foodId);
+          return (
+            <div key={opt.foodId} style={{ border: "1px solid var(--line)", borderRadius: 8, background: activo ? "var(--green-soft)" : "#fff", padding: "6px 8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button
+                  onClick={() => onToggle(opt.foodId)}
+                  aria-pressed={activo}
+                  style={{
+                    flex: 1, textAlign: "left", fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: activo ? 700 : 500,
+                    padding: "6px 4px", border: "none", background: "transparent", color: activo ? "var(--green-dark)" : "var(--ink)", cursor: "pointer",
+                  }}
+                >
+                  {t(idioma, opt.labelKey)}
+                  {opt.foodId === PROTEINA_PREDETERMINADA_RECOMENDADA && <span style={{ fontWeight: 500, fontSize: 11, color: "var(--mustard-dark)" }}> · {t(idioma, "cuestionario.proteinas.recomendado")}</span>}
+                </button>
+                {activo && !base && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <button onClick={() => onCambiarVeces(opt.foodId, Math.max(1, veces - 1))} disabled={veces <= 1} aria-label={t(idioma, "cuestionario.proteinas.menos")} style={{ ...paso, opacity: veces <= 1 ? 0.4 : 1 }}>−</button>
+                    <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)", minWidth: 52, textAlign: "center" }}>{t(idioma, "cuestionario.proteinas.veces", { n: veces })}</span>
+                    <button onClick={() => onCambiarVeces(opt.foodId, Math.min(maximo, veces + 1))} disabled={veces >= maximo} aria-label={t(idioma, "cuestionario.proteinas.mas")} style={{ ...paso, opacity: veces >= maximo ? 0.4 : 1 }}>+</button>
+                  </div>
+                )}
+                {activo && base && (
+                  <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700, color: "var(--green-dark)" }}>{t(idioma, "cuestionario.proteinas.elResto")}</span>
+                )}
+              </div>
+              {activo && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", padding: "2px 4px 4px", cursor: "pointer" }}>
+                  <input type="radio" name="predeterminado" checked={base} onChange={() => onPredeterminado(opt.foodId)} style={{ accentColor: "var(--green)" }} />
+                  {t(idioma, "cuestionario.proteinas.predeterminado")}
+                </label>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {Object.keys(frecuencias).length > 0 && (
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: cubiertas > maximo ? "var(--rust)" : "var(--ink)", background: "var(--paper)", borderRadius: 8, padding: "9px 11px", marginTop: 12, lineHeight: 1.5 }}>
+          {cubiertas > maximo
+            ? t(idioma, "cuestionario.proteinas.teSobran", { n: cubiertas, max: maximo })
+            : hayPredeterminado
+              ? t(idioma, "cuestionario.proteinas.cuentaConBase", { n: cubiertas, max: maximo, resto })
+              : t(idioma, "cuestionario.proteinas.cuentaSinBase", { n: cubiertas, max: maximo, resto })}
+          {hayPredeterminado && (
+            <button onClick={() => onPredeterminado(null)} style={{ display: "block", marginTop: 4, background: "none", border: "none", padding: 0, cursor: "pointer", fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", textDecoration: "underline" }}>
+              {t(idioma, "cuestionario.proteinas.sinPredeterminado")}
+            </button>
+          )}
+        </div>
+      )}
     </>
   );
 }
