@@ -75,6 +75,8 @@ logica/despensa.js             → stock de la despensa: zonas, menú confirmado
                                   tachar/destachar compras, queda poco (alertasStock), limpieza,
                                   fecha de cambio (sellarCambios), migrarDespensa
 logica/lista-compra-neta.js    → necesidadesComida, calcularListaNeta (lista de la compra menos lo que hay)
+logica/comida-real.js          → lo comido de verdad («Cambié algo»): lineasComida, propuestaGramos,
+                                  comidaReal, registroComida, totalesDiaReal, necesidadesComidaReal
 logica/nevera.js               → colocación de la nevera dibujada: huecoDe, formaDe, esBebida, repartirEnHuecos
 logica/entreno-ejercicios.js   → tipos de ejercicio y de serie, músculos, equipos, biblioteca semilla (80),
                                   listaEjercicios, ejercicioPorId, buscarEjercicios, posibleDuplicado
@@ -94,7 +96,8 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 `evaluarTendencia` y meses de `formatFechaCorta`), `datos-iniciales.js` → `peso.js`,
 `cuestionario.js` → `comun.js` y `datos-iniciales.js`, `migraciones.js` → `datos-iniciales.js`,
 `objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js` y `datos-iniciales.js`, y `lista-compra-neta.js` →
-`macros.js`, `comida-calculo.js` y `despensa.js` (`nevera.js` no importa nada). Del entreno:
+`macros.js`, `comida-calculo.js` y `despensa.js`, y `comida-real.js` → esos tres y `datos-iniciales.js`
+(`nevera.js` no importa nada). Del entreno:
 `entreno-sesion.js` → `comun.js`, `entreno-almacen.js` → `entreno-calculo.js` e `informes.js` →
 `entreno-calculo.js`, `resumen-mensual.js` y `objetivos.js` (solo lee de él); `entreno-ejercicios.js`,
 `entreno-nombres.js` y `entreno-calculo.js` no importan nada (reciben `ejercicioDe(id)` y `nombreDe` como
@@ -233,6 +236,16 @@ El estado de los dos lo lleva el mismo hook, `useMenu` (`ui/estado/menu.js`), co
 distinta para cada uno (`MENU_COMPLETO` y `MENU_SIMPLE`: claves de almacenamiento y campo de la
 lista de la compra) — así es imposible que una mejora llegue a uno y se olvide en el otro.
 
+**Hecha y «Cambié algo»** (B1+B3, 25-oct-2026; solo Menú completo, que es el único que marca comidas):
+en el detalle de una comida, «Hecha» la da por buena tal cual y «Cambié algo» (`ui/menu/cambie-algo.jsx`)
+deja cambiar cada alimento por otro del catálogo propio (primero su carpeta, luego el resto; cantidad
+propuesta con las mismas kcal, redondeada sin pasar del ±10 %, editable) o marcar «no lo comí». Se marca
+para HOY, como siempre, en `data.comidasCompletadas[fecha][tipo]`, que desde entonces guarda un registro
+`{ hecha: true, slotId, macros, cambios? }` (`registroComida`, `logica/comida-real.js`; las de antes,
+`true`, las convierte `migrateData` en `{ hecha: true }`). Las kcal del día del menú y de cada comida
+enseñan lo comido de verdad en las comidas con cambios (`totalesDiaReal`), **sin reajustar nada** del
+menú ni del ciclo; la despensa descuenta lo comido de verdad.
+
 **Compartir** (`BotonCompartir`, `ui/comun/compartir.jsx`): el menú de la semana elegida y las dos
 listas de la compra se comparten como texto o como imagen (un PNG dibujado en un `<canvas>`, sin
 librerías), con `navigator.share` y, donde no se puede, copiando el texto al portapapeles o
@@ -264,7 +277,8 @@ Cómo se relaciona con el Menú completo (el Menú simple queda fuera):
   mete lo comprado en la despensa (`despensa.compras`) y destachar lo saca.
 - **Completar una comida descuenta** lo que lleva (sin bajar de cero) y desmarcarla devuelve
   exactamente lo descontado (`despensa.consumos`, por fecha y tipo de comida). Una comida con consumo
-  ya no cuenta como pendiente, así que nada se cuenta dos veces.
+  ya no cuenta como pendiente, así que nada se cuenta dos veces. Si se marca con «Cambié algo», se
+  devuelve lo descontado antes y se descuenta lo comido de verdad (`necesidadesComidaReal`).
 - `calcularListaCompra` (`comida-calculo.js`) sigue intacta para el Menú simple, que conserva sus
   casillas de siempre en `data.listaCompraSimple`.
 - Borrar un alimento del catálogo lo quita también de la despensa: `useCatalogo` recibe el aviso
