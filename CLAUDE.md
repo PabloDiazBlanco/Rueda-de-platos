@@ -62,7 +62,8 @@ logica/macros.js               → getFood, macrosFor, emptyMacros, addMacros, c
 logica/seleccion.js            → sorteo ponderado + reglas de combinación (weightedPick, pickWithRules...)
 logica/comida-calculo.js       → mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra
 logica/objetivos.js            → PAL/TDEE/macros objetivo, calcularObjetivosPerfil, objetivosPorComida,
-                                  presets de reparto de comidas (PRESETS_COMIDAS)
+                                  presets de reparto de comidas (PRESETS_COMIDAS) y la recomendación de
+                                  preentreno (recomendacionPreentreno, D3: no toca ninguna fórmula)
 logica/menu-generador.js       → generateMenu, lastPicksFromHistory (el motor de generación completo)
 logica/peso.js                 → seguimiento de peso: tendencia, cambios atípicos, ciclos
 logica/salud-publica.js        → resumenNutrientesSemana: sal/azúcares/fibra contra umbrales de la OMS
@@ -238,6 +239,13 @@ Hay dos pantallas de menú que conviven, y las dos usan el mismo `generateMenu`:
 El estado de los dos lo lleva el mismo hook, `useMenu` (`ui/estado/menu.js`), con una configuración
 distinta para cada uno (`MENU_COMPLETO` y `MENU_SIMPLE`: claves de almacenamiento y campo de la
 lista de la compra) — así es imposible que una mejora llegue a uno y se olvide en el otro.
+
+**Preentreno** (D3, 25-oct-2026, versión mínima): el perfil guarda cuándo se entrena (`diasEntreno`,
+`horaEntreno` y `entrenoComida: { momento: "antes"|"despues", comida }`; se pregunta al final del asistente de
+alta y se edita en Actividad diaria, `ui/perfil/preentreno.jsx`). `recomendacionPreentreno` da una
+**recomendación** transparente (comer algo ligero antes, o que no hace falta si se entrena después de una
+comida), **sin tocar el reparto de macros**. En los días de entreno, los dos menús enseñan una línea corta
+(`LineaPreentreno`).
 
 **Generar no es instantáneo** (C11, 25-oct-2026): `useMenu.generar` calcula el menú igual que siempre pero lo
 enseña tras una espera al azar de 3 a 6 s (`ESPERA_GENERAR_MIN_MS`/`MAX_MS`), con la animación de
