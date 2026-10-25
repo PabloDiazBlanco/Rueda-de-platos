@@ -7,9 +7,10 @@
 // donde exista (no en iPhone: Safari no la tiene). Con la app cerrada no puede sonar nada — una web no
 // puede programar avisos locales — y así se dice en Ajustes de entreno (diseño, §5.5).
 import React, { useState, useEffect } from "react";
+import { Timer } from "lucide-react";
 import { t } from "i18n";
 import { FUENTE_TEXTO, FUENTE_MONO } from "../estilos.js";
-import { reloj } from "./comun.jsx";
+import { reloj, HojaInferior, Chip, BotonPrincipal, TextoSuave } from "./comun.jsx";
 
 // El contexto de audio se crea con el primer toque dentro de la sesión: los navegadores no dejan sonar
 // nada hasta que el usuario ha tocado la página.
@@ -93,5 +94,67 @@ export function BarraDescanso({ descanso, ajustes, idioma, onAjustar, onSaltar, 
         <button onClick={onSaltar} style={{ ...boton, background: "var(--green)", color: "#fff", border: "none", padding: "0 14px" }}>{t(idioma, "entreno.sesion.saltar")}</button>
       </div>
     </div>
+  );
+}
+
+// ---------- Descanso de cada ejercicio (G3, 25-oct-2026) ----------
+// Cada ejercicio de una rutina o de un entreno lleva su propio descanso entre series, y se cambia con un
+// toque desde su tarjeta, tanto en el editor de la rutina como durante el entreno: un botón pequeño con el
+// reloj y el tiempo («⏱ 2:00») que abre esta hoja. Las opciones habituales van en fichas (un toque elige y
+// cierra) y −15 / +15 afinan sin cerrar. «Sin descanso» (0) sirve, por ejemplo, para pasar del primer
+// ejercicio de una superserie al segundo sin esperar.
+export const DESCANSOS = [0, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
+
+export function textoDescanso(segundos, idioma) {
+  return segundos === 0 ? t(idioma, "entreno.descanso.sin") : reloj(segundos);
+}
+
+export function BotonDescanso({ segundos, onClick, idioma, style }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label={t(idioma, "entreno.descanso.boton", { t: textoDescanso(segundos, idioma) })}
+      title={t(idioma, "entreno.descanso.boton", { t: textoDescanso(segundos, idioma) })}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 5, minHeight: 36, padding: "0 10px", borderRadius: 999,
+        border: "1px solid var(--line)", background: "var(--card)", cursor: "pointer", flexShrink: 0,
+        fontFamily: FUENTE_MONO, fontVariantNumeric: "tabular-nums", fontSize: 13, fontWeight: 700, color: "var(--green-dark)",
+        ...style,
+      }}
+    >
+      <Timer size={14} /> {textoDescanso(segundos, idioma)}
+    </button>
+  );
+}
+
+// `ayuda`: una línea bajo el título que dice a qué afecta (a la rutina, o solo a este entreno).
+export function HojaDescanso({ titulo, segundos, ayuda, onElegir, onCerrar, idioma }) {
+  const [valor, setValor] = useState(segundos ?? 120);
+  function afinar(delta) {
+    const nuevo = Math.max(0, Math.min(900, valor + delta));
+    setValor(nuevo);
+    onElegir(nuevo);
+  }
+  const boton = {
+    minWidth: 56, height: 44, borderRadius: 10, border: "1px solid var(--line)", background: "var(--card)", cursor: "pointer",
+    fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700, color: "var(--green-dark)",
+  };
+  return (
+    <HojaInferior titulo={titulo || t(idioma, "entreno.descanso.titulo")} onCerrar={onCerrar} idioma={idioma}>
+      {ayuda && <TextoSuave style={{ fontSize: 12.5, marginBottom: 10 }}>{ayuda}</TextoSuave>}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 12 }}>
+        <button onClick={() => afinar(-15)} aria-label={t(idioma, "entreno.sesion.menos15")} style={boton}>−15</button>
+        <div aria-live="polite" style={{ minWidth: 90, textAlign: "center", fontFamily: FUENTE_MONO, fontVariantNumeric: "tabular-nums", fontSize: 26, fontWeight: 700, color: "var(--green-dark)" }}>
+          {textoDescanso(valor, idioma)}
+        </div>
+        <button onClick={() => afinar(15)} aria-label={t(idioma, "entreno.sesion.mas15")} style={boton}>+15</button>
+      </div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginBottom: 12 }}>
+        {DESCANSOS.map((d) => (
+          <Chip key={d} activo={d === valor} onClick={() => { onElegir(d); onCerrar(); }}>{textoDescanso(d, idioma)}</Chip>
+        ))}
+      </div>
+      <BotonPrincipal onClick={onCerrar}>{t(idioma, "entreno.descanso.listo")}</BotonPrincipal>
+    </HojaInferior>
   );
 }

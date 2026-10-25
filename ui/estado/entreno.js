@@ -299,6 +299,8 @@ export function useEntreno(data) {
     return e && e.descansoSeg !== undefined && e.descansoSeg !== null ? e.descansoSeg : null;
   };
   const opcionesSesion = () => ({ ajustes: ref.current.catalogo ? ref.current.catalogo.ajustes : ajustes, anteriorDe, descansoDe });
+  // Descanso con el que entra un ejercicio nuevo en una rutina o en un entreno (G3).
+  const descansoInicial = (id) => S.descansoInicial(id, opcionesSesion());
 
   // Sesiones de un mes para pintar: las del documento más las terminadas que aún esperan en la cola.
   function sesionesDeMes(mes) {
@@ -311,7 +313,7 @@ export function useEntreno(data) {
   // ---------- Acciones ----------
   return {
     cargar, cargado: !!catalogo, catalogo, ajustes, lista, indice, borrador, meses, cola, nube, pesoCorporal,
-    ejercicioDe, anteriorDe,
+    ejercicioDe, anteriorDe, descansoInicial,
     recordsDe: (id) => ((indice.ejercicios || {})[id] || {}).records || {},
     cargarMes, cargarTodosLosMeses, sesionesDeMes, mesActual, reconstruir,
 
@@ -334,6 +336,7 @@ export function useEntreno(data) {
     marcarHecha: (inst, id) => cambiar((s) => S.marcarHecha(s, inst, id, Date.now(), opcionesSesion().ajustes)),
     desmarcar: (inst, id) => cambiar((s) => S.desmarcar(s, inst, id)),
     ajustarDescanso: (seg) => cambiar((s) => S.ajustarDescanso(s, seg)),
+    descansoEjercicio: (inst, seg) => cambiar((s) => S.descansoEjercicio(s, inst, seg)),
     saltarDescanso: () => cambiar(S.saltarDescanso),
     // Descanso a mano (botón ⏱ de la barra de la sesión), sin marcar ninguna serie.
     iniciarDescanso: (segundos) => cambiar((s) => {
@@ -349,7 +352,8 @@ export function useEntreno(data) {
     reanudar: () => cambiar((s) => S.reanudar(s, Date.now())),
 
     // Terminar: la sesión pasa a la cola (ya es definitiva en este dispositivo) y se intenta subir.
-    // `actualizarRutina`: pasar a la rutina los cambios de estructura (ejercicios, orden, series).
+    // `actualizarRutina`: pasar a la rutina los cambios de estructura (ejercicios, orden, series) y de
+    // descanso.
     async terminar(opciones = {}, { actualizarRutina = false } = {}) {
       const actual = ref.current.borrador;
       if (!actual) return null;

@@ -28,7 +28,7 @@ import {
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
-  terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion,
+  terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion, anadirEjercicios, descansoEjercicio,
 } from "entreno-sesion";
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
@@ -1717,6 +1717,40 @@ function grupoEntrenoSesion() {
           );
         },
       },
+      // ---------- Descanso de cada ejercicio (G3, 25-oct-2026) ----------
+      {
+        nombre: "G3: un ejercicio añadido sin rutina entra con el descanso de su ficha o el de los ajustes; descansoEjercicio cambia el de las series siguientes",
+        ejecutar: () => {
+          const descansoDe = (id) => (id === "ex_jalon_pecho" ? 75 : null);
+          let s = nuevaSesion({ ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA });
+          s = anadirEjercicios(s, ["ex_press_banca_barra", "ex_jalon_pecho"], { ajustes: AJUSTES_PRUEBA, descansoDe });
+          const antes = s.ejercicios.map((e) => e.descansoSeg).join(",");
+          const banca = s.ejercicios[0];
+          const s90 = descansoEjercicio(s, banca.inst, 90);
+          const marcada = marcarHecha(s90, banca.inst, banca.series[0].id, AHORA_SESION, AJUSTES_PRUEBA);
+          const sinDescanso = marcarHecha(descansoEjercicio(s, banca.inst, 0), banca.inst, banca.series[0].id, AHORA_SESION, AJUSTES_PRUEBA);
+          // 120 = ajustes (banca sin descanso propio), 75 = el de la ficha del jalón; tras cambiarlo a 90, la
+          // serie marcada descansa 90 s; con 0, no arranca ninguno.
+          return comparar(
+            { antes, despues: s90.ejercicios[0].descansoSeg, otro: s90.ejercicios[1].descansoSeg, ms: marcada.descanso.hasta - AHORA_SESION, cero: sinDescanso.descanso },
+            { antes: "120,75", despues: 90, otro: 75, ms: 90000, cero: null }
+          );
+        },
+      },
+      {
+        nombre: "G3: un descanso cambiado durante el entreno cuenta como cambio de la rutina y aplicarARutina lo guarda",
+        ejecutar: () => {
+          const rutina = { ...RUTINA_PRUEBA, ejercicios: RUTINA_PRUEBA.ejercicios.map((re) => ({ ...re, descansoSeg: re.descansoSeg ?? 120 })) };
+          let s = nuevaSesion({ rutina, ahora: AHORA_SESION, ajustes: AJUSTES_PRUEBA, anteriorDe: anteriorPrueba });
+          s.ejercicios.forEach((ej) => ej.series.forEach((sr) => { s = marcarHecha(s, ej.inst, sr.id, AHORA_SESION, AJUSTES_PRUEBA); }));
+          const cambiada = descansoEjercicio(s, s.ejercicios[1].inst, 90);
+          const r = aplicarARutina(rutina, cambiada, "2026-10-25");
+          return comparar(
+            { igual: cambiosEstructurales(s, rutina), cambiada: cambiosEstructurales(cambiada, rutina), banca: r.ejercicios[0].descansoSeg, jalon: r.ejercicios[1].descansoSeg },
+            { igual: false, cambiada: true, banca: 120, jalon: 90 }
+          );
+        },
+      },
     ],
   };
 }
@@ -1747,6 +1781,28 @@ function grupoEntrenoAlmacen() {
           return comparar(
             { changed: vacio.changed, precargar: vacio.valor.ajustes.precargar, descanso: vacio.valor.ajustes.descansoSeg, inicioViejo: viejo.valor.ajustes.inicioSemana, precargarViejo: viejo.valor.ajustes.precargar, descansoViejo: viejo.valor.ajustes.descansoSeg, cambioViejo: viejo.changed },
             { changed: true, precargar: true, descanso: 120, inicioViejo: 1, precargarViejo: false, descansoViejo: 90, cambioViejo: true }
+          );
+        },
+      },
+      {
+        nombre: "migrarCatalogo (G3): el descanso «de siempre» de una rutina pasa a ser el de la ficha del ejercicio o el de los ajustes; un número se conserva",
+        ejecutar: () => {
+          const guardado = {
+            version: 1, ajustes: { descansoSeg: 90 }, aviso: {},
+            personalizados: { ex_press_banca_barra: { descansoSeg: 150 } },
+            propios: [{ id: "exp_a", nombre: "Mi máquina", tipo: "peso_reps", descansoSeg: 45 }],
+            rutinas: [{ id: "r1", nombre: "A", ejercicios: [
+              { ejercicioId: "ex_press_banca_barra", descansoSeg: null, series: [] },
+              { ejercicioId: "ex_jalon_pecho", series: [] },
+              { ejercicioId: "exp_a", descansoSeg: null, series: [] },
+              { ejercicioId: "ex_curl_barra", descansoSeg: 75, series: [] },
+            ] }],
+          };
+          const m = migrarCatalogo(guardado);
+          const otraVez = migrarCatalogo(m.valor);
+          return comparar(
+            { descansos: m.valor.rutinas[0].ejercicios.map((re) => re.descansoSeg).join(","), changed: m.changed, segunda: otraVez.changed, original: guardado.rutinas[0].ejercicios[0].descansoSeg },
+            { descansos: "150,90,45,75", changed: true, segunda: false, original: null }
           );
         },
       },

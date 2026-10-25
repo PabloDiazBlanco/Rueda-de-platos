@@ -24,7 +24,7 @@ import {
   TextoSuave, pesoAPantalla,
 } from "./comun.jsx";
 import { FilaSerie, HojaTipoSerie, etiquetasSeries, plantillaColumnas, columnasDe } from "./fila-serie.jsx";
-import { BarraDescanso, prepararAudio } from "./descanso.jsx";
+import { BarraDescanso, prepararAudio, BotonDescanso, HojaDescanso } from "./descanso.jsx";
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
 import { TerminarEntreno, textoRecord } from "./terminar.jsx";
 import { HojaDiscos } from "./discos.jsx";
@@ -89,6 +89,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const [avisos, setAvisos] = useState({}); // id de serie → [avisos]
   const [terminando, setTerminando] = useState(false);
   const [discos, setDiscos] = useState(null); // kg de partida de la calculadora de discos, si está abierta
+  const [descansoDe, setDescansoDe] = useState(null); // inst del ejercicio cuyo descanso se está eligiendo
   const onTerminar = () => setTerminando(true);
 
   usePantallaEncendida();
@@ -277,9 +278,13 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
                         )}
                       />
                     ))}
-                    <BotonTexto onClick={() => entreno.anadirSerie(ej.inst)} style={{ marginLeft: 8, minHeight: 40 }}>
-                      <Plus size={15} /> {t(idioma, "entreno.sesion.anadirSerie")}
-                    </BotonTexto>
+                    {/* Añadir serie y, a la derecha, el descanso de este ejercicio (G3): un toque lo cambia. */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 4px 0 8px" }}>
+                      <BotonTexto onClick={() => entreno.anadirSerie(ej.inst)} style={{ minHeight: 40 }}>
+                        <Plus size={15} /> {t(idioma, "entreno.sesion.anadirSerie")}
+                      </BotonTexto>
+                      <BotonDescanso segundos={ej.descansoSeg ?? ajustes.descansoSeg} onClick={() => setDescansoDe(ej.inst)} idioma={idioma} />
+                    </div>
                   </div>
                 )}
               </section>
@@ -356,6 +361,20 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
       )}
 
       {discos && <HojaDiscos kg={discos.kg} ajustes={ajustes} idioma={idioma} onCerrar={() => setDiscos(null)} />}
+
+      {descansoDe && s.ejercicios.some((e) => e.inst === descansoDe) && (() => {
+        const ej = s.ejercicios.find((e) => e.inst === descansoDe);
+        return (
+          <HojaDescanso
+            titulo={nombreDe(entreno, ej.ejercicioId, idioma)}
+            segundos={ej.descansoSeg ?? ajustes.descansoSeg}
+            ayuda={t(idioma, s.rutinaId ? "entreno.descanso.ayudaSesionRutina" : "entreno.descanso.ayudaSesion")}
+            onElegir={(seg) => entreno.descansoEjercicio(descansoDe, seg)}
+            onCerrar={() => setDescansoDe(null)}
+            idioma={idioma}
+          />
+        );
+      })()}
 
       {terminando && <TerminarEntreno entreno={entreno} idioma={idioma} onVolver={() => setTerminando(false)} onGuardado={onGuardado} />}
 

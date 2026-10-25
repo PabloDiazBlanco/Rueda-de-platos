@@ -60,6 +60,27 @@ export function migrarCatalogo(guardado) {
   const aviso = { ...(valor.aviso || {}) };
   Object.keys(base.aviso).forEach((k) => { if (aviso[k] === undefined) { aviso[k] = base.aviso[k]; changed = true; } });
   valor.aviso = aviso;
+  // G3 (25-oct-2026): cada ejercicio de una rutina lleva su propio descanso, un número. Antes podía ser
+  // null («el de siempre»), que seguía al de los ajustes: cambiar el descanso por defecto cambiaba todas
+  // las rutinas a la vez. Las rutinas ya creadas conservan el descanso que tenían en ese momento: el
+  // propio del ejercicio (personalización de su ficha, o el que lleve un ejercicio propio) o el de los
+  // ajustes. Se lee del propio catálogo, sin importar la biblioteca (este módulo solo depende de
+  // entreno-calculo).
+  const descansoPropio = (id) => {
+    const p = valor.personalizados[id];
+    if (p && p.descansoSeg !== null && p.descansoSeg !== undefined) return p.descansoSeg;
+    const propio = valor.propios.find((e) => e && e.id === id);
+    if (propio && propio.descansoSeg !== null && propio.descansoSeg !== undefined) return propio.descansoSeg;
+    return null;
+  };
+  const sinDescanso = (re) => re && (re.descansoSeg === null || re.descansoSeg === undefined);
+  let rutinasTocadas = false;
+  const rutinas = valor.rutinas.map((r) => {
+    if (!r || !Array.isArray(r.ejercicios) || !r.ejercicios.some(sinDescanso)) return r;
+    rutinasTocadas = true;
+    return { ...r, ejercicios: r.ejercicios.map((re) => (sinDescanso(re) ? { ...re, descansoSeg: descansoPropio(re.ejercicioId) ?? ajustes.descansoSeg } : re)) };
+  });
+  if (rutinasTocadas) { valor.rutinas = rutinas; changed = true; }
   if (valor.version !== VERSION) { valor.version = VERSION; changed = true; }
   return { valor, changed };
 }

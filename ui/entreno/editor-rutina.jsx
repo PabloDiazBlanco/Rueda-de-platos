@@ -3,6 +3,8 @@
 // ejercicios en orden (añadir con el selector, quitar, subir y bajar), y por ejercicio sus series de
 // plantilla (tipo, kilos y repeticiones), su descanso y una nota. Se edita una copia y solo se guarda al
 // pulsar «Guardar», para poder salir sin tocar nada.
+// El descanso es de cada ejercicio (G3, 25-oct-2026): al añadirlo entra con el de su ficha o el de los
+// ajustes, y se cambia con el botón del reloj de su tarjeta (BotonDescanso / HojaDescanso).
 import React, { useState } from "react";
 import { Plus, ArrowUp, ArrowDown, X } from "lucide-react";
 import { t } from "i18n";
@@ -10,11 +12,10 @@ import { camposDeTipo, TIPOS_SERIE, LETRA_SERIE } from "entreno-ejercicios";
 import { Field, inputStyle } from "../comun/modal.jsx";
 import { BackLink } from "../comun/tarjetas.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
-import { BotonPrincipal, BotonTexto, TextoSuave, nombreDe, reloj, pesoAPantalla, formatoNumero } from "./comun.jsx";
+import { BotonPrincipal, BotonTexto, TextoSuave, nombreDe, pesoAPantalla, formatoNumero } from "./comun.jsx";
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
 import { COLOR_SERIE, deTexto, unidadTiempo } from "./fila-serie.jsx";
-
-const DESCANSOS = [null, 30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
+import { BotonDescanso, HojaDescanso } from "./descanso.jsx";
 
 function rutinaNueva() {
   return { id: null, nombre: "", ejercicios: [] };
@@ -46,6 +47,7 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
   const existente = id ? ((entreno.catalogo && entreno.catalogo.rutinas) || []).find((r) => r.id === id) : null;
   const [rutina, setRutina] = useState(() => (existente ? JSON.parse(JSON.stringify(existente)) : rutinaNueva()));
   const [selector, setSelector] = useState(false);
+  const [descanso, setDescanso] = useState(null); // índice del ejercicio cuyo descanso se está eligiendo
   const [error, setError] = useState("");
   const ajustes = entreno.ajustes;
 
@@ -147,17 +149,13 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
               <Plus size={14} /> {t(idioma, "entreno.sesion.anadirSerie")}
             </BotonTexto>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
-              <label style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700, color: "var(--ink-soft)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 8, marginTop: 4 }}>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700, color: "var(--ink-soft)" }}>
                 {t(idioma, "entreno.rutinas.descanso")}
-                <select
-                  value={re.descansoSeg ?? ""}
-                  onChange={(e) => cambiarEjercicio(i, (x) => ({ ...x, descansoSeg: e.target.value === "" ? null : Number(e.target.value) }))}
-                  style={{ ...inputStyle, height: 40, marginTop: 4, fontWeight: 400 }}
-                >
-                  {DESCANSOS.map((d) => <option key={String(d)} value={d ?? ""}>{d === null ? t(idioma, "entreno.rutinas.descansoDefecto", { t: reloj(ajustes.descansoSeg) }) : reloj(d)}</option>)}
-                </select>
-              </label>
+                <div style={{ marginTop: 4 }}>
+                  <BotonDescanso segundos={re.descansoSeg ?? entreno.descansoInicial(re.ejercicioId)} onClick={() => setDescanso(i)} idioma={idioma} style={{ minHeight: 40 }} />
+                </div>
+              </div>
               <label style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700, color: "var(--ink-soft)" }}>
                 {t(idioma, "entreno.rutinas.nota")}
                 <input
@@ -193,11 +191,22 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
               const series = anterior.length
                 ? anterior.map((a) => ({ tipo: a.tipo || "normal", kg: a.kg ?? null, reps: a.reps ?? null, seg: a.seg ?? null, km: a.km ?? null }))
                 : [{ tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }];
-              return { ejercicioId: eid, descansoSeg: null, nota: "", series };
+              return { ejercicioId: eid, descansoSeg: entreno.descansoInicial(eid), nota: "", series };
             });
             setRutina((r) => ({ ...r, ejercicios: [...r.ejercicios, ...nuevos] }));
             setSelector(false);
           }}
+        />
+      )}
+
+      {descanso !== null && rutina.ejercicios[descanso] && (
+        <HojaDescanso
+          titulo={nombreDe(entreno, rutina.ejercicios[descanso].ejercicioId, idioma)}
+          segundos={rutina.ejercicios[descanso].descansoSeg ?? entreno.descansoInicial(rutina.ejercicios[descanso].ejercicioId)}
+          ayuda={t(idioma, "entreno.descanso.ayudaRutina")}
+          onElegir={(seg) => cambiarEjercicio(descanso, (x) => ({ ...x, descansoSeg: seg }))}
+          onCerrar={() => setDescanso(null)}
+          idioma={idioma}
         />
       )}
     </div>

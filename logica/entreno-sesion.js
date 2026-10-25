@@ -59,16 +59,24 @@ function cambiarSerie(s, inst, id, fn) {
   return cambiarEjercicio(s, inst, (ej) => ({ ...ej, series: ej.series.map((sr) => (sr.id === id ? fn(sr) : sr)) }));
 }
 
+// Descanso con el que entra un ejercicio en una rutina o en un entreno empezado de cero (G3, 25-oct-2026):
+// el propio del ejercicio (su ficha) o, si no tiene, el de los ajustes. A partir de ahí es suyo: se cambia
+// en la rutina o durante el entreno, y cambiar después el de los ajustes ya no lo mueve.
+export function descansoInicial(id, { ajustes = {}, descansoDe = () => null } = {}) {
+  return descansoDe(id) ?? ajustes.descansoSeg ?? null;
+}
+
 // ---------- Empezar ----------
 // Desde una rutina (copia sus ejercicios, descansos, notas y nº y tipo de series) o vacía. Con
 // `ajustes.precargar`, los kilos y repeticiones salen ya rellenos con lo de la última vez (`anteriorDe(id)`
 // → series); sin él, vacíos (la columna «anterior» los sigue enseñando al lado). `descansoDe(id)` es el
-// descanso personalizado del ejercicio, si lo tiene.
+// descanso personalizado del ejercicio, si lo tiene: solo se usa si la rutina no trae uno (rutinas de
+// antes de G3 que aún no han pasado por migrarCatalogo).
 export function nuevaSesion({ rutina = null, ahora, ajustes = {}, anteriorDe = () => [], descansoDe = () => null, nombre = "" }) {
   const ejercicios = ((rutina && rutina.ejercicios) || []).map((re) => {
     let series = (re.series && re.series.length ? re.series : [{ tipo: "normal" }]).map((p) => serieVacia(p.tipo || "normal"));
     if (ajustes.precargar) series = precargarSeries(series, anteriorDe(re.ejercicioId));
-    return nuevoEjercicio(re.ejercicioId, series, { descansoSeg: re.descansoSeg ?? descansoDe(re.ejercicioId) ?? null, nota: re.nota || "" });
+    return nuevoEjercicio(re.ejercicioId, series, { descansoSeg: re.descansoSeg ?? descansoInicial(re.ejercicioId, { ajustes, descansoDe }), nota: re.nota || "" });
   });
   return {
     id: "ses_" + uid(),
@@ -83,13 +91,13 @@ export function nuevaSesion({ rutina = null, ahora, ajustes = {}, anteriorDe = (
 }
 
 // Añade ejercicios al final. Llevan tantas series como la última vez (rellenas si se precarga) o, sin
-// historial, tres vacías.
+// historial, tres vacías, y su descanso inicial (ver descansoInicial).
 export function anadirEjercicios(s, ids, { ajustes = {}, anteriorDe = () => [], descansoDe = () => null } = {}) {
   const nuevos = ids.map((id) => {
     const anterior = anteriorDe(id) || [];
     let series = anterior.length ? anterior.map((a) => serieVacia(a.tipo || "normal")) : Array.from({ length: SERIES_POR_DEFECTO }, () => serieVacia());
     if (ajustes.precargar) series = precargarSeries(series, anterior);
-    return nuevoEjercicio(id, series, { descansoSeg: descansoDe(id) ?? null });
+    return nuevoEjercicio(id, series, { descansoSeg: descansoInicial(id, { ajustes, descansoDe }) });
   });
   return { ...s, ejercicios: [...s.ejercicios, ...nuevos] };
 }
@@ -142,6 +150,15 @@ export function desmarcar(s, inst, id) {
 }
 
 // ---------- Descanso ----------
+// Cambia el descanso de un ejercicio de la sesión (G3: acceso rápido durante el entreno). Vale para las
+// series que se marquen a partir de ahora; el descanso que ya está corriendo no se toca (para eso están
+// −15 y +15 en su barra). Si la sesión viene de una rutina, al terminar se ofrece pasarlo a ella (ver
+// cambiosEstructurales).
+export function descansoEjercicio(s, inst, segundos) {
+  const valor = Math.max(0, Math.round(Number(segundos) || 0));
+  return cambiarEjercicio(s, inst, (ej) => ({ ...ej, descansoSeg: valor }));
+}
+
 export function ajustarDescanso(s, segundos) {
   if (!s.descanso) return s;
   const hasta = Math.max(s.descanso.inicio, s.descanso.hasta + segundos * 1000);
@@ -225,9 +242,17 @@ export function terminarSesion(s, ahora, { nombre, esfuerzo, nota, inicio } = {}
 const huellaSesion = (s) => s.ejercicios.map((ej) => `${ej.sustituyeA || ej.ejercicioId}:${ej.series.length}`).join("|");
 const huellaRutina = (r) => (r.ejercicios || []).map((re) => `${re.ejercicioId}:${(re.series || []).length}`).join("|");
 
+// También cuenta como cambio el descanso de un ejercicio retocado durante el entreno (G3). Solo se mira
+// con la misma estructura (entonces el ejercicio i de la sesión es el i de la rutina), en los que no se
+// sustituyeron solo hoy (vuelven a la rutina tal cual estaban) y si la rutina trae su propio descanso: una
+// rutina de antes de G3 sin migrar (null, «el de siempre») no debe dar un cambio que nadie hizo.
 export function cambiosEstructurales(s, rutina) {
   if (!rutina) return false;
-  return huellaSesion(s) !== huellaRutina(rutina);
+  if (huellaSesion(s) !== huellaRutina(rutina)) return true;
+  return s.ejercicios.some((ej, i) => {
+    const deRutina = rutina.ejercicios[i].descansoSeg;
+    return !ej.sustituyeA && deRutina !== null && deRutina !== undefined && (ej.descansoSeg ?? null) !== deRutina;
+  });
 }
 
 const plantillaSerie = (sr) => {
@@ -237,8 +262,9 @@ const plantillaSerie = (sr) => {
 };
 
 // Pasa a la rutina los cambios de estructura de la sesión: ejercicios, orden y series (con los valores
-// de hoy como nueva plantilla). Un ejercicio sustituido solo hoy deja en la rutina el original con su
-// plantilla de siempre. Se conservan el descanso y la nota de cada ejercicio que ya estaba.
+// de hoy como nueva plantilla) y el descanso de cada ejercicio (el de hoy, que es el de la rutina salvo que
+// se cambiara durante el entreno). Un ejercicio sustituido solo hoy deja en la rutina el original con su
+// plantilla de siempre. Se conserva la nota de cada ejercicio que ya estaba.
 export function aplicarARutina(rutina, s, hoy) {
   const previos = rutina.ejercicios || [];
   const usados = new Set();
@@ -250,7 +276,7 @@ export function aplicarARutina(rutina, s, hoy) {
     if (ej.sustituyeA && previo) return previo;
     return {
       ejercicioId: id,
-      descansoSeg: previo ? previo.descansoSeg ?? null : ej.descansoSeg ?? null,
+      descansoSeg: ej.descansoSeg ?? (previo ? previo.descansoSeg ?? null : null),
       nota: previo ? previo.nota || "" : "",
       series: ej.series.map(plantillaSerie),
     };
