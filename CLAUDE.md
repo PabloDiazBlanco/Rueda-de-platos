@@ -71,6 +71,7 @@ logica/resumen-mensual.js      → calcularResumenMensual, pesoEnMes (comidas co
 logica/i18n.js                 → diccionario de textos por idioma (ES/EN/CA/GL/EU) y la función t()
 logica/datos-iniciales.js      → FOODS_SEED, CATEGORIAS_ALIMENTOS, initialData (cuenta nueva)
 logica/cuestionario.js         → opciones del cuestionario de alta y construirIngredientesDesdeCuestionario
+                                  (con la proteína predeterminada, que pasa a ser la «base» del motor, A9)
 logica/migraciones.js          → migrateData
 logica/despensa.js             → stock de la despensa: zonas, menú confirmado, descontar/devolver comidas,
                                   tachar/destachar compras, queda poco (alertasStock), limpieza,
