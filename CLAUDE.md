@@ -335,7 +335,7 @@ despensa, **no pasan por `migrateData`**):
 |---|---|
 | `rueda-de-platos:entreno-catalogo-v1` | ejercicios propios, personalización de los de fábrica (favorito, nota fija, descanso), rutinas, ajustes, estado del aviso de actividad |
 | `rueda-de-platos:entreno-AAAA-MM-v1` | las sesiones **terminadas** de ese mes |
-| `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes y, por ejercicio, la última vez y sus récords |
+| `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes; por ejercicio, la última vez y sus récords; por rutina (`rutinas`, G4), los ejercicios de su última sesión |
 | `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion }`: la sesión en curso (o `null`) |
 | `localStorage` `fooddraft:entreno-borrador` / `fooddraft:entreno-pendientes` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube |
 
@@ -390,6 +390,12 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
 - **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca), récords
   batidos, «actualizar la rutina» si cambió su estructura (o el descanso de algún ejercicio), guardar,
   compartir (`documentoSesion` con `BotonCompartir`) y descartar con confirmación.
+- **«Anterior» equivalente** (G4, 25-oct-2026): en un entreno que viene de una rutina, la columna
+  «anterior» y la precarga usan lo que se hizo en la **última sesión de esa misma rutina**
+  (`anteriorEquivalente`, `entreno-calculo.js`; el mismo ejercicio dos veces, cada uno con el suyo por
+  `ocurrencia`). Primera vez de la rutina, ejercicio que aquella vez no estaba o entreno sin rutina: la
+  última vez a secas, como antes. Un índice guardado sin `rutinas` hace que `migrarIndice` pida
+  `reconstruir` y el hook lo reconstruye una vez al cargar.
 - **Descanso de cada ejercicio** (G3, 25-oct-2026): cada ejercicio de una rutina lleva su `descansoSeg`
   (un número; 0 = sin descanso). Entra con el de su ficha o el de los ajustes (`descansoInicial`) al
   añadirlo a una rutina o a un entreno empezado de cero, y se cambia con el botón del reloj de su tarjeta
