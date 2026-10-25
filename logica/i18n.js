@@ -1416,6 +1416,9 @@ const TEXTOS = {
     "periodo.previsto": "Inicio previsto",
     "periodo.aviso": "Es solo informativo: la previsión es una cuenta sencilla y no sirve como método anticonceptivo. Ante cualquier duda, consulta a un profesional sanitario.",
     "periodo.privacidad": "Estos datos se guardan solo en este dispositivo: no se suben a tu cuenta ni a la nube, y se pierden si cambias de móvil o borras los datos del navegador.",
+
+    "ajustes.descongelar.label": "Aviso para descongelar",
+    "ajustes.descongelar.ayuda": "Cada noche a las 21:30, una notificación para revisar las comidas de mañana por si tienes que descongelar algo o comprar. Usa el mismo permiso de notificaciones que el recordatorio de pesaje; en iPhone solo llega con la app instalada.",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2771,6 +2774,9 @@ const TEXTOS = {
     "periodo.previsto": "Expected start",
     "periodo.aviso": "This is for information only: the forecast is a simple calculation and is not a contraceptive method. If in doubt, ask a health professional.",
     "periodo.privacidad": "This data is stored only on this device: it isn’t uploaded to your account or the cloud, and it’s lost if you change phone or clear your browser data.",
+
+    "ajustes.descongelar.label": "Defrost reminder",
+    "ajustes.descongelar.ayuda": "Every night at 21:30, a notification to check tomorrow’s meals in case you need to defrost something or buy anything. It uses the same notification permission as the weigh-in reminder; on iPhone it only arrives with the app installed.",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -4126,6 +4132,9 @@ const TEXTOS = {
     "periodo.previsto": "Inici previst",
     "periodo.aviso": "És només informatiu: la previsió és un càlcul senzill i no serveix com a mètode anticonceptiu. Davant de qualsevol dubte, consulta un professional sanitari.",
     "periodo.privacidad": "Aquestes dades es desen només en aquest dispositiu: no es pugen al teu compte ni al núvol, i es perden si canvies de mòbil o esborres les dades del navegador.",
+
+    "ajustes.descongelar.label": "Avís per descongelar",
+    "ajustes.descongelar.ayuda": "Cada nit a les 21:30, una notificació per revisar els àpats de demà per si has de descongelar alguna cosa o comprar. Fa servir el mateix permís de notificacions que el recordatori de pes; a l’iPhone només arriba amb l’app instal·lada.",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5481,6 +5490,9 @@ const TEXTOS = {
     "periodo.previsto": "Inicio previsto",
     "periodo.aviso": "É só informativo: a previsión é unha conta sinxela e non serve como método anticonceptivo. Ante calquera dúbida, consulta a un profesional sanitario.",
     "periodo.privacidad": "Estes datos gárdanse só neste dispositivo: non se soben á túa conta nin á nube, e pérdense se cambias de móbil ou borras os datos do navegador.",
+
+    "ajustes.descongelar.label": "Aviso para desconxelar",
+    "ajustes.descongelar.ayuda": "Cada noite ás 21:30, unha notificación para revisar as comidas de mañá por se tes que desconxelar algo ou mercar. Usa o mesmo permiso de notificacións que o recordatorio de pesaxe; no iPhone só chega coa app instalada.",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6836,6 +6848,9 @@ const TEXTOS = {
     "periodo.previsto": "Aurreikusitako hasiera",
     "periodo.aviso": "Informazio hutsa da: aurreikuspena kalkulu sinple bat da eta ez da metodo antisorgailua. Zalantzarik izanez gero, galdetu osasun-profesional bati.",
     "periodo.privacidad": "Datu hauek gailu honetan bakarrik gordetzen dira: ez dira zure kontura edo hodeira igotzen, eta mugikorra aldatzen baduzu edo nabigatzailearen datuak ezabatzen badituzu galdu egiten dira.",
+
+    "ajustes.descongelar.label": "Desizozteko abisua",
+    "ajustes.descongelar.ayuda": "Gauero 21:30ean, jakinarazpen bat biharko otorduak begiratzeko, zerbait desizoztu edo erosi behar baduzu ere. Pisatzeko gogorarazlearen jakinarazpen-baimen bera erabiltzen du; iPhonen aplikazioa instalatuta badago bakarrik iristen da.",
   },
 };
 

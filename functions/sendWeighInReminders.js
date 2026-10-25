@@ -104,6 +104,15 @@ exports.sendWeighInReminders = onSchedule(
           return;
         }
 
+        // C8 (25-oct-2026): desde que existe el aviso para descongelar, el token de notificaciones puede estar
+        // guardado solo por ese aviso. Si la cuenta tiene el recordatorio de pesaje desactivado, no se le manda.
+        // (Hasta entonces, desactivarlo borraba el token, así que el resultado para las cuentas de antes es el
+        // mismo.)
+        if (datos.perfil && datos.perfil.notificacionesPush === false) {
+          logger.info(`${uid}: recordatorio de pesaje desactivado, se omite`);
+          return;
+        }
+
         const pesoTracking = datos.pesoTracking;
         if (!pesoTracking) {
           logger.info(`${uid}: sin seguimiento de peso configurado, se omite`);

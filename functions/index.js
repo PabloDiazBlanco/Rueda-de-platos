@@ -17,3 +17,4 @@ exports.createCheckoutSession = require("./createCheckoutSession").createCheckou
 exports.createPortalSession = require("./createPortalSession").createPortalSession;
 exports.suggestMeals = require("./suggestMeals").suggestMeals;
 exports.sendWeighInReminders = require("./sendWeighInReminders").sendWeighInReminders;
+exports.sendDefrostReminders = require("./sendDefrostReminders").sendDefrostReminders;

@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v27";
+const CACHE_NAME = "fooddraft-v28";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./cargador-ui.js", "./ui/archivos.json",
   "./manifest.json", "./icon.svg",
@@ -41,7 +41,9 @@ try {
       body: body || "",
       // Sin icono en PNG todavía (ver la hoja de ruta de publicación, Fase 7) — el navegador usa
       // su icono por defecto mientras tanto. Cuando exista ./icon-192.png, añadirlo aquí.
-      tag: "recordatorio-pesaje",
+      // La etiqueta la manda la función (C8: «aviso-descongelar»), para que un aviso no sustituya a otro;
+      // sin ella, la de siempre.
+      tag: (payload.data && payload.data.tag) || "recordatorio-pesaje",
     });
   });
 } catch (e) {

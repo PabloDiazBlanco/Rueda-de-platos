@@ -112,6 +112,30 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
   const [notifEstado, setNotifEstado] = useState(""); // "" | "pidiendo" | "error"
   const [notifError, setNotifError] = useState("");
   const notifPush = perfil?.notificacionesPush ?? false;
+  // C8: el aviso para descongelar usa el mismo permiso y token de notificaciones que el recordatorio de pesaje,
+  // pero se activa aparte; el token solo se borra cuando ninguno de los dos está activado.
+  const avisoDescongelar = perfil?.avisoDescongelar ?? false;
+  const [descongelarEstado, setDescongelarEstado] = useState(""); // "" | "pidiendo" | "error"
+  const [descongelarError, setDescongelarError] = useState("");
+
+  async function handleToggleDescongelar(activar) {
+    setDescongelarError("");
+    if (!activar) {
+      onSave({ ...perfil, avisoDescongelar: false });
+      setDescongelarEstado("");
+      if (!notifPush && typeof window.disablePushNotifications === "function") window.disablePushNotifications().catch(() => {});
+      return;
+    }
+    setDescongelarEstado("pidiendo");
+    try {
+      await window.requestPushPermission();
+      onSave({ ...perfil, avisoDescongelar: true });
+      setDescongelarEstado("");
+    } catch (err) {
+      setDescongelarEstado("error");
+      setDescongelarError(t(idioma, "perfil.notificaciones.error." + (err.code || "generico")));
+    }
+  }
 
   function cambiarIdioma(nuevo) {
     guardarIdiomaLocal(nuevo);
@@ -123,7 +147,8 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
     if (!activar) {
       onSave({ ...perfil, notificacionesPush: false });
       setNotifEstado("");
-      if (typeof window.disablePushNotifications === "function") {
+      // Si el aviso para descongelar (C8) sigue activado, el token hace falta para él: no se borra.
+      if (!avisoDescongelar && typeof window.disablePushNotifications === "function") {
         window.disablePushNotifications().catch(() => {});
       }
       return;
@@ -185,6 +210,39 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
             <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>
               {notifError}
             </div>
+          )}
+        </Field>
+
+        <Field label={t(idioma, "ajustes.descongelar.label")}>
+          <div style={{ display: "flex", gap: 8 }}>
+            {[
+              { value: true, labelKey: "perfil.notificaciones.activadas" },
+              { value: false, labelKey: "perfil.notificaciones.desactivadas" },
+            ].map((op) => (
+              <button
+                key={String(op.value)}
+                onClick={() => handleToggleDescongelar(op.value)}
+                disabled={descongelarEstado === "pidiendo"}
+                style={{
+                  flex: 1, fontFamily: FUENTE_TEXTO, fontSize: 13.5, fontWeight: 700,
+                  padding: "9px 10px", borderRadius: 8, border: "1px solid var(--line)",
+                  background: avisoDescongelar === op.value ? "var(--green-dark)" : "#fff",
+                  color: avisoDescongelar === op.value ? "#fff" : "var(--ink)",
+                  cursor: descongelarEstado === "pidiendo" ? "default" : "pointer",
+                }}
+              >
+                {t(idioma, op.labelKey)}
+              </button>
+            ))}
+          </div>
+          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 4 }}>
+            {t(idioma, "ajustes.descongelar.ayuda")}
+          </div>
+          {descongelarEstado === "pidiendo" && (
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginTop: 4 }}>{t(idioma, "perfil.notificaciones.pidiendoPermiso")}</div>
+          )}
+          {descongelarEstado === "error" && (
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>{descongelarError}</div>
           )}
         </Field>
 

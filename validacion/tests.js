@@ -649,6 +649,13 @@ export function crearGrupos(mod, carga) {
           },
         },
         {
+          nombre: "C8: el aviso para descongelar empieza desactivado en los perfiles de antes y no se toca si ya estaba",
+          ejecutar: () => comparar(
+            { viejo: migrateData({ perfil: { nombre: "X" } }).data.perfil.avisoDescongelar, activado: migrateData({ perfil: { nombre: "Y", avisoDescongelar: true } }).data.perfil.avisoDescongelar, sinPerfil: migrateData({}).data.perfil },
+            { viejo: false, activado: true, sinPerfil: undefined }
+          ),
+        },
+        {
           nombre: "D3: el perfil de antes queda sin respuesta de preentreno (null, null, sin días) sin tocar lo contestado",
           ejecutar: () => {
             const viejo = migrateData({ perfil: { nombre: "X", repartoComidas: { Comida: 0.5, Cena: 0.5 } } }).data.perfil;
