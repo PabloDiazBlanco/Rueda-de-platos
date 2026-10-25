@@ -86,6 +86,8 @@ logica/entreno-calculo.js      → 1RM (Epley), volumen, duración con pausas, r
 logica/entreno-sesion.js       → operaciones puras de la sesión en curso (series, descanso, sustituir hoy,
                                   pausa, terminar) y de rutinas (aplicarARutina, rutinaDesdeSesion)
 logica/entreno-almacen.js      → claves, migraciones, meses, índice, borrador, cola de envíos y CSV
+logica/entreno-importar.js     → importar de Hevy y Lyfta: leerCSV, adaptadores, emparejar con la biblioteca,
+                                  prepararImportacion (vista previa) y construirImportacion
 logica/informes.js             → informes cruzados del área Cuerpo (informeCruzadoMes, declaradoPorSemana),
                                   aviso de actividad (sesionesPorSemana, evaluarAvisoActividad) y de grupos
                                   musculares sin entrenar (ultimaVezPorGrupo, gruposSinEntrenar)
@@ -98,7 +100,8 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 `objetivos.js`, `peso.js` e `i18n.js`, `despensa.js` → `comun.js` y `datos-iniciales.js`, y `lista-compra-neta.js` →
 `macros.js`, `comida-calculo.js` y `despensa.js`, y `comida-real.js` → esos tres y `datos-iniciales.js`
 (`nevera.js` no importa nada). Del entreno:
-`entreno-sesion.js` → `comun.js`, `entreno-almacen.js` → `entreno-calculo.js` e `informes.js` →
+`entreno-sesion.js` → `comun.js`, `entreno-importar.js` → `comun.js` y `entreno-ejercicios.js`,
+`entreno-almacen.js` → `entreno-calculo.js` e `informes.js` →
 `entreno-calculo.js`, `resumen-mensual.js` y `objetivos.js` (solo lee de él); `entreno-ejercicios.js`,
 `entreno-nombres.js` y `entreno-calculo.js` no importan nada (reciben `ejercicioDe(id)` y `nombreDe` como
 funciones, para no depender de la biblioteca ni de los nombres). La interfaz importa `logica/` por **nombre corto** y otros
@@ -360,7 +363,7 @@ despensa, **no pasan por `migrateData`**):
 
 | Clave | Contenido |
 |---|---|
-| `rueda-de-platos:entreno-catalogo-v1` | ejercicios propios, personalización de los de fábrica (favorito, nota fija, descanso), rutinas, ajustes, estado del aviso de actividad |
+| `rueda-de-platos:entreno-catalogo-v1` | ejercicios propios, personalización de los de fábrica (favorito, nota fija, descanso), rutinas, ajustes, estado de los avisos, importaciones hechas |
 | `rueda-de-platos:entreno-AAAA-MM-v1` | las sesiones **terminadas** de ese mes |
 | `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes; por ejercicio, la última vez y sus récords; por rutina (`rutinas`, G4), los ejercicios de su última sesión |
 | `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion }`: la sesión en curso (o `null`) |
@@ -444,6 +447,16 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   `entreno-calculo.js` (con sus pruebas) y `comun.jsx` las reexporta. «¿Datos erróneos o que faltan?» de la
   ficha navega a `feedback` con `params: { categoria: "ejercicio", ejercicioId }`, y `FeedbackView` ofrece
   arriba el correo ya rellenado (nunca lo abre solo).
+- **Importar de Hevy y Lyfta** (G10, 25-oct-2026; `ui/entreno/importar.jsx`, en Ajustes → Entrenamiento):
+  se elige el CSV exportado, se ve un resumen (entrenos nuevos, los que ya estaban, ejercicios reconocidos y
+  los que se crearán como propios, con la opción de elegir uno de la biblioteca) y se importa por el mismo
+  camino que un entreno terminado (por meses + `reconstruir`). Las sesiones llevan `origen:
+  "importado:hevy|lyfta"` y un `lote`, que guarda `catalogo.importaciones` para **deshacer** la importación
+  entera (los propios que creó se archivan). No duplica: mismo nombre y misma hora de inicio (±5 min). El
+  emparejamiento usa la biblioteca que haya en cada momento con sus nombres en los cinco idiomas y los alias
+  de `ALIAS_EJERCICIOS` (`entreno-nombres.js`): **al añadir un ejercicio a la biblioteca, añade sus alias**.
+  RPE de Hevy → RIR = 10 − RPE; pesos de Lyfta en kg. Los CSV del usuario nunca se copian al repositorio: los
+  casos de `validacion/` usan filas inventadas con el mismo formato.
 - **Opcionales hechos**: calculadora de discos (`discos.jsx` y `discosPorLado`, desde el ⋮ de los ejercicios
   con barra; barra de 20 kg o 45 lb) y carpetas de rutinas (`rutina.carpeta`, texto opcional que solo agrupa
   la lista; sin migración, porque una rutina sin carpeta se ve como siempre). Quedan sin hacer las
