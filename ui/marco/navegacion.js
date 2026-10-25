@@ -20,7 +20,7 @@
 import {
   Utensils, Dumbbell, PersonStanding, CalendarDays, ListChecks, Refrigerator, ChefHat, Apple, Package,
   Shuffle, Camera, PieChart, Scale, Activity, Ruler, Share2, Mail, FileText, Sparkles, Settings, User,
-  ClipboardList, BookOpen, History, TrendingUp,
+  ClipboardList, BookOpen, History, TrendingUp, Droplet,
 } from "lucide-react";
 
 export const AREAS = [
@@ -82,6 +82,8 @@ export const AREAS = [
       { clave: "actividad", destino: "actividad-diaria", etiqueta: "barra.actividad", icono: Activity, incluye: ["actividad-diaria"] },
       { clave: "resumen", destino: "perfil-resumen", etiqueta: "barra.resumen", icono: PieChart, incluye: ["perfil-resumen"] },
       { clave: "informes", destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles, incluye: ["cuerpo-informes"] },
+      // I1: solo si el perfil tiene sexo femenino (`soloMujer`, ver visibleCon). Es la quinta: no cabe otra.
+      { clave: "periodo", destino: "cuerpo-periodo", etiqueta: "barra.periodo", icono: Droplet, incluye: ["cuerpo-periodo"], soloMujer: true },
     ],
     menu: [
       { destino: "perfil-peso", etiqueta: "drawer.registroPeso", icono: Scale },
@@ -89,6 +91,7 @@ export const AREAS = [
       { destino: "actividad-diaria", etiqueta: "drawer.actividadDiaria", icono: Activity },
       { destino: "perfil-resumen", etiqueta: "perfilRoot.resumenMensual", icono: PieChart },
       { destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles },
+      { destino: "cuerpo-periodo", etiqueta: "barra.periodo", icono: Droplet, soloMujer: true },
     ],
   },
 ];
@@ -126,6 +129,12 @@ export function pestanaDe(destino) {
     if (p) return p.clave;
   }
   return null;
+}
+
+// ¿Se enseña esta pestaña o entrada del menú con este perfil? Hoy solo «Período» (I1) depende de él: sale si
+// el perfil tiene sexo femenino. La barra inferior y el menú lateral filtran con esto.
+export function visibleCon(item, perfil) {
+  return !item.soloMujer || !!(perfil && perfil.sexo === "mujer");
 }
 
 // La descripción completa de un área por su clave (o undefined).

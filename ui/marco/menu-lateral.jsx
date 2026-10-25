@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { X, ChevronDown } from "lucide-react";
 import { t } from "i18n";
 import { FUENTE_TEXTO } from "../estilos.js";
-import { AREAS, COMUNES } from "./navegacion.js";
+import { AREAS, COMUNES, visibleCon } from "./navegacion.js";
 
 // ---------- Menú lateral (drawer) ----------
 // Desde la navegación por áreas (octubre de 2026) lo que lista sale de ui/marco/navegacion.js: arriba,
@@ -14,7 +14,7 @@ import { AREAS, COMUNES } from "./navegacion.js";
 // mismo, sin navegar — mismo patrón que tenía el menú desde la Tanda 2 con Configuración y Peso. El área
 // en la que se está sale resaltada y desplegada al abrir el menú, para que nunca haya dudas de dónde
 // se está.
-export function DrawerMenu({ open, onClose, tab, area, setTab, onIrAArea, idioma, premium }) {
+export function DrawerMenu({ open, onClose, tab, area, setTab, onIrAArea, idioma, premium, perfil }) {
   // Lo que el usuario ha desplegado o plegado a mano; si no ha tocado un área, se despliega sola la
   // actual.
   const [expandido, setExpandido] = useState({});
@@ -75,7 +75,7 @@ export function DrawerMenu({ open, onClose, tab, area, setTab, onIrAArea, idioma
                 />
                 {a.menu.length > 0 && abierto && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 1, marginLeft: 15, borderLeft: "1.5px solid var(--line)", paddingLeft: 8, marginBottom: 4 }}>
-                    {a.menu.map((m) => (
+                    {a.menu.filter((m) => visibleCon(m, perfil)).map((m) => (
                       <DrawerItem
                         key={m.destino}
                         icono={m.icono}

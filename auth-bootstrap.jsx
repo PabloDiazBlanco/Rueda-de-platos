@@ -704,6 +704,9 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     window.storage = makeFirestoreStorage(user.uid);
     window.authProvider = user.providerData[0]?.providerId === "google.com" ? "google" : "password";
+    // Identificador de la cuenta para lo que se guarda solo en el dispositivo y no debe ver otra cuenta que
+    // inicie sesión en el mismo móvil (hoy, el período: ui/cuerpo/periodo.jsx).
+    window.cuentaId = user.uid;
     await migrateLocalDataIfNeeded(user.uid);
     watchForFirstProfileCompletion(user.uid);
     const mod = await loadMainApp();

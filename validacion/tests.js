@@ -5,6 +5,7 @@
 // antes de guardarlos como referencia (agosto de 2026).
 import { DAYS, primerEmoji } from "comun";
 import { cumplimientoMacrosMes } from "resumen-mensual";
+import { migrarPeriodo, alternarDia, iniciosDeRegla, prediccionPeriodo } from "periodo";
 import { objetivosPorComida, recomendacionPreentreno } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
@@ -429,6 +430,39 @@ export function crearGrupos(mod, carga) {
                 nada: tipo({ repartoComidas: reparto, horaEntreno: null, entrenoComida: null }), sinPerfil: tipo(null),
               },
               { despues: "noHace:Comida", antes: "comer:Cena", franja: "general", comidaQueYaNoEsta: "general", nada: "nada", sinPerfil: "nada" }
+            );
+          },
+        },
+      ],
+    },
+    {
+      // I1 (25-oct-2026): inicios de regla = días de regla cuyo día anterior no lo es; siguiente inicio = último
+      // + distancia entre los dos últimos (o + 28 con uno solo).
+      grupo: "Período (I1)",
+      casos: [
+        {
+          nombre: "Inicios y predicción: con dos inicios (1-oct y 30-oct, 29 días) → 28-nov; con uno → +28; sin ninguno → null",
+          ejecutar: () => {
+            const dos = { regla: ["2026-10-01", "2026-10-02", "2026-10-03", "2026-10-30", "2026-10-31", "2026-11-01"] };
+            const uno = { regla: ["2026-10-05", "2026-10-06"] };
+            const p = prediccionPeriodo(dos);
+            const q = prediccionPeriodo(uno);
+            return comparar(
+              { inicios: iniciosDeRegla(dos.regla).join(","), fecha: p.fecha, ciclo: p.ciclo, base: p.base, fechaUno: q.fecha, baseUno: q.base, nada: prediccionPeriodo({ regla: [] }) },
+              { inicios: "2026-10-01,2026-10-30", fecha: "2026-11-28", ciclo: 29, base: "dos", fechaUno: "2026-11-02", baseUno: "uno", nada: null }
+            );
+          },
+        },
+        {
+          nombre: "Marcar y desmarcar un día; la migración quita fechas mal escritas y repetidas y ordena",
+          ejecutar: () => {
+            const p1 = alternarDia(migrarPeriodo(null), "regla", "2026-10-10");
+            const p2 = alternarDia(p1, "relaciones", "2026-10-12");
+            const p3 = alternarDia(p2, "regla", "2026-10-10");
+            const m = migrarPeriodo({ regla: ["2026-10-09", "x", "2026-10-02", "2026-10-09"], relaciones: "no" });
+            return comparar(
+              { regla1: p1.regla.join(","), relaciones2: p2.relaciones.join(","), regla3: p3.regla.length, migrada: m.regla.join(","), relacionesMigradas: m.relaciones.length, version: m.version },
+              { regla1: "2026-10-10", relaciones2: "2026-10-12", regla3: 0, migrada: "2026-10-02,2026-10-09", relacionesMigradas: 0, version: 1 }
             );
           },
         },

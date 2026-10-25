@@ -149,7 +149,7 @@ export default function RuedaDePlatos() {
   return (
     <Shell>
       <Header saveState={saveState} idioma={idioma} titulo={area ? areaPorClave(area).titulo : TITULO_COMUN} onOpenMenu={() => setDrawerOpen(true)} />
-      <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} area={area} setTab={setTab} onIrAArea={irAArea} idioma={idioma} premium={premium} />
+      <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} area={area} setTab={setTab} onIrAArea={irAArea} idioma={idioma} premium={premium} perfil={data.perfil} />
 
       {/* Con barra inferior (y con la pastilla del entreno en curso), <main> deja libre abajo lo que
           ocupan, para que lo último de cada pantalla no quede escondido detrás. */}
@@ -157,7 +157,7 @@ export default function RuedaDePlatos() {
         <Pantalla tab={tab} ctx={ctx} />
       </main>
 
-      <BarraInferior area={area} tab={tab} navegar={navegar} idioma={idioma} />
+      <BarraInferior area={area} tab={tab} navegar={navegar} idioma={idioma} perfil={data.perfil} />
       <PastillaEntreno entreno={entreno} idioma={idioma} hayBarra={!!area} />
 
       <ModalesCatalogo catalogo={catalogo} data={data} idioma={idioma} />

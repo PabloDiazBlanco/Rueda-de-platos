@@ -33,6 +33,7 @@ import { HistorialView, DetalleSesionView } from "./entreno/historial.jsx";
 import { FichaEjercicioView } from "./entreno/ficha.jsx";
 import { ProgresoView } from "./entreno/progreso.jsx";
 import { InformesView } from "./cuerpo/informes.jsx";
+import { PeriodoView } from "./cuerpo/periodo.jsx";
 import { AvisoActividad } from "./entreno/aviso-actividad.jsx";
 import { AvisoGrupos } from "./entreno/aviso-grupos.jsx";
 
@@ -213,6 +214,9 @@ const PANTALLAS = {
   "cuerpo-informes": ({ data, idioma, setTab, premium, entreno }) => (
     <InformesView data={data} premium={premium} entreno={entreno} idioma={idioma} onGoPremium={() => setTab("perfil-premium")} />
   ),
+
+  // Período (I1): solo para perfiles con sexo femenino; los datos, solo en el dispositivo.
+  "cuerpo-periodo": ({ data, idioma }) => <PeriodoView perfil={data.perfil} idioma={idioma} />,
 
   "perfil-documentos": ({ idioma }) => <DocumentosView idioma={idioma} />,
 

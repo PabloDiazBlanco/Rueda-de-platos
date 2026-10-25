@@ -17,7 +17,7 @@
 import React, { useState, useEffect } from "react";
 import { t } from "i18n";
 import { FUENTE_TEXTO } from "../estilos.js";
-import { areaPorClave, pestanaDe } from "./navegacion.js";
+import { areaPorClave, pestanaDe, visibleCon } from "./navegacion.js";
 
 // Altura que ocupa la barra con su margen: lo que <main> deja libre abajo para que lo último de cada
 // pantalla no quede escondido detrás (lo usa app.jsx).
@@ -64,11 +64,13 @@ export function useEscribiendo() {
   return escribiendo;
 }
 
-export function BarraInferior({ area, tab, navegar, idioma }) {
+export function BarraInferior({ area, tab, navegar, idioma, perfil }) {
   const [reducido] = useState(prefiereMenosMovimiento);
   const escribiendo = useEscribiendo();
   const descripcion = areaPorClave(area);
   if (!descripcion || !descripcion.pestanas.length) return null;
+  // Pestañas que dependen del perfil (hoy, «Período»: solo con sexo femenino).
+  const pestanas = descripcion.pestanas.filter((p) => visibleCon(p, perfil));
   const activa = pestanaDe(tab);
 
   return (
@@ -103,7 +105,7 @@ export function BarraInferior({ area, tab, navegar, idioma }) {
           pointerEvents: escribiendo ? "none" : "auto",
         }}
       >
-        {descripcion.pestanas.map((p) => {
+        {pestanas.map((p) => {
           const esActiva = p.clave === activa;
           const Icono = p.icono;
           const nombre = t(idioma, p.etiqueta);
