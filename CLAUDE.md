@@ -459,8 +459,15 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   casos de `validacion/` usan filas inventadas con el mismo formato.
 - **Opcionales hechos**: calculadora de discos (`discos.jsx` y `discosPorLado`, desde el ⋮ de los ejercicios
   con barra; barra de 20 kg o 45 lb) y carpetas de rutinas (`rutina.carpeta`, texto opcional que solo agrupa
-  la lista; sin migración, porque una rutina sin carpeta se ve como siempre). Quedan sin hacer las
-  superseries y el mapa corporal.
+  la lista; sin migración, porque una rutina sin carpeta se ve como siempre). Queda sin hacer el mapa
+  corporal.
+- **Superseries** (G11, 25-oct-2026): `superserie: id` en cada ejercicio de la rutina y de la sesión; los
+  **seguidos** con el mismo id forman el grupo (2 o más), así que reordenar no deja restos (`gruposSuperserie`,
+  `grupoDe`, `unirSuperserie`, `separarSuperserie` en `entreno-sesion.js`). Se crean en el editor de la
+  rutina (entre tarjetas, «Superserie con el siguiente») y en el ⋮ de la sesión; franja mostaza y «Superserie
+  N». Al marcar una serie, el foco va por rondas (`ordenDeSeries`/`siguienteSerie`: A1 B1 A2 B2…). Cada
+  ejercicio conserva su descanso, como sin superserie. Crear o deshacer una durante el entreno cuenta como
+  cambio de la rutina; las importadas (G10) llegan con el mismo modelo.
 - **Capas a pantalla completa y hojas inferiores** del módulo: `CapaCompleta` y `HojaInferior` en
   `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
   de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).
