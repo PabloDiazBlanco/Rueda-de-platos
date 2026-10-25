@@ -218,6 +218,25 @@ export function anteriorDe(indice, ejercicioId) {
   return (e && e.ultima && e.ultima.series) || [];
 }
 
+// «Anterior» equivalente (G4, 25-oct-2026). El ejemplo del usuario: press de banca el lunes en «Pecho»
+// como primer ejercicio y el jueves en «Torso» como cuarto, con cargas y repeticiones distintas porque
+// llega más cansado. La última vez a secas mezclaría los dos días; lo que sirve de referencia es lo que
+// se hizo en ese mismo hueco de esa misma rutina. Regla acordada:
+// - Si la sesión viene de una rutina y esa rutina ya se hizo antes (el índice guarda, por rutina, los
+//   ejercicios de su última sesión: `indice.rutinas`), se usan las series de ese ejercicio en esa sesión.
+//   `ocurrencia` distingue el mismo ejercicio repetido en una rutina (el 2.º press de banca con el 2.º).
+// - Si es la primera vez que se hace la rutina, si aquella vez no se hizo este ejercicio, o si el entreno
+//   no viene de ninguna rutina: la última vez a secas, como siempre.
+export function anteriorEquivalente(indice, ejercicioId, { rutinaId = null, ocurrencia = 0 } = {}) {
+  const r = rutinaId && indice && indice.rutinas && indice.rutinas[rutinaId];
+  if (r) {
+    const delEjercicio = (r.ejercicios || []).filter((e) => e.ejercicioId === ejercicioId);
+    const e = delEjercicio[ocurrencia];
+    if (e && e.series && e.series.length) return e.series;
+  }
+  return anteriorDe(indice, ejercicioId);
+}
+
 // ---------- Series por músculo ----------
 // Series que cuentan, sumadas por grupo muscular entre dos fechas (incluidas; null = sin límite): el
 // músculo principal suma 1 por serie y cada secundario 0,5, porque trabaja pero no es el objetivo (es

@@ -201,10 +201,13 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
 
           {!s.ejercicios.length && <TextoSuave style={{ padding: "18px 4px" }}>{t(idioma, "entreno.sesion.vacia")}</TextoSuave>}
 
-          {s.ejercicios.map((ej) => {
+          {s.ejercicios.map((ej, posicion) => {
             const tipo = tipoDe(ej.ejercicioId);
             const campos = camposDeTipo(tipo);
-            const anterior = entreno.anteriorDe(ej.ejercicioId);
+            // «Anterior» equivalente (G4): en un entreno de rutina, lo de la última sesión de esa rutina en
+            // este mismo hueco (si el ejercicio sale dos veces, cada uno con el suyo).
+            const ocurrencia = s.ejercicios.slice(0, posicion).filter((x) => x.ejercicioId === ej.ejercicioId).length;
+            const anterior = entreno.anteriorDe(ej.ejercicioId, { rutinaId: s.rutinaId, ocurrencia });
             const etiquetas = etiquetasSeries(ej.series);
             const hechas = ej.series.filter((x) => x.hecha).length;
             const plegado = estaPlegado(ej);

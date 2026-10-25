@@ -16,7 +16,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { uid } from "comun";
 import { listaEjercicios, ejercicioPorId } from "entreno-ejercicios";
-import { anteriorDe as anteriorDelIndice, fechaLocal } from "entreno-calculo";
+import { anteriorEquivalente, fechaLocal } from "entreno-calculo";
 import * as S from "entreno-sesion";
 import {
   CLAVE_CATALOGO, CLAVE_INDICE, CLAVE_BORRADOR, claveMes, mesDe, migrarCatalogo, migrarMes, migrarIndice,
@@ -78,6 +78,7 @@ export function useEntreno(data) {
   // Si la carga de un documento falló (sin conexión al abrir), no se escribe encima hasta haberlo leído
   // bien: escribir un catálogo vacío sobre el bueno sería perder las rutinas.
   const cargaFiable = useRef({ catalogo: false, indice: false });
+  const indiceIncompleto = useRef(false);
   const procesandoCola = useRef(false);
 
   const ejercicioDe = (id) => ejercicioPorId(ref.current.catalogo, id);
@@ -97,8 +98,11 @@ export function useEntreno(data) {
 
   async function cargarIndice() {
     try {
-      const { valor } = migrarIndice(await leerNube(CLAVE_INDICE));
+      const { valor, reconstruir: incompleto } = migrarIndice(await leerNube(CLAVE_INDICE));
       cargaFiable.current.indice = true;
+      // Un índice de antes de G4 no sabe la última sesión de cada rutina: se reconstruye una vez, cuando
+      // ya hay datos (ver el efecto de «comprobado» más abajo).
+      indiceIncompleto.current = incompleto;
       setIndice(valor);
       return valor;
     } catch (e) {
@@ -272,7 +276,12 @@ export function useEntreno(data) {
     comprobado.current = true;
     (async () => {
       await procesarCola();
-      try { await comprobarIndice(); } catch (e) { /* se reintentará la próxima vez */ }
+      try {
+        if (indiceIncompleto.current) {
+          await reconstruir();
+          indiceIncompleto.current = false;
+        } else await comprobarIndice();
+      } catch (e) { /* se reintentará la próxima vez */ }
     })();
   }, [catalogo, data]);
 
@@ -293,7 +302,9 @@ export function useEntreno(data) {
 
   const lista = useMemo(() => listaEjercicios(catalogo), [catalogo]);
   const ajustes = (catalogo && catalogo.ajustes) || migrarCatalogo(null).valor.ajustes;
-  const anteriorDe = (id) => anteriorDelIndice(ref.current.indice, id);
+  // «Anterior» de un ejercicio. Con `contexto` ({ rutinaId, ocurrencia }), el equivalente de G4: lo que se
+  // hizo en la última sesión de esa rutina; sin él, la última vez a secas.
+  const anteriorDe = (id, contexto) => anteriorEquivalente(ref.current.indice, id, contexto || {});
   const descansoDe = (id) => {
     const e = ejercicioDe(id);
     return e && e.descansoSeg !== undefined && e.descansoSeg !== null ? e.descansoSeg : null;

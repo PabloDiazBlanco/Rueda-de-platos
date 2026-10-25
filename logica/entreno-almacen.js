@@ -98,17 +98,22 @@ export function migrarMes(guardado, mes) {
 }
 
 export function indiceVacio() {
-  return { version: VERSION, meses: {}, ejercicios: {} };
+  return { version: VERSION, meses: {}, ejercicios: {}, rutinas: {} };
 }
 
+// `reconstruir`: el índice guardado es de antes de que existiera `rutinas` (G4): no se puede completar
+// sin releer los meses, así que el hook lo reconstruye entero una vez. Mientras, «anterior» cae a la
+// última vez a secas, como hasta ahora.
 export function migrarIndice(guardado) {
-  if (!guardado || typeof guardado !== "object") return { valor: indiceVacio(), changed: true };
+  if (!guardado || typeof guardado !== "object") return { valor: indiceVacio(), changed: true, reconstruir: false };
   let changed = false;
+  let reconstruir = false;
   const valor = { ...guardado };
   if (!valor.meses || typeof valor.meses !== "object") { valor.meses = {}; changed = true; }
   if (!valor.ejercicios || typeof valor.ejercicios !== "object") { valor.ejercicios = {}; changed = true; }
+  if (!valor.rutinas || typeof valor.rutinas !== "object") { valor.rutinas = {}; changed = true; reconstruir = true; }
   if (valor.version !== VERSION) { valor.version = VERSION; changed = true; }
-  return { valor, changed };
+  return { valor, changed, reconstruir };
 }
 
 // El borrador se guarda como { version, sesion } (sesion null = no hay entreno en curso).
@@ -156,7 +161,9 @@ export function fusionarMeses(a, b) {
 
 // ---------- Índice ----------
 // Por ejercicio: la última vez que se hizo (sus series hechas, para la columna «anterior» y la precarga),
-// sus récords (cada uno con fecha y sesión) y en cuántas sesiones sale; y por mes, cuántas sesiones hay.
+// sus récords (cada uno con fecha y sesión) y en cuántas sesiones sale; por mes, cuántas sesiones hay; y
+// por rutina (G4), los ejercicios de su última sesión con sus series, en orden, para el «anterior»
+// equivalente (ver anteriorEquivalente en entreno-calculo.js).
 
 const copiaSerie = ({ tipo, kg, reps, seg, km, rir }) => ({ tipo, kg: kg ?? null, reps: reps ?? null, seg: seg ?? null, km: km ?? null, rir: rir ?? null });
 const valorRecord = (r) => (r === null || r === undefined ? null : typeof r === "object" ? r.valor : r);
@@ -188,7 +195,17 @@ function anotarSesion(indice, sesion, ejercicioDe, pesoCorporal) {
     });
     ejercicios[ej.ejercicioId] = nuevo;
   });
-  return { ...indice, ejercicios };
+  let rutinas = indice.rutinas || {};
+  if (sesion.rutinaId) {
+    const previa = rutinas[sesion.rutinaId];
+    const ejerciciosRutina = (sesion.ejercicios || [])
+      .map((ej) => ({ ejercicioId: ej.ejercicioId, series: (ej.series || []).filter((s) => s.hecha).map(copiaSerie) }))
+      .filter((e) => e.series.length);
+    if (ejerciciosRutina.length && (!previa || new Date(sesion.inicio) >= new Date(previa.inicio))) {
+      rutinas = { ...rutinas, [sesion.rutinaId]: { sesionId: sesion.id, fecha, inicio: sesion.inicio, ejercicios: ejerciciosRutina } };
+    }
+  }
+  return { ...indice, ejercicios, rutinas };
 }
 
 // Reconstruye el índice entero a partir de los documentos de mes: es lo que se hace al editar o borrar

@@ -66,16 +66,27 @@ export function descansoInicial(id, { ajustes = {}, descansoDe = () => null } = 
   return descansoDe(id) ?? ajustes.descansoSeg ?? null;
 }
 
+// Cuántas veces sale ya `id` en una lista de ejercicios antes de la posición `hasta`: con el mismo
+// ejercicio dos veces en una rutina, el «anterior» del segundo es el del segundo (G4).
+function ocurrenciaDe(lista, id, hasta = lista.length) {
+  let n = 0;
+  for (let i = 0; i < hasta; i++) if (lista[i].ejercicioId === id) n++;
+  return n;
+}
+
 // ---------- Empezar ----------
 // Desde una rutina (copia sus ejercicios, descansos, notas y nº y tipo de series) o vacía. Con
-// `ajustes.precargar`, los kilos y repeticiones salen ya rellenos con lo de la última vez (`anteriorDe(id)`
-// → series); sin él, vacíos (la columna «anterior» los sigue enseñando al lado). `descansoDe(id)` es el
+// `ajustes.precargar`, los kilos y repeticiones salen ya rellenos con lo de la última vez
+// (`anteriorDe(id, { rutinaId, ocurrencia })` → series; en la app, el «anterior» equivalente de G4: lo de
+// la última sesión de esa rutina si la hay); sin él, vacíos (la columna «anterior» los sigue enseñando al
+// lado). `descansoDe(id)` es el
 // descanso personalizado del ejercicio, si lo tiene: solo se usa si la rutina no trae uno (rutinas de
 // antes de G3 que aún no han pasado por migrarCatalogo).
 export function nuevaSesion({ rutina = null, ahora, ajustes = {}, anteriorDe = () => [], descansoDe = () => null, nombre = "" }) {
-  const ejercicios = ((rutina && rutina.ejercicios) || []).map((re) => {
+  const deRutina = (rutina && rutina.ejercicios) || [];
+  const ejercicios = deRutina.map((re, i) => {
     let series = (re.series && re.series.length ? re.series : [{ tipo: "normal" }]).map((p) => serieVacia(p.tipo || "normal"));
-    if (ajustes.precargar) series = precargarSeries(series, anteriorDe(re.ejercicioId));
+    if (ajustes.precargar) series = precargarSeries(series, anteriorDe(re.ejercicioId, { rutinaId: rutina.id, ocurrencia: ocurrenciaDe(deRutina, re.ejercicioId, i) }));
     return nuevoEjercicio(re.ejercicioId, series, { descansoSeg: re.descansoSeg ?? descansoInicial(re.ejercicioId, { ajustes, descansoDe }), nota: re.nota || "" });
   });
   return {
@@ -93,8 +104,10 @@ export function nuevaSesion({ rutina = null, ahora, ajustes = {}, anteriorDe = (
 // Añade ejercicios al final. Llevan tantas series como la última vez (rellenas si se precarga) o, sin
 // historial, tres vacías, y su descanso inicial (ver descansoInicial).
 export function anadirEjercicios(s, ids, { ajustes = {}, anteriorDe = () => [], descansoDe = () => null } = {}) {
+  const vistos = [...s.ejercicios];
   const nuevos = ids.map((id) => {
-    const anterior = anteriorDe(id) || [];
+    const anterior = anteriorDe(id, { rutinaId: s.rutinaId || null, ocurrencia: ocurrenciaDe(vistos, id) }) || [];
+    vistos.push({ ejercicioId: id });
     let series = anterior.length ? anterior.map((a) => serieVacia(a.tipo || "normal")) : Array.from({ length: SERIES_POR_DEFECTO }, () => serieVacia());
     if (ajustes.precargar) series = precargarSeries(series, anterior);
     return nuevoEjercicio(id, series, { descansoSeg: descansoInicial(id, { ajustes, descansoDe }) });

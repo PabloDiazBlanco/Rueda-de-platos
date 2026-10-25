@@ -25,6 +25,7 @@ import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
   pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes, discosPorLado,
+  anteriorEquivalente,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -32,7 +33,7 @@ import {
 } from "entreno-sesion";
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
-  elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV,
+  elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV, migrarIndice,
 } from "entreno-almacen";
 import { declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad } from "informes";
 
@@ -1852,6 +1853,56 @@ function grupoEntrenoAlmacen() {
           const incremental = actualizarIndiceConSesion(reconstruirIndice([septiembre, octubre], ejercicioPrueba, 80), nueva, ejercicioPrueba, 80);
           const completo = reconstruirIndice([septiembre, anadirSesionAMes(octubre, nueva)], ejercicioPrueba, 80);
           return comparar({ iguales: JSON.stringify(incremental) === JSON.stringify(completo), pesoMax: incremental.ejercicios.banca.records.pesoMax.valor }, { iguales: true, pesoMax: 70 });
+        },
+      },
+      // ---------- «Anterior» equivalente (G4, 25-oct-2026) ----------
+      {
+        nombre: "G4: «anterior» de la última sesión de la misma rutina; rutina nueva, sin rutina o ejercicio que no estaba, la última vez a secas",
+        ejecutar: () => {
+          const ses = (id, inicio, rutinaId, ejercicios) => ({
+            id, nombre: "x", rutinaId, inicio, fin: inicio, pausas: [], actualizado: 1,
+            ejercicios: ejercicios.map(([eid, series], k) => ({ inst: `ei_${id}_${k}`, ejercicioId: eid, nota: "", series: series.map(([kg, reps]) => serieP("normal", kg, reps)) })),
+          });
+          // Lunes, «Pecho» con la banca de primero; jueves, «Torso» con la banca de segundo (más cansado);
+          // viernes, un entreno suelto sin rutina.
+          const oct = { version: 1, mes: "2026-10", sesiones: [
+            ses("p1", "2026-10-19T17:00:00.000Z", "rt_pecho", [["banca", [[80, 8], [80, 7]]]]),
+            ses("t1", "2026-10-22T17:00:00.000Z", "rt_torso", [["curl", [[30, 10]]], ["banca", [[70, 10], [70, 9]]]]),
+            ses("l1", "2026-10-23T17:00:00.000Z", null, [["banca", [[60, 12]]]]),
+          ] };
+          const ind = reconstruirIndice([oct], ejercicioPrueba, 80);
+          const txt = (series) => series.map((s) => `${s.kg}x${s.reps}`).join(" ");
+          return comparar(
+            {
+              pecho: txt(anteriorEquivalente(ind, "banca", { rutinaId: "rt_pecho" })), torso: txt(anteriorEquivalente(ind, "banca", { rutinaId: "rt_torso" })),
+              nueva: txt(anteriorEquivalente(ind, "banca", { rutinaId: "rt_nueva" })), sinRutina: txt(anteriorEquivalente(ind, "banca")),
+              noEstaba: txt(anteriorEquivalente(ind, "curl", { rutinaId: "rt_pecho" })),
+            },
+            { pecho: "80x8 80x7", torso: "70x10 70x9", nueva: "60x12", sinRutina: "60x12", noEstaba: "30x10" }
+          );
+        },
+      },
+      {
+        nombre: "G4: el mismo ejercicio dos veces en una rutina, cada uno con el suyo al precargar; un índice de antes de G4 pide reconstruirse",
+        ejecutar: () => {
+          const sesion = {
+            id: "d1", nombre: "Doble", rutinaId: "rt_doble", inicio: "2026-10-20T17:00:00.000Z", fin: "2026-10-20T18:00:00.000Z", pausas: [], actualizado: 1,
+            ejercicios: [
+              { inst: "a", ejercicioId: "banca", nota: "", series: [serieP("normal", 90, 5)] },
+              { inst: "b", ejercicioId: "banca", nota: "", series: [serieP("normal", 60, 12)] },
+            ],
+          };
+          const ind = reconstruirIndice([{ version: 1, mes: "2026-10", sesiones: [sesion] }], ejercicioPrueba, 80);
+          const rutina = { id: "rt_doble", nombre: "Doble", ejercicios: [
+            { ejercicioId: "banca", descansoSeg: 120, series: [{ tipo: "normal" }] },
+            { ejercicioId: "banca", descansoSeg: 120, series: [{ tipo: "normal" }] },
+          ] };
+          const s = nuevaSesion({ rutina, ahora: AHORA_SESION, ajustes: { precargar: true, descansoSeg: 120 }, anteriorDe: (id, ctx) => anteriorEquivalente(ind, id, ctx) });
+          const viejo = migrarIndice({ version: 1, meses: { "2026-10": 1 }, ejercicios: {} });
+          return comparar(
+            { primero: s.ejercicios[0].series[0].kg, segundo: s.ejercicios[1].series[0].kg, reconstruir: viejo.reconstruir, rutinas: typeof viejo.valor.rutinas, actual: migrarIndice(ind).reconstruir },
+            { primero: 90, segundo: 60, reconstruir: true, rutinas: "object", actual: false }
+          );
         },
       },
       {
