@@ -388,8 +388,15 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   siguiente serie. El descanso (`descanso.jsx`) se calcula con `descanso.hasta` y avisa una vez con un
   pitido de Web Audio (el contexto se crea con el primer toque) y vibración donde exista.
 - **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca), récords
-  batidos, «actualizar la rutina» si cambió su estructura, guardar, compartir (`documentoSesion` con
-  `BotonCompartir`) y descartar con confirmación.
+  batidos, «actualizar la rutina» si cambió su estructura (o el descanso de algún ejercicio), guardar,
+  compartir (`documentoSesion` con `BotonCompartir`) y descartar con confirmación.
+- **Descanso de cada ejercicio** (G3, 25-oct-2026): cada ejercicio de una rutina lleva su `descansoSeg`
+  (un número; 0 = sin descanso). Entra con el de su ficha o el de los ajustes (`descansoInicial`) al
+  añadirlo a una rutina o a un entreno empezado de cero, y se cambia con el botón del reloj de su tarjeta
+  (`BotonDescanso` / `HojaDescanso`, en `descanso.jsx`), en el editor y durante el entreno
+  (`descansoEjercicio`, solo para las series siguientes). Cambiar después el descanso por defecto ya no
+  mueve las rutinas: `migrarCatalogo` convirtió los `null` antiguos («el de siempre») en el valor que
+  tenían ese día. Tras una serie de calentamiento se sigue usando el de los ajustes.
 - **Comodidad y progreso** (fase C): en el ⋮ de cada ejercicio de la sesión, sustituir solo hoy
   (`sustituyeA`, no cambia la rutina), subir/bajar, nota de hoy, ver ficha y quitar; ⏸ pausa el cronómetro
   (no el descanso). Al marcar una serie que bate un récord sale una línea discreta (`recordsEnVivo`), y en el
