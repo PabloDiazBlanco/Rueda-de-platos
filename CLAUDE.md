@@ -461,6 +461,10 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   con barra; barra de 20 kg o 45 lb) y carpetas de rutinas (`rutina.carpeta`, texto opcional que solo agrupa
   la lista; sin migración, porque una rutina sin carpeta se ve como siempre). Queda sin hacer el mapa
   corporal.
+- **Gimnasio** (G2, 25-oct-2026): campo opcional al terminar (`sesion.gimnasio`, texto libre, con las cadenas
+  habituales en España de `GIMNASIOS_HABITUALES` como sugerencia) y gimnasio habitual en los ajustes
+  (`ajustes.gimnasio`), que sale ya puesto. Si un mes tiene entrenos en más de uno, el historial ofrece fichas
+  para ver solo los de un sitio. Sin ubicación (ver el registro de la noche para su viabilidad).
 - **Superseries** (G11, 25-oct-2026): `superserie: id` en cada ejercicio de la rutina y de la sesión; los
   **seguidos** con el mismo id forman el grupo (2 o más), así que reordenar no deja restos (`gruposSuperserie`,
   `grupoDe`, `unirSuperserie`, `separarSuperserie` en `entreno-sesion.js`). Se crean en el editor de la
