@@ -308,23 +308,14 @@ async function migrateLocalDataIfNeeded(uid) {
   localStorage.setItem(marker, "1");
 }
 
-// ---------- Botón flotante de cerrar sesión (fuera de la app, para no tocar su código) ----------
-function renderLogoutButton() {
-  if (document.getElementById("logout-btn")) return;
-  const btn = document.createElement("button");
-  btn.id = "logout-btn";
-  btn.textContent = "Cerrar sesión";
-  btn.style.cssText =
-    "position:fixed;top:10px;right:10px;z-index:9999;font-family:'Helvetica Neue',Arial,sans-serif;" +
-    "font-size:12px;font-weight:700;color:#1f4d38;background:#e6efe6;border:none;" +
-    "border-radius:20px;padding:7px 12px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,0.15);";
-  btn.onclick = () => signOut(auth);
-  document.body.appendChild(btn);
-}
-function removeLogoutButton() {
-  const btn = document.getElementById("logout-btn");
-  if (btn) btn.remove();
-}
+// ---------- Cerrar sesión ----------
+// Hasta octubre de 2026 aquí se pegaba un botón flotante «Cerrar sesión» fuera de React (arriba a la
+// derecha, z-index 9999, en todas las pantallas). Ahora el botón vive dentro de la app, en Ajustes y en
+// la pantalla de alta (ui/comun/cerrar-sesion.jsx), con una confirmación; aquí solo queda el puente con
+// Firebase. Al cerrarse la sesión, onAuthStateChanged (al final de este archivo) vuelve a la bienvenida.
+window.signOutUser = function () {
+  return signOut(auth);
+};
 
 // ---------- Bandera de un idioma, dibujada a mano en SVG ----------
 // Copia exacta de la de app.jsx — no se comparte entre los dos archivos porque no hay ninguna capa
@@ -714,12 +705,10 @@ onAuthStateChanged(auth, async (user) => {
     window.storage = makeFirestoreStorage(user.uid);
     window.authProvider = user.providerData[0]?.providerId === "google.com" ? "google" : "password";
     await migrateLocalDataIfNeeded(user.uid);
-    renderLogoutButton();
     watchForFirstProfileCompletion(user.uid);
     const mod = await loadMainApp();
     root.render(React.createElement(mod.default));
   } else {
-    removeLogoutButton();
     root.render(React.createElement(LoggedOutFlow));
   }
 });

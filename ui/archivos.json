@@ -7,6 +7,7 @@
   "ui/catalogo/platos.jsx",
   "ui/catalogo/reglas.jsx",
   "ui/comun/categorias.js",
+  "ui/comun/cerrar-sesion.jsx",
   "ui/comun/compartir.jsx",
   "ui/comun/idioma.jsx",
   "ui/comun/modal.jsx",

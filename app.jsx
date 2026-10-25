@@ -23,6 +23,7 @@ import { DrawerMenu } from "./ui/marco/menu-lateral.jsx";
 import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
+import { BotonCerrarSesionAlta } from "./ui/comun/cerrar-sesion.jsx";
 import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
 import { AREAS, COMUNES, TITULO_COMUN, areaDe, pestanaDe, areaPorClave } from "./ui/marco/navegacion.js";
 import { ModalesCatalogo } from "./ui/catalogo/modales.jsx";
@@ -115,16 +116,20 @@ export default function RuedaDePlatos() {
   // de todo, como ya hacía antes de partir esto en dos pantallas. Qué pantalla mostrar se decide
   // con si `data.perfil` ya existe o no — no hace falta ningún campo nuevo para esto: initialData()
   // nunca incluye un "perfil", así que su sola presencia ya significa "el primer asistente terminó".
+  // Las dos llevan arriba a la derecha el botón de cerrar sesión, por si se ha entrado con otra cuenta
+  // (fuera del alta, cerrar sesión está en Ajustes).
   if (!data.perfilOnboardingDone) {
     if (!data.perfil) {
       return (
         <Shell>
+          <BotonCerrarSesionAlta idioma={idiomaFallback} />
           <ProfileOnboarding onComplete={perfil.guardarPerfilInicial} onSkip={perfil.skipPerfil} idioma={idiomaFallback} />
         </Shell>
       );
     }
     return (
       <Shell>
+        <BotonCerrarSesionAlta idioma={data.perfil.idioma || idiomaFallback} />
         <CatalogoOnboarding
           idioma={data.perfil.idioma || idiomaFallback}
           repartoComidas={data.perfil.repartoComidas}

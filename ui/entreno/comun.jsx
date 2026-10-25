@@ -14,8 +14,7 @@ import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 // Para lo que no cabe en un modal pequeño (elegir entre 80 ejercicios, crear uno, la sesión en curso):
 // fija sobre todo, con su barra arriba (volver o cerrar y el título), el contenido desplazable y un pie
 // opcional (el botón principal), y la pantalla de debajo inmóvil. `capa`: z-index (45 la sesión, como
-// los paneles de la nevera; 50 lo que se abre encima de ella, como los modales). La barra deja libres
-// ~110 px a la derecha, donde flota el botón «Cerrar sesión» de auth-bootstrap.jsx.
+// los paneles de la nevera; 50 lo que se abre encima de ella, como los modales).
 export function CapaCompleta({ titulo, onCerrar, icono = "cerrar", pie, capa = 50, accionesTitulo, children, idioma }) {
   useEffect(() => {
     const antes = document.body.style.overflow;
@@ -37,7 +36,7 @@ export function CapaCompleta({ titulo, onCerrar, icono = "cerrar", pie, capa = 5
       aria-label={titulo}
       style={{ position: "fixed", inset: 0, zIndex: capa, background: "var(--paper)", display: "flex", flexDirection: "column" }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 110px 10px 10px", borderBottom: "1px solid var(--line)", background: "var(--paper)", minHeight: 56, boxSizing: "border-box" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px", borderBottom: "1px solid var(--line)", background: "var(--paper)", minHeight: 56, boxSizing: "border-box" }}>
         <button
           onClick={onCerrar}
           aria-label={t(idioma, icono === "volver" ? "entreno.comun.volver" : "common.cerrar")}

@@ -143,8 +143,8 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
       aria-modal="true"
       aria-label={t(idioma, "entreno.sesion.titulo")}
     >
-      {/* Barra de arriba. Deja libres ~110 px a la derecha: ahí flota «Cerrar sesión» (auth-bootstrap.jsx). */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 110px 8px 8px", minHeight: 56, boxSizing: "border-box", borderBottom: "1px solid var(--line)", background: "var(--card)" }}>
+      {/* Barra de arriba. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px", minHeight: 56, boxSizing: "border-box", borderBottom: "1px solid var(--line)", background: "var(--card)" }}>
         <button onClick={entreno.ocultarSesion} aria-label={t(idioma, "entreno.sesion.minimizar")} title={t(idioma, "entreno.sesion.minimizar")} style={botonIcono}>
           <ChevronDown size={22} />
         </button>

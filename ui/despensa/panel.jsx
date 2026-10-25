@@ -78,8 +78,7 @@ export function MarcoPanel({ titulo, fondo, tema, reducido, onCerrar, escapeActi
       }}
     >
       <div style={{ height: "100%", maxWidth: 560, margin: "0 auto", display: "flex", flexDirection: "column" }}>
-        {/* La esquina de arriba a la derecha se deja libre: ahí flota el botón de cerrar sesión. */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, paddingRight: 110 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
           <button
             onClick={cerrar}
             style={{

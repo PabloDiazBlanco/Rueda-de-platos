@@ -1263,6 +1263,13 @@ const TEXTOS = {
 
     "entreno.rutinas.carpeta": "Carpeta (opcional)",
     "entreno.rutinas.carpetaPlaceholder": "Ej.: Fuerza, Verano…",
+
+    "cerrarSesion.titulo": "Cerrar sesión",
+    "cerrarSesion.desc": "Sales de tu cuenta en este dispositivo. Tus datos siguen guardados en la nube y vuelven al iniciar sesión.",
+    "cerrarSesion.boton": "Cerrar sesión",
+    "cerrarSesion.confirmTitulo": "¿Cerrar sesión?",
+    "cerrarSesion.confirmTexto": "Saldrás de tu cuenta en este dispositivo. No se borra nada.",
+    "cerrarSesion.error": "No se ha podido cerrar la sesión. Inténtalo de nuevo.",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2465,6 +2472,13 @@ const TEXTOS = {
 
     "entreno.rutinas.carpeta": "Folder (optional)",
     "entreno.rutinas.carpetaPlaceholder": "E.g. Strength, Summer…",
+
+    "cerrarSesion.titulo": "Sign out",
+    "cerrarSesion.desc": "You'll leave your account on this device. Your data stays saved in the cloud and comes back when you sign in.",
+    "cerrarSesion.boton": "Sign out",
+    "cerrarSesion.confirmTitulo": "Sign out?",
+    "cerrarSesion.confirmTexto": "You'll leave your account on this device. Nothing is deleted.",
+    "cerrarSesion.error": "Couldn't sign out. Please try again.",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -3667,6 +3681,13 @@ const TEXTOS = {
 
     "entreno.rutinas.carpeta": "Carpeta (opcional)",
     "entreno.rutinas.carpetaPlaceholder": "Ex.: Força, Estiu…",
+
+    "cerrarSesion.titulo": "Tanca la sessió",
+    "cerrarSesion.desc": "Surts del teu compte en aquest dispositiu. Les teves dades continuen desades al núvol i tornen quan inicies la sessió.",
+    "cerrarSesion.boton": "Tanca la sessió",
+    "cerrarSesion.confirmTitulo": "Vols tancar la sessió?",
+    "cerrarSesion.confirmTexto": "Sortiràs del teu compte en aquest dispositiu. No s'esborra res.",
+    "cerrarSesion.error": "No s'ha pogut tancar la sessió. Torna-ho a provar.",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -4869,6 +4890,13 @@ const TEXTOS = {
 
     "entreno.rutinas.carpeta": "Cartafol (opcional)",
     "entreno.rutinas.carpetaPlaceholder": "Ex.: Forza, Verán…",
+
+    "cerrarSesion.titulo": "Pechar sesión",
+    "cerrarSesion.desc": "Saes da túa conta neste dispositivo. Os teus datos seguen gardados na nube e volven ao iniciar sesión.",
+    "cerrarSesion.boton": "Pechar sesión",
+    "cerrarSesion.confirmTitulo": "Pechar sesión?",
+    "cerrarSesion.confirmTexto": "Sairás da túa conta neste dispositivo. Non se borra nada.",
+    "cerrarSesion.error": "Non se puido pechar a sesión. Téntao de novo.",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6071,6 +6099,13 @@ const TEXTOS = {
 
     "entreno.rutinas.carpeta": "Karpeta (aukerakoa)",
     "entreno.rutinas.carpetaPlaceholder": "Adib.: Indarra, Uda…",
+
+    "cerrarSesion.titulo": "Itxi saioa",
+    "cerrarSesion.desc": "Gailu honetako zure kontutik irtengo zara. Zure datuak hodeian gordeta jarraitzen dute eta saioa hastean itzultzen dira.",
+    "cerrarSesion.boton": "Itxi saioa",
+    "cerrarSesion.confirmTitulo": "Saioa itxi?",
+    "cerrarSesion.confirmTexto": "Gailu honetako zure kontutik irtengo zara. Ez da ezer ezabatzen.",
+    "cerrarSesion.error": "Ezin izan da saioa itxi. Saiatu berriro.",
   },
 };
 

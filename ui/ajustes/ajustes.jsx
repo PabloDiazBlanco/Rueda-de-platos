@@ -1,5 +1,6 @@
 // ---------- ui/ajustes/ajustes.jsx ----------
-// Ajustes: idioma, notificaciones, descarga de datos, repetir el cuestionario y eliminar la cuenta.
+// Ajustes: idioma, notificaciones, descarga de datos, repetir el cuestionario, cerrar sesión y eliminar
+// la cuenta.
 import React, { useState } from "react";
 import { Download } from "lucide-react";
 import { descargarDatosJSON } from "peso";
@@ -7,6 +8,7 @@ import { t, guardarIdiomaLocal } from "i18n";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { LanguageDropdown } from "../comun/idioma.jsx";
+import { TarjetaCerrarSesion } from "../comun/cerrar-sesion.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // Requiere reautenticación (contraseña, o pop-up de Google si la cuenta usa ese login) antes de
@@ -207,6 +209,8 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, idio
           {t(idioma, "ajustes.repetirCuestionario.boton")}
         </button>
       </div>
+
+      <TarjetaCerrarSesion idioma={idioma} />
 
       <div style={{ border: "1px solid var(--rust)", borderRadius: 12, padding: "16px 18px", marginTop: 16, maxWidth: 480 }}>
         <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--rust)", marginBottom: 4 }}>
