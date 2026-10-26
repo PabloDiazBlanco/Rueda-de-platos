@@ -31,9 +31,26 @@ export function Shell({ children }) {
         "--olive-soft": "#f0eed6",
         "--citrus": "#c2662d",
         "--citrus-soft": "#f5e2d3",
-        // Cristal de la barra inferior (ui/marco/barra-inferior.jsx): fondo de tarjeta al 72 % (con
-        // desenfoque detrás), borde verde oscuro translúcido y la cápsula de la pestaña activa.
-        "--cristal": "rgba(255,253,247,0.72)",
+        // Colores de los macros, en un solo sitio para todo lo que pinte proteína, grasa e hidratos (el
+        // anillo y las barras del menú, las pastillas P/G/C del menú, del detalle de una comida y del
+        // catálogo). Criterio de gráficas de la parte estética (26-oct-2026): cada color significa una
+        // sola cosa en toda la app —verde, lo tuyo; mostaza, el objetivo o la referencia; óxido, fuera de
+        // rango—, así que la grasa, que hasta entonces era mostaza, pasa a oliva y el mostaza queda libre
+        // para «objetivo». `-texto` es el color de la letra de las pastillas y `-suave`, su fondo.
+        "--macro-prot": "var(--green)",
+        "--macro-prot-texto": "var(--green-dark)",
+        "--macro-prot-suave": "var(--green-soft)",
+        "--macro-grasa": "var(--olive)",
+        "--macro-grasa-texto": "var(--olive)",
+        "--macro-grasa-suave": "var(--olive-soft)",
+        "--macro-carb": "var(--coffee)",
+        "--macro-carb-texto": "var(--coffee)",
+        "--macro-carb-suave": "var(--coffee-soft)",
+        // Cristal de la barra inferior (ui/marco/barra-inferior.jsx): fondo de tarjeta al 60 % (con
+        // desenfoque detrás), borde verde oscuro translúcido y la cápsula de la pestaña activa. Era del
+        // 72 % hasta la parte estética (26-oct-2026): el usuario prefirió que se viera algo más lo de
+        // detrás. Sin `backdrop-filter`, o con «reducir transparencia», la barra usa --card, sólida.
+        "--cristal": "rgba(255,253,247,0.60)",
         "--cristal-borde": "rgba(31,77,56,0.14)",
         "--cristal-activo": "rgba(47,107,79,0.14)",
         background: "var(--paper)",

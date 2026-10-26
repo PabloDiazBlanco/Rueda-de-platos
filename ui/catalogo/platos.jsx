@@ -72,9 +72,9 @@ export function IngredientCard({ ingredient, data, onEdit, onDelete, extraNote, 
           </div>
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             <MacroPill label="kcal" value={fmt(m.kcal)} color="var(--rust)" bg="var(--rust-soft)" />
-            <MacroPill label="P" value={fmt(m.prot)} color="var(--green-dark)" bg="var(--green-soft)" />
-            <MacroPill label="G" value={fmt(m.fat)} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-            <MacroPill label="C" value={fmt(m.carb)} color="var(--coffee)" bg="var(--coffee-soft)" />
+            <MacroPill label="P" value={fmt(m.prot)} color="var(--macro-prot-texto)" bg="var(--macro-prot-suave)" />
+            <MacroPill label="G" value={fmt(m.fat)} color="var(--macro-grasa-texto)" bg="var(--macro-grasa-suave)" />
+            <MacroPill label="C" value={fmt(m.carb)} color="var(--macro-carb-texto)" bg="var(--macro-carb-suave)" />
           </div>
         </div>
       ) : (
@@ -339,9 +339,9 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
                 {t(idioma, "editModal.totalDelPlato")}
               </span>
               <MacroPill label="kcal" value={fmt(composTotal.kcal)} color="var(--rust)" bg="var(--rust-soft)" />
-              <MacroPill label="P" value={`${fmt(composTotal.prot)} g`} color="var(--green-dark)" bg="var(--green-soft)" />
-              <MacroPill label="G" value={`${fmt(composTotal.fat)} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-              <MacroPill label="C" value={`${fmt(composTotal.carb)} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+              <MacroPill label="P" value={`${fmt(composTotal.prot)} g`} color="var(--macro-prot-texto)" bg="var(--macro-prot-suave)" />
+              <MacroPill label="G" value={`${fmt(composTotal.fat)} g`} color="var(--macro-grasa-texto)" bg="var(--macro-grasa-suave)" />
+              <MacroPill label="C" value={`${fmt(composTotal.carb)} g`} color="var(--macro-carb-texto)" bg="var(--macro-carb-suave)" />
             </div>
           ) : (
             <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)" }}>
@@ -387,9 +387,9 @@ export function EditModal({ state, foods = [], onClose, onSave, idioma }) {
           {preview ? (
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 2 }}>
               <MacroPill label="kcal" value={fmt(preview.kcal)} color="var(--rust)" bg="var(--rust-soft)" />
-              <MacroPill label="P" value={`${fmt(preview.prot)} g`} color="var(--green-dark)" bg="var(--green-soft)" />
-              <MacroPill label="G" value={`${fmt(preview.fat)} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-              <MacroPill label="C" value={`${fmt(preview.carb)} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+              <MacroPill label="P" value={`${fmt(preview.prot)} g`} color="var(--macro-prot-texto)" bg="var(--macro-prot-suave)" />
+              <MacroPill label="G" value={`${fmt(preview.fat)} g`} color="var(--macro-grasa-texto)" bg="var(--macro-grasa-suave)" />
+              <MacroPill label="C" value={`${fmt(preview.carb)} g`} color="var(--macro-carb-texto)" bg="var(--macro-carb-suave)" />
             </div>
           ) : (
             <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)" }}>

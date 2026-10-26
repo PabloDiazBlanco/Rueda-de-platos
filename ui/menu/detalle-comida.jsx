@@ -189,9 +189,9 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
             {c.macros && (
               <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 8 }}>
                 <MacroPill label="kcal" value={fmt(c.macros.kcal)} color="var(--rust)" bg="var(--rust-soft)" />
-                <MacroPill label="P" value={fmt(c.macros.prot)} color="var(--green-dark)" bg="var(--green-soft)" />
-                <MacroPill label="G" value={fmt(c.macros.fat)} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-                <MacroPill label="C" value={fmt(c.macros.carb)} color="var(--coffee)" bg="var(--coffee-soft)" />
+                <MacroPill label="P" value={fmt(c.macros.prot)} color="var(--macro-prot-texto)" bg="var(--macro-prot-suave)" />
+                <MacroPill label="G" value={fmt(c.macros.fat)} color="var(--macro-grasa-texto)" bg="var(--macro-grasa-suave)" />
+                <MacroPill label="C" value={fmt(c.macros.carb)} color="var(--macro-carb-texto)" bg="var(--macro-carb-suave)" />
               </div>
             )}
           </div>
