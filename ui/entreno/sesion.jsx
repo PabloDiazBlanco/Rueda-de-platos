@@ -17,6 +17,7 @@ import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
 import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
 import { estaPausada, siguienteSerie, grupoDe } from "entreno-sesion";
+import { pasoEntreEjercicios } from "gimnasio";
 import { inputStyle } from "../comun/modal.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
@@ -25,6 +26,7 @@ import {
 } from "./comun.jsx";
 import { FilaSerie, HojaTipoSerie, etiquetasSeries, plantillaColumnas, columnasDe } from "./fila-serie.jsx";
 import { BarraDescanso, prepararAudio, BotonDescanso, HojaDescanso } from "./descanso.jsx";
+import { MiniMapaPaseo } from "./mini-mapa.jsx";
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
 import { TerminarEntreno, textoRecord } from "./terminar.jsx";
 import { HojaDiscos } from "./discos.jsx";
@@ -90,6 +92,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const [terminando, setTerminando] = useState(false);
   const [discos, setDiscos] = useState(null); // kg de partida de la calculadora de discos, si está abierta
   const [descansoDe, setDescansoDe] = useState(null); // inst del ejercicio cuyo descanso se está eligiendo
+  const [paseoSaltado, setPaseoSaltado] = useState(null); // `inicio` del descanso cuyo paseo se saltó
   const onTerminar = () => setTerminando(true);
 
   usePantallaEncendida();
@@ -321,6 +324,16 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
         </div>
       </div>
 
+      {/* FitDraft (26-oct-2026): al cerrar un ejercicio, el mini-mapa con el paseo hasta la máquina del
+          siguiente, encima de la barra del descanso. Un toque lo salta; se apaga en los ajustes de entreno. */}
+      {s.descanso && ajustes.paseoDescanso !== false && paseoSaltado !== s.descanso.inicio && (() => {
+        const paso = s.descanso.inst ? pasoEntreEjercicios(s, s.descanso.inst) : null;
+        return paso ? (
+          <div style={{ borderTop: "1px solid var(--line)", background: "var(--card)", paddingTop: 8 }}>
+            <MiniMapaPaseo key={s.descanso.inicio} entreno={entreno} idioma={idioma} sesion={s} paso={paso} onSaltar={() => setPaseoSaltado(s.descanso.inicio)} />
+          </div>
+        ) : null;
+      })()}
       {s.descanso && (
         <BarraDescanso
           key={s.descanso.inicio}

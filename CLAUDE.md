@@ -53,7 +53,8 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
                           despensa.js (useDespensa), entreno.js (useEntreno), cuerpo.js (useCuerpo)
   comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores),
                           cerrar-sesion (tarjeta de Ajustes y botón de la pantalla de alta), mapa corporal
-                          (mapa-corporal.jsx y sus trazados MIT, mapa-trazados.js)
+                          (mapa-corporal.jsx y sus trazados MIT, mapa-trazados.js), avatar.jsx (el chibi
+                          de FitDraft y el monitor)
   marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral,
                           navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
   menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/ cuerpo/   una carpeta por área
@@ -104,6 +105,10 @@ logica/cuerpo-series.js        → la serie de cada día con los datos reales (c
                                   tablaXYZ) y las preguntas del constructor (PREGUNTAS, FORMAS, resolverMontaje)
 logica/mapa-corporal.js        → mapa corporal: SLUG_A_GRUPO (trazo → 14 grupos), escala de verdes,
                                   seriesDeRutina, valoresDeEjercicio, generoMapa
+logica/gimnasio.js             → el gimnasio dibujado de FitDraft: plano, zonas y 25 máquinas (ZONAS, ESTACIONES),
+                                  lista de una zona (ejerciciosDeZona), rutas A* (aEstrella, puntoDe), paradas de
+                                  una rutina, paso entre ejercicios, zonas teñidas (estadoZonas), frase del
+                                  monitor (fraseMonitor), rutina de hoy (rutinaDeHoy) y días de la semana
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
@@ -117,7 +122,7 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 `entreno-almacen.js` → `entreno-calculo.js` e `informes.js` →
 `entreno-calculo.js`, `resumen-mensual.js`, `objetivos.js` (solo lee de él) y `cuerpo-series.js`; del área
 Cuerpo, `cuerpo-series.js` → `entreno-calculo.js` y `periodo.js` (`cuerpo-diario.js` y `mapa-corporal.js` no
-importan nada); `entreno-ejercicios.js`,
+importan nada); del gimnasio de FitDraft, `gimnasio.js` → `entreno-calculo.js` (fechas); `entreno-ejercicios.js`,
 `entreno-nombres.js` y `entreno-calculo.js` no importan nada (reciben `ejercicioDe(id)` y `nombreDe` como
 funciones, para no depender de la biblioteca ni de los nombres). La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
@@ -174,7 +179,8 @@ la misma interfaz que la app. Reglas al escribir en `ui/`:
 ## Navegación por áreas
 
 Desde octubre de 2026 la app es «muchas aplicaciones en una»: tres **áreas** — **FoodDraft**
-(nutrición), **Entrenamiento** y **Cuerpo** (peso, medidas, actividad diaria, resúmenes) — y una zona
+(nutrición), **FitDraft** (entreno; hasta el 26-oct-2026 se llamaba «Entrenamiento», su clave interna sigue
+siendo `entreno`) y **Cuerpo** (peso, medidas, actividad diaria, resúmenes) — y una zona
 **común** sin área (Compartir, Ayuda y comentarios, Documentos, Premium, Ajustes, Perfil). El porqué y
 el aspecto de cada pieza están en `local/ideas/gimnasio/03-diseno-modulo-entreno.md` (§3).
 
@@ -198,8 +204,10 @@ el aspecto de cada pieza están en `local/ideas/gimnasio/03-diseno-modulo-entren
   con el foco (el teclado del móvil la subiría encima), y `<main>` deja libre abajo lo que ocupa
   (`RELLENO_BARRA`). Las variables del cristal están en `Shell`.
 - **Cabecera**: el título grande dice el área («Tu recetario», «Tu entreno», «Tu cuerpo»; «Tu cuenta» en
-  la zona común); el rótulo pequeño sigue siendo «FoodDraft».
-- **Capas (`z-index`)**: barra inferior 30 · pastilla de entreno en curso 31 · menú lateral 40/41 ·
+  la zona común); el rótulo pequeño es «FoodDraft», salvo en el área de entreno, que dice «FitDraft» (el
+  `rotulo` de su entrada en `AREAS`; es una marca, no se traduce).
+- **Capas (`z-index`)**: gimnasio dibujado de Entrenar 5 (fijo debajo de la cabecera; sus botones, 6-7) ·
+  barra inferior 30 · pastilla de entreno en curso 31 · menú lateral 40/41 ·
   sesión de entreno y paneles de la nevera 45 · modales 50 · `HistoriaScreen` de `auth-bootstrap.jsx`
   9999.
 - **Cerrar sesión** (`ui/comun/cerrar-sesion.jsx`, con una confirmación breve) está en **Ajustes** y,
@@ -415,7 +423,7 @@ Reglas de esta parte:
 ## Entrenamiento
 
 Módulo de entreno al estilo Hevy/Lyfta con la estética de FoodDraft (octubre de 2026), en el área
-Entrenamiento. Diseño y porqué: `local/ideas/gimnasio/03-diseno-modulo-entreno.md`; plan de construcción
+FitDraft (así se llama desde el 26-oct-2026; antes, «Entrenamiento»). Diseño y porqué: `local/ideas/gimnasio/03-diseno-modulo-entreno.md`; plan de construcción
 y decisiones cerradas: `04-plan-de-ejecucion.md` (§3 y §4.3). Toda la lógica está en los cinco módulos
 `logica/entreno-*.js`, con sus casos en `validacion/` (grupos «Entreno: …»).
 
@@ -429,6 +437,9 @@ despensa, **no pasan por `migrateData`**):
 | `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes; por ejercicio, la última vez y sus récords; por rutina (`rutinas`, G4), los ejercicios de su última sesión |
 | `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion }`: la sesión en curso (o `null`) |
 | `localStorage` `fooddraft:entreno-borrador` / `fooddraft:entreno-pendientes` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube |
+
+Los ajustes del catálogo incluyen `paseoDescanso` (FitDraft, 26-oct-2026: el mini-mapa del descanso; `true`
+por defecto, lo completa `migrarCatalogo` en los catálogos de antes).
 
 Una sesión es `{ id, nombre, rutinaId, inicio, fin, pausas, esfuerzo, nota, origen, lote, ejercicios:
 [{ inst, ejercicioId, sustituyeA, nota, descansoSeg, series: [{ id, tipo, kg, reps, seg, km, rir, hecha }] }],
@@ -461,8 +472,9 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   `fijarBorrador` (sella `actualizado`, guarda en `localStorage` y programa la subida). Si la carga del
   catálogo o del índice falla (sin conexión al abrir), no se escribe encima hasta haberlos leído bien. No
   crea ningún documento hasta que se usa. `nube === "pendiente"` solo si una subida falló.
-- **Pantallas** (destinos del área Entrenamiento en `ui/pantallas.jsx`): `entreno` (inicio.jsx: empezar
-  vacío o con una rutina, seguir uno a medias, últimos entrenos), `entreno-rutinas` y `entreno-rutina`
+- **Pantallas** (destinos del área FitDraft en `ui/pantallas.jsx`): `entreno` (inicio.jsx: dos vistas, el
+  gimnasio **Dibujo** y la **Lista** de siempre con empezar vacío o con una rutina, seguir uno a medias y
+  últimos entrenos; ver «El gimnasio dibujado de FitDraft» más abajo), `entreno-rutinas` y `entreno-rutina`
   (`params: { id }`, editor), `entreno-ejercicios` (biblioteca), `entreno-historial` y `entreno-sesion`
   (`params: { id, inicio }`, detalle corregible). Los **ajustes de entreno** (unidades, interruptores,
   descansos, exportar CSV/JSON, recalcular el índice) no son un destino del área desde el 25-oct-2026: son
@@ -505,7 +517,10 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   en los días entrenados. «Progreso» (`progreso.jsx`, quinta pestaña): series por músculo de esta semana
   frente a la media de las 4 anteriores, y entrenos y volumen de las últimas 12 semanas
   (`semanasRecientes`), sin «zona recomendada». Libras y millas: las conversiones están en
-  `entreno-calculo.js` (con sus pruebas) y `comun.jsx` las reexporta. «¿Datos erróneos o que faltan?» de la
+  `entreno-calculo.js` (con sus pruebas) y `comun.jsx` las reexporta. Desde el 26-oct-2026 Progreso sigue el
+  criterio de gráficas (cada tarjeta es una pregunta; un solo selector de rango 1 mes · 3 meses · 1 año · Todo
+  para entrenos y volumen por semana, con las piezas de `ui/cuerpo/graficas.jsx`; verde lo tuyo, la media del
+  rango como referencia mostaza, lectura al tocar y botón «Gráfica»; el volumen pasó de oliva a verde). «¿Datos erróneos o que faltan?» de la
   ficha navega a `feedback` con `params: { categoria: "ejercicio", ejercicioId }`, y `FeedbackView` ofrece
   arriba el correo ya rellenado (nunca lo abre solo).
 - **Importar de Hevy y Lyfta** (G10, 25-oct-2026; `ui/entreno/importar.jsx`, en Ajustes → Entrenamiento):
@@ -520,8 +535,8 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   casos de `validacion/` usan filas inventadas con el mismo formato.
 - **Opcionales hechos**: calculadora de discos (`discos.jsx` y `discosPorLado`, desde el ⋮ de los ejercicios
   con barra; barra de 20 kg o 45 lb) y carpetas de rutinas (`rutina.carpeta`, texto opcional que solo agrupa
-  la lista; sin migración, porque una rutina sin carpeta se ve como siempre). Queda sin hacer el mapa
-  corporal.
+  la lista; sin migración, porque una rutina sin carpeta se ve como siempre). El mapa corporal ya está
+  hecho (ver «Mapa corporal»).
 - **Gimnasio** (G2, 25-oct-2026): campo opcional al terminar (`sesion.gimnasio`, texto libre, con las cadenas
   habituales en España de `GIMNASIOS_HABITUALES` como sugerencia) y gimnasio habitual en los ajustes
   (`ajustes.gimnasio`), que sale ya puesto. Si un mes tiene entrenos en más de uno, el historial ofrece fichas
@@ -536,6 +551,59 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
 - **Capas a pantalla completa y hojas inferiores** del módulo: `CapaCompleta` y `HojaInferior` en
   `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
   de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).
+
+### El gimnasio dibujado de FitDraft
+
+Bloque ENTRENO / FITDRAFT de la parte estética (26-oct-2026; decisiones en `local/ideas/esteticas/registro.md`,
+«DECISIONES FINALES»; maquetas `v3-01` a `v3-03` de esa carpeta). Lo puro está en `logica/gimnasio.js` (grupo
+«FitDraft: el gimnasio» de `validacion/`); el dibujo, en `ui/entreno/gimnasio-*.jsx`, con sus colores en
+`gimnasio-tema.js` (nunca a mano). Todo es solo lectura: no cambia ningún dato de entreno, ni la cola ni el
+borrador.
+
+- **Vista Dibujo de Entrenar** (`gimnasio-vista.jsx`): la otra es **Lista**, la pantalla de siempre. La primera
+  vez sale el dibujo y luego se recuerda la última (`localStorage` `fooddraft:vista-gimnasio`). El plano ocupa la
+  pantalla entre la cabecera y abajo (fijo, z-index 5; la barra de cristal flota encima). Es una planta vista
+  desde arriba con canto, de 600 × 1010 unidades: arriba siete zonas (las cinco de los avisos G8, esterillas y
+  cardio) con **25 máquinas para los 80 ejercicios** (cada uno en una sola; los propios se dibujan en la de su
+  músculo, `ESTACION_POR_MUSCULO`), abajo la oficina y la recepción. **Al añadir un ejercicio a la biblioteca,
+  ponlo en una máquina**: un caso de `validacion/` cuenta que estén los 80.
+- **Sistema híbrido** (v3-01 · D; `gimnasio.jsx`, `MapaGimnasio`): mapa con arrastre, pellizco, doble toque,
+  rueda y + / −, donde el zoom es la jerarquía (de lejos, los rótulos de zona; de cerca, los nombres de las
+  máquinas, solo de adorno); «Pasear» cambia a un joystick flotante (nace donde se pone el pulgar, zona muerta
+  de 10 px, radio de 46 px) con «Usar · …» junto a cada máquina o sitio; «Ir a…» siempre (zonas y sitios). La
+  cámara, el avatar y el joystick se mueven por refs, sin repintar el plano. Recepción: el torno es «Empezar»
+  (todas las rutinas y el entreno vacío), la pizarra a tiza es Progreso, el libro es Historial; oficina: la
+  estantería es Rutinas, el corcho es la semana (días con entreno y estado de las zonas) y el monitor está
+  siempre sentado.
+- **Botón fijo «Empezar · (rutina de hoy)»** encima de la barra, un toque: la rutina que hace más que no se
+  hace según el índice (`rutinaDeHoy`; antes que ninguna, las que no se han hecho nunca); sin rutinas, un
+  entreno vacío. No sale mientras hay un entreno a medias (su sitio es de la pastilla).
+- **Al tocar una zona o una máquina** (`hoja-zona.jsx`, también al crear rutinas): una sola lista con todos los
+  ejercicios de la zona (los de músculo principal en ella), con filtros por músculo; con máquina, primero su
+  ejercicio principal y el resto de su músculo de cerca a lejos (`ejerciciosDeZona`). Sin nombres de máquina:
+  el título es la zona y bajo cada ejercicio, «equipo · músculo». Sin «Añadir todos».
+- **Zonas teñidas** (v3-03 · A; botón de capas, `fooddraft:capas-gimnasio`): verde con ✓ = entrenada esta
+  semana; gris con telarañas = 14 días o más sin entrenar; nunca entrenada, sin tinte. Del índice y la cola,
+  sin leer meses (`ultimaVezPorZona`, `estadoZonas`).
+- **Monitor**: las 15 frases de la maqueta (`fitdraft.monitor.<situacion>.<n>`, cinco por situación: saludo,
+  una zona olvidada 14 días, mucho tiempo sin venir = 14 días sin ninguna sesión), al azar, **como mucho una
+  al día** (`fooddraft:monitor-gym`); tocarlo la repite. El grupo va siempre detrás de «de» o «sin»
+  (`fitdraft.grupoFrase.*`) para no concordar nada. En el dibujo, el monitor y las zonas hacen de avisos; los
+  de actividad y de grupos sin entrenar siguen en la Lista.
+- **Puerta de cristal corredera**: solo la primera vez al día (`fooddraft:puerta-gym`), se salta tocando.
+- **Crear la rutina** (`mapa-rutina.jsx`): en el editor, «Añadir ejercicio» abre el mapa; la rutina se dibuja
+  como ruta con paradas numeradas en su orden (`paradasDeRutina`; dos seguidas en la misma máquina, una parada)
+  y la primera iluminada. **Nunca «ordenar por cercanía»**. «Buscar» abre el selector de siempre (buscador y
+  ejercicios propios). En mitad de un entreno, «añadir ejercicio» sigue con el selector sencillo.
+- **Entre ejercicios** (v3-02 · V2, `mini-mapa.jsx`): al marcar la última serie de un ejercicio, un mini-mapa
+  encima de la barra del descanso donde el avatar va a la máquina del siguiente pendiente de la sesión
+  (`pasoEntreEjercicios`). Un toque lo salta; `ajustes.paseoDescanso` (Ajustes → FitDraft) lo apaga.
+- **Avatar chibi** (`ui/comun/avatar.jsx`): mujer u hombre (solo cambia el pelo). `perfil.avatar`, elegido en
+  el paso «Entrenamiento» del asistente de alta y cambiable en Ajustes (sección FitDraft); `migrateData` pone
+  el del sexo del perfil a los de antes (sin sexo, el de hombre).
+- **Reducir movimiento**: sin puerta, la cámara salta, el avatar aparece donde iba (también en el mini-mapa),
+  la siguiente parada no palpita y el monitor no levanta el brazo.
+- Textos: bloque `fitdraft.` al final de cada diccionario (nombres de zonas, máquinas y sitios, frases...).
 
 ## Área Cuerpo: resumen, informes cruzados, constructor, sueño, pasos y aviso de actividad
 

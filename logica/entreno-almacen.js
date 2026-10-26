@@ -35,6 +35,9 @@ export const AJUSTES_POR_DEFECTO = {
   descansoSeg: 120, descansoCalentamientoSeg: 60, inicioSemana: 1, sonido: true, vibracion: true,
   // G2: el gimnasio habitual, que sale ya puesto al terminar un entreno ("" = ninguno).
   gimnasio: "",
+  // FitDraft (parte estética, 26-oct-2026): el mini-mapa del descanso al cerrar un ejercicio, donde el avatar
+  // va a la máquina del siguiente. Encendido por defecto; los catálogos de antes lo reciben al migrarse.
+  paseoDescanso: true,
 };
 
 export function catalogoVacio() {

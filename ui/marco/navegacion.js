@@ -1,6 +1,6 @@
 // ---------- ui/marco/navegacion.js ----------
 // Descripción de la navegación por áreas («muchas aplicaciones en una», octubre de 2026). La app se
-// reparte en tres áreas — FoodDraft (nutrición), Entrenamiento y Cuerpo — más una zona común sin área
+// reparte en tres áreas — FoodDraft (nutrición), FitDraft (entreno) y Cuerpo — más una zona común sin área
 // (Compartir, Ayuda, Documentos, Premium, Ajustes, Perfil). Cada área tiene:
 // - `pestanas`: lo principal, a una mano, en su barra inferior flotante (ui/marco/barra-inferior.jsx).
 //   Cada pestaña tiene un destino raíz y la lista de destinos que «cuelgan» de ella (`incluye`), que
@@ -55,7 +55,10 @@ export const AREAS = [
     // El módulo de entreno (octubre de 2026). El entreno en curso no es ninguna pestaña: es una capa a
     // pantalla completa (ui/entreno/sesion.jsx) que se abre desde cualquier sitio con la pastilla. Sus
     // ajustes no están aquí: son una sección de Ajustes (zona común) desde el 25-oct-2026.
-    clave: "entreno", etiqueta: "area.entreno", titulo: "header.tuEntreno", icono: Dumbbell,
+    // Desde el 26-oct-2026 (parte estética) el área se llama FitDraft: en el menú lateral y en el rótulo pequeño
+    // de la cabecera (`rotulo`; las demás áreas dicen «FoodDraft»). El título grande sigue siendo «Tu entreno».
+    // La clave interna sigue siendo "entreno": la usan la última pantalla recordada y las pruebas.
+    clave: "entreno", etiqueta: "fitdraft.area", titulo: "header.tuEntreno", rotulo: "FitDraft", icono: Dumbbell,
     pestanas: [
       { clave: "entrenar", destino: "entreno", etiqueta: "barra.entrenar", icono: Dumbbell, incluye: ["entreno"] },
       { clave: "rutinas", destino: "entreno-rutinas", etiqueta: "barra.rutinas", icono: ClipboardList, incluye: ["entreno-rutinas", "entreno-rutina"] },
