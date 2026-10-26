@@ -322,6 +322,14 @@ Además, dentro de la misma clave:
   primer emoji de lo que escriba, `primerEmoji`). Sin emoji, el de su carpeta (`emojiDe` en
   `ui/despensa/piezas.jsx`). En la Lista sale en lugar del de la carpeta; en el Dibujo, como una pegatina
   encima del dibujo de siempre.
+- **Dibujo propio de cada alimento base** (estética del 26-oct-2026): los 43 de `FOODS_SEED` tienen su
+  dibujo en SVG (`ui/despensa/alimentos.jsx`, con el id del alimento como clave, en una caja de 48 × 48),
+  que sustituye al dibujo genérico de su forma **y** a la pegatina del emoji en la nevera, el estante, la
+  Lista y «Añadir» (`MarcaAlimento`, `piezas.jsx`). Lo decide `dibujoPropio(food, FOODS_SEED)`
+  (`logica/nevera.js`; `repartirEnHuecos` lo añade como `dibujo` a cada entrada): solo los de la semilla, y
+  no si el usuario les cambió el emoji (entonces manda el suyo; si lo borró, vuelve el dibujo). Los que crea
+  el usuario siguen como antes (forma + pegatina, o emoji en la Lista). **Al añadir un alimento a
+  `FOODS_SEED`, dibújalo ahí**: el caso «Dibujo propio» de `validacion/` cuenta que estén todos.
 - **Fecha de cambio** (`actualizado` en cada entrada): la pone `sellarCambios` en `useDespensa` con cada
   cambio, nunca cada operación por su cuenta. Hoy no la usa nada: es para el futuro aviso de revisar lo
   que lleva mucho sin tocarse (idea F2).
@@ -345,6 +353,18 @@ botella vacía y la puerta cerrada. El nivel se guarda en `localStorage` (`foodd
 como comodidad del dispositivo y no como dato de la cuenta, y vuelve a cero en cuanto se desborda: si se
 sale con el charco en el suelo, al volver ya está recogido.
 
+**Detalles que se tocan** (estética del 26-oct-2026, `ui/despensa/detalles.jsx`; maqueta
+`local/ideas/esteticas/v2-07-cocina.html`): juguetes que no abren nada ni guardan nada. El **frutero**, en una
+repisa encima de la vitro (lejos del grifo y sin tapar la vitro, que sigue siendo el botón de «¿Qué
+cocino?»), enseña la fruta que hay en casa (`frutasDelFrutero`, `logica/nevera.js`: nevera y despensa, no la
+congelada ni la acabada, cada una una vez, como mucho 5) y da un saltito al tocarlo. La **planta** de encima
+de la nevera solo se mueve si se toca; tras un número de toques al azar entre 4 y 9 (otro cada vez) sale una
+**mosca** que vuela a su alrededor, se mata con un toque y deja una mancha verde oscura que se apaga en ~3 s
+(si no se le da, se esconde a los 6 s). La **lámpara** oscila al tocarla y se para sola; cada toque más la
+mueve más rápido y más amplio, hasta el doble (rAF con amortiguación, sin estado de React). La planta y la
+lámpara salieron de `FondoCocina` para poder moverse. Sus colores, en el tema (`mimbre`, `hoja`, `mosca`,
+`mancha`, `cable`...); sus textos, en el bloque `cocina.` de `logica/i18n.js`.
+
 Reglas de esta parte:
 - **Qué va en cada hueco** (puerta, baldas, cajón, cesta...) **y con qué dibujo** lo decide
   `logica/nevera.js`, con sus casos en `validacion/tests.js` (grupo «Colocación en la nevera»); la
@@ -356,7 +376,9 @@ Reglas de esta parte:
   `local/ideas/diseno-nevera/`.
 - Con «reducir movimiento» activado en el sistema no hay animaciones: el interior se abre al instante,
   la vitrocerámica navega sin esperar al fuego y el grifo llena la botella sin gota que caiga (si se
-  desborda, todo aparece ya en el suelo, y al recogerlo vuelve de golpe).
+  desborda, todo aparece ya en el suelo, y al recogerlo vuelve de golpe). La fruta del frutero no salta,
+  la planta y la lámpara no se mueven (la luz de la lámpara solo parpadea) y la mosca aparece y desaparece
+  sin volar; su mancha se quita sin fundido.
 - Todo se coloca en unidades del dibujo de la cocina (`ESCENA_ANCHO` × `ESCENA_ALTO`) sobre un
   contenedor con esa misma proporción, así que la escena se escala entera con el ancho de la pantalla.
 - La vista elegida (Dibujo o Lista) se recuerda en `localStorage` (`fooddraft:vista-despensa`), como
