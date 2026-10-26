@@ -17,7 +17,7 @@ import {
   resumenDespensaParaIA,
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
-import { esBebida, huecoDe, formaDe, repartirEnHuecos } from "nevera";
+import { esBebida, huecoDe, formaDe, repartirEnHuecos, dibujoPropio, frutasDelFrutero } from "nevera";
 import { tieneTraduccion, clavesDeIdioma, IDIOMAS_DISPONIBLES } from "i18n";
 import {
   EJERCICIOS_SEMILLA, TIPOS_EJERCICIO, GRUPOS_MUSCULARES, EQUIPOS, camposDeTipo, listaEjercicios, buscarEjercicios,
@@ -1263,6 +1263,57 @@ export function crearGrupos(mod, carga) {
                 huecos: "puerta,lacteos,carne,embutido,frutaVerdura", lacteos: "3,1", puerta: "huevos",
                 conOtros: "puerta,lacteos,carne,embutido,otros,frutaVerdura", despensa: "cereales:1,conservas:0,aceites:0,pan:0",
               }
+            );
+          },
+        },
+        {
+          // Estética de la cocina (26-oct-2026): los 43 alimentos de la semilla llevan dibujo propio; los
+          // del usuario, no (siguen con su emoji). Si el usuario cambió el emoji de uno de la semilla, se
+          // respeta el suyo; si lo borró, vuelve el dibujo.
+          nombre: "Dibujo propio: todos los de la semilla, ninguno de los del usuario, y el emoji cambiado a mano manda",
+          ejecutar: () => {
+            const f = (id) => FOODS_SEED.find((x) => x.id === id);
+            const conDibujo = FOODS_SEED.filter((x) => dibujoPropio(x, FOODS_SEED) === x.id).length;
+            const items = [{ id: "1", foodId: "f_huevo", zona: "nevera", gramos: 360 }, { id: "2", foodId: "f_mio", zona: "nevera", gramos: 100 }];
+            const foods = [...FOODS_SEED, { id: "f_mio", name: "Kéfir de cabra", categoria: "lacteos", emoji: "🐐" }];
+            const puerta = repartirEnHuecos(items, foods, "nevera", FOODS_SEED).find((h) => h.clave === "puerta");
+            return comparar(
+              {
+                conDibujo, total: FOODS_SEED.length,
+                propio: dibujoPropio({ id: "f_mio", name: "Mi tarta", categoria: "snacks_procesados" }, FOODS_SEED),
+                emojiCambiado: dibujoPropio({ ...f("f_salmon"), emoji: "🐡" }, FOODS_SEED),
+                emojiBorrado: dibujoPropio({ ...f("f_salmon"), emoji: "" }, FOODS_SEED),
+                sinSemilla: dibujoPropio(f("f_salmon")),
+                enLaPuerta: puerta.entradas.map((e) => `${e.item.foodId}:${e.dibujo}`).join(","),
+              },
+              {
+                conDibujo: 43, total: 43, propio: null, emojiCambiado: null, emojiBorrado: "f_salmon", sinSemilla: null,
+                enLaPuerta: "f_huevo:f_huevo,f_mio:null",
+              }
+            );
+          },
+        },
+        {
+          nombre: "Frutero: la fruta que queda en la nevera o la despensa, sin la congelada ni repetidas, como mucho 5",
+          ejecutar: () => {
+            const items = [
+              { id: "1", foodId: "f_manzana", zona: "nevera", tengo: true },
+              { id: "2", foodId: "f_manzana", zona: "despensa", tengo: true },
+              { id: "3", foodId: "f_fresas", zona: "congelador", gramos: 300 },
+              { id: "4", foodId: "f_pera", zona: "nevera", tengo: false },
+              { id: "5", foodId: "f_platano", zona: "despensa", gramos: 400 },
+              { id: "6", foodId: "f_tomate", zona: "nevera", tengo: true },
+              { id: "7", foodId: "f_uvas", zona: "nevera", gramos: 0 },
+            ];
+            const muchas = ["f_manzana", "f_platano", "f_naranja", "f_pera", "f_fresas", "f_uvas"].map((id, i) => ({ id: String(i), foodId: id, zona: "nevera", tengo: true }));
+            return comparar(
+              {
+                frutas: frutasDelFrutero(items, FOODS_SEED, FOODS_SEED).map((e) => e.food.id).join(","),
+                dibujo: frutasDelFrutero(items, FOODS_SEED, FOODS_SEED)[0].dibujo,
+                cuantas: frutasDelFrutero(muchas, FOODS_SEED, FOODS_SEED).length,
+                vacio: frutasDelFrutero([], FOODS_SEED, FOODS_SEED).length,
+              },
+              { frutas: "f_manzana,f_platano", dibujo: "f_manzana", cuantas: 5, vacio: 0 }
             );
           },
         },

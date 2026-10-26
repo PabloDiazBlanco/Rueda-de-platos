@@ -289,12 +289,12 @@ function Ficha({ entrada, onTocar, idioma, tema, pequena, alertaDe }) {
         fontFamily: FUENTE_TEXTO,
       }}
     >
-      {/* El dibujo de siempre (bote, bandeja, botella...) y, encima, como una pegatina, el emoji propio del
-          alimento (F3): con solo el dibujo, todas las proteínas o todos los yogures se veían iguales. Sin
-          emoji propio, solo el dibujo, como antes. */}
+      {/* Los del catálogo base, su dibujo propio (ui/despensa/alimentos.jsx). Los demás, el dibujo de su
+          forma (bote, bandeja, botella...) y, encima, como una pegatina, su emoji (F3): con solo el dibujo,
+          todas las proteínas o todos los yogures se veían iguales. Sin emoji, solo el dibujo, como antes. */}
       <span style={{ position: "relative", display: "block" }}>
-        <IconoAlimento forma={entrada.forma} tamano={pequena ? 34 : 46} />
-        {food && food.emoji && (
+        <IconoAlimento forma={entrada.forma} dibujo={entrada.dibujo} tamano={pequena ? 34 : 46} />
+        {food && food.emoji && !entrada.dibujo && (
           <span
             aria-hidden="true"
             style={{

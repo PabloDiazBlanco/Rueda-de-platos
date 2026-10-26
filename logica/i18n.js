@@ -1459,6 +1459,12 @@ const TEXTOS = {
     "queCocino.pensando.frase3": "Dándole la vuelta al filete…",
     "queCocino.pensando.frase4": "Casi está…",
     "queCocino.pensando.tarda": "Está tardando un poco más de lo normal…",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Hacer saltar la fruta del frutero",
+    "cocina.planta": "Menear la planta",
+    "cocina.lampara": "Balancear la lámpara",
+    "cocina.mosca": "Aplastar la mosca",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2857,6 +2863,12 @@ const TEXTOS = {
     "queCocino.pensando.frase3": "Flipping the steak…",
     "queCocino.pensando.frase4": "Almost there…",
     "queCocino.pensando.tarda": "This is taking a little longer than usual…",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Make the fruit in the bowl jump",
+    "cocina.planta": "Shake the plant",
+    "cocina.lampara": "Swing the lamp",
+    "cocina.mosca": "Swat the fly",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -4255,6 +4267,12 @@ const TEXTOS = {
     "queCocino.pensando.frase3": "Girant el filet…",
     "queCocino.pensando.frase4": "Gairebé està…",
     "queCocino.pensando.tarda": "Està trigant una mica més del normal…",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Fes saltar la fruita de la fruitera",
+    "cocina.planta": "Belluga la planta",
+    "cocina.lampara": "Gronxa el llum",
+    "cocina.mosca": "Aixafa la mosca",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5653,6 +5671,12 @@ const TEXTOS = {
     "queCocino.pensando.frase3": "Dándolle a volta ao filete…",
     "queCocino.pensando.frase4": "Case está…",
     "queCocino.pensando.tarda": "Está tardando un pouco máis do normal…",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Facer saltar a froita do froiteiro",
+    "cocina.planta": "Abanear a planta",
+    "cocina.lampara": "Abanear a lámpada",
+    "cocina.mosca": "Esmagar a mosca",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -7051,6 +7075,12 @@ const TEXTOS = {
     "queCocino.pensando.frase3": "Xerrari buelta ematen…",
     "queCocino.pensando.frase4": "Ia prest…",
     "queCocino.pensando.tarda": "Ohi baino pixka bat gehiago ari da tardatzen…",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Fruta-ontziko fruta salto eginarazi",
+    "cocina.planta": "Mugitu landarea",
+    "cocina.lampara": "Kulunkatu lanpara",
+    "cocina.mosca": "Zapaldu eulia",
   },
 };
 

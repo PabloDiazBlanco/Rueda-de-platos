@@ -54,6 +54,16 @@ export const TEMAS_NEVERA = {
     charcoOscuro: "#77703f",
     charcoBrillo: "#c9c095",
     alerta: "#c2452d",          // cantidades de lo que se está acabando
+    // Los detalles de la cocina (estética del 26-oct-2026, ui/despensa/detalles.jsx): el frutero de la
+    // repisa, las hojas de la planta, su mosca y la mancha que deja, y el cable de la lámpara.
+    mimbre: "#d9b06a",
+    mimbreOscuro: "#b38b55",
+    hoja: "#6fbb6f",
+    mosca: "#2b2b26",
+    alaMosca: "#dfe9ef",
+    ojoMosca: "#c2452d",
+    mancha: "#3f5a2a",          // verde oscuro, no rojo, para que no sea desagradable
+    cable: "#8a7a5c",
   },
 };
 

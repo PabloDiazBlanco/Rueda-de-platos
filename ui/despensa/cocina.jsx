@@ -11,6 +11,8 @@
 // estante, lo que guarda de verdad la despensa; 2) pared, azulejos, encimera y muebles, solo decorado;
 // 3) la vitrocerámica, que enciende un fuego y lleva a «¿Qué cocino?» (solo navegando: esa pantalla es
 // la de siempre, premium o con su aviso), y el grifo, que suelta una gota al tocarlo.
+// Desde el 26-oct-2026 hay además tres detalles que se tocan solo por jugar (ui/despensa/detalles.jsx): el
+// frutero de la repisa de encima de la vitro, la planta con su mosca y la lámpara que oscila.
 // Además, el mueble de debajo del fregadero se abre como la nevera y guarda la lista de limpieza y cosas
 // de casa (ui/despensa/fregadero.jsx).
 //
@@ -33,6 +35,7 @@ import {
 } from "./dibujos.jsx";
 import { PanelZona } from "./panel.jsx";
 import { PanelFregadero } from "./fregadero.jsx";
+import { DetallesCocina } from "./detalles.jsx";
 
 // Tiempos de la animación (ms). La puerta tarda en abrirse ABRIR_PUERTA y el panel aparece poco antes
 // de que termine el rebote, para que no se note una espera; el estante solo «late» un momento.
@@ -235,6 +238,9 @@ export function VistaDibujo({ data, despensa, tema, idioma, onIrACocinar }) {
 
         <button onClick={abrirGrifo} aria-label={t(idioma, "despensa.grifo")} style={{ ...botonInvisible, ...en(GRIFO.x, GRIFO.y, GRIFO.w, GRIFO.h) }} />
         <button onClick={irACocinar} aria-label={t(idioma, "despensa.abrir.cocinar")} style={{ ...botonInvisible, ...en(VITRO.x, VITRO.y, VITRO.w, VITRO.h) }} />
+
+        {/* El frutero de la repisa, la planta y la lámpara: juguetes que se mueven al tocarlos. */}
+        <DetallesCocina tema={tema} reducido={reducido} frutas={despensa.frutero()} bloqueado={!!panel} idioma={idioma} />
 
         <button
           onClick={() => abrir("despensa")}

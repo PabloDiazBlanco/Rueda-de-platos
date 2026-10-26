@@ -16,7 +16,8 @@ import {
 } from "despensa";
 import { necesidadesComida, calcularListaNeta } from "lista-compra-neta";
 import { necesidadesComidaReal } from "comida-real";
-import { repartirEnHuecos } from "nevera";
+import { repartirEnHuecos, frutasDelFrutero } from "nevera";
+import { FOODS_SEED } from "datos-iniciales";
 
 // Documento aparte de los datos principales (STORAGE_KEY en datos.js), con su propia versión: ver
 // la cabecera de logica/despensa.js.
@@ -102,7 +103,9 @@ export function useDespensa(data, menu) {
     quitar: (itemId) => cambiar((d) => quitarItem(d, itemId)),
     // Lo de una zona repartido en sus huecos (baldas, puerta, cajón...), con el dibujo de cada cosa ya
     // decidido: ver repartirEnHuecos (logica/nevera.js). Es lo que pinta la nevera dibujada.
-    huecos: (zona) => repartirEnHuecos(items, data && data.foods, zona),
+    huecos: (zona) => repartirEnHuecos(items, data && data.foods, zona, FOODS_SEED),
+    // La fruta que se ve en el frutero de la repisa (frutasDelFrutero, logica/nevera.js): solo decorado.
+    frutero: () => frutasDelFrutero(items, data && data.foods, FOODS_SEED),
     // Lista de la compra neta de una semana (1, 2) o del ciclo entero ("todo"): ver calcularListaNeta.
     listaNeta: (alcance) => calcularListaNeta(data, menu, alcance, despensa),
     comprar: (fila) => cambiar((d) => marcarComprado(d, fila, getFood(data, fila.foodId))),

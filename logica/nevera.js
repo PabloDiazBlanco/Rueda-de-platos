@@ -148,19 +148,59 @@ export function formaDe(food) {
   return FORMA_POR_CATEGORIA[food.categoria] || "generico";
 }
 
+// Dibujo propio de un alimento del catálogo base (estética de la cocina, 26-oct-2026): cada uno de los
+// 43 de FOODS_SEED tiene el suyo (ui/despensa/alimentos.jsx), que sustituye en la nevera, el estante y la
+// lista al dibujo genérico de su forma y a la pegatina del emoji. Devuelve la clave del dibujo (el id del
+// alimento, que es fijo) o null si no tiene: los alimentos que crea el usuario siguen con su emoji (y,
+// sin emoji, el de su carpeta), como antes.
+//
+// Excepción: si el usuario le cambió el emoji a uno de la semilla (F3), ha elegido cómo quiere verlo, así
+// que se respeta el suyo. Borrarlo (emoji "") no cuenta como elegir otro: entonces sale el dibujo.
+//
+// `semilla` es FOODS_SEED (o lo que haga sus veces en las pruebas). Llega como parámetro para que este
+// módulo siga sin importar nada, como el resto de la colocación.
+export function dibujoPropio(food, semilla) {
+  if (!food) return null;
+  const original = (semilla || []).find((f) => f.id === food.id);
+  if (!original) return null;
+  if (food.emoji && food.emoji !== original.emoji) return null;
+  return food.id;
+}
+
 // Reparte las entradas de una zona en sus huecos, en el orden en que se pintan y con su dibujo ya
-// decidido. Devuelve [{ clave, entradas: [{ item, food, forma }] }], con los huecos `siempre` aunque
-// estén vacíos y el resto solo si tienen algo. Dentro de cada hueco, por nombre.
-export function repartirEnHuecos(items, foods, zona) {
+// decidido. Devuelve [{ clave, entradas: [{ item, food, forma, dibujo }] }] (`dibujo`: el propio del
+// alimento, ver dibujoPropio, o null), con los huecos `siempre` aunque estén vacíos y el resto solo si
+// tienen algo. Dentro de cada hueco, por nombre.
+export function repartirEnHuecos(items, foods, zona, semilla) {
   const porId = new Map((foods || []).map((f) => [f.id, f]));
   const grupos = {};
   (items || []).filter((i) => i.zona === zona).forEach((item) => {
     const food = porId.get(item.foodId) || null;
     const clave = huecoDe(food, zona);
-    (grupos[clave] = grupos[clave] || []).push({ item, food, forma: formaDe(food) });
+    (grupos[clave] = grupos[clave] || []).push({ item, food, forma: formaDe(food), dibujo: dibujoPropio(food, semilla) });
   });
   const nombre = (e) => (e.food ? e.food.name : e.item.foodId);
   return (HUECOS[zona] || [])
     .filter((h) => h.siempre || grupos[h.clave])
     .map((h) => ({ clave: h.clave, entradas: (grupos[h.clave] || []).sort((a, b) => nombre(a).localeCompare(nombre(b), "es")) }));
+}
+
+// La fruta del frutero que hay en la repisa de encima de la vitrocerámica (estética de la cocina,
+// 26-oct-2026): solo decorado, enseña la fruta que hay en casa. Cuenta la de la nevera y la de la
+// despensa, pero no la congelada (nadie pone fresas congeladas en un frutero) ni la que se ha acabado;
+// cada fruta una vez aunque esté en dos sitios, por nombre y como mucho `max`, que es lo que cabe en
+// el bol. Mismo formato que las entradas de repartirEnHuecos, para pintarlas igual.
+export function frutasDelFrutero(items, foods, semilla, max = 5) {
+  const porId = new Map((foods || []).map((f) => [f.id, f]));
+  const vistas = new Set();
+  const frutas = [];
+  (items || []).forEach((item) => {
+    const food = porId.get(item.foodId);
+    if (!food || food.categoria !== "frutas" || item.zona === "congelador" || vistas.has(food.id)) return;
+    const queda = typeof item.gramos === "number" ? item.gramos > 0 : !!item.tengo;
+    if (!queda) return;
+    vistas.add(food.id);
+    frutas.push({ item, food, forma: formaDe(food), dibujo: dibujoPropio(food, semilla) });
+  });
+  return frutas.sort((a, b) => a.food.name.localeCompare(b.food.name, "es")).slice(0, max);
 }

@@ -7,9 +7,11 @@
 // tema (ui/despensa/tema.js); los de la comida son fijos, porque una manzana es roja en cualquier
 // estilo.
 //
-// Qué dibujo lleva cada alimento y en qué hueco va lo decide logica/nevera.js (formaDe, huecoDe); aquí
-// solo se pinta.
+// Qué dibujo lleva cada alimento y en qué hueco va lo decide logica/nevera.js (formaDe, huecoDe,
+// dibujoPropio); aquí solo se pinta. Los 43 alimentos del catálogo base tienen además su dibujo propio
+// (ui/despensa/alimentos.jsx), que IconoAlimento prefiere al de su forma cuando se le pasa `dibujo`.
 import React from "react";
+import { DIBUJOS_ALIMENTOS } from "./alimentos.jsx";
 
 // Borde fino y suave para lo que es blanco o casi (leche, yogures, huevos): sin él se perdería sobre el
 // interior claro de la nevera.
@@ -347,19 +349,26 @@ const DIBUJOS = {
 };
 
 // Un alimento dibujado en un recuadro cuadrado de `tamano` (px, o unidades del dibujo si va dentro de
-// otro SVG con x/y), escalado para que todos ocupen lo mismo y apoyado por abajo.
-export function IconoAlimento({ forma, tamano = 40, x, y }) {
-  const d = DIBUJOS[forma] || DIBUJOS.generico;
-  const k = Math.min(40 / d.w, 40 / d.h);
-  const ox = (48 - d.w * k) / 2;
-  const oy = 46 - d.h * k;
+// otro SVG con x/y), escalado para que todos ocupen lo mismo y apoyado por abajo. Con `dibujo` (la clave
+// que da dibujoPropio, logica/nevera.js), el dibujo propio del alimento, que ya viene hecho a la medida
+// del recuadro; si no, el genérico de su `forma`.
+export function IconoAlimento({ forma, dibujo, tamano = 40, x, y }) {
   const dentroDeOtroSvg = x !== undefined;
+  const propio = dibujo && DIBUJOS_ALIMENTOS[dibujo];
+  let contenido;
+  if (propio) {
+    contenido = propio();
+  } else {
+    const d = DIBUJOS[forma] || DIBUJOS.generico;
+    const k = Math.min(40 / d.w, 40 / d.h);
+    contenido = <g transform={`translate(${(48 - d.w * k) / 2} ${46 - d.h * k}) scale(${k})`}>{d.dibujo()}</g>;
+  }
   return (
     <svg
       x={x} y={y} width={tamano} height={tamano} viewBox="0 0 48 48" aria-hidden="true"
       style={dentroDeOtroSvg ? undefined : { display: "block", flexShrink: 0 }}
     >
-      <g transform={`translate(${ox} ${oy}) scale(${k})`}>{d.dibujo()}</g>
+      {contenido}
     </svg>
   );
 }
@@ -371,7 +380,7 @@ function FilaMini({ entradas, x0, x1, base, tamano, max = 4 }) {
   if (!visibles.length) return null;
   const paso = (x1 - x0) / visibles.length;
   return visibles.map((e, i) => (
-    <IconoAlimento key={e.item.id} forma={e.forma} tamano={tamano} x={x0 + paso * i + (paso - tamano) / 2} y={base - tamano} />
+    <IconoAlimento key={e.item.id} forma={e.forma} dibujo={e.dibujo} tamano={tamano} x={x0 + paso * i + (paso - tamano) / 2} y={base - tamano} />
   ));
 }
 
@@ -500,8 +509,9 @@ export function Estante({ tema, huecos }) {
 // ---------- La cocina de alrededor (capas 2 y 3) ----------
 // Medidas de la escena completa (unidades del viewBox). La nevera y el estante no se dibujan aquí: son
 // piezas aparte que se tocan y se animan (ui/despensa/cocina.jsx las coloca encima, en estas mismas
-// unidades); esto es el fondo: pared, azulejos, encimera con sus muebles, suelo, lámpara y planta, más
-// el fregadero con su grifo y la vitrocerámica, que también se pueden tocar.
+// unidades); esto es el fondo: pared, azulejos, encimera con sus muebles y suelo, más el fregadero con
+// su grifo y la vitrocerámica, que también se pueden tocar. La lámpara, la planta y el frutero, que se
+// mueven al tocarlos, van aparte (ui/despensa/detalles.jsx).
 export const ESCENA_ANCHO = 360;
 export const ESCENA_ALTO = 470;
 export const SUELO_Y = 440;
@@ -639,14 +649,8 @@ export function FondoCocina({ tema, fuegoEncendido, gota, reducido, cosasFregade
         <ellipse cx="152" cy={ENCIMERA_Y + 4} rx="15" ry="4.2" fill="#55554f" />
         <rect x="164" y={ENCIMERA_Y + 1.5} width="14" height="3.4" rx="1.7" fill="#55554f" />
 
-        {/* lámpara colgando del techo, sobre la nevera */}
-        <rect x="299" y="0" width="2" height="34" fill="#8a7a5c" />
-        <path d="M282,52 Q282,34 300,34 Q318,34 318,52 Z" fill={tema.cuerpo} />
-        <ellipse cx="300" cy="54" rx="8" ry="3" fill={tema.luz} />
-
-        {/* planta encima de la nevera (que empieza en y ≈ 98) */}
-        <path d="M232,82 Q220,62 228,52 M238,82 Q240,58 252,50 M244,82 Q258,68 266,66" stroke={tema.planta} strokeWidth="5" fill="none" strokeLinecap="round" />
-        <path d="M222,80 L258,80 L253,98 L227,98 Z" fill={tema.maceta} />
+        {/* La lámpara del techo, la planta de encima de la nevera y el frutero de la repisa se tocan y se
+            mueven: están en ui/despensa/detalles.jsx, encima de este fondo. */}
       </g>
     </svg>
   );
