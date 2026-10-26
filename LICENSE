@@ -9,8 +9,9 @@ written permission of the copyright holder.
 Viewing the code, and forking it within GitHub as allowed by GitHub's Terms of Service, are the
 only uses permitted without that permission.
 
-Third-party components (for example React, Firebase, lucide-react or Babel) remain under their
-own licences and are not covered by this notice.
+Third-party components (for example React, Firebase, lucide-react or Babel) and the human-body muscle drawing paths
+(derived from react-native-body-highlighter, MIT licence, Copyright (c) 2022 ELABBASSI Hicham) remain under their own
+licences and are not covered by this notice.
 
 ---
 
@@ -25,5 +26,6 @@ parte, sin el permiso previo y por escrito del titular de los derechos.
 Ver el código y hacer un *fork* dentro de GitHub, tal como permiten las Condiciones del Servicio
 de GitHub, son los únicos usos permitidos sin ese permiso.
 
-Los componentes de terceros (por ejemplo React, Firebase, lucide-react o Babel) siguen bajo sus
+Los componentes de terceros (por ejemplo React, Firebase, lucide-react o Babel) y los trazados del dibujo del cuerpo
+humano (derivados de react-native-body-highlighter, licencia MIT, Copyright (c) 2022 ELABBASSI Hicham) siguen bajo sus
 propias licencias y no están cubiertos por este aviso.
