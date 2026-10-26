@@ -5,8 +5,7 @@
 // las comidas completadas descuentan de la despensa (ver useDespensa, ui/estado/despensa.js).
 import React, { useState } from "react";
 import { Shuffle, Undo2, Check } from "lucide-react";
-import { DAYS } from "comun";
-import { registroComida, indiceRegistros, totalesComidaReal } from "comida-real";
+import { registroComida, indiceRegistros, totalesComidaReal, totalesDiaReal } from "comida-real";
 import { fechaISO } from "peso";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
@@ -17,10 +16,12 @@ import { documentoMenu } from "./exportar.js";
 import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
 import { GenerandoMenu } from "./generando.jsx";
-import { LineaPreentreno } from "../perfil/preentreno.jsx";
+import { SelectorDia, TarjetaDia, diaDeHoy } from "./selector-dia.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 export function MenuView({ menu, onGenerate, generando, onUndo, menuWeek, setMenuWeek, history, data, onUpdateMeal, objetivos, onUpdateObjetivos, onUpsertRule, onToggleComidaCompletada, despensa, idioma }) {
+  // El día que se enseña (uno solo a la vez); al abrir la pantalla, hoy.
+  const [dia, setDia] = useState(diaDeHoy);
   const [selectedMealId, setSelectedMealId] = useState(null);
   const [editingObjetivos, setEditingObjetivos] = useState(false);
   const [showStats, setShowStats] = useState(true);
@@ -176,88 +177,81 @@ export function MenuView({ menu, onGenerate, generando, onUndo, menuWeek, setMen
             </button>
           </div>
 
-          {showStats && <DayStatsPanel data={data} menu={menu} week={menuWeek} objetivos={objetivos} idioma={idioma} />}
-          {showStats && <ResumenSaludPublica data={data} menu={menu} week={menuWeek} objetivos={objetivos} idioma={idioma} />}
+          {/* Un solo día a la vez (parte estética, 26-oct-2026): los botones de día cambian a la vez la
+              tarjeta de macros y las comidas de debajo. Sal, azúcares y fibra siguen siendo de la semana. */}
+          <SelectorDia dia={dia} onCambiar={setDia} idioma={idioma} />
+          {showStats && <DayStatsPanel data={data} menu={menu} week={menuWeek} day={dia} objetivos={objetivos} idioma={idioma} />}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {DAYS.map((day) => {
-              const dayMeals = menu.filter((s) => s.week === menuWeek && s.day === day);
+          {/* D3: en los días de entreno, la tarjeta del día lleva la recomendación de preentreno en una línea. */}
+          <TarjetaDia key={dia} dia={dia} perfil={data.perfil} total={totalesDiaReal(data, menu, menuWeek, dia).kcal} idioma={idioma}>
+            {menu.filter((s) => s.week === menuWeek && s.day === dia).map((m) => {
+              // Las kcal de verdad si la comida se marcó con cambios (B1+B3); si no, las del menú.
+              const totales = totalesComidaReal(data, m, registros);
+              const ajustada = m.raciones && Object.values(m.raciones).some((v) => Number(v) !== 1);
               return (
-                <div key={day} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
-                  {/* D3: en los días de entreno, la recomendación de preentreno en una línea. */}
-                  <LineaPreentreno perfil={data.perfil} day={day} idioma={idioma} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {dayMeals.map((m) => {
-                      // Las kcal de verdad si la comida se marcó con cambios (B1+B3); si no, las del menú.
-                      const totales = totalesComidaReal(data, m, registros);
-                      const ajustada = m.raciones && Object.values(m.raciones).some((v) => Number(v) !== 1);
-                      return (
-                      <div
-                        key={m.id}
-                        onClick={() => setSelectedMealId(m.id)}
+              <div
+                key={m.id}
+                onClick={() => setSelectedMealId(m.id)}
+                style={{
+                  display: "flex",
+                  alignItems: "baseline",
+                  gap: 10,
+                  fontFamily: FUENTE_TEXTO,
+                  cursor: "pointer",
+                  padding: "4px 6px",
+                  marginLeft: -6,
+                  marginRight: -6,
+                  borderRadius: 7,
+                }}
+              >
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>{t(idioma, "mealType." + m.mealType)}</span>
+                {m.closedDish ? (
+                  <span style={{ fontSize: 13, color: "var(--rust)", fontWeight: 600 }}>{m.closedDish}</span>
+                ) : m.item ? (
+                  <span style={{ fontSize: 13, color: "var(--ink)" }}>{m.item}</span>
+                ) : (
+                  <span style={{ fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    {m.protein} + {m.carbo} + {m.verdura}
+                    {m.garbanzos && (
+                      <span
                         style={{
-                          display: "flex",
-                          alignItems: "baseline",
-                          gap: 10,
                           fontFamily: FUENTE_TEXTO,
-                          cursor: "pointer",
-                          padding: "4px 6px",
-                          marginLeft: -6,
-                          marginRight: -6,
-                          borderRadius: 7,
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          color: "var(--mustard-dark)",
+                          background: "var(--mustard-soft)",
+                          padding: "2px 7px",
+                          borderRadius: 20,
                         }}
                       >
-                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>{t(idioma, "mealType." + m.mealType)}</span>
-                        {m.closedDish ? (
-                          <span style={{ fontSize: 13, color: "var(--rust)", fontWeight: 600 }}>{m.closedDish}</span>
-                        ) : m.item ? (
-                          <span style={{ fontSize: 13, color: "var(--ink)" }}>{m.item}</span>
-                        ) : (
-                          <span style={{ fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                            {m.protein} + {m.carbo} + {m.verdura}
-                            {m.garbanzos && (
-                              <span
-                                style={{
-                                  fontFamily: FUENTE_TEXTO,
-                                  fontSize: 10.5,
-                                  fontWeight: 700,
-                                  color: "var(--mustard-dark)",
-                                  background: "var(--mustard-soft)",
-                                  padding: "2px 7px",
-                                  borderRadius: 20,
-                                }}
-                              >
-                                {t(idioma, "menu.garbanzos5050")}
-                              </span>
-                            )}
-                          </span>
-                        )}
-                        <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                          {ajustada && (
-                            <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-soft)", padding: "2px 6px", borderRadius: 20 }}>
-                              {t(idioma, "menu.ajustada")}
-                            </span>
-                          )}
-                          {totales.cambiada && (
-                            <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--mustard-dark)", background: "var(--mustard-soft)", padding: "2px 6px", borderRadius: 20 }}>
-                              {t(idioma, "menu.cambiada")}
-                            </span>
-                          )}
-                          {totales.kcal > 0 && (
-                            <span style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 700 }}>
-                              {t(idioma, "menu.kcal", { n: Math.round(totales.kcal) })}
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                        {t(idioma, "menu.garbanzos5050")}
+                      </span>
+                    )}
+                  </span>
+                )}
+                <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                  {ajustada && (
+                    <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-soft)", padding: "2px 6px", borderRadius: 20 }}>
+                      {t(idioma, "menu.ajustada")}
+                    </span>
+                  )}
+                  {totales.cambiada && (
+                    <span style={{ fontSize: 9.5, fontWeight: 700, color: "var(--mustard-dark)", background: "var(--mustard-soft)", padding: "2px 6px", borderRadius: 20 }}>
+                      {t(idioma, "menu.cambiada")}
+                    </span>
+                  )}
+                  {totales.kcal > 0 && (
+                    <span style={{ fontSize: 11, color: "var(--ink-soft)", fontWeight: 700 }}>
+                      {t(idioma, "menu.kcal", { n: Math.round(totales.kcal) })}
+                    </span>
+                  )}
+                </span>
+              </div>
               );
             })}
-          </div>
+          </TarjetaDia>
+
+          {showStats && <ResumenSaludPublica data={data} menu={menu} week={menuWeek} objetivos={objetivos} idioma={idioma} />}
         </>
       )}
 
