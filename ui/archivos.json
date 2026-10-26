@@ -14,6 +14,7 @@
   "ui/comun/tarjetas.jsx",
   "ui/cuerpo/informes.jsx",
   "ui/cuerpo/periodo.jsx",
+  "ui/despensa/alimentos.jsx",
   "ui/despensa/anadir.jsx",
   "ui/despensa/cocina.jsx",
   "ui/despensa/despensa.jsx",

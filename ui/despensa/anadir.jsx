@@ -12,7 +12,7 @@ import { t } from "i18n";
 import { zonaPorDefecto, usaCantidad } from "despensa";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
-import { emojiDe, SelectorZona } from "./piezas.jsx";
+import { MarcaAlimento, SelectorZona } from "./piezas.jsx";
 
 export function AnadirAlimentoModal({ data, despensa, onClose, idioma, zonaInicial }) {
   const [query, setQuery] = useState("");
@@ -76,7 +76,7 @@ export function AnadirAlimentoModal({ data, despensa, onClose, idioma, zonaInici
                     border: "none", borderRadius: 7, padding: "7px 6px", cursor: "pointer",
                   }}
                 >
-                  <span style={{ fontSize: 15 }}>{emojiDe(f)}</span>
+                  <MarcaAlimento food={f} tamano={15} />
                   <span>{f.name}</span>
                 </button>
               ))
@@ -89,7 +89,7 @@ export function AnadirAlimentoModal({ data, despensa, onClose, idioma, zonaInici
       ) : (
         <>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, fontFamily: FUENTE_TEXTO }}>
-            <span style={{ fontSize: 18 }}>{emojiDe(food)}</span>
+            <MarcaAlimento food={food} tamano={18} />
             <span style={{ flex: 1, fontSize: 14, fontWeight: 700, color: "var(--ink)" }}>{food.name}</span>
             <button
               onClick={() => setElegido(null)}

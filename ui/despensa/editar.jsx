@@ -10,7 +10,7 @@ import { SelectorZona } from "./piezas.jsx";
 import { IconoAlimento } from "./dibujos.jsx";
 
 export function EditarEntradaModal({ entrada, despensa, onClose, idioma }) {
-  const { item, food, forma } = entrada;
+  const { item, food, forma, dibujo } = entrada;
   const conGramos = typeof item.gramos === "number";
   const [gramos, setGramos] = useState(conGramos ? String(item.gramos) : "");
   const [tengo, setTengo] = useState(!!item.tengo);
@@ -46,7 +46,7 @@ export function EditarEntradaModal({ entrada, despensa, onClose, idioma }) {
   return (
     <ModalShell onClose={onClose} title={food ? food.name : item.foodId}>
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
-        <IconoAlimento forma={forma} tamano={64} />
+        <IconoAlimento forma={forma} dibujo={dibujo} tamano={64} />
       </div>
 
       {conGramos ? (

@@ -7,9 +7,11 @@
 // tema (ui/despensa/tema.js); los de la comida son fijos, porque una manzana es roja en cualquier
 // estilo.
 //
-// Qué dibujo lleva cada alimento y en qué hueco va lo decide logica/nevera.js (formaDe, huecoDe); aquí
-// solo se pinta.
+// Qué dibujo lleva cada alimento y en qué hueco va lo decide logica/nevera.js (formaDe, huecoDe,
+// dibujoPropio); aquí solo se pinta. Los 43 alimentos del catálogo base tienen además su dibujo propio
+// (ui/despensa/alimentos.jsx), que IconoAlimento prefiere al de su forma cuando se le pasa `dibujo`.
 import React from "react";
+import { DIBUJOS_ALIMENTOS } from "./alimentos.jsx";
 
 // Borde fino y suave para lo que es blanco o casi (leche, yogures, huevos): sin él se perdería sobre el
 // interior claro de la nevera.
@@ -347,19 +349,26 @@ const DIBUJOS = {
 };
 
 // Un alimento dibujado en un recuadro cuadrado de `tamano` (px, o unidades del dibujo si va dentro de
-// otro SVG con x/y), escalado para que todos ocupen lo mismo y apoyado por abajo.
-export function IconoAlimento({ forma, tamano = 40, x, y }) {
-  const d = DIBUJOS[forma] || DIBUJOS.generico;
-  const k = Math.min(40 / d.w, 40 / d.h);
-  const ox = (48 - d.w * k) / 2;
-  const oy = 46 - d.h * k;
+// otro SVG con x/y), escalado para que todos ocupen lo mismo y apoyado por abajo. Con `dibujo` (la clave
+// que da dibujoPropio, logica/nevera.js), el dibujo propio del alimento, que ya viene hecho a la medida
+// del recuadro; si no, el genérico de su `forma`.
+export function IconoAlimento({ forma, dibujo, tamano = 40, x, y }) {
   const dentroDeOtroSvg = x !== undefined;
+  const propio = dibujo && DIBUJOS_ALIMENTOS[dibujo];
+  let contenido;
+  if (propio) {
+    contenido = propio();
+  } else {
+    const d = DIBUJOS[forma] || DIBUJOS.generico;
+    const k = Math.min(40 / d.w, 40 / d.h);
+    contenido = <g transform={`translate(${(48 - d.w * k) / 2} ${46 - d.h * k}) scale(${k})`}>{d.dibujo()}</g>;
+  }
   return (
     <svg
       x={x} y={y} width={tamano} height={tamano} viewBox="0 0 48 48" aria-hidden="true"
       style={dentroDeOtroSvg ? undefined : { display: "block", flexShrink: 0 }}
     >
-      <g transform={`translate(${ox} ${oy}) scale(${k})`}>{d.dibujo()}</g>
+      {contenido}
     </svg>
   );
 }
@@ -371,7 +380,7 @@ function FilaMini({ entradas, x0, x1, base, tamano, max = 4 }) {
   if (!visibles.length) return null;
   const paso = (x1 - x0) / visibles.length;
   return visibles.map((e, i) => (
-    <IconoAlimento key={e.item.id} forma={e.forma} tamano={tamano} x={x0 + paso * i + (paso - tamano) / 2} y={base - tamano} />
+    <IconoAlimento key={e.item.id} forma={e.forma} dibujo={e.dibujo} tamano={tamano} x={x0 + paso * i + (paso - tamano) / 2} y={base - tamano} />
   ));
 }
 

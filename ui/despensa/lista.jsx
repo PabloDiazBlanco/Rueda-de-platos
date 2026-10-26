@@ -10,7 +10,7 @@ import { t } from "i18n";
 import { ZONAS } from "despensa";
 import { inputStyle, IconBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
-import { ICONO_ZONA, emojiDe } from "./piezas.jsx";
+import { ICONO_ZONA, MarcaAlimento } from "./piezas.jsx";
 import { ListaLimpieza } from "./fregadero.jsx";
 
 export function VistaLista({ data, despensa, idioma }) {
@@ -74,7 +74,7 @@ function FilaDespensa({ item, food, nombre, despensa, alerta, idioma }) {
           fontFamily: FUENTE_TEXTO, fontSize: 13, color: agotado ? "var(--ink-soft)" : "var(--ink)",
         }}
       >
-        <span style={{ fontSize: 15, flexShrink: 0, opacity: agotado ? 0.5 : 1 }}>{emojiDe(food)}</span>
+        <MarcaAlimento food={food} tamano={15} apagado={agotado} />
         <span>{nombre}</span>
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>
