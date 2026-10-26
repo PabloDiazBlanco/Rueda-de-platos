@@ -845,7 +845,7 @@ const TEXTOS = {
     // app.jsx, pero comparten el mismo diccionario: leen el idioma guardado con leerIdiomaGuardado()
     // y tienen su propio selector ES/EN, igual que la bienvenida (ver auth-bootstrap.jsx).
     "privacidad.titulo": "Política de privacidad — FoodDraft",
-    "privacidad.actualizado": "Última actualización: 25 de octubre de 2026",
+    "privacidad.actualizado": "Última actualización: 26 de octubre de 2026",
     "privacidad.responsableHeader": "Responsable del tratamiento",
     "privacidad.responsableTexto": "Pablo Díaz Blanco, España.<br />Contacto: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "privacidad.datosHeader": "Qué datos se recogen",
@@ -854,9 +854,9 @@ const TEXTOS = {
     "privacidad.datosSeguimiento": "<strong>Seguimiento</strong>: historial de pesadas, menús generados, catálogo de alimentos y platos que crees, lo que apuntas en tu despensa y tus entrenamientos.",
     "privacidad.datosFotos": "<strong>Fotos, despensa y textos enviados a la IA</strong>: si usas el lector por foto, la imagen se envía a Gemini (Google) para leer los datos nutricionales. Si usas «¿Qué cocino?», se envía a Gemini lo que decidas incluir: una foto de ingredientes, el texto que escribas y, si dejas marcada la casilla, la lista de lo que tienes en la despensa (el nombre de cada alimento y una cantidad aproximada). Solo se envía para preparar la respuesta y <strong>no se almacena</strong> en ningún servidor de FoodDraft — se descarta tras procesarlo.",
     "privacidad.paraQueHeader": "Para qué se usan",
-    "privacidad.paraQueTexto": "Únicamente para prestar el servicio: generar tus menús, calcular tus objetivos nutricionales y llevar tu seguimiento de peso. No se usan con fines publicitarios ni se venden a terceros.",
+    "privacidad.paraQueTexto": "Únicamente para prestar el servicio: generar tus menús, calcular tus objetivos nutricionales, llevar tu seguimiento de peso y enseñarte tus resúmenes e informes. No se usan con fines publicitarios ni se venden a terceros.",
     "privacidad.baseLegalHeader": "Base legal",
-    "privacidad.baseLegalTexto": "La ejecución del servicio que solicitas al crear una cuenta (art. 6.1.b RGPD) y, en el caso de las fotos, de lo que envías a la IA y de los datos del período (datos de salud), tu consentimiento explícito (art. 6.1.a y 9.2.a RGPD) al usar esas funciones de forma voluntaria.",
+    "privacidad.baseLegalTexto": "La ejecución del servicio que solicitas al crear una cuenta (art. 6.1.b RGPD) y, en el caso de las fotos, de lo que envías a la IA y de los datos del período y del sueño (datos de salud), tu consentimiento explícito (art. 6.1.a y 9.2.a RGPD) al usar esas funciones de forma voluntaria.",
     "privacidad.conQuienHeader": "Con quién se comparten",
     "privacidad.conQuienFirebase": "<strong>Google Firebase</strong> (autenticación, base de datos, protección anti-abuso, avisos y, vía Gemini, lectura de fotos y generación de recetas), como encargado del tratamiento, con sus propias garantías de seguridad y transferencia internacional de datos.",
     "privacidad.conQuienStripe": "<strong>Stripe</strong>, únicamente si contratas una suscripción de pago, para gestionar el cobro (no se le comparten datos de salud, solo lo necesario para procesar el pago).",
@@ -872,7 +872,7 @@ const TEXTOS = {
     "privacidad.volver": "← Volver a FoodDraft",
 
     "terminos.titulo": "Términos de uso — FoodDraft",
-    "terminos.actualizado": "Última actualización: 14 de octubre de 2026",
+    "terminos.actualizado": "Última actualización: 26 de octubre de 2026",
     "terminos.quienesSomosHeader": "Quiénes somos",
     "terminos.quienesSomosTexto": "FoodDraft es un servicio operado por Pablo Díaz Blanco, España.<br />Contacto: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "terminos.queEsHeader": "Qué es el servicio",
@@ -1436,6 +1436,7 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Período</strong> (solo si usas esa sección): los días de regla y de relaciones que marques son datos de salud y <strong>se guardan únicamente en tu dispositivo</strong>; no se envían a nuestros servidores ni a nadie. Desaparecen si borras los datos de la app o del navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificaciones</strong>: si activas los avisos (recordatorio de pesaje, aviso para descongelar), se guarda un identificador técnico de tu dispositivo para poder enviártelos. Se borra al desactivarlos desde Ajustes.",
+    "privacidad.datosSuenoPasos": "<strong>Sueño y pasos</strong> (solo si los apuntas): las horas y la calidad de tu sueño de cada noche y los pasos de cada día. Se guardan en tu cuenta, como el resto del seguimiento, y solo se usan para tus resúmenes e informes: no cambian tus objetivos ni tus menús.",
 
     // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
     // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
@@ -2691,7 +2692,7 @@ const TEXTOS = {
     "editModal.probabilidadDentroGrupo": "Probability within the group (%)",
 
     "privacidad.titulo": "Privacy policy — FoodDraft",
-    "privacidad.actualizado": "Last updated: October 25, 2026",
+    "privacidad.actualizado": "Last updated: October 26, 2026",
     "privacidad.responsableHeader": "Data controller",
     "privacidad.responsableTexto": "Pablo Díaz Blanco, Spain.<br />Contact: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "privacidad.datosHeader": "What data we collect",
@@ -2700,9 +2701,9 @@ const TEXTOS = {
     "privacidad.datosSeguimiento": "<strong>Tracking</strong>: weigh-in history, generated menus, catalog of foods and dishes you create, what you note down in your pantry and your workouts.",
     "privacidad.datosFotos": "<strong>Photos, pantry and text sent to the AI</strong>: if you use the photo reader, the image is sent to Gemini (Google) to read the nutritional data. If you use “What do I cook?”, whatever you choose to include is sent to Gemini: a photo of ingredients, the text you type and, if you leave the box ticked, the list of what you have in your pantry (the name of each food and an approximate amount). It is sent only to prepare the answer and <strong>is not stored</strong> on any FoodDraft server — it is discarded after processing.",
     "privacidad.paraQueHeader": "What it's used for",
-    "privacidad.paraQueTexto": "Solely to provide the service: generating your menus, calculating your nutritional goals and tracking your weight. It is not used for advertising and is not sold to third parties.",
+    "privacidad.paraQueTexto": "Solely to provide the service: generating your menus, calculating your nutritional goals, tracking your weight and showing you your summaries and reports. It is not used for advertising and is not sold to third parties.",
     "privacidad.baseLegalHeader": "Legal basis",
-    "privacidad.baseLegalTexto": "Performance of the service you request when creating an account (GDPR art. 6.1.b) and, for photos, what you send to the AI and period data (health data), your explicit consent (GDPR art. 6.1.a and 9.2.a) when you voluntarily use those features.",
+    "privacidad.baseLegalTexto": "Performance of the service you request when creating an account (GDPR art. 6.1.b) and, for photos, what you send to the AI and period and sleep data (health data), your explicit consent (GDPR art. 6.1.a and 9.2.a) when you voluntarily use those features.",
     "privacidad.conQuienHeader": "Who it's shared with",
     "privacidad.conQuienFirebase": "<strong>Google Firebase</strong> (authentication, database, anti-abuse protection, notifications and, via Gemini, photo reading and recipe generation), as data processor, with its own security and international data transfer safeguards.",
     "privacidad.conQuienStripe": "<strong>Stripe</strong>, only if you take out a paid subscription, to handle the charge (no health data is shared with it, only what's needed to process the payment).",
@@ -2718,7 +2719,7 @@ const TEXTOS = {
     "privacidad.volver": "← Back to FoodDraft",
 
     "terminos.titulo": "Terms of use — FoodDraft",
-    "terminos.actualizado": "Last updated: October 14, 2026",
+    "terminos.actualizado": "Last updated: October 26, 2026",
     "terminos.quienesSomosHeader": "Who we are",
     "terminos.quienesSomosTexto": "FoodDraft is a service operated by Pablo Díaz Blanco, Spain.<br />Contact: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "terminos.queEsHeader": "What the service is",
@@ -3282,6 +3283,7 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Period</strong> (only if you use that section): the period and intimacy days you mark are health data and <strong>are stored only on your device</strong>; they are not sent to our servers or to anyone else. They disappear if you clear the app’s or browser’s data.",
     "privacidad.datosNotificaciones": "<strong>Notifications</strong>: if you turn on reminders (weigh-in reminder, defrost reminder), a technical identifier of your device is stored so we can send them to you. It is deleted when you turn them off in Settings.",
+    "privacidad.datosSuenoPasos": "<strong>Sleep and steps</strong> (only if you log them): how many hours you slept each night and how well, and your steps each day. They are stored in your account, like the rest of your tracking, and are only used for your summaries and reports: they don't change your goals or your menus.",
 
     // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
     // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
@@ -4537,7 +4539,7 @@ const TEXTOS = {
     "editModal.probabilidadDentroGrupo": "Probabilitat dins del grup (%)",
 
     "privacidad.titulo": "Política de privacitat — FoodDraft",
-    "privacidad.actualizado": "Última actualització: 25 d'octubre de 2026",
+    "privacidad.actualizado": "Última actualització: 26 d'octubre de 2026",
     "privacidad.responsableHeader": "Responsable del tractament",
     "privacidad.responsableTexto": "Pablo Díaz Blanco, Espanya.<br />Contacte: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "privacidad.datosHeader": "Quines dades es recullen",
@@ -4546,9 +4548,9 @@ const TEXTOS = {
     "privacidad.datosSeguimiento": "<strong>Seguiment</strong>: historial de pesades, menús generats, catàleg d'aliments i plats que creïs, el que apuntes al teu rebost i els teus entrenaments.",
     "privacidad.datosFotos": "<strong>Fotos, rebost i textos enviats a la IA</strong>: si fas servir el lector per foto, la imatge s'envia a Gemini (Google) per llegir les dades nutricionals. Si fas servir «Què cuino?», s'envia a Gemini el que decideixis incloure: una foto d'ingredients, el text que escriguis i, si deixes marcada la casella, la llista del que tens al rebost (el nom de cada aliment i una quantitat aproximada). Només s'envia per preparar la resposta i <strong>no s'emmagatzema</strong> en cap servidor de FoodDraft — es descarta després de processar-lo.",
     "privacidad.paraQueHeader": "Per a què es fan servir",
-    "privacidad.paraQueTexto": "Únicament per prestar el servei: generar els teus menús, calcular els teus objectius nutricionals i portar el teu seguiment de pes. No es fan servir amb finalitats publicitàries ni es venen a tercers.",
+    "privacidad.paraQueTexto": "Únicament per prestar el servei: generar els teus menús, calcular els teus objectius nutricionals, portar el teu seguiment de pes i mostrar-te els teus resums i informes. No es fan servir amb finalitats publicitàries ni es venen a tercers.",
     "privacidad.baseLegalHeader": "Base legal",
-    "privacidad.baseLegalTexto": "L'execució del servei que sol·licites en crear un compte (art. 6.1.b RGPD) i, en el cas de les fotos, del que envies a la IA i de les dades del període (dades de salut), el teu consentiment explícit (art. 6.1.a i 9.2.a RGPD) en fer servir aquestes funcions de manera voluntària.",
+    "privacidad.baseLegalTexto": "L'execució del servei que sol·licites en crear un compte (art. 6.1.b RGPD) i, en el cas de les fotos, del que envies a la IA i de les dades del període i del son (dades de salut), el teu consentiment explícit (art. 6.1.a i 9.2.a RGPD) en fer servir aquestes funcions de manera voluntària.",
     "privacidad.conQuienHeader": "Amb qui es comparteixen",
     "privacidad.conQuienFirebase": "<strong>Google Firebase</strong> (autenticació, base de dades, protecció antiabús, avisos i, via Gemini, lectura de fotos i generació de receptes), com a encarregat del tractament, amb les seves pròpies garanties de seguretat i transferència internacional de dades.",
     "privacidad.conQuienStripe": "<strong>Stripe</strong>, únicament si contractes una subscripció de pagament, per gestionar el cobrament (no se li comparteixen dades de salut, només el que cal per processar el pagament).",
@@ -4564,7 +4566,7 @@ const TEXTOS = {
     "privacidad.volver": "← Torna a FoodDraft",
 
     "terminos.titulo": "Termes d'ús — FoodDraft",
-    "terminos.actualizado": "Última actualització: 14 d'octubre de 2026",
+    "terminos.actualizado": "Última actualització: 26 d'octubre de 2026",
     "terminos.quienesSomosHeader": "Qui som",
     "terminos.quienesSomosTexto": "FoodDraft és un servei operat per Pablo Díaz Blanco, Espanya.<br />Contacte: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "terminos.queEsHeader": "Què és el servei",
@@ -5128,6 +5130,7 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Període</strong> (només si fas servir aquesta secció): els dies de regla i de relacions que marquis són dades de salut i <strong>es desen únicament al teu dispositiu</strong>; no s'envien als nostres servidors ni a ningú. Desapareixen si esborres les dades de l'app o del navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificacions</strong>: si actives els avisos (recordatori de pesada, avís per descongelar), es desa un identificador tècnic del teu dispositiu per poder enviar-te'ls. S'esborra en desactivar-los des d'Ajustos.",
+    "privacidad.datosSuenoPasos": "<strong>Son i passos</strong> (només si els apuntes): les hores i la qualitat del teu son de cada nit i els passos de cada dia. Es desen al teu compte, com la resta del seguiment, i només es fan servir per als teus resums i informes: no canvien els teus objectius ni els teus menús.",
 
     // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
     // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
@@ -6383,7 +6386,7 @@ const TEXTOS = {
     "editModal.probabilidadDentroGrupo": "Probabilidade dentro do grupo (%)",
 
     "privacidad.titulo": "Política de privacidade — FoodDraft",
-    "privacidad.actualizado": "Última actualización: 25 de outubro de 2026",
+    "privacidad.actualizado": "Última actualización: 26 de outubro de 2026",
     "privacidad.responsableHeader": "Responsable do tratamento",
     "privacidad.responsableTexto": "Pablo Díaz Blanco, España.<br />Contacto: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "privacidad.datosHeader": "Que datos se recollen",
@@ -6392,9 +6395,9 @@ const TEXTOS = {
     "privacidad.datosSeguimiento": "<strong>Seguimento</strong>: historial de pesadas, menús xerados, catálogo de alimentos e pratos que crees, o que apuntas na túa despensa e os teus adestramentos.",
     "privacidad.datosFotos": "<strong>Fotos, despensa e textos enviados á IA</strong>: se usas o lector por foto, a imaxe envíase a Gemini (Google) para ler os datos nutricionais. Se usas «Que cociño?», envíase a Gemini o que decidas incluír: unha foto de ingredientes, o texto que escribas e, se deixas marcada a caixa, a lista do que tes na despensa (o nome de cada alimento e unha cantidade aproximada). Só se envía para preparar a resposta e <strong>non se almacena</strong> en ningún servidor de FoodDraft — descártase despois de procesalo.",
     "privacidad.paraQueHeader": "Para que se usan",
-    "privacidad.paraQueTexto": "Unicamente para prestar o servizo: xerar os teus menús, calcular os teus obxectivos nutricionais e levar o teu seguimento de peso. Non se usan con fins publicitarios nin se venden a terceiros.",
+    "privacidad.paraQueTexto": "Unicamente para prestar o servizo: xerar os teus menús, calcular os teus obxectivos nutricionais, levar o teu seguimento de peso e amosarche os teus resumos e informes. Non se usan con fins publicitarios nin se venden a terceiros.",
     "privacidad.baseLegalHeader": "Base legal",
-    "privacidad.baseLegalTexto": "A execución do servizo que solicitas ao crear unha conta (art. 6.1.b RGPD) e, no caso das fotos, do que envías á IA e dos datos do período (datos de saúde), o teu consentimento explícito (art. 6.1.a e 9.2.a RGPD) ao usar esas funcións de forma voluntaria.",
+    "privacidad.baseLegalTexto": "A execución do servizo que solicitas ao crear unha conta (art. 6.1.b RGPD) e, no caso das fotos, do que envías á IA e dos datos do período e do sono (datos de saúde), o teu consentimento explícito (art. 6.1.a e 9.2.a RGPD) ao usar esas funcións de forma voluntaria.",
     "privacidad.conQuienHeader": "Con quen se comparten",
     "privacidad.conQuienFirebase": "<strong>Google Firebase</strong> (autenticación, base de datos, protección antiabuso, avisos e, vía Gemini, lectura de fotos e xeración de receitas), como encargado do tratamento, coas súas propias garantías de seguridade e transferencia internacional de datos.",
     "privacidad.conQuienStripe": "<strong>Stripe</strong>, unicamente se contratas unha subscrición de pagamento, para xestionar o cobro (non se lle comparten datos de saúde, só o necesario para procesar o pagamento).",
@@ -6410,7 +6413,7 @@ const TEXTOS = {
     "privacidad.volver": "← Volver a FoodDraft",
 
     "terminos.titulo": "Termos de uso — FoodDraft",
-    "terminos.actualizado": "Última actualización: 14 de outubro de 2026",
+    "terminos.actualizado": "Última actualización: 26 de outubro de 2026",
     "terminos.quienesSomosHeader": "Quen somos",
     "terminos.quienesSomosTexto": "FoodDraft é un servizo operado por Pablo Díaz Blanco, España.<br />Contacto: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "terminos.queEsHeader": "Que é o servizo",
@@ -6974,6 +6977,7 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Período</strong> (só se usas esa sección): os días de regra e de relacións que marques son datos de saúde e <strong>gárdanse unicamente no teu dispositivo</strong>; non se envían aos nosos servidores nin a ninguén. Desaparecen se borras os datos da app ou do navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificacións</strong>: se activas os avisos (recordatorio de pesaxe, aviso para descongelar), gárdase un identificador técnico do teu dispositivo para poder enviarchos. Bórrase ao desactivalos desde Axustes.",
+    "privacidad.datosSuenoPasos": "<strong>Sono e pasos</strong> (só se os apuntas): as horas e a calidade do teu sono de cada noite e os pasos de cada día. Gárdanse na túa conta, como o resto do seguimento, e só se usan para os teus resumos e informes: non cambian os teus obxectivos nin os teus menús.",
 
     // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
     // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
@@ -8229,7 +8233,7 @@ const TEXTOS = {
     "editModal.probabilidadDentroGrupo": "Taldearen barruko probabilitatea (%)",
 
     "privacidad.titulo": "Pribatutasun-politika — FoodDraft",
-    "privacidad.actualizado": "Azken eguneratzea: 2026ko urriaren 25a",
+    "privacidad.actualizado": "Azken eguneratzea: 2026ko urriaren 26a",
     "privacidad.responsableHeader": "Tratamenduaren arduraduna",
     "privacidad.responsableTexto": "Pablo Díaz Blanco, Espainia.<br />Kontaktua: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "privacidad.datosHeader": "Zein datu biltzen diren",
@@ -8238,9 +8242,9 @@ const TEXTOS = {
     "privacidad.datosSeguimiento": "<strong>Jarraipena</strong>: pisatzeen historiala, sortutako menuak, elikagaien katalogoa eta sortzen dituzun platerak, zure jakitokian apuntatzen duzuna eta zure entrenamenduak.",
     "privacidad.datosFotos": "<strong>IAra bidalitako argazkiak, jakitokia eta testuak</strong>: argazki bidezko irakurgailua erabiltzen baduzu, irudia Gemini-ra (Google) bidaltzen da datu nutrizionalak irakurtzeko. «Zer sukaldatu?» erabiltzen baduzu, sartzea erabakitzen duzuna bidaltzen zaio Gemini-ri: osagaien argazki bat, idazten duzun testua eta, laukia markatuta uzten baduzu, jakitokian daukazunaren zerrenda (elikagai bakoitzaren izena eta gutxi gorabeherako kantitatea). Erantzuna prestatzeko soilik bidaltzen da eta <strong>ez da gordetzen</strong> FoodDrafteko inongo zerbitzarian — prozesatu ondoren baztertzen da.",
     "privacidad.paraQueHeader": "Zertarako erabiltzen diren",
-    "privacidad.paraQueTexto": "Zerbitzua emateko bakarrik: zure menuak sortzeko, zure helburu nutrizionalak kalkulatzeko eta zure pisuaren jarraipena eramateko. Ez dira publizitate-helburuetarako erabiltzen, ezta hirugarrenei saltzen ere.",
+    "privacidad.paraQueTexto": "Zerbitzua emateko bakarrik: zure menuak sortzeko, zure helburu nutrizionalak kalkulatzeko, zure pisuaren jarraipena eramateko eta zure laburpenak eta txostenak erakusteko. Ez dira publizitate-helburuetarako erabiltzen, ezta hirugarrenei saltzen ere.",
     "privacidad.baseLegalHeader": "Oinarri legala",
-    "privacidad.baseLegalTexto": "Kontu bat sortzean eskatzen duzun zerbitzuaren betearazpena (DBEO 6.1.b art.) eta, argazkien, IAra bidaltzen duzunaren eta aldiaren datuen (osasun-datuak) kasuan, funtzio horiek borondatez erabiltzean ematen duzun berariazko baimena (DBEO 6.1.a eta 9.2.a art.).",
+    "privacidad.baseLegalTexto": "Kontu bat sortzean eskatzen duzun zerbitzuaren betearazpena (DBEO 6.1.b art.) eta, argazkien, IAra bidaltzen duzunaren eta aldiaren eta loaren datuen (osasun-datuak) kasuan, funtzio horiek borondatez erabiltzean ematen duzun berariazko baimena (DBEO 6.1.a eta 9.2.a art.).",
     "privacidad.conQuienHeader": "Norekin partekatzen diren",
     "privacidad.conQuienFirebase": "<strong>Google Firebase</strong> (autentifikazioa, datu-basea, abusuen aurkako babesa, jakinarazpenak eta, Gemini bidez, argazki-irakurketa eta errezeta-sorkuntza), tratamendu-arduradun gisa, bere segurtasun-bermeekin eta datuen nazioarteko transferentziarekin.",
     "privacidad.conQuienStripe": "<strong>Stripe</strong>, ordainpeko harpidetza bat kontratatzen baduzu bakarrik, kobrantza kudeatzeko (ez zaio osasun-daturik partekatzen, ordainketa prozesatzeko beharrezkoa dena bakarrik).",
@@ -8256,7 +8260,7 @@ const TEXTOS = {
     "privacidad.volver": "← Itzuli FoodDraft-era",
 
     "terminos.titulo": "Erabilera-baldintzak — FoodDraft",
-    "terminos.actualizado": "Azken eguneratzea: 2026ko urriaren 14a",
+    "terminos.actualizado": "Azken eguneratzea: 2026ko urriaren 26a",
     "terminos.quienesSomosHeader": "Nortzuk garen",
     "terminos.quienesSomosTexto": "FoodDraft Pablo Díaz Blanco-k, Espainian, kudeatutako zerbitzu bat da.<br />Kontaktua: <a href=\"mailto:draftedfood@gmail.com\">draftedfood@gmail.com</a>",
     "terminos.queEsHeader": "Zerbitzua zer den",
@@ -8820,6 +8824,7 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Aldia</strong> (atal hori erabiltzen baduzu soilik): markatzen dituzun hileroko eta harremanen egunak osasun-datuak dira eta <strong>zure gailuan soilik gordetzen dira</strong>; ez dira gure zerbitzarietara ez inorri bidaltzen. Aplikazioaren edo nabigatzailearen datuak ezabatzen badituzu, desagertu egiten dira.",
     "privacidad.datosNotificaciones": "<strong>Jakinarazpenak</strong>: abisuak aktibatzen badituzu (pisatze-gogorarazpena, desizozteko abisua), zure gailuaren identifikatzaile tekniko bat gordetzen da horiek bidali ahal izateko. Ezarpenetan desaktibatzean ezabatzen da.",
+    "privacidad.datosSuenoPasos": "<strong>Loa eta urratsak</strong> (apuntatzen badituzu soilik): gau bakoitzeko loaren orduak eta kalitatea, eta egun bakoitzeko urratsak. Zure kontuan gordetzen dira, gainerako jarraipena bezala, eta zure laburpen eta txostenetarako soilik erabiltzen dira: ez dituzte zure helburuak ez zure menuak aldatzen.",
 
     // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
     // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
