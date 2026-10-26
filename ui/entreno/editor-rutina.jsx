@@ -7,6 +7,8 @@
 // ajustes, y se cambia con el botón del reloj de su tarjeta (BotonDescanso / HojaDescanso).
 // Superseries (G11): entre dos tarjetas, «Superserie con el siguiente» los une (o suma el siguiente al
 // grupo); dentro de un grupo, «Separar» saca al ejercicio. Los del grupo llevan una franja mostaza.
+// Añadir ejercicios abre el gimnasio dibujado (bloque FitDraft, 26-oct-2026; ui/entreno/mapa-rutina.jsx): la
+// rutina se ve como una ruta con sus paradas; desde ahí, «Buscar» abre el selector de siempre.
 import React, { useState } from "react";
 import { Plus, ArrowUp, ArrowDown, X, Link2, Link2Off } from "lucide-react";
 import { t } from "i18n";
@@ -19,6 +21,7 @@ import { BotonPrincipal, BotonTexto, TextoSuave, nombreDe, pesoAPantalla, format
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
 import { COLOR_SERIE, deTexto, unidadTiempo } from "./fila-serie.jsx";
 import { BotonDescanso, HojaDescanso } from "./descanso.jsx";
+import { CapaMapaRutina } from "./mapa-rutina.jsx";
 
 function rutinaNueva() {
   return { id: null, nombre: "", ejercicios: [] };
@@ -50,6 +53,7 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
   const existente = id ? ((entreno.catalogo && entreno.catalogo.rutinas) || []).find((r) => r.id === id) : null;
   const [rutina, setRutina] = useState(() => (existente ? JSON.parse(JSON.stringify(existente)) : rutinaNueva()));
   const [selector, setSelector] = useState(false);
+  const [mapa, setMapa] = useState(false);
   const [descanso, setDescanso] = useState(null); // índice del ejercicio cuyo descanso se está eligiendo
   const [error, setError] = useState("");
   const ajustes = entreno.ajustes;
@@ -63,6 +67,22 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
       if (j < 0 || j >= l.length) return r;
       [l[i], l[j]] = [l[j], l[i]];
       return { ...r, ejercicios: l };
+    });
+  }
+
+  // Cada ejercicio nuevo empieza con lo de la última vez (si lo hay) o con tres series normales.
+  function nuevoEjercicio(eid) {
+    const anterior = entreno.anteriorDe(eid);
+    const series = anterior.length
+      ? anterior.map((a) => ({ tipo: a.tipo || "normal", kg: a.kg ?? null, reps: a.reps ?? null, seg: a.seg ?? null, km: a.km ?? null }))
+      : [{ tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }];
+    return { ejercicioId: eid, descansoSeg: entreno.descansoInicial(eid), nota: "", series };
+  }
+  // Desde el mapa, «✓» quita la última vez que sale ese ejercicio en la rutina.
+  function quitarUltimo(eid) {
+    setRutina((r) => {
+      const i = r.ejercicios.map((e) => e.ejercicioId).lastIndexOf(eid);
+      return i < 0 ? r : { ...r, ejercicios: r.ejercicios.filter((_, k) => k !== i) };
     });
   }
 
@@ -197,7 +217,7 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
       })}
 
       <button
-        onClick={() => setSelector(true)}
+        onClick={() => setMapa(true)}
         style={{ width: "100%", minHeight: 48, margin: "4px 0 18px", borderRadius: 10, border: "1.5px dashed var(--green)", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700, color: "var(--green-dark)" }}
       >
         <Plus size={16} /> {t(idioma, "entreno.sesion.anadirEjercicio")}
@@ -211,17 +231,21 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
           idioma={idioma}
           onCerrar={() => setSelector(false)}
           onElegir={(ids) => {
-            // Cada ejercicio nuevo empieza con lo de la última vez (si lo hay) o con tres series normales.
-            const nuevos = ids.map((eid) => {
-              const anterior = entreno.anteriorDe(eid);
-              const series = anterior.length
-                ? anterior.map((a) => ({ tipo: a.tipo || "normal", kg: a.kg ?? null, reps: a.reps ?? null, seg: a.seg ?? null, km: a.km ?? null }))
-                : [{ tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }];
-              return { ejercicioId: eid, descansoSeg: entreno.descansoInicial(eid), nota: "", series };
-            });
-            setRutina((r) => ({ ...r, ejercicios: [...r.ejercicios, ...nuevos] }));
+            setRutina((r) => ({ ...r, ejercicios: [...r.ejercicios, ...ids.map(nuevoEjercicio)] }));
             setSelector(false);
           }}
+        />
+      )}
+
+      {mapa && !selector && (
+        <CapaMapaRutina
+          entreno={entreno}
+          idioma={idioma}
+          ejercicioIds={rutina.ejercicios.map((e) => e.ejercicioId)}
+          onAnadir={(eid) => setRutina((r) => ({ ...r, ejercicios: [...r.ejercicios, nuevoEjercicio(eid)] }))}
+          onQuitar={quitarUltimo}
+          onBuscar={() => setSelector(true)}
+          onCerrar={() => setMapa(false)}
         />
       )}
 

@@ -6,6 +6,7 @@ import { t, leerIdiomaGuardado } from "i18n";
 import { DatosPersonalesFields, EstiloVidaFields, EntrenamientosFields, ObjetivoFields } from "../perfil/campos.jsx";
 import { RepartoComidasFields } from "../perfil/reparto-comidas.jsx";
 import { MomentoEntrenoFields } from "../perfil/preentreno.jsx";
+import { ElegirAvatar } from "../comun/avatar.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Asistente de alta por pasos (Bloque 2 del rediseño, Tanda 3): antes era un único formulario
@@ -24,6 +25,9 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
   const [peso, setPeso] = useState("");
   const [palBase, setPalBase] = useState("escritorio");
   const [entrenamientos, setEntrenamientos] = useState([]);
+  // El avatar del gimnasio de FitDraft (26-oct-2026): mientras no se toque, el del sexo elegido.
+  const [avatarElegido, setAvatarElegido] = useState(null);
+  const avatar = avatarElegido || (sexo === "mujer" ? "mujer" : "hombre");
   const [objetivo, setObjetivo] = useState("mantenimiento");
   const [presetId, setPresetId] = useState("clasico-4");
   // D3: cuándo se entrena (opcional), al final, junto al reparto, porque depende de qué comidas hay.
@@ -59,6 +63,7 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
         .filter((e) => e.horas && e.frecuenciaSemanal)
         .map((e) => ({ tipo: e.tipo, horas: Number(e.horas), frecuenciaSemanal: Number(e.frecuenciaSemanal) })),
       objetivo,
+      avatar,
       presetComidas: presetId,
       repartoComidas,
       diasEntreno: momentoEntreno.diasEntreno,
@@ -104,6 +109,13 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
         )}
         {paso === 1 && <EstiloVidaFields palBase={palBase} setPalBase={setPalBase} idioma={idioma} />}
         {paso === 2 && <EntrenamientosFields entrenamientos={entrenamientos} setEntrenamientos={setEntrenamientos} idioma={idioma} />}
+        {paso === 2 && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>{t(idioma, "fitdraft.avatar.titulo")}</div>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>{t(idioma, "fitdraft.avatar.ayudaAlta")}</div>
+            <ElegirAvatar valor={avatar} onCambio={setAvatarElegido} idioma={idioma} />
+          </div>
+        )}
         {paso === 3 && (
           <ObjetivoFields
             objetivo={objetivo} setObjetivo={setObjetivo}

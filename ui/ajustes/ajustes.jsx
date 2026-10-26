@@ -10,6 +10,7 @@ import { SectionIntro } from "../comun/tarjetas.jsx";
 import { LanguageDropdown } from "../comun/idioma.jsx";
 import { TarjetaCerrarSesion } from "../comun/cerrar-sesion.jsx";
 import { SeccionAjustesEntreno } from "../entreno/ajustes.jsx";
+import { ElegirAvatar, avatarDePerfil } from "../comun/avatar.jsx";
 import { SeccionLicencias } from "./licencias.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
@@ -280,7 +281,15 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
 
       {entreno && (
         <div ref={refEntreno} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 18px 20px", marginTop: 16, maxWidth: 480, scrollMarginTop: 16 }}>
-          <h2 style={{ margin: 0, fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 19, color: "var(--green-dark)" }}>{t(idioma, "area.entreno")}</h2>
+          <h2 style={{ margin: 0, fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 19, color: "var(--green-dark)" }}>{t(idioma, "fitdraft.area")}</h2>
+          {/* El avatar del gimnasio dibujado (FitDraft, 26-oct-2026): se eligió en el alta y se cambia aquí. */}
+          {perfil && (
+            <div style={{ marginTop: 12 }}>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, fontWeight: 700, color: "var(--ink)", marginBottom: 2 }}>{t(idioma, "fitdraft.avatar.titulo")}</div>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginBottom: 8 }}>{t(idioma, "fitdraft.avatar.ayuda")}</div>
+              <ElegirAvatar valor={avatarDePerfil(perfil)} onCambio={(avatar) => onSave({ ...perfil, avatar })} idioma={idioma} />
+            </div>
+          )}
           <SeccionAjustesEntreno entreno={entreno} idioma={idioma} />
         </div>
       )}

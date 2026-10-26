@@ -139,6 +139,8 @@ export function SeccionAjustesEntreno({ entreno, idioma }) {
       <Interruptor etiqueta={t(idioma, "entreno.ajustes.sonido")} activo={a.sonido} onCambio={(v) => cambiar({ sonido: v })} />
       <Interruptor etiqueta={t(idioma, "entreno.ajustes.vibracion")} ayuda={t(idioma, "entreno.ajustes.vibracionAyuda")} activo={a.vibracion} onCambio={(v) => cambiar({ vibracion: v })} />
       <TextoSuave style={{ fontSize: 12, marginTop: 8 }}>{t(idioma, "entreno.ajustes.avisoAbierta")}</TextoSuave>
+      {/* FitDraft (26-oct-2026): el mini-mapa del descanso al acabar un ejercicio (ui/entreno/mini-mapa.jsx). */}
+      <Interruptor etiqueta={t(idioma, "fitdraft.ajustes.paseo")} ayuda={t(idioma, "fitdraft.ajustes.paseoAyuda")} activo={a.paseoDescanso !== false} onCambio={(v) => cambiar({ paseoDescanso: v })} />
 
       <TituloSeccion>{t(idioma, "entreno.ajustes.tusDatos")}</TituloSeccion>
       <TextoSuave style={{ marginBottom: 10 }}>{t(idioma, "entreno.ajustes.exportarAyuda")}</TextoSuave>

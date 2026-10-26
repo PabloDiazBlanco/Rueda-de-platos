@@ -150,7 +150,7 @@ export default function RuedaDePlatos() {
 
   return (
     <Shell>
-      <Header saveState={saveState} idioma={idioma} titulo={area ? areaPorClave(area).titulo : TITULO_COMUN} onOpenMenu={() => setDrawerOpen(true)} />
+      <Header saveState={saveState} idioma={idioma} titulo={area ? areaPorClave(area).titulo : TITULO_COMUN} rotulo={(area && areaPorClave(area).rotulo) || "FoodDraft"} onOpenMenu={() => setDrawerOpen(true)} />
       <DrawerMenu open={drawerOpen} onClose={() => setDrawerOpen(false)} tab={tab} area={area} setTab={setTab} onIrAArea={irAArea} idioma={idioma} premium={premium} perfil={data.perfil} />
 
       {/* Con barra inferior (y con la pastilla del entreno en curso), <main> deja libre abajo lo que

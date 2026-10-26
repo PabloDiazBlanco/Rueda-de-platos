@@ -2,11 +2,16 @@
 // «Entrenar»: la pantalla de inicio del área de entreno (diseño, §4.1). Empezar un entreno vacío o desde
 // una rutina (un toque), seguir uno que quedó a medias y ver los últimos entrenos del mes. Sin avisos de
 // pago ni «novedades»: nada se interpone entre abrir la app y empezar a entrenar (principio 3).
+// Desde el 26-oct-2026 (bloque FitDraft de la parte estética) tiene dos vistas: «Dibujo», el gimnasio
+// dibujado (ui/entreno/gimnasio-vista.jsx), y «Lista», esta de siempre. La primera vez sale el dibujo y luego
+// se recuerda la última en el dispositivo (`fooddraft:vista-gimnasio`). Los avisos de actividad y de grupos
+// sin entrenar solo salen en la Lista: en el dibujo lo dicen las zonas teñidas y el monitor.
 import React, { useState } from "react";
 import { Plus, ChevronRight, CloudOff, Play, Settings } from "lucide-react";
 import { t } from "i18n";
 import { resumenSesion } from "entreno-calculo";
 import { ModalShell, ModalBtn } from "../comun/modal.jsx";
+import { VistaGimnasio, SelectorVista, leerVista, CLAVE_VISTA } from "./gimnasio-vista.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 import {
   Tarjeta, BotonPrincipal, BotonSecundario, BotonTexto, TituloSeccion, TextoSuave, duracionTexto, fechaCorta,
@@ -15,6 +20,11 @@ import {
 
 export function EntrenarView({ entreno, idioma, navegar, aviso }) {
   const [confirmar, setConfirmar] = useState(null); // null | { tipo: "descartar" } | { tipo: "reemplazar", rutina }
+  const [vista, setVista] = useState(leerVista);
+  function cambiarVista(v) {
+    setVista(v);
+    try { localStorage.setItem(CLAVE_VISTA, v); } catch (e) { /* solo dura esta visita */ }
+  }
   const { borrador, catalogo } = entreno;
   const rutinas = (catalogo && catalogo.rutinas) || [];
   const recientes = entreno.sesionesDeMes(entreno.mesActual()).slice(0, 6);
@@ -24,8 +34,44 @@ export function EntrenarView({ entreno, idioma, navegar, aviso }) {
     else entreno.empezar(rutina);
   }
 
+  const modal = confirmar && (
+    <ModalShell
+      title={t(idioma, confirmar.tipo === "descartar" ? "entreno.inicio.descartarTitulo" : "entreno.inicio.reemplazarTitulo")}
+      onClose={() => setConfirmar(null)}
+    >
+      <TextoSuave style={{ marginBottom: 16 }}>
+        {t(idioma, confirmar.tipo === "descartar" ? "entreno.inicio.descartarTexto" : "entreno.inicio.reemplazarTexto")}
+      </TextoSuave>
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <ModalBtn variant="ghost" onClick={() => setConfirmar(null)}>{t(idioma, "common.cancelar")}</ModalBtn>
+        <ModalBtn
+          variant="danger"
+          onClick={() => {
+            entreno.descartar();
+            if (confirmar.tipo === "reemplazar") entreno.empezar(confirmar.rutina);
+            setConfirmar(null);
+          }}
+        >
+          {t(idioma, confirmar.tipo === "descartar" ? "entreno.inicio.descartar" : "entreno.inicio.reemplazar")}
+        </ModalBtn>
+      </div>
+    </ModalShell>
+  );
+
+  if (vista === "dibujo") {
+    return (
+      <>
+        <VistaGimnasio entreno={entreno} idioma={idioma} navegar={navegar} empezar={empezar} onVista={cambiarVista} />
+        {modal}
+      </>
+    );
+  }
+
   return (
     <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
+        <SelectorVista vista="lista" onCambiar={cambiarVista} idioma={idioma} />
+      </div>
       {aviso}
 
       {borrador && (
@@ -106,29 +152,7 @@ export function EntrenarView({ entreno, idioma, navegar, aviso }) {
         </BotonTexto>
       </div>
 
-      {confirmar && (
-        <ModalShell
-          title={t(idioma, confirmar.tipo === "descartar" ? "entreno.inicio.descartarTitulo" : "entreno.inicio.reemplazarTitulo")}
-          onClose={() => setConfirmar(null)}
-        >
-          <TextoSuave style={{ marginBottom: 16 }}>
-            {t(idioma, confirmar.tipo === "descartar" ? "entreno.inicio.descartarTexto" : "entreno.inicio.reemplazarTexto")}
-          </TextoSuave>
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <ModalBtn variant="ghost" onClick={() => setConfirmar(null)}>{t(idioma, "common.cancelar")}</ModalBtn>
-            <ModalBtn
-              variant="danger"
-              onClick={() => {
-                entreno.descartar();
-                if (confirmar.tipo === "reemplazar") entreno.empezar(confirmar.rutina);
-                setConfirmar(null);
-              }}
-            >
-              {t(idioma, confirmar.tipo === "descartar" ? "entreno.inicio.descartar" : "entreno.inicio.reemplazar")}
-            </ModalBtn>
-          </div>
-        </ModalShell>
-      )}
+      {modal}
     </div>
   );
 }
