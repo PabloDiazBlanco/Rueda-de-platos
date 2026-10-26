@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v29";
+const CACHE_NAME = "fooddraft-v30";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./cargador-ui.js", "./ui/archivos.json",
   "./manifest.json", "./icon.svg",
@@ -9,7 +9,7 @@ const FILES_TO_CACHE = [
   "./logica/nevera.js", "./logica/entreno-ejercicios.js", "./logica/entreno-nombres.js",
   "./logica/entreno-calculo.js", "./logica/entreno-sesion.js", "./logica/entreno-almacen.js",
   "./logica/informes.js", "./logica/comida-real.js", "./logica/entreno-importar.js", "./logica/periodo.js",
-  "./logica/cuerpo-diario.js", "./logica/cuerpo-series.js", "./logica/mapa-corporal.js",
+  "./logica/cuerpo-diario.js", "./logica/cuerpo-series.js", "./logica/mapa-corporal.js", "./logica/gimnasio.js",
 ];
 
 // ---------- Notificaciones push en segundo plano (Fase 6) ----------

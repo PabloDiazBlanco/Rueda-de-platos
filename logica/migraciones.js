@@ -183,5 +183,14 @@ export function migrateData(rawData) {
     if (!Array.isArray(data.perfil.diasEntreno)) { data.perfil.diasEntreno = []; changed = true; }
   }
 
+  // Avatar del gimnasio de FitDraft (parte estética, 26-oct-2026): "mujer" o "hombre" (solo cambia el pelo,
+  // coleta o corto). Se elige en el asistente de alta y se cambia en Ajustes; en los perfiles de antes sale
+  // el que corresponde a su sexo (sin sexo, el de hombre, como el mapa corporal). Uno ya elegido no se toca,
+  // aunque no coincida con el sexo: es una elección del usuario.
+  if (data.perfil && data.perfil.avatar !== "mujer" && data.perfil.avatar !== "hombre") {
+    data.perfil.avatar = data.perfil.sexo === "mujer" ? "mujer" : "hombre";
+    changed = true;
+  }
+
   return { data, changed };
 }

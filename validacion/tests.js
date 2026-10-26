@@ -58,6 +58,11 @@ import {
 import { SLUG_A_GRUPO, GRUPOS_MAPA, nivelSeries, colorSeries, generoMapa, seriesDeRutina, valoresDeEjercicio } from "mapa-corporal";
 // Los trazados del mapa corporal son un archivo de datos de ui/ sin JSX: se importa directamente.
 import { TRAZADOS_MIT } from "../ui/comun/mapa-trazados.js";
+import {
+  ZONAS, ESTACIONES, ESTACION_DE, SITIOS, ENTRADA_DENTRO, zonaDeMusculo, estacionDeEjercicio, ejerciciosDeZona, libre, aEstrella,
+  puntoDe, paradasDeRutina, pasoEntreEjercicios, ultimaVezPorZona, estadoZonas, situacionMonitor, fraseMonitor, rutinaDeHoy,
+  diasEntrenadosSemana,
+} from "gimnasio";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -690,6 +695,18 @@ export function crearGrupos(mod, carga) {
             { viejo: migrateData({ perfil: { nombre: "X" } }).data.perfil.avisoDescongelar, activado: migrateData({ perfil: { nombre: "Y", avisoDescongelar: true } }).data.perfil.avisoDescongelar, sinPerfil: migrateData({}).data.perfil },
             { viejo: false, activado: true, sinPerfil: undefined }
           ),
+        },
+        {
+          nombre: "FitDraft: el perfil de antes recibe el avatar de su sexo (sin sexo, hombre); uno elegido no se toca; uno raro se corrige",
+          ejecutar: () => {
+            const avatar = (perfil) => migrateData({ perfil }).data.perfil.avatar;
+            return comparar(
+              { mujer: avatar({ nombre: "A", sexo: "mujer" }), hombre: avatar({ nombre: "B", sexo: "hombre" }), sinSexo: avatar({ nombre: "C" }),
+                elegido: avatar({ nombre: "D", sexo: "mujer", avatar: "hombre" }), raro: avatar({ nombre: "E", sexo: "mujer", avatar: "gato" }),
+                sinPerfil: migrateData({}).data.perfil, segunda: migrateData(migrateData({ perfil: { nombre: "F", sexo: "mujer" } }).data).changed },
+              { mujer: "mujer", hombre: "hombre", sinSexo: "hombre", elegido: "hombre", raro: "mujer", sinPerfil: undefined, segunda: false }
+            );
+          },
         },
         {
           nombre: "D3: el perfil de antes queda sin respuesta de preentreno (null, null, sin días) sin tocar lo contestado",
@@ -1346,6 +1363,7 @@ export function crearGrupos(mod, carga) {
     grupoCuerpoSeries(),
     grupoCuerpoInformes(),
     grupoMapaCorporal(),
+    grupoGimnasio(),
   ];
 }
 
@@ -1463,7 +1481,7 @@ function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
 // del plan): todas deben existir en los cinco idiomas, porque en pantalla una que falte no se nota.
 const PREFIJOS_NUEVOS = [
   "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
-  "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio",
+  "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio", "fitdraft.",
 ];
 
 function clavesSinTraducir(claves) {
@@ -2096,6 +2114,17 @@ function grupoEntrenoAlmacen() {
           return comparar(
             { changed: vacio.changed, precargar: vacio.valor.ajustes.precargar, descanso: vacio.valor.ajustes.descansoSeg, inicioViejo: viejo.valor.ajustes.inicioSemana, precargarViejo: viejo.valor.ajustes.precargar, descansoViejo: viejo.valor.ajustes.descansoSeg, cambioViejo: viejo.changed },
             { changed: true, precargar: true, descanso: 120, inicioViejo: 1, precargarViejo: false, descansoViejo: 90, cambioViejo: true }
+          );
+        },
+      },
+      {
+        nombre: "migrarCatalogo (FitDraft): el paseo del descanso empieza encendido en los catálogos de antes; apagado se queda apagado",
+        ejecutar: () => {
+          const viejo = migrarCatalogo({ version: 1, propios: [], personalizados: {}, rutinas: [], ajustes: { descansoSeg: 90 }, aviso: {} });
+          const apagado = migrarCatalogo({ version: 1, propios: [], personalizados: {}, rutinas: [], ajustes: { paseoDescanso: false }, aviso: {} });
+          return comparar(
+            { nuevo: migrarCatalogo(null).valor.ajustes.paseoDescanso, viejo: viejo.valor.ajustes.paseoDescanso, cambio: viejo.changed, apagado: apagado.valor.ajustes.paseoDescanso },
+            { nuevo: true, viejo: true, cambio: true, apagado: false }
           );
         },
       },
@@ -2938,6 +2967,171 @@ function grupoMapaCorporal() {
             { niveles: "0,1,1,1,2,2,3,3,4,4,4", cero: "#e6e2d6", diez: "#2f6b4f", pecho: 3, triceps: 1.5, hombros: 1.5, otros: 3, principal: 10, secundario: 5,
               mujer: "mujer", hombre: "hombre", sinSexo: "hombre", sinPerfil: "hombre" }
           );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- FitDraft: el gimnasio dibujado (parte estética, 26-oct-2026) ----------
+// Reparto de los 80 ejercicios en las 25 máquinas, la lista de una zona, las rutas, las zonas teñidas, la frase
+// del monitor, la rutina de hoy y el paso entre ejercicios. Los órdenes esperados de las listas se calcularon a
+// mano con las distancias entre los centros de las máquinas (prensa → sillas 91, rack 121, zona libre 140,
+// glúteo 179, plataforma 190).
+function grupoGimnasio() {
+  const ejercicioDe = (id) => EJERCICIOS_SEMILLA.find((e) => e.id === id) || null;
+  const lista = listaEjercicios(null);
+  const sesionPaso = (hechas) => ({ ejercicios: hechas.map((h, i) => ({ inst: "i" + i, ejercicioId: "ex_prensa", series: h.map((x, k) => ({ id: "s" + i + k, hecha: !!x })) })) });
+  return {
+    grupo: "FitDraft: el gimnasio",
+    casos: [
+      {
+        nombre: "Los 80 ejercicios de la biblioteca, cada uno en una sola de las 25 máquinas; los 15 músculos, cada uno en una sola zona",
+        ejecutar: () => {
+          const todos = ESTACIONES.flatMap((e) => e.ej);
+          const ids = EJERCICIOS_SEMILLA.map((e) => e.id);
+          const zonas = new Set(ZONAS.map((z) => z.id));
+          const musculos = ZONAS.flatMap((z) => z.musculos);
+          return comparar(
+            { maquinas: ESTACIONES.length, enMaquinas: todos.length, distintos: new Set(todos).size, faltan: ids.filter((id) => !ESTACION_DE[id]).join(","), sobran: todos.filter((id) => !ids.includes(id)).join(","),
+              zonasMal: ESTACIONES.filter((e) => !zonas.has(e.zona)).map((e) => e.id).join(","), musculos: musculos.length, musculosDistintos: new Set(musculos).size,
+              sinZona: GRUPOS_MUSCULARES.filter((m) => !zonaDeMusculo(m)).join(","), gemelos: zonaDeMusculo("gemelos"), antebrazos: zonaDeMusculo("antebrazos") },
+            { maquinas: 25, enMaquinas: 80, distintos: 80, faltan: "", sobran: "", zonasMal: "", musculos: 15, musculosDistintos: 15, sinZona: "", gemelos: "pierna", antebrazos: "brazos" }
+          );
+        },
+      },
+      {
+        nombre: "Tocar la prensa: «Pierna» con Prensa de piernas primero, luego hack, extensión y el resto de cuádriceps, y después isquios, glúteos, gemelos y aductores",
+        ejecutar: () => {
+          const r = ejerciciosDeZona(lista, "pierna", "prensa");
+          const conPropio = ejerciciosDeZona([...lista, { id: "exp_x", musculo: "cuadriceps" }, { id: "exp_y", musculo: "pecho" }], "pierna", "prensa");
+          return comparar(
+            { orden: r.join(","), propio: conPropio.indexOf("exp_x"), total: conPropio.length, sinPecho: conPropio.includes("exp_y") },
+            { orden: "ex_prensa,ex_hack,ex_extension_cuadriceps,ex_sentadilla,ex_sentadilla_frontal,ex_sentadilla_goblet,ex_zancadas,ex_bulgara,ex_femoral_tumbado,ex_femoral_sentado,ex_peso_muerto,ex_peso_muerto_rumano,ex_hip_thrust,ex_hip_thrust_maquina,ex_patada_gluteo,ex_abductores,ex_gemelos_pie,ex_gemelos_sentado,ex_aductores",
+              propio: 8, total: 20, sinPecho: false }
+          );
+        },
+      },
+      {
+        nombre: "Tocar la zona (sin máquina): músculo a músculo en el orden de la biblioteca; tocar la torre empieza por las dominadas y no trae los fondos (son de pecho)",
+        ejecutar: () => {
+          const espalda = ejerciciosDeZona(lista, "espalda");
+          const torre = ejerciciosDeZona(lista, "espalda", "torre");
+          return comparar(
+            { espalda: espalda.join(","), primeroTorre: torre[0], fondos: torre.includes("ex_fondos_paralelas"), totalTorre: torre.length, nada: ejerciciosDeZona(lista, "no-existe").length },
+            { espalda: "ex_dominadas,ex_dominadas_lastradas,ex_dominadas_asistidas,ex_jalon_pecho,ex_jalon_estrecho,ex_remo_mancuerna,ex_pullover_polea,ex_remo_barra,ex_remo_sentado_polea,ex_remo_maquina,ex_remo_landmine,ex_encogimientos,ex_hiperextensiones",
+              primeroTorre: "ex_dominadas", fondos: false, totalTorre: 13, nada: 0 }
+          );
+        },
+      },
+      {
+        nombre: "Rutas: desde la entrada se llega a las 25 máquinas y a los 6 sitios por pasillos libres, empezando y acabando donde se pide",
+        ejecutar: () => {
+          const desde = [ENTRADA_DENTRO.x, ENTRADA_DENTRO.y];
+          const mal = [];
+          [...ESTACIONES, ...SITIOS].forEach((c) => {
+            const p = puntoDe(c, desde);
+            const ruta = aEstrella(desde[0], desde[1], p[0], p[1]);
+            if (!libre(p[0], p[1]) || !ruta) { mal.push(c.id); return; }
+            const fin = ruta[ruta.length - 1];
+            if (ruta[0][0] !== desde[0] || ruta[0][1] !== desde[1] || fin[0] !== p[0] || fin[1] !== p[1]) mal.push(c.id + ":extremos");
+            // Cada tramo, muestreado cada 4 unidades, pasa por sitio libre (con el margen del avatar menos 1).
+            let choca = false;
+            for (let k = 1; k < ruta.length && !choca; k++) {
+              const [a, b] = [ruta[k - 1], ruta[k]];
+              const n = Math.ceil(Math.hypot(b[0] - a[0], b[1] - a[1]) / 4);
+              for (let q = 1; q < n && !choca; q++) if (!libre(a[0] + (b[0] - a[0]) * q / n, a[1] + (b[1] - a[1]) * q / n, 7)) choca = true;
+            }
+            if (choca) mal.push(c.id + ":choca");
+          });
+          return comparar({ mal: mal.join(","), dentroDeMaquina: libre(59, 216) }, { mal: "", dentroDeMaquina: false });
+        },
+      },
+      {
+        nombre: "La rutina como ruta: paradas en su orden, dos seguidos en la misma máquina son una parada; un propio va a la de su músculo; lo desconocido se salta",
+        ejecutar: () => {
+          const de = (id) => (id === "exp_curl" ? { id, musculo: "biceps" } : ejercicioDe(id));
+          const p = paradasDeRutina(["ex_prensa", "ex_hack", "ex_jalon_pecho", "exp_curl", "ex_prensa", "no_existe"], de);
+          return comparar(
+            { paradas: p.map((x) => `${x.estacion}[${x.indices.join("+")}]`).join(" "), propio: estacionDeEjercicio({ id: "exp_z", musculo: "gemelos" }), nulo: estacionDeEjercicio(null) },
+            { paradas: "prensa[0+1] jalon[2] banco-brazos[3] prensa[4]", propio: "prensa", nulo: null }
+          );
+        },
+      },
+      {
+        nombre: "Entre ejercicios: al cerrar uno, el siguiente con series pendientes (o uno saltado de antes); nada si quedan series, si no existe o si todo está hecho",
+        ejecutar: () => {
+          const a = sesionPaso([[1, 1], [1, 0], [0]]);
+          const b = sesionPaso([[0, 1], [1], [1, 1]]);
+          const c = sesionPaso([[1], [1]]);
+          const vacio = sesionPaso([[], [0]]);
+          return comparar(
+            { cerrarPrimero: JSON.stringify(pasoEntreEjercicios(a, "i0")), quedan: pasoEntreEjercicios(a, "i1"), saltado: JSON.stringify(pasoEntreEjercicios(b, "i2")), todo: pasoEntreEjercicios(c, "i1"),
+              noExiste: pasoEntreEjercicios(a, "zz"), sinSeries: pasoEntreEjercicios(vacio, "i0") },
+            { cerrarPrimero: '{"desde":0,"hacia":1}', quedan: null, saltado: '{"desde":2,"hacia":0}', todo: null, noExiste: null, sinSeries: null }
+          );
+        },
+      },
+      {
+        nombre: "Zonas teñidas: entrenada esta semana, olvidada a los 14 días, sin tinte entre medias y si nunca; la cola cuenta",
+        ejecutar: () => {
+          const indice = { ejercicios: {
+            ex_prensa: { ultima: { fecha: "2026-10-27" } },
+            ex_jalon_pecho: { ultima: { fecha: "2026-10-10" } },
+            ex_press_banca_barra: { ultima: { fecha: "2026-10-20" } },
+            ex_plancha: { ultima: { fecha: "2026-10-14" } },
+            no_existe: { ultima: { fecha: "2026-10-28" } },
+          } };
+          const cola = [{ inicio: "2026-10-26T18:00:00", ejercicios: [{ ejercicioId: "ex_curl_barra", series: [{ hecha: true }] }, { ejercicioId: "ex_cinta", series: [{ hecha: false }] }] }];
+          const uv = ultimaVezPorZona(indice, ejercicioDe, cola);
+          const e = estadoZonas({ ultimaVez: uv, hoy: "2026-10-28", inicioSemana: 1 });
+          const dom = estadoZonas({ ultimaVez: uv, hoy: "2026-10-28", inicioSemana: 0 });
+          return comparar(
+            { pierna: e.pierna.estado, espalda: e.espalda.estado, diasEspalda: e.espalda.dias, pecho: e.pecho.estado, core: e.core.estado, brazos: e.brazos.estado, hombros: e.hombros.estado,
+              diasHombros: e.hombros.dias, cardio: e.cardio.estado, ultima: uv.ultima, brazosDomingo: dom.brazos.estado },
+            // La plancha, el 14: justo 14 días → olvidada. El «no_existe» del 28 cuenta como última sesión pero no tiñe nada.
+            { pierna: "entrenada", espalda: "olvidada", diasEspalda: 18, pecho: "nada", core: "olvidada", brazos: "entrenada", hombros: "nada",
+              diasHombros: null, cardio: "nada", ultima: "2026-10-28", brazosDomingo: "entrenada" }
+          );
+        },
+      },
+      {
+        nombre: "El monitor: mucho tiempo sin venir a los 14 días; si no, el grupo más olvidado; si no, el saludo; una frase al día como mucho",
+        ejecutar: () => {
+          const estados = { pierna: { estado: "entrenada", dias: 1 }, espalda: { estado: "olvidada", dias: 18 }, core: { estado: "olvidada", dias: 30 }, pecho: { estado: "nada", dias: 8 } };
+          const grupo = situacionMonitor({ estados, ultimaSesion: "2026-10-27", hoy: "2026-10-28" });
+          const tiempo = situacionMonitor({ estados, ultimaSesion: "2026-10-14", hoy: "2026-10-28" });
+          const trece = situacionMonitor({ estados: {}, ultimaSesion: "2026-10-15", hoy: "2026-10-28" });
+          const nueva = situacionMonitor({ estados: {}, ultimaSesion: null, hoy: "2026-10-28" });
+          const f1 = fraseMonitor({ estados, ultimaSesion: "2026-10-27", hoy: "2026-10-28", azar: () => 0.99 });
+          const f2 = fraseMonitor({ estados: {}, ultimaSesion: null, hoy: "2026-10-28", guardada: f1, azar: () => 0 });
+          const f3 = fraseMonitor({ estados: {}, ultimaSesion: null, hoy: "2026-10-29", guardada: f1, azar: () => 0 });
+          return comparar(
+            { grupo: grupo.situacion + ":" + grupo.grupo, tiempo: tiempo.situacion, trece: trece.situacion, nueva: nueva.situacion,
+              f1: `${f1.situacion}:${f1.grupo}:${f1.indice}:${f1.nueva}`, f2: `${f2.situacion}:${f2.indice}:${f2.nueva}`, f3: `${f3.situacion}:${f3.indice}:${f3.nueva}:${f3.fecha}` },
+            { grupo: "grupo:core", tiempo: "tiempo", trece: "normal", nueva: "normal",
+              f1: "grupo:core:4:true", f2: "grupo:4:false", f3: "normal:0:true:2026-10-29" }
+          );
+        },
+      },
+      {
+        nombre: "La rutina de hoy: primero las que no se han hecho nunca (en su orden); si no, la que hace más que no se hace; sin rutinas, ninguna",
+        ejecutar: () => {
+          const r = [{ id: "a", nombre: "Torso" }, { id: "b", nombre: "Pierna" }, { id: "c", nombre: "Brazos" }];
+          const indice = { rutinas: { a: { fecha: "2026-10-20" }, b: { fecha: "2026-10-22" } } };
+          return comparar(
+            { nunca: rutinaDeHoy(r, indice).id, rotacion: rutinaDeHoy(r.slice(0, 2), indice).id, sinIndice: rutinaDeHoy(r, null).id, vacia: rutinaDeHoy([], indice) },
+            { nunca: "c", rotacion: "a", sinIndice: "a", vacia: null }
+          );
+        },
+      },
+      {
+        nombre: "El corcho: los días de esta semana con algún entreno, desde el primer día de la semana elegido",
+        ejecutar: () => {
+          const s = ["2026-10-26T18:00:00", "2026-10-28T09:00:00", "2026-10-25T18:00:00", "2026-11-02T18:00:00"].map((inicio) => ({ inicio }));
+          const lunes = diasEntrenadosSemana(s, "2026-10-29", 1).map((x) => (x ? 1 : 0)).join("");
+          const domingo = diasEntrenadosSemana(s, "2026-10-29", 0).map((x) => (x ? 1 : 0)).join("");
+          return comparar({ lunes, domingo }, { lunes: "1010000", domingo: "1101000" });
         },
       },
     ],
