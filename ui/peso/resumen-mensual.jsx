@@ -176,9 +176,9 @@ export function ResumenMensualView({ data, premium, onGoPremium, idioma, entreno
             <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", marginBottom: 6, lineHeight: 1.45 }}>
               {t(idioma, cumplimiento.dias === 1 ? "cuerpo.resumen.macrosIntroUno" : "cuerpo.resumen.macrosIntro", { n: cumplimiento.dias })}
             </div>
-            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.proteina")} dato={cumplimiento.prot} color="var(--green)" idioma={idioma} />
-            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.carbos")} dato={cumplimiento.carb} color="var(--coffee)" idioma={idioma} />
-            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.grasa")} dato={cumplimiento.fat} color="var(--olive)" idioma={idioma} />
+            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.proteina")} dato={cumplimiento.prot} color="var(--macro-prot)" idioma={idioma} />
+            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.carbos")} dato={cumplimiento.carb} color="var(--macro-carb)" idioma={idioma} />
+            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.grasa")} dato={cumplimiento.fat} color="var(--macro-grasa)" idioma={idioma} />
           </>
         ) : (
           <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>{t(idioma, "cuerpo.resumen.macrosSinDias")}</div>
