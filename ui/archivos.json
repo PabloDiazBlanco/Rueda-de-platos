@@ -78,6 +78,7 @@
   "ui/peso/medidas.jsx",
   "ui/peso/resumen-mensual.jsx",
   "ui/peso/seguimiento.jsx",
+  "ui/premium/cocinando.jsx",
   "ui/premium/premium.jsx",
   "ui/premium/que-cocino.jsx"
 ]
