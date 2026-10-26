@@ -188,9 +188,9 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
                         </div>
                         <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
                           <MacroPill label="kcal" value={f.kcal} color="var(--rust)" bg="var(--rust-soft)" />
-                          <MacroPill label="P" value={`${f.prot} g`} color="var(--green-dark)" bg="var(--green-soft)" />
-                          <MacroPill label="G" value={`${f.fat} g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-                          <MacroPill label="C" value={`${f.carb} g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+                          <MacroPill label="P" value={`${f.prot} g`} color="var(--macro-prot-texto)" bg="var(--macro-prot-suave)" />
+                          <MacroPill label="G" value={`${f.fat} g`} color="var(--macro-grasa-texto)" bg="var(--macro-grasa-suave)" />
+                          <MacroPill label="C" value={`${f.carb} g`} color="var(--macro-carb-texto)" bg="var(--macro-carb-suave)" />
                           <span style={{ fontFamily: FUENTE_TEXTO, fontSize: 10, color: "var(--ink-soft)", alignSelf: "center" }}>
                             {t(idioma, "foodsView.por100g")}
                           </span>

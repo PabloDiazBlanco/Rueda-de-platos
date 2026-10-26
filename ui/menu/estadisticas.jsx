@@ -1,12 +1,11 @@
 // ---------- ui/menu/estadisticas.jsx ----------
 // Estadísticas del menú: panel del día, resumen de sal/azúcares/fibra frente a la OMS y el modal
 // de objetivos nutricionales.
-import React, { useState } from "react";
+import React from "react";
 import { AlertCircle } from "lucide-react";
 import { fmt } from "macros";
 import { totalesDiaReal } from "comida-real";
 import { OBJETIVO_ETAPAS, calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
-import { DAYS } from "comun";
 import { resumenNutrientesSemana } from "salud-publica";
 import { t } from "i18n";
 import { ModalShell, ModalBtn } from "../comun/modal.jsx";
@@ -14,20 +13,31 @@ import { MacroPill } from "../comun/tarjetas.jsx";
 import { NivelBadge } from "../peso/seguimiento.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
+// La tarjeta de macros del día elegido (Bloque MENÚ de la parte estética, 26-oct-2026: opción A «sin aro»
+// de local/ideas/esteticas/v2-02-macros.html). A la izquierda, el anillo cuenta solo el reparto de las kcal
+// entre los tres macros, con las kcal en el centro, y debajo la pastilla del % del objetivo de kcal (mostaza
+// si te quedas corto, verde si estás en el ±10 %, óxido si te pasas: el mismo criterio que antes). A la
+// derecha, cada macro contra su objetivo: la barra es lo que llevas y la raya mostaza, el 100 % (la escala
+// llega al 130 %, para que se vea cuánto te pasas); una barra que pasa del 110 % se pinta en óxido, como su
+// cifra. Así responde a «¿llego hoy a mis objetivos?» sin leer números, con el criterio de gráficas: un color,
+// un significado. Sin objetivos calculados no hay barras: quedan el anillo y las pastillas P/G/C.
+//
 // Las kcal y macros del día son las de verdad (B1+B3): en las comidas que se marcaron con cambios, lo
-// que se comió; en el resto, lo del menú. Se avisa debajo cuando hay alguna cambiada.
-export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
-  const [day, setDay] = useState(DAYS[0]);
+// que se comió; en el resto, lo del menú. Se avisa debajo cuando hay alguna cambiada. El día lo elige
+// quien la pinta (MenuView, con SelectorDia), para que la gráfica y las comidas de debajo vayan a la par.
+export function DayStatsPanel({ data, menu, week, day, objetivos, idioma }) {
   const totals = totalesDiaReal(data, menu, week, day);
 
   const segments = [
-    { key: "prot", kcal: totals.prot * 4, color: "var(--green)" },
-    { key: "fat", kcal: totals.fat * 9, color: "var(--mustard)" },
-    { key: "carb", kcal: totals.carb * 4, color: "var(--coffee)" },
+    { key: "prot", kcal: totals.prot * 4, color: "var(--macro-prot)" },
+    { key: "fat", kcal: totals.fat * 9, color: "var(--macro-grasa)" },
+    { key: "carb", kcal: totals.carb * 4, color: "var(--macro-carb)" },
   ];
-  const totalForRing = segments.reduce((s, x) => s + x.kcal, 0) || 1;
-  const R = 70;
+  const totalForRing = segments.reduce((s, x) => s + x.kcal, 0);
+  const R = 50;
   const C = 2 * Math.PI * R;
+  // Un pequeño hueco entre segmentos, para que se lean tres trozos y no una mancha.
+  const HUECO = totalForRing > 0 ? 2 : 0;
   let acc = 0;
 
   const pct = objetivos?.kcal ? Math.round((totals.kcal / objetivos.kcal) * 100) : null;
@@ -37,72 +47,89 @@ export function DayStatsPanel({ data, menu, week, objetivos, idioma }) {
     pct > 110 ? { bg: "var(--rust-soft)", fg: "var(--rust)" } :
     { bg: "var(--green-soft)", fg: "var(--green-dark)" };
 
+  const conObjetivos = !!(objetivos && objetivos.kcal && objetivos.prot && objetivos.fat && objetivos.carb);
+  const barras = [
+    { key: "prot", nombre: t(idioma, "objetivosModal.proteina"), valor: totals.prot, obj: objetivos?.prot, color: "var(--macro-prot)" },
+    { key: "fat", nombre: t(idioma, "objetivosModal.grasa"), valor: totals.fat, obj: objetivos?.fat, color: "var(--macro-grasa)" },
+    { key: "carb", nombre: t(idioma, "objetivosModal.carbos"), valor: totals.carb, obj: objetivos?.carb, color: "var(--macro-carb)" },
+  ];
+  // La escala de las barras llega al 130 %: la raya del objetivo cae en 1/1,3 del ancho.
+  const TOPE = 1.3;
+  const rayaObjetivo = `${(100 / TOPE).toFixed(2)}%`;
+
   return (
-    <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-      <div style={{ display: "flex", gap: 6, overflowX: "auto", marginBottom: 16, paddingBottom: 2 }}>
-        {DAYS.map((d) => (
-          <button
-            key={d}
-            onClick={() => setDay(d)}
-            style={{
-              fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700,
-              padding: "6px 13px", borderRadius: 20, border: "1px solid var(--line)", flexShrink: 0,
-              background: d === day ? "var(--green-dark)" : "var(--paper)",
-              color: d === day ? "#fff" : "var(--ink)",
-            }}
-          >
-            {t(idioma, "dia." + d).slice(0, 3)}
-          </button>
-        ))}
-      </div>
-
-      <div style={{ position: "relative", width: 180, height: 180, margin: "0 auto 12px" }}>
-        <svg viewBox="0 0 180 180" width="180" height="180">
-          <circle cx="90" cy="90" r={R} fill="none" stroke="var(--paper)" strokeWidth="20" />
-          {segments.map((s) => {
-            const len = (s.kcal / totalForRing) * C;
-            const dashoffset = -acc;
-            acc += len;
-            return (
-              <circle
-                key={s.key} cx="90" cy="90" r={R} fill="none" stroke={s.color} strokeWidth="20"
-                strokeDasharray={`${len} ${C - len}`} strokeDashoffset={dashoffset}
-                transform="rotate(-90 90 90)"
-              />
-            );
-          })}
-        </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontSize: 25, fontWeight: 700, color: "var(--green-dark)" }}>{Math.round(totals.kcal)}</div>
-          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)" }}>kcal</div>
+    <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "14px 14px 12px", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, justifyContent: "center" }}>
+        <div style={{ width: 124, flexShrink: 0, textAlign: "center" }}>
+          <div style={{ position: "relative", width: 124, height: 124 }}>
+            <svg viewBox="0 0 124 124" width="124" height="124" aria-hidden="true">
+              <circle cx="62" cy="62" r={R} fill="none" stroke="var(--paper)" strokeWidth="14" />
+              {totalForRing > 0 && segments.map((s) => {
+                const len = (s.kcal / totalForRing) * C;
+                const dashoffset = -acc;
+                acc += len;
+                return (
+                  <circle
+                    key={s.key} cx="62" cy="62" r={R} fill="none" stroke={s.color} strokeWidth="14"
+                    strokeDasharray={`${Math.max(0, len - HUECO)} ${C}`} strokeDashoffset={dashoffset}
+                    transform="rotate(-90 62 62)"
+                  />
+                );
+              })}
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+              <div style={{ fontSize: 23, color: "var(--green-dark)", lineHeight: 1.1 }}>{Math.round(totals.kcal)}</div>
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10, color: "var(--ink-soft)" }}>kcal</div>
+            </div>
+          </div>
+          {pct !== null && (
+            <span style={{
+              display: "inline-block", marginTop: 6, fontFamily: FUENTE_TEXTO, fontSize: 10.5, fontWeight: 700, lineHeight: 1.3,
+              padding: "3px 9px", borderRadius: 20, background: pctStyle.bg, color: pctStyle.fg,
+            }}>
+              {t(idioma, "menu.dia.pctDe", { pct, kcal: objetivos.kcal })}
+            </span>
+          )}
         </div>
-      </div>
 
-      {pct !== null && (
-        <div style={{ textAlign: "center", marginBottom: 13 }}>
-          <span style={{
-            fontFamily: FUENTE_TEXTO, fontSize: 11.5, fontWeight: 700,
-            padding: "4px 11px", borderRadius: 20, background: pctStyle.bg, color: pctStyle.fg,
-          }}>
-            {t(idioma, "dayStats.pctObjetivo", { pct, kcal: objetivos.kcal })}
-          </span>
-        </div>
-      )}
-
-      <div style={{ display: "flex", justifyContent: "center", gap: 5, flexWrap: "wrap" }}>
-        <MacroPill label="P" value={`${fmt(totals.prot)}g`} color="var(--green-dark)" bg="var(--green-soft)" />
-        <MacroPill label="G" value={`${fmt(totals.fat)}g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-        <MacroPill label="C" value={`${fmt(totals.carb)}g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+        {conObjetivos ? (
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 12, fontFamily: FUENTE_TEXTO }}>
+            {barras.map((b) => {
+              const r = b.valor / b.obj;
+              const fuera = r > 1.1;
+              return (
+                <div key={b.key}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 6, marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.nombre}</span>
+                    <span style={{ fontSize: 10.5, color: fuera ? "var(--rust)" : "var(--ink-soft)", fontWeight: fuera ? 700 : 400, whiteSpace: "nowrap" }}>
+                      {Math.round(b.valor)} / {Math.round(b.obj)} g
+                    </span>
+                  </div>
+                  <div style={{ position: "relative", height: 8, borderRadius: 4, background: "var(--paper)" }}>
+                    <div style={{ height: 8, borderRadius: 4, width: `${(Math.min(TOPE, r) / TOPE) * 100}%`, background: fuera ? "var(--rust)" : b.color }} />
+                    <div aria-hidden="true" style={{ position: "absolute", left: rayaObjetivo, top: -3, width: 2.5, height: 14, marginLeft: -1.25, borderRadius: 1, background: "var(--mustard)" }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 6 }}>
+            <MacroPill label="P" value={`${fmt(totals.prot)}g`} color="var(--macro-prot-texto)" bg="var(--macro-prot-suave)" />
+            <MacroPill label="G" value={`${fmt(totals.fat)}g`} color="var(--macro-grasa-texto)" bg="var(--macro-grasa-suave)" />
+            <MacroPill label="C" value={`${fmt(totals.carb)}g`} color="var(--macro-carb-texto)" bg="var(--macro-carb-suave)" />
+          </div>
+        )}
       </div>
 
       {totals.cambiadas > 0 && (
-        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--mustard-dark)", marginTop: 10, textAlign: "center" }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 10, textAlign: "center" }}>
           {t(idioma, totals.cambiadas === 1 ? "dayStats.conCambiosUna" : "dayStats.conCambios", { n: totals.cambiadas })}
         </div>
       )}
 
       {!objetivos?.kcal && (
-        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 13, textAlign: "center" }}>
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)", marginTop: 10, textAlign: "center" }}>
           {t(idioma, "dayStats.fijaObjetivo")}
         </div>
       )}
@@ -201,9 +228,9 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
             )}
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 16 }}>
-            <MacroPill label={t(idioma, "objetivosModal.proteina")} value={`${objetivosCalculados.prot}g`} color="var(--green-dark)" bg="var(--green-soft)" />
-            <MacroPill label={t(idioma, "objetivosModal.grasa")} value={`${objetivosCalculados.fat}g`} color="var(--mustard-dark)" bg="var(--mustard-soft)" />
-            <MacroPill label={t(idioma, "objetivosModal.carbos")} value={`${objetivosCalculados.carb}g`} color="var(--coffee)" bg="var(--coffee-soft)" />
+            <MacroPill label={t(idioma, "objetivosModal.proteina")} value={`${objetivosCalculados.prot}g`} color="var(--macro-prot-texto)" bg="var(--macro-prot-suave)" />
+            <MacroPill label={t(idioma, "objetivosModal.grasa")} value={`${objetivosCalculados.fat}g`} color="var(--macro-grasa-texto)" bg="var(--macro-grasa-suave)" />
+            <MacroPill label={t(idioma, "objetivosModal.carbos")} value={`${objetivosCalculados.carb}g`} color="var(--macro-carb-texto)" bg="var(--macro-carb-suave)" />
           </div>
 
           {objetivosCalculados.carbMinNotMet && (

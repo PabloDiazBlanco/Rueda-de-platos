@@ -17,6 +17,7 @@ import { resumenDespensaParaIA } from "despensa";
 import { t } from "i18n";
 import { inputStyle } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
+import { PensandoCocina, esperaMinimaPensando } from "./cocinando.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 export function SuggestMealsView({ data, despensa, onGuardarComoCerrado, idioma }) {
@@ -49,14 +50,20 @@ export function SuggestMealsView({ data, despensa, onGuardarComoCerrado, idioma 
     setLoading(true);
     setError("");
     setRecetas(null);
+    // Mientras piensa se ve la escena de la cocina (PensandoCocina), con una espera mínima para que no
+    // aparezca y desaparezca de golpe si Gemini contesta muy rápido; si tarda más, no se añade nada.
+    const hasta = Date.now() + esperaMinimaPensando();
+    const esperarMinimo = () => new Promise((listo) => setTimeout(listo, Math.max(0, hasta - Date.now())));
     try {
       const catalogo = (data.foods || []).map((f) => ({ id: f.id, name: f.name }));
       const r = await window.suggestRecipes({
         modo, photoDataUrl: photo, especias, otrosIngredientes, catalogo, idioma,
         despensa: mandaDespensa ? enCasa : [],
       });
+      await esperarMinimo();
       setRecetas(r);
     } catch (err) {
+      await esperarMinimo();
       setError(err.message);
     } finally {
       setLoading(false);
@@ -139,6 +146,8 @@ export function SuggestMealsView({ data, despensa, onGuardarComoCerrado, idioma 
           <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--rust)", background: "var(--rust-soft)", borderRadius: 8, padding: "9px 12px", marginTop: 10 }}>{error}</div>
         )}
       </div>
+
+      {loading && <PensandoCocina idioma={idioma} />}
 
       {recetas && recetas.length === 0 && (
         <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", maxWidth: 480 }}>{t(idioma, "queCocino.sinResultados")}</div>

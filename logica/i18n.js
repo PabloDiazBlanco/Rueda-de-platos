@@ -1436,6 +1436,29 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Período</strong> (solo si usas esa sección): los días de regla y de relaciones que marques son datos de salud y <strong>se guardan únicamente en tu dispositivo</strong>; no se envían a nuestros servidores ni a nadie. Desaparecen si borras los datos de la app o del navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificaciones</strong>: si activas los avisos (recordatorio de pesaje, aviso para descongelar), se guarda un identificador técnico de tu dispositivo para poder enviártelos. Se borra al desactivarlos desde Ajustes.",
+
+    // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
+    // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
+    "menu.generando.frase1": "Eligiendo las proteínas…",
+    "menu.generando.frase2": "Poniendo el arroz a cocer…",
+    "menu.generando.frase3": "Repartiendo la verdura…",
+    "menu.generando.frase4": "Cerrando los tuppers…",
+    "menu.generando.segundos": "{n} s",
+    "menu.diaCorto.Lunes": "Lun",
+    "menu.diaCorto.Martes": "Mar",
+    "menu.diaCorto.Miércoles": "Mié",
+    "menu.diaCorto.Jueves": "Jue",
+    "menu.diaCorto.Viernes": "Vie",
+    "menu.diaCorto.Sábado": "Sáb",
+    "menu.diaCorto.Domingo": "Dom",
+    "menu.dia.hoy": "hoy",
+    "menu.dia.total": "Total del día",
+    "menu.dia.pctDe": "{pct} % de {kcal}",
+    "queCocino.pensando.frase1": "Mirando lo que tienes…",
+    "queCocino.pensando.frase2": "Buscando combinaciones…",
+    "queCocino.pensando.frase3": "Dándole la vuelta al filete…",
+    "queCocino.pensando.frase4": "Casi está…",
+    "queCocino.pensando.tarda": "Está tardando un poco más de lo normal…",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2811,6 +2834,29 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Period</strong> (only if you use that section): the period and intimacy days you mark are health data and <strong>are stored only on your device</strong>; they are not sent to our servers or to anyone else. They disappear if you clear the app’s or browser’s data.",
     "privacidad.datosNotificaciones": "<strong>Notifications</strong>: if you turn on reminders (weigh-in reminder, defrost reminder), a technical identifier of your device is stored so we can send them to you. It is deleted when you turn them off in Settings.",
+
+    // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
+    // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
+    "menu.generando.frase1": "Picking the proteins…",
+    "menu.generando.frase2": "Putting the rice on…",
+    "menu.generando.frase3": "Sharing out the veg…",
+    "menu.generando.frase4": "Closing the lunchboxes…",
+    "menu.generando.segundos": "{n} s",
+    "menu.diaCorto.Lunes": "Mon",
+    "menu.diaCorto.Martes": "Tue",
+    "menu.diaCorto.Miércoles": "Wed",
+    "menu.diaCorto.Jueves": "Thu",
+    "menu.diaCorto.Viernes": "Fri",
+    "menu.diaCorto.Sábado": "Sat",
+    "menu.diaCorto.Domingo": "Sun",
+    "menu.dia.hoy": "today",
+    "menu.dia.total": "Day total",
+    "menu.dia.pctDe": "{pct}% of {kcal}",
+    "queCocino.pensando.frase1": "Looking at what you have…",
+    "queCocino.pensando.frase2": "Finding combinations…",
+    "queCocino.pensando.frase3": "Flipping the steak…",
+    "queCocino.pensando.frase4": "Almost there…",
+    "queCocino.pensando.tarda": "This is taking a little longer than usual…",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -4186,6 +4232,29 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Període</strong> (només si fas servir aquesta secció): els dies de regla i de relacions que marquis són dades de salut i <strong>es desen únicament al teu dispositiu</strong>; no s'envien als nostres servidors ni a ningú. Desapareixen si esborres les dades de l'app o del navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificacions</strong>: si actives els avisos (recordatori de pesada, avís per descongelar), es desa un identificador tècnic del teu dispositiu per poder enviar-te'ls. S'esborra en desactivar-los des d'Ajustos.",
+
+    // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
+    // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
+    "menu.generando.frase1": "Triant les proteïnes…",
+    "menu.generando.frase2": "Posant l'arròs a coure…",
+    "menu.generando.frase3": "Repartint la verdura…",
+    "menu.generando.frase4": "Tancant els tàpers…",
+    "menu.generando.segundos": "{n} s",
+    "menu.diaCorto.Lunes": "Dl",
+    "menu.diaCorto.Martes": "Dt",
+    "menu.diaCorto.Miércoles": "Dc",
+    "menu.diaCorto.Jueves": "Dj",
+    "menu.diaCorto.Viernes": "Dv",
+    "menu.diaCorto.Sábado": "Ds",
+    "menu.diaCorto.Domingo": "Dg",
+    "menu.dia.hoy": "avui",
+    "menu.dia.total": "Total del dia",
+    "menu.dia.pctDe": "{pct} % de {kcal}",
+    "queCocino.pensando.frase1": "Mirant què tens…",
+    "queCocino.pensando.frase2": "Buscant combinacions…",
+    "queCocino.pensando.frase3": "Girant el filet…",
+    "queCocino.pensando.frase4": "Gairebé està…",
+    "queCocino.pensando.tarda": "Està trigant una mica més del normal…",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5561,6 +5630,29 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Período</strong> (só se usas esa sección): os días de regra e de relacións que marques son datos de saúde e <strong>gárdanse unicamente no teu dispositivo</strong>; non se envían aos nosos servidores nin a ninguén. Desaparecen se borras os datos da app ou do navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificacións</strong>: se activas os avisos (recordatorio de pesaxe, aviso para descongelar), gárdase un identificador técnico do teu dispositivo para poder enviarchos. Bórrase ao desactivalos desde Axustes.",
+
+    // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
+    // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
+    "menu.generando.frase1": "Escollendo as proteínas…",
+    "menu.generando.frase2": "Poñendo o arroz a cocer…",
+    "menu.generando.frase3": "Repartindo a verdura…",
+    "menu.generando.frase4": "Pechando os táperes…",
+    "menu.generando.segundos": "{n} s",
+    "menu.diaCorto.Lunes": "Lun",
+    "menu.diaCorto.Martes": "Mar",
+    "menu.diaCorto.Miércoles": "Mér",
+    "menu.diaCorto.Jueves": "Xov",
+    "menu.diaCorto.Viernes": "Ven",
+    "menu.diaCorto.Sábado": "Sáb",
+    "menu.diaCorto.Domingo": "Dom",
+    "menu.dia.hoy": "hoxe",
+    "menu.dia.total": "Total do día",
+    "menu.dia.pctDe": "{pct} % de {kcal}",
+    "queCocino.pensando.frase1": "Mirando o que tes…",
+    "queCocino.pensando.frase2": "Buscando combinacións…",
+    "queCocino.pensando.frase3": "Dándolle a volta ao filete…",
+    "queCocino.pensando.frase4": "Case está…",
+    "queCocino.pensando.tarda": "Está tardando un pouco máis do normal…",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6936,6 +7028,29 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Aldia</strong> (atal hori erabiltzen baduzu soilik): markatzen dituzun hileroko eta harremanen egunak osasun-datuak dira eta <strong>zure gailuan soilik gordetzen dira</strong>; ez dira gure zerbitzarietara ez inorri bidaltzen. Aplikazioaren edo nabigatzailearen datuak ezabatzen badituzu, desagertu egiten dira.",
     "privacidad.datosNotificaciones": "<strong>Jakinarazpenak</strong>: abisuak aktibatzen badituzu (pisatze-gogorarazpena, desizozteko abisua), zure gailuaren identifikatzaile tekniko bat gordetzen da horiek bidali ahal izateko. Ezarpenetan desaktibatzean ezabatzen da.",
+
+    // Bloque MENÚ de la parte estética (26-oct-2026): frases de la cadena de tuppers, días cortos del
+    // selector de un solo día y frases de «¿Qué cocino?» mientras piensa.
+    "menu.generando.frase1": "Proteinak aukeratzen…",
+    "menu.generando.frase2": "Arroza egosten jartzen…",
+    "menu.generando.frase3": "Barazkiak banatzen…",
+    "menu.generando.frase4": "Tupperrak ixten…",
+    "menu.generando.segundos": "{n} s",
+    "menu.diaCorto.Lunes": "Al",
+    "menu.diaCorto.Martes": "Ar",
+    "menu.diaCorto.Miércoles": "Az",
+    "menu.diaCorto.Jueves": "Og",
+    "menu.diaCorto.Viernes": "Or",
+    "menu.diaCorto.Sábado": "Lr",
+    "menu.diaCorto.Domingo": "Ig",
+    "menu.dia.hoy": "gaur",
+    "menu.dia.total": "Eguneko guztira",
+    "menu.dia.pctDe": "% {pct} / {kcal}",
+    "queCocino.pensando.frase1": "Daukazuna begiratzen…",
+    "queCocino.pensando.frase2": "Konbinazioak bilatzen…",
+    "queCocino.pensando.frase3": "Xerrari buelta ematen…",
+    "queCocino.pensando.frase4": "Ia prest…",
+    "queCocino.pensando.tarda": "Ohi baino pixka bat gehiago ari da tardatzen…",
   },
 };
 

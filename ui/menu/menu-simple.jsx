@@ -2,7 +2,6 @@
 // Pantalla de Menú simple: el mismo generador, sin calorías ni cantidades.
 import React, { useState } from "react";
 import { Shuffle, Undo2 } from "lucide-react";
-import { DAYS } from "comun";
 import { t } from "i18n";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { ListaCompraModal } from "./lista-compra.jsx";
@@ -10,7 +9,7 @@ import { documentoMenu } from "./exportar.js";
 import { BotonCompartir } from "../comun/compartir.jsx";
 import { HistoryPanel } from "./historial.jsx";
 import { GenerandoMenu } from "./generando.jsx";
-import { LineaPreentreno } from "../perfil/preentreno.jsx";
+import { SelectorDia, TarjetaDia, diaDeHoy } from "./selector-dia.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // Menú simple (Tanda 3 del rediseño): la misma idea de "organizar la semana" que Menú completo,
@@ -22,6 +21,8 @@ import { FUENTE_TEXTO } from "../estilos.js";
 // pantallas conviven sin pisarse.
 export function MenuSimpleView({ menu, onGenerate, generando, onUndo, menuWeek, setMenuWeek, history, data, onToggleMarcadoCompra, idioma }) {
   const [showListaCompra, setShowListaCompra] = useState(false);
+  // El día que se enseña (uno solo a la vez); al abrir la pantalla, hoy.
+  const [dia, setDia] = useState(diaDeHoy);
 
   return (
     <>
@@ -130,42 +131,33 @@ export function MenuSimpleView({ menu, onGenerate, generando, onUndo, menuWeek, 
             </button>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {DAYS.map((day) => {
-              const dayMeals = menu.filter((s) => s.week === menuWeek && s.day === day);
+          {/* Un solo día a la vez, como en el Menú completo (parte estética, 26-oct-2026), sin kcal. */}
+          <SelectorDia dia={dia} onCambiar={setDia} idioma={idioma} />
+          <TarjetaDia key={dia} dia={dia} perfil={data.perfil} idioma={idioma}>
+            {menu.filter((s) => s.week === menuWeek && s.day === dia).map((m) => {
+              const combinacion = m.closedDish
+                ? m.closedDish
+                : m.item
+                ? m.item
+                : [m.protein, m.carbo, m.verdura, m.garbanzos ? t(idioma, "menuSimple.garbanzos") : null].filter(Boolean).join(" + ") || "—";
               return (
-                <div key={day} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "12px 14px" }}>
-                  <div style={{ fontSize: 15, marginBottom: 8 }}>{t(idioma, "dia." + day)}</div>
-                  <LineaPreentreno perfil={data.perfil} day={day} idioma={idioma} />
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {dayMeals.map((m) => {
-                      const combinacion = m.closedDish
-                        ? m.closedDish
-                        : m.item
-                        ? m.item
-                        : [m.protein, m.carbo, m.verdura, m.garbanzos ? t(idioma, "menuSimple.garbanzos") : null].filter(Boolean).join(" + ") || "—";
-                      return (
-                        <div
-                          key={m.id}
-                          style={{
-                            display: "flex", alignItems: "baseline", gap: 10,
-                            fontFamily: FUENTE_TEXTO, padding: "4px 6px",
-                          }}
-                        >
-                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>
-                            {t(idioma, "mealType." + m.mealType)}
-                          </span>
-                          <span style={{ fontSize: 13, color: m.closedDish ? "var(--rust)" : "var(--ink)", fontWeight: m.closedDish ? 600 : 400 }}>
-                            {combinacion}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <div
+                  key={m.id}
+                  style={{
+                    display: "flex", alignItems: "baseline", gap: 10,
+                    fontFamily: FUENTE_TEXTO, padding: "4px 6px", marginLeft: -6, marginRight: -6,
+                  }}
+                >
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--mustard-dark)", width: 68, flexShrink: 0 }}>
+                    {t(idioma, "mealType." + m.mealType)}
+                  </span>
+                  <span style={{ fontSize: 13, color: m.closedDish ? "var(--rust)" : "var(--ink)", fontWeight: m.closedDish ? 600 : 400 }}>
+                    {combinacion}
+                  </span>
                 </div>
               );
             })}
-          </div>
+          </TarjetaDia>
         </>
       )}
 

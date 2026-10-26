@@ -181,7 +181,7 @@ el aspecto de cada pieza están en `local/ideas/gimnasio/03-diseno-modulo-entren
 - **Menú lateral**: arriba las áreas, desplegables con todas sus funciones (el área actual sale
   resaltada y desplegada); abajo lo común, con Premium en mostaza. Un área sin pantallas no se lista.
 - **Barra inferior** (`ui/marco/barra-inferior.jsx`): píldora flotante de cristal claro (fondo
-  `--cristal` al 72 % con desenfoque; fondo sólido sin `backdrop-filter` o con «reducir transparencia»),
+  `--cristal` al 60 % con desenfoque; fondo sólido sin `backdrop-filter` o con «reducir transparencia»),
   solo en las pantallas de un área. Solo la pestaña activa enseña su nombre (las demás, como
   `aria-label` y `title`); tocar una pestaña lleva a su raíz. Se esconde mientras hay un campo de texto
   con el foco (el teclado del móvil la subiría encima), y `<main>` deja libre abajo lo que ocupa
@@ -253,8 +253,25 @@ comida), **sin tocar el reparto de macros**. En los días de entreno, los dos me
 **Generar no es instantáneo** (C11, 25-oct-2026): `useMenu.generar` calcula el menú igual que siempre pero lo
 enseña tras una espera al azar de 3 a 6 s (`ESPERA_GENERAR_MIN_MS`/`MAX_MS`), con la animación de
 `ui/menu/generando.jsx` en el sitio del menú y el botón desactivado; la misma en los dos menús. Con «reducir
-movimiento» se genera al momento. La animación es **provisional** (pendiente de elegir la definitiva entre las
-propuestas estéticas): para cambiarla basta con sustituir ese componente, que solo recibe `{ inicio, duracion }`.
+movimiento» se genera al momento. La animación es la **cadena de tuppers** (parte estética, 26-oct-2026): siete
+tuppers en la encimera de la cocina retro (colores de `ui/despensa/tema.js`, solo importado), uno por día, que un
+cucharón va llenando y que se cierran con un rebote, con frases de cocina (`menu.generando.frase1-4`), los segundos
+y una barra. Todo va en fracciones de la duración, así que dura lo que dure la espera. El componente sigue
+recibiendo solo `{ inicio, duracion }`.
+
+**Fondo «mínimo pulido» y un solo día a la vez** (parte estética, 26-oct-2026): sin ilustración de fondo, y los
+dos menús enseñan **un día cada vez** (`SelectorDia` y `TarjetaDia`, `ui/menu/selector-dia.jsx`): al abrir, hoy
+(con un punto mostaza en su botón); los botones de día cambian a la vez la tarjeta de macros y las comidas. El día
+elegido vive en el estado de la pantalla, no se guarda. En el Menú completo, la tarjeta de macros
+(`DayStatsPanel`, `ui/menu/estadisticas.jsx`) es la «A sin aro»: el anillo cuenta solo el reparto de kcal entre
+macros, debajo la pastilla del % de kcal y a la derecha una barra por macro contra su objetivo (raya mostaza en el
+100 %, escala hasta el 130 %, óxido por encima del 110 %); sin objetivos, las pastillas P/G/C. La tarjeta del día
+acaba con el total de kcal. Sal, azúcares y fibra siguen siendo de la semana, debajo.
+
+**Colores de los macros**: en un solo sitio, variables de `Shell` (`--macro-prot`, `--macro-grasa`, `--macro-carb`,
+con `-texto` y `-suave` para las pastillas). Por el criterio de gráficas (un color, un significado: verde lo tuyo,
+mostaza objetivo o referencia, óxido fuera de rango), **la grasa es oliva**, no mostaza. Úsalas en todo lo nuevo
+que pinte macros, nunca el color a mano.
 
 **Hecha y «Cambié algo»** (B1+B3, 25-oct-2026; solo Menú completo, que es el único que marca comidas):
 en el detalle de una comida, «Hecha» la da por buena tal cual y «Cambié algo» (`ui/menu/cambie-algo.jsx`)
@@ -642,6 +659,14 @@ hay varios usuarios y la IA cuesta dinero, así que se movió al servidor:
   cerrado»: las macros, si se guarda, las calcula la app con `composedMacros`, nunca vienen de la IA.
   `functions/suggestMeals.js` (la versión anterior: combinaciones solo con alimentos del catálogo, misma
   cuota) se conserva para las copias de la app que aún no se hayan actualizado; el cliente ya no la llama.
+
+  **Mientras piensa** (parte estética, 26-oct-2026; `PensandoCocina`, `ui/premium/cocinando.jsx`): debajo del
+  formulario, la cámara entra desde la cocina entera hasta la vitro (1 s) y se queda en la encimera vista en
+  primera persona, con un muñón que corta un tomate a rodajas y otro que saltea un filete, en bucle hasta la
+  respuesta; frases que cambian (`queCocino.pensando.*`) y, pasados 8 s, «está tardando un poco más». Espera
+  mínima de 1 s de viaje + 1,5 s (`esperaMinimaPensando`) para que no parpadee, también si hay error. Con «reducir
+  movimiento», la escena de cerca quieta desde el principio (sin viaje), con la misma espera mínima de 1,5 s.
+  Dibujos propios (no reutiliza los de `ui/despensa/`), con los colores de su tema.
 
 Las tres usan `@google/genai` con la clave `GEMINI_API_KEY` guardada como secreto de Firebase (no
 está en el repo). **El nombre del modelo (`gemini-3.1-flash-lite`) está hardcodeado en los tres

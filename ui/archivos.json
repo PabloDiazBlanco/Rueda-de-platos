@@ -66,6 +66,7 @@
   "ui/menu/lista-compra.jsx",
   "ui/menu/menu-completo.jsx",
   "ui/menu/menu-simple.jsx",
+  "ui/menu/selector-dia.jsx",
   "ui/onboarding/asistente-perfil.jsx",
   "ui/onboarding/cuestionario.jsx",
   "ui/pantallas.jsx",
@@ -77,6 +78,7 @@
   "ui/peso/medidas.jsx",
   "ui/peso/resumen-mensual.jsx",
   "ui/peso/seguimiento.jsx",
+  "ui/premium/cocinando.jsx",
   "ui/premium/premium.jsx",
   "ui/premium/que-cocino.jsx"
 ]
