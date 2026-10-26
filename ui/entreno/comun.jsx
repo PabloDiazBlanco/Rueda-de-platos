@@ -167,7 +167,7 @@ export function fechaCorta(inicio, idioma) {
 
 // «24 oct» / «24 de octubre» (en euskera, «urr. 24» / «urriaren 24a»), con Intl si el navegador tiene el
 // idioma y con las tablas de arriba si no.
-function diaYMes(d, idioma, corto) {
+export function diaYMes(d, idioma, corto) {
   const l = LOCALES[idioma] || "es-ES";
   if (soportado(l)) return new Intl.DateTimeFormat(l, { day: "numeric", month: corto ? "short" : "long" }).format(d);
   const tabla = (corto ? MESES_CORTOS : MESES)[idioma] || MESES.es;

@@ -8,6 +8,8 @@ import { t } from "i18n";
 import { ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 import { BotonPrincipal, TextoSuave, HojaInferior, OpcionHoja, nombreDe } from "./comun.jsx";
+import { MapaCorporal } from "../comun/mapa-corporal.jsx";
+import { seriesDeRutina } from "mapa-corporal";
 
 function grupos(rutinas) {
   const porCarpeta = {};
@@ -66,7 +68,7 @@ export function RutinasView({ entreno, idioma, navegar }) {
                     <MoreVertical size={18} />
                   </button>
                 </div>
-                <div style={{ padding: "0 14px 12px" }}>
+                <div style={{ padding: "0 14px 12px", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10 }}>
                   <button
                     onClick={() => empezar(r)}
                     disabled={!r.ejercicios.length}
@@ -78,6 +80,10 @@ export function RutinasView({ entreno, idioma, navegar }) {
                   >
                     <Play size={14} /> {t(idioma, "entreno.inicio.empezar")}
                   </button>
+                  {/* Qué músculos trabaja la rutina (series previstas), en pequeño. */}
+                  {r.ejercicios.length > 0 && (
+                    <MapaCorporal tamano="pequeno" valores={seriesDeRutina(r, entreno.ejercicioDe)} perfil={entreno.perfil} idioma={idioma} etiqueta={t(idioma, "cuerpo.mapa.rutina", { nombre: r.nombre })} />
+                  )}
                 </div>
               </div>
             ))}

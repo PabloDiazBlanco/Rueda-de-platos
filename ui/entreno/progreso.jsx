@@ -1,7 +1,7 @@
 // ---------- ui/entreno/progreso.jsx ----------
 // «Progreso» (destino `entreno-progreso`; diseño, §4.8): series por grupo muscular de la semana actual
-// frente a la media de las 4 anteriores (barras horizontales: la versión legible del «radar» de otras
-// apps), y entrenos y volumen por semana de las últimas 12. Sin «zona recomendada» de series: no se
+// en el mapa corporal (ui/comun/mapa-corporal.jsx, desde el 26-oct-2026; antes, 14 barras horizontales),
+// con la media de las 4 anteriores al tocar cada músculo, y entrenos y volumen por semana de las últimas 12. Sin «zona recomendada» de series: no se
 // pone ninguna cifra objetivo hasta tener una investigación propia que la respalde, como el resto de
 // cifras de FoodDraft (diseño, §6.8); solo se enseña lo hecho.
 import React from "react";
@@ -10,6 +10,7 @@ import { seriesPorMusculo, semanaDe, sumarDias, semanasRecientes, fechaLocal } f
 import { FUENTE_TEXTO } from "../estilos.js";
 import { TextoSuave, TituloSeccion, formatoNumero, textoPeso } from "./comun.jsx";
 import { GraficaBarras } from "./graficas.jsx";
+import { MapaCorporal } from "../comun/mapa-corporal.jsx";
 import { useTodasLasSesiones } from "./ficha.jsx";
 
 const SEMANAS = 12;
@@ -25,7 +26,6 @@ export function ProgresoView({ entreno, idioma }) {
   const musculos = [...new Set([...Object.keys(actual), ...Object.keys(previas)])]
     .map((m) => ({ m, actual: actual[m] || 0, media: (previas[m] || 0) / 4 }))
     .sort((a, b) => b.actual - a.actual || b.media - a.media);
-  const maximo = Math.max(1, ...musculos.map((x) => Math.max(x.actual, x.media)));
 
   const semanas = semanasRecientes(sesiones, entreno.ejercicioDe, entreno.pesoCorporal, inicioSemana, hoy, SEMANAS);
   const x = (s) => new Date(s.semana + "T12:00:00").getTime();
@@ -38,29 +38,19 @@ export function ProgresoView({ entreno, idioma }) {
       <TituloSeccion>{t(idioma, "entreno.progreso.seriesMusculo")}</TituloSeccion>
       <TextoSuave style={{ fontSize: 12, marginBottom: 10 }}>{t(idioma, "entreno.progreso.seriesAyuda")}</TextoSuave>
       {!musculos.length && <TextoSuave>{t(idioma, "entreno.progreso.sinSeries")}</TextoSuave>}
-      <div role="list" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {musculos.map(({ m, actual: a, media }) => (
-          <div key={m} role="listitem" aria-label={t(idioma, "entreno.progreso.filaMusculo", { musculo: t(idioma, "musculo." + m), n: formatoNumero(a, idioma), media: formatoNumero(media, idioma) })}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontFamily: FUENTE_TEXTO, fontSize: 13, marginBottom: 3 }}>
-              <span style={{ fontWeight: 600 }}>{t(idioma, "musculo." + m)}</span>
-              <span style={{ color: "var(--ink-soft)" }}>
-                <b style={{ color: "var(--ink)" }}>{formatoNumero(a, idioma)}</b> · {t(idioma, "entreno.progreso.media", { n: formatoNumero(media, idioma) })}
-              </span>
-            </div>
-            {/* Barra llena: esta semana. Marca vertical: la media de las 4 anteriores. */}
-            <div style={{ position: "relative", height: 10, borderRadius: 5, background: "var(--green-soft)" }}>
-              <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${(a / maximo) * 100}%`, borderRadius: 5, background: "var(--green)" }} />
-              {media > 0 && <div style={{ position: "absolute", top: -3, bottom: -3, width: 2, left: `calc(${(media / maximo) * 100}% - 1px)`, background: "var(--mustard-dark)" }} />}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* El reparto por músculo es el mapa corporal (criterio de gráficas, 26-oct-2026: nunca 14 barras). Al
+          tocar un músculo se leen sus series de esta semana y la media de las 4 anteriores. */}
       {musculos.length > 0 && (
-        <TextoSuave style={{ fontSize: 11.5, marginTop: 8 }}>
-          <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: 2, background: "var(--green)", verticalAlign: "-1px" }} /> {t(idioma, "entreno.progreso.leyendaSemana")}
-          {"  "}
-          <span style={{ display: "inline-block", width: 2, height: 10, background: "var(--mustard-dark)", verticalAlign: "-1px", marginLeft: 8 }} /> {t(idioma, "entreno.progreso.leyendaMedia")}
-        </TextoSuave>
+        <MapaCorporal
+          valores={Object.fromEntries(musculos.map((x) => [x.m, x.actual]))}
+          perfil={entreno.perfil}
+          idioma={idioma}
+          etiqueta={t(idioma, "entreno.progreso.seriesMusculo")}
+          textoDe={(m) => {
+            const x = musculos.find((y) => y.m === m) || { actual: 0, media: 0 };
+            return t(idioma, "cuerpo.mapa.seriesYMedia", { n: formatoNumero(x.actual, idioma), media: formatoNumero(x.media, idioma) });
+          }}
+        />
       )}
 
       <TituloSeccion>{t(idioma, "entreno.progreso.entrenosSemana")}</TituloSeccion>

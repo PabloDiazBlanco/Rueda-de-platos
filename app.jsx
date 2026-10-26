@@ -18,6 +18,7 @@ import { usePerfil } from "./ui/estado/perfil.js";
 import { usePeso } from "./ui/estado/peso.js";
 import { useDespensa } from "./ui/estado/despensa.js";
 import { useEntreno } from "./ui/estado/entreno.js";
+import { useCuerpo } from "./ui/estado/cuerpo.js";
 import { Shell, Header } from "./ui/marco/cabecera.jsx";
 import { DrawerMenu } from "./ui/marco/menu-lateral.jsx";
 import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
@@ -101,7 +102,8 @@ export default function RuedaDePlatos() {
   const perfil = usePerfil(setData);
   const peso = usePeso(setData);
   const entreno = useEntreno(data);
-  useCargaInicial([cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar, entreno.cargar], () => setLoading(false));
+  const cuerpo = useCuerpo();
+  useCargaInicial([cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar, entreno.cargar, cuerpo.cargar], () => setLoading(false));
 
   if (loading || !data) {
     return (
@@ -144,7 +146,7 @@ export default function RuedaDePlatos() {
 
   const area = areaDe(tab);
   const hayPastilla = !!entreno.borrador && !entreno.sesionVisible;
-  const ctx = { data, idioma, premium, setTab, navegar, params, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa, entreno };
+  const ctx = { data, idioma, premium, setTab, navegar, params, menuCompleto, menuSimple, toggleComidaCompletada, catalogo, perfil, peso, despensa, entreno, cuerpo };
 
   return (
     <Shell>

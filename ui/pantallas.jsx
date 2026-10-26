@@ -34,6 +34,9 @@ import { FichaEjercicioView } from "./entreno/ficha.jsx";
 import { ProgresoView } from "./entreno/progreso.jsx";
 import { InformesView } from "./cuerpo/informes.jsx";
 import { PeriodoView } from "./cuerpo/periodo.jsx";
+import { ConstructorView } from "./cuerpo/constructor.jsx";
+import { SuenoView } from "./cuerpo/sueno.jsx";
+import { PasosHoy } from "./cuerpo/pasos.jsx";
 import { AvisoActividad } from "./entreno/aviso-actividad.jsx";
 import { AvisoGrupos } from "./entreno/aviso-grupos.jsx";
 
@@ -210,23 +213,33 @@ const PANTALLAS = {
 
   "perfil-medidas": ({ idioma }) => <MedidasPlaceholderView idioma={idioma} />,
 
-  // Informes cruzados del área Cuerpo (premium): entreno, comida y peso juntos.
-  "cuerpo-informes": ({ data, idioma, setTab, premium, entreno }) => (
-    <InformesView data={data} premium={premium} entreno={entreno} idioma={idioma} onGoPremium={() => setTab("perfil-premium")} />
+  // Informes cruzados del área Cuerpo (premium): los 15 predefinidos y los favoritos (26-oct-2026).
+  "cuerpo-informes": ({ data, idioma, setTab, premium, entreno, cuerpo, navegar }) => (
+    <InformesView data={data} premium={premium} entreno={entreno} cuerpo={cuerpo} idioma={idioma} navegar={navegar} onGoPremium={() => setTab("perfil-premium")} />
   ),
+
+  // Constructor de informes (premium): se llega desde Informes; `params.spec` abre un favorito.
+  "cuerpo-constructor": ({ data, idioma, setTab, premium, entreno, cuerpo, navegar, params }) => (
+    <ConstructorView key={params && params.spec ? JSON.stringify(params.spec) : "nuevo"} data={data} premium={premium} entreno={entreno} cuerpo={cuerpo} idioma={idioma} navegar={navegar} params={params} onGoPremium={() => setTab("perfil-premium")} />
+  ),
+
+  // Sueño (gratis): en el menú lateral de Cuerpo, no en la barra.
+  "cuerpo-sueno": ({ idioma, cuerpo, navegar }) => <SuenoView cuerpo={cuerpo} idioma={idioma} navegar={navegar} />,
 
   // Período (I1): solo para perfiles con sexo femenino; los datos, solo en el dispositivo.
   "cuerpo-periodo": ({ data, idioma }) => <PeriodoView perfil={data.perfil} idioma={idioma} />,
 
   "perfil-documentos": ({ idioma }) => <DocumentosView idioma={idioma} />,
 
-  // Arriba, el aviso de actividad (si lo hay): lo registrado frente a lo declarado aquí.
-  "actividad-diaria": ({ data, idioma, perfil, entreno, navegar }) => (
+  // Arriba, el aviso de actividad (si lo hay): lo registrado frente a lo declarado aquí. Al final, los pasos
+  // de hoy (26-oct-2026).
+  "actividad-diaria": ({ data, idioma, perfil, entreno, cuerpo, navegar }) => (
     <ActividadDiariaView
       perfil={data.perfil}
       onSave={perfil.savePerfil}
       idioma={idioma}
       aviso={<AvisoActividad entreno={entreno} data={data} idioma={idioma} navegar={navegar} enActividad />}
+      pasos={<PasosHoy cuerpo={cuerpo} idioma={idioma} navegar={navegar} />}
     />
   ),
 

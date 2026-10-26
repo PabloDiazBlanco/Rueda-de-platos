@@ -18,6 +18,9 @@ const claveLocal = () => `fooddraft:periodo-v1:${window.cuentaId || "sin-cuenta"
 function leer() {
   try { return migrarPeriodo(JSON.parse(localStorage.getItem(claveLocal()) || "null")); } catch (e) { return periodoVacio(); }
 }
+// Lo leen también los informes cruzados y el constructor, que calculan las fases del ciclo **en el móvil** con
+// esto (ui/cuerpo/graficas.jsx, useSerieCuerpo); nunca se sube ni se guarda en otro sitio.
+export const leerPeriodoLocal = () => leer();
 function guardar(p) {
   try { localStorage.setItem(claveLocal(), JSON.stringify(p)); } catch (e) { /* sin localStorage no se guarda; se avisa abajo */ }
 }

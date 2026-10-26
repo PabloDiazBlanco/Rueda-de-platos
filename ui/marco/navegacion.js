@@ -20,7 +20,7 @@
 import {
   Utensils, Dumbbell, PersonStanding, CalendarDays, ListChecks, Refrigerator, ChefHat, Apple, Package,
   Shuffle, Camera, PieChart, Scale, Activity, Ruler, Share2, Mail, FileText, Sparkles, Settings, User,
-  ClipboardList, BookOpen, History, TrendingUp, Droplet,
+  ClipboardList, BookOpen, History, TrendingUp, Droplet, Moon,
 } from "lucide-react";
 
 export const AREAS = [
@@ -81,7 +81,7 @@ export const AREAS = [
         incluye: ["perfil-peso", "perfil-medidas"] },
       { clave: "actividad", destino: "actividad-diaria", etiqueta: "barra.actividad", icono: Activity, incluye: ["actividad-diaria"] },
       { clave: "resumen", destino: "perfil-resumen", etiqueta: "barra.resumen", icono: PieChart, incluye: ["perfil-resumen"] },
-      { clave: "informes", destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles, incluye: ["cuerpo-informes"] },
+      { clave: "informes", destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles, incluye: ["cuerpo-informes", "cuerpo-constructor"] },
       // I1: solo si el perfil tiene sexo femenino (`soloMujer`, ver visibleCon). Es la quinta: no cabe otra.
       { clave: "periodo", destino: "cuerpo-periodo", etiqueta: "barra.periodo", icono: Droplet, incluye: ["cuerpo-periodo"], soloMujer: true },
     ],
@@ -89,6 +89,8 @@ export const AREAS = [
       { destino: "perfil-peso", etiqueta: "drawer.registroPeso", icono: Scale },
       { destino: "perfil-medidas", etiqueta: "perfilRoot.medidasCorporales", icono: Ruler },
       { destino: "actividad-diaria", etiqueta: "drawer.actividadDiaria", icono: Activity },
+      // Sueño (26-oct-2026): solo en el menú lateral; las cinco pestañas de abajo no cambian.
+      { destino: "cuerpo-sueno", etiqueta: "cuerpo.sueno.menu", icono: Moon },
       { destino: "perfil-resumen", etiqueta: "perfilRoot.resumenMensual", icono: PieChart },
       { destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles },
       { destino: "cuerpo-periodo", etiqueta: "barra.periodo", icono: Droplet, soloMujer: true },

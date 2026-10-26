@@ -44,7 +44,20 @@ import {
   lineasComida, redondearRazonable, propuestaGramos, opcionesCambio, comidaReal, registroComida, necesidadesComidaReal,
   estaHecha, registroDeSlot, totalesDiaReal,
 } from "comida-real";
-import { declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad, ultimaVezPorGrupo, gruposSinEntrenar } from "informes";
+import {
+  declaradoPorSemana, informeCruzadoMes, sesionesPorSemana, evaluarAvisoActividad, ultimaVezPorGrupo, gruposSinEntrenar,
+  INFORMES, informesVisibles, pesoFinDeSemana, desviacionPeso,
+} from "informes";
+import {
+  migrarDiario, apuntarSueno, quitarSueno, apuntarPasos, ultimoSueno, ultimosDias, calidadDeCara, caraDeCalidad,
+  migrarFavoritos, alternarFavorito, tieneFavorito, idDeConstructor,
+} from "cuerpo-diario";
+import {
+  construirSerie, valores, variable, pista, pearson, porCategoria, tablaXYZ, PREGUNTAS, FORMAS, TEMAS, resolverMontaje, completarHuecos,
+} from "cuerpo-series";
+import { SLUG_A_GRUPO, GRUPOS_MAPA, nivelSeries, colorSeries, generoMapa, seriesDeRutina, valoresDeEjercicio } from "mapa-corporal";
+// Los trazados del mapa corporal son un archivo de datos de ui/ sin JSX: se importa directamente.
+import { TRAZADOS_MIT } from "../ui/comun/mapa-trazados.js";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1329,6 +1342,10 @@ export function crearGrupos(mod, carga) {
     grupoAvisoActividad(),
     grupoComidaReal(),
     grupoImportar(),
+    grupoCuerpoDiario(),
+    grupoCuerpoSeries(),
+    grupoCuerpoInformes(),
+    grupoMapaCorporal(),
   ];
 }
 
@@ -2660,6 +2677,266 @@ function grupoImportar() {
           return comparar(
             { propios: r.propios.length, elegido: r.sesiones[0].ejercicios[2].ejercicioId, otraVez: `${otraVez.entrenos.length}/${otraVez.repetidos}`, casiIgual: casiIgual.repetidos, otraHora: otraHora.repetidos },
             { propios: 0, elegido: "ex_remo_mancuerna", otraVez: "0/1", casiIgual: 1, otraHora: 0 }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Área Cuerpo: sueño, pasos, favoritos, informes, constructor y mapa corporal (26-oct-2026) ----------
+// Los valores esperados se calcularon a mano con los datos de cada caso (ver los comentarios de cada uno).
+
+function grupoCuerpoDiario() {
+  return {
+    grupo: "Cuerpo: sueño, pasos y favoritos",
+    casos: [
+      {
+        nombre: "Sueño: al cuarto más cercano y dentro de 3-11 h; pasos vacíos = sin dato; la última noche y los últimos días",
+        ejecutar: () => {
+          let d = migrarDiario(null).diario;
+          d = apuntarSueno(d, "2026-10-20", 7.3, 6); // 7,3 × 4 = 29,2 → 29 cuartos = 7 h 15
+          d = apuntarSueno(d, "2026-10-21", 2, 10); // menos de 3 h → 3 h
+          d = apuntarPasos(d, "2026-10-21", 8420);
+          const conPasos = d.dias["2026-10-21"].pasos;
+          d = apuntarPasos(d, "2026-10-21", ""); // vacío borra el dato (no es 0)
+          const ultima = ultimoSueno(d, "2026-10-22");
+          const dias = ultimosDias(d, "2026-10-21", 3);
+          const sinNoche = quitarSueno(d, "2026-10-21"); // el día se queda sin nada: desaparece
+          return comparar(
+            { h20: d.dias["2026-10-20"].sueno.horas, c20: d.dias["2026-10-20"].sueno.calidad, h21: d.dias["2026-10-21"].sueno.horas, conPasos, pasosBorrados: d.dias["2026-10-21"].pasos === undefined,
+              ultima: `${ultima.fecha}:${ultima.horas}:${ultima.calidad}`, fechas: dias.map((x) => x.fecha).join(","), primero: dias[0].sueno, segundo: dias[1].sueno.horas,
+              quedan: Object.keys(sinNoche.dias).join(",") },
+            { h20: 7.25, c20: 6, h21: 3, conPasos: 8420, pasosBorrados: true, ultima: "2026-10-21:3:10", fechas: "2026-10-19,2026-10-20,2026-10-21", primero: null, segundo: 7.25, quedan: "2026-10-20" }
+          );
+        },
+      },
+      {
+        nombre: "Las cinco caras se guardan como 2, 4, 6, 8 y 10; la migración del diario quita lo imposible sin perder lo bueno",
+        ejecutar: () => {
+          const m = migrarDiario({ version: 0, dias: { x: { sueno: { horas: 7 } }, "2026-10-01": { sueno: { horas: "8" }, pasos: -5 }, "2026-10-02": {}, "2026-10-03": { pasos: 12000.4 } } });
+          return comparar(
+            { caras: [0, 1, 2, 3, 4].map(calidadDeCara).join(","), deCalidad: [2, 6, 10, 3].map(caraDeCalidad).join(","), fechas: Object.keys(m.diario.dias).join(","),
+              horas: m.diario.dias["2026-10-01"].sueno.horas, calidad: m.diario.dias["2026-10-01"].sueno.calidad, sinPasos: m.diario.dias["2026-10-01"].pasos === undefined,
+              pasos: m.diario.dias["2026-10-03"].pasos, changed: m.changed, version: m.diario.version, vacio: Object.keys(migrarDiario(null).diario.dias).length },
+            { caras: "2,4,6,8,10", deCalidad: "0,2,4,1", fechas: "2026-10-01,2026-10-03", horas: 8, calidad: null, sinPasos: true, pasos: 12000, changed: true, version: 1, vacio: 0 }
+          );
+        },
+      },
+      {
+        nombre: "Favoritos: la estrella pone arriba y quita; la migración deja solo los bien formados y sin repetir; id estable del constructor",
+        ejecutar: () => {
+          const spec = { pregunta: "suenoKcal", forma: "relacion", huecos: { v2: "kcal", v1: "sueno" }, periodo: "dia", vista: "a" };
+          const idCons = idDeConstructor(spec);
+          let f = migrarFavoritos(null).favoritos;
+          f = alternarFavorito(f, { id: "ce-prot", tipo: "pre" });
+          f = alternarFavorito(f, { id: idCons, tipo: "cons", spec });
+          const orden = f.lista.map((x) => x.tipo).join(",");
+          const sinPre = alternarFavorito(f, { id: "ce-prot", tipo: "pre" });
+          const m = migrarFavoritos({ version: 1, lista: [{ id: "a", tipo: "pre" }, { id: "a", tipo: "pre" }, { id: "b", tipo: "cons" }, { id: "c", tipo: "x" }, { id: "d", tipo: "cons", spec: { pregunta: "libre" } }] });
+          return comparar(
+            { idCons, orden, tiene: tieneFavorito(f, "ce-prot"), quedan: sinPre.lista.length, yaNo: tieneFavorito(sinPre, "ce-prot"), migrados: m.favoritos.lista.map((x) => x.id).join(","), changed: m.changed },
+            { idCons: "cons:suenoKcal:v1=sueno&v2=kcal:dia:a", orden: "cons,pre", tiene: true, quedan: 1, yaNo: false, migrados: "a,d", changed: true }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// Una cuenta pequeña de prueba (hoy = miércoles 28-oct-2026; las semanas empiezan en lunes): dos comidas al
+// día, pesajes (uno atípico), un entreno el martes 27, sueño, pasos y una regla el 20-21.
+function serieDePrueba() {
+  const macros = (kcal, prot, carb, fat) => ({ hecha: true, macros: { kcal, prot, carb, fat } });
+  const ejercicioDe = (id) => EJERCICIOS_SEMILLA.find((e) => e.id === id) || null;
+  return construirSerie({
+    data: {
+      perfil: { repartoComidas: { Comida: 0.6, Cena: 0.4 } },
+      comidasCompletadas: {
+        "2026-10-26": { Comida: macros(900, 50, 100, 30), Cena: macros(700, 40, 60, 25) },
+        "2026-10-27": { Comida: true }, // marcada antes de B1+B3: cuenta como hecha, pero sin macros
+        "2026-10-28": {},
+      },
+      pesoTracking: { historial: [{ fecha: "2026-10-19", peso: 80 }, { fecha: "2026-10-21", peso: 79.6 }], entradas: [{ fecha: "2026-10-26", peso: 79 }, { fecha: "2026-10-27", peso: 90, atipico: true }] },
+    },
+    sesiones: [{
+      id: "s1", inicio: "2026-10-27T18:00:00", fin: "2026-10-27T19:00:00", pausas: [], esfuerzo: 4,
+      ejercicios: [{ ejercicioId: "ex_press_banca_barra", series: [{ tipo: "normal", kg: 100, reps: 5, hecha: true }, { tipo: "calentamiento", kg: 120, reps: 5, hecha: true }] }],
+    }],
+    ejercicioDe, pesoCorporal: 80, indice: null,
+    diario: { version: 1, dias: { "2026-10-26": { sueno: { horas: 6.5, calidad: 4 } }, "2026-10-27": { sueno: { horas: 8, calidad: 8 }, pasos: 9000 } } },
+    periodo: { regla: ["2026-10-20", "2026-10-21"] },
+    hoy: "2026-10-28", inicioSemana: 1,
+  });
+}
+
+function grupoCuerpoSeries() {
+  return {
+    grupo: "Cuerpo: la serie de cada día y la estadística honesta",
+    casos: [
+      {
+        nombre: "La serie junta lo de verdad: kcal solo de días completos con macros, peso sin atípicos, entreno desde la primera sesión, fase del período",
+        ejecutar: () => {
+          const s = serieDePrueba();
+          const dia = (f) => s.dias.find((d) => d.fecha === f);
+          const d26 = dia("2026-10-26"), d27 = dia("2026-10-27"), d28 = dia("2026-10-28");
+          return comparar(
+            { dias: s.dias.length, semanas: s.semanas.length, kcal26: d26.kcal, prot26: d26.prot, hidr26: d26.hidr, grasa26: d26.grasa, hechas26: d26.hechas, hechas27: d27.hechas, hechas28: d28.hechas,
+              hechas25: dia("2026-10-25").hechas, kcal27: d27.kcal, peso26: d26.peso, peso27: d27.peso, entreno26: d26.entreno, entreno27: d27.entreno, entreno28: d28.entreno,
+              volumen27: d27.volumen, rm27: d27.rm.ex_press_banca_barra, duracion27: d27.duracion, esfuerzo27: d27.esfuerzo, pecho27: d27.series.pecho, triceps27: d27.series.triceps,
+              sueno26: d26.sueno, pasos27: d27.pasos, fase19: dia("2026-10-19").fase, fase20: dia("2026-10-20").fase, fase28: d28.fase, cicloDia28: d28.cicloDia },
+            // 900+700 = 1600 kcal; 100 kg × 5 = 500 kg = 0,5 t (el calentamiento no cuenta); Epley 100 × (1 + 5/30) = 116,7;
+            // del 19-oct (lunes del primer pesaje) al 28 = 10 días en 2 semanas; el 28 es el día 9 desde el inicio del 20.
+            { dias: 10, semanas: 2, kcal26: 1600, prot26: 90, hidr26: 160, grasa26: 55, hechas26: 100, hechas27: 50, hechas28: 0, hechas25: null, kcal27: null, peso26: 79, peso27: null,
+              entreno26: null, entreno27: "con", entreno28: "sin", volumen27: 0.5, rm27: 116.7, duracion27: 60, esfuerzo27: 4, pecho27: 1, triceps27: 0.5, sueno26: 6.5, pasos27: 9000,
+              fase19: null, fase20: "regla", fase28: "folicular", cicloDia28: 9 }
+          );
+        },
+      },
+      {
+        nombre: "Por semana: media del peso, suma de entrenos y «cambio de peso» = media de esta semana menos la de la anterior",
+        ejecutar: () => {
+          const s = serieDePrueba();
+          const peso = valores(s, "peso", "semana");
+          const d = valores(s, "dPeso", "semana");
+          const ses = valores(s, "sesiones", "dia"); // «entrenos» solo existe por semana: aunque se pida por día
+          return comparar(
+            { peso1: peso[0].valor, peso2: peso[1].valor, delta1: d[0].valor, delta2: d[1].valor, ses1: ses[0].valor, ses2: ses[1].valor, nSes: ses.length, rm: variable("rm:ex_press_banca_barra").agg, serie: variable("series:pecho").soloSemana },
+            { peso1: 79.8, peso2: 79, delta1: null, delta2: -0.8, ses1: null, ses2: 1, nSes: 2, rm: "max", serie: true }
+          );
+        },
+      },
+      {
+        nombre: "Pista: con menos de 14 días o 6 semanas, «aún no hay suficiente»; |r| < 0,2 sin relación; 0,2-0,4 débil; 0,4-0,6 pista; ≥ 0,6 clara",
+        ejecutar: () => {
+          const c = (p) => `${p.tipo}${p.fuerza ? ":" + p.fuerza : ""}${p.sube === null ? "" : p.sube ? ":sube" : ":baja"}`;
+          return comparar(
+            { poco: c(pista(0.9, 13, "dia")), pocoSemana: c(pista(0.9, 5, "semana")), nada: c(pista(0.15, 20, "dia")), debil: c(pista(0.2, 14, "dia")), media: c(pista(0.5, 14, "dia")), clara: c(pista(-0.65, 6, "semana")),
+              r1: pearson([[1, 2], [2, 4], [3, 6]]), rMenos1: pearson([[1, 3], [2, 2], [3, 1]]), pocos: pearson([[1, 2], [2, 3]]) },
+            { poco: "poco", pocoSemana: "poco", nada: "nada", debil: "pista:debil:sube", media: "pista:media:sube", clara: "pista:clara:baja", r1: 1, rMenos1: -1, pocos: 0 }
+          );
+        },
+      },
+      {
+        nombre: "Medias por categoría (con / sin entreno) y tabla «más / menos X e Y: media de Z» con cuántas semanas hay detrás",
+        ejecutar: () => {
+          const s = serieDePrueba();
+          const g = porCategoria(s, "entreno", "duracion");
+          // Diez semanas a mano: proteína, entrenos y peso medio de cada una (cambio de peso desde la 2.ª).
+          const P = [100, 150, 100, 150, 100, 150, 100, 150, 150, 150], S = [1, 1, 3, 3, 1, 1, 3, 3, 3, 3];
+          const W = [80, 79.5, 79.4, 78.6, 78.6, 78.4, 78.3, 77.5, 77, 76.7];
+          const semanas = P.map((p, k) => ({ inicio: `2026-0${Math.floor(k / 4) + 1}-${String(1 + (k % 4) * 7).padStart(2, "0")}`, dias: [{ prot: p, sesiones: S[k], peso: W[k] }] }));
+          const tabla = tablaXYZ({ dias: [], semanas }, ["prot", "sesiones", "dPeso"], "semana", Infinity);
+          // Medianas: proteína 150 y entrenos 3. «Más y más» (≥ las dos): semanas 3, 7, 8 y 9 → −0,8 −0,8 −0,5 −0,3 = −0,6 de media.
+          return comparar(
+            { sin: `${g[0].cat}:${g[0].n}`, con: `${g[1].cat}:${g[1].n}:${g[1].media}`, mx: tabla.medianaX, my: tabla.medianaY, aaN: tabla.celdas.aa.n, aa: tabla.celdas.aa.media, abN: tabla.celdas.ab.n, ab: tabla.celdas.ab.media, bbN: tabla.celdas.bb.n },
+            { sin: "sin:0", con: "con:1:60", mx: 150, my: 3, aaN: 4, aa: -0.6, abN: 2, ab: null, bbN: 1 }
+          );
+        },
+      },
+    ],
+  };
+}
+
+function grupoCuerpoInformes() {
+  return {
+    grupo: "Cuerpo: informes predefinidos y constructor",
+    casos: [
+      {
+        nombre: "15 informes (11 sin ciclo: los tres del ciclo y «peso, kcal y sueño con las fases»); fin de semana = lunes − viernes; el peso de un día frente a los de alrededor",
+        ejecutar: () => {
+          const dias = [
+            { fecha: "2026-10-16", dow: 4, peso: 80 }, { fecha: "2026-10-17", dow: 5, peso: null }, { fecha: "2026-10-18", dow: 6, peso: null },
+            { fecha: "2026-10-19", dow: 0, peso: 81 }, { fecha: "2026-10-20", dow: 1, peso: null },
+          ];
+          const vecinos = [{ peso: 80 }, { peso: null }, { peso: 81 }, { peso: 80.5 }, { peso: null }, { peso: 79.5 }];
+          const ids = INFORMES.map((it) => it.id);
+          return comparar(
+            { total: INFORMES.length, distintos: new Set(ids).size, sinCiclo: informesVisibles(false).length, conCiclo: informesVisibles(true).length,
+              finde: pesoFinDeSemana({ dias }, Infinity).map((q) => `${q.fecha}:${q.valor}`).join(","), desv: desviacionPeso(vecinos, 2), sinVecinos: desviacionPeso([{ peso: 80 }, { peso: 81 }], 0) },
+            // vecinos del índice 2 (81): 80, 80,5 y 79,5 → media 80 → +1
+            { total: 15, distintos: 15, sinCiclo: 11, conCiclo: 15, finde: "2026-10-19:1", desv: 1, sinVecinos: null }
+          );
+        },
+      },
+      {
+        nombre: "Con pocos datos, los informes dicen «aún no hay suficiente» (y nunca rompen); el balance describe el cambio de peso, pero su relación con las kcal aún no",
+        ejecutar: () => {
+          const s = serieDePrueba();
+          const r = INFORMES.map((it) => it.calc(s, { semanas: 13, periodo: "dia", objetivos: { kcal: 2000, prot: 120, carb: 200, fat: 60 } }));
+          const de = (id) => r[INFORMES.findIndex((it) => it.id === id)];
+          const prot = de("ce-prot"), balance = de("pc-balance");
+          // Balance: dos semanas con pesaje (79,8 → 79 = −0,8 kg) y un solo día completo de comida (1.600 kcal).
+          return comparar(
+            { suficientes: INFORMES.filter((it, i) => r[i].suficiente).map((it) => it.id).join(","), todosConGrafica: r.every((x) => x.grafica && x.grafica.tipo), protCon: prot.cifras.nCon, protRef: prot.cifras.ref,
+              balance: balance.cifras.cambio, balanceKcal: balance.cifras.kcalMedia, balancePista: balance.pista.tipo },
+            { suficientes: "pc-balance", todosConGrafica: true, protCon: 0, protRef: 120, balance: -0.8, balanceKcal: 1600, balancePista: "poco" }
+          );
+        },
+      },
+      {
+        nombre: "Constructor: 25 preguntas por temas; «entrenos» obliga a ir por semana; los marcadores toman el ejercicio y el músculo con datos",
+        ejecutar: () => {
+          const s = serieDePrueba();
+          const m1 = resolverMontaje({ forma: "relacion", huecos: { v1: "sesiones", v2: "kcal" }, periodo: "dia" });
+          const m2 = resolverMontaje({ forma: "categoria", huecos: { v1: "sueno", c: "fase" }, periodo: "semana" });
+          const m3 = resolverMontaje({ forma: "libre", huecos: { v1: "sueno", v2: "kcal", v3: "esfuerzo", v4: "" }, periodo: "dia" });
+          const h = completarHuecos({ v1: "rm", v2: "serie" }, s);
+          return comparar(
+            { preguntas: PREGUNTAS.length, ids: new Set(PREGUNTAS.map((p) => p.id)).size, formas: PREGUNTAS.every((p) => FORMAS[p.forma]), temas: TEMAS.every((x) => PREGUNTAS.some((p) => p.tema === x)),
+              p1: `${m1.periodo}:${m1.soloSemana}`, p2: `${m2.forma}:${m2.periodo}:${m2.cat}:${m2.ids.join("/")}`, p3: `${m3.ids.length}:${m3.periodo}`, rm: h.v1, serie: h.v2 },
+            { preguntas: 25, ids: 25, formas: true, temas: true, p1: "semana:sesiones", p2: "categoria:dia:fase:sueno", p3: "3:dia", rm: "rm:ex_press_banca_barra", serie: "series:pecho" }
+          );
+        },
+      },
+    ],
+  };
+}
+
+const SLUGS_SIN_MUSCULO = ["head", "hair", "neck", "hands", "feet", "knees", "ankles", "tibialis"];
+
+function grupoMapaCorporal() {
+  return {
+    grupo: "Cuerpo: mapa corporal",
+    casos: [
+      {
+        nombre: "Los trazos van a los 14 grupos (oblicuos y abdominales → abdomen; upper-back → dorsales; trapecio → espalda alta), y los 14 se ven en hombre y en mujer",
+        ejecutar: () => {
+          const grupos = new Set(Object.values(SLUG_A_GRUPO));
+          const sinGrupo = [];
+          const faltan = [];
+          ["hombre", "mujer"].forEach((g) => {
+            const vistos = new Set();
+            ["frente", "espalda"].forEach((lado) => Object.keys(TRAZADOS_MIT[g][lado].partes).forEach((slug) => {
+              if (SLUG_A_GRUPO[slug]) vistos.add(SLUG_A_GRUPO[slug]);
+              else if (!SLUGS_SIN_MUSCULO.includes(slug)) sinGrupo.push(`${g}:${slug}`);
+            }));
+            GRUPOS_MAPA.forEach((m) => { if (!vistos.has(m)) faltan.push(`${g}:${m}`); });
+          });
+          return comparar(
+            { grupos: grupos.size, iguales: GRUPOS_MAPA.every((m) => grupos.has(m)), obliques: SLUG_A_GRUPO.obliques, abs: SLUG_A_GRUPO.abs, upper: SLUG_A_GRUPO["upper-back"], trapecio: SLUG_A_GRUPO.trapezius,
+              sinGrupo: sinGrupo.join(","), faltan: faltan.join(","), contornos: ["hombre", "mujer"].every((g) => TRAZADOS_MIT[g].frente.contorno && TRAZADOS_MIT[g].espalda.contorno) },
+            { grupos: 14, iguales: true, obliques: "abdomen", abs: "abdomen", upper: "dorsales", trapecio: "espalda_alta", sinGrupo: "", faltan: "", contornos: true }
+          );
+        },
+      },
+      {
+        nombre: "Escala de cinco verdes (0 · 1-3 · 4-6 · 7-9 · 10+); series de una rutina; principal y secundarios de un ejercicio; hombre o mujer",
+        ejecutar: () => {
+          const ejercicioDe = (id) => EJERCICIOS_SEMILLA.find((e) => e.id === id) || null;
+          const rutina = { ejercicios: [
+            { ejercicioId: "ex_press_banca_barra", series: [{ tipo: "calentamiento" }, { tipo: "normal" }, { tipo: "normal" }, { tipo: "normal" }] },
+            { ejercicioId: "no_existe", series: [{ tipo: "normal" }] },
+          ] };
+          const r = seriesDeRutina(rutina, ejercicioDe);
+          const v = valoresDeEjercicio(ejercicioDe("ex_press_banca_barra"));
+          return comparar(
+            { niveles: [0, 0.5, 3, 3.4, 4, 6, 7, 9, 9.6, 10, 25].map(nivelSeries).join(","), cero: colorSeries(0), diez: colorSeries(12),
+              pecho: r.pecho, triceps: r.triceps, hombros: r.hombros, otros: Object.keys(r).length, principal: v.pecho, secundario: v.triceps,
+              mujer: generoMapa({ sexo: "mujer" }), hombre: generoMapa({ sexo: "hombre" }), sinSexo: generoMapa({}), sinPerfil: generoMapa(null) },
+            // 3 series normales (la de calentamiento no cuenta): pecho 3, tríceps y hombros 1,5 cada uno
+            { niveles: "0,1,1,1,2,2,3,3,4,4,4", cero: "#e6e2d6", diez: "#2f6b4f", pecho: 3, triceps: 1.5, hombros: 1.5, otros: 3, principal: 10, secundario: 5,
+              mujer: "mujer", hombre: "hombre", sinSexo: "hombre", sinPerfil: "hombre" }
           );
         },
       },

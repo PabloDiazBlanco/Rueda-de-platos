@@ -18,6 +18,8 @@ import { DatosEjercicio, AjustesDeEjercicio } from "./ejercicios.jsx";
 import { textoSerie, textoRecord } from "./terminar.jsx";
 import { etiquetasSeries, COLOR_SERIE } from "./fila-serie.jsx";
 import { GraficasEjercicio } from "./graficas.jsx";
+import { MapaCorporal } from "../comun/mapa-corporal.jsx";
+import { valoresDeEjercicio } from "mapa-corporal";
 
 const PESTANAS = ["resumen", "historial", "progreso", "records"];
 
@@ -70,6 +72,19 @@ export function FichaEjercicioView({ entreno, idioma, navegar, params }) {
       {pestana === "resumen" && (
         <div>
           <DatosEjercicio ejercicio={e} idioma={idioma} />
+          {/* Qué trabaja, en el mapa corporal: el principal en el verde más oscuro y los secundarios en el del medio. */}
+          {e.musculo !== "cardio" && (
+            <div style={{ margin: "4px 0 14px" }}>
+              <MapaCorporal
+                valores={valoresDeEjercicio(e)}
+                perfil={entreno.perfil}
+                idioma={idioma}
+                leyenda="ejercicio"
+                etiqueta={t(idioma, "cuerpo.mapa.queTrabaja")}
+                textoDe={(m, v) => t(idioma, v >= 10 ? "cuerpo.mapa.principal" : v > 0 ? "cuerpo.mapa.secundario" : "cuerpo.mapa.nada")}
+              />
+            </div>
+          )}
           <TextoSuave style={{ marginBottom: 14 }}>
             {veces.length
               ? `${t(idioma, veces.length === 1 ? "entreno.ficha.unaSesion" : "entreno.ficha.sesiones", { n: veces.length })} · ${t(idioma, "entreno.ficha.ultimaVez", { fecha: fechaCorta(veces[0].sesion.inicio, idioma) })}`

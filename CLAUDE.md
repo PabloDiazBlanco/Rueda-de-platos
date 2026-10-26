@@ -50,9 +50,10 @@ ui/                    → la interfaz (React): .jsx si lleva JSX, .js si no
   pantallas.jsx         tabla destino del menú lateral (`tab`) → pantalla
   estado/               hooks: datos.js (useDatos, usePremium, useCargaInicial), menu.js (useMenu,
                           el mismo para Menú completo y simple), catalogo.js, perfil.js, peso.js,
-                          despensa.js (useDespensa), entreno.js (useEntreno)
+                          despensa.js (useDespensa), entreno.js (useEntreno), cuerpo.js (useCuerpo)
   comun/                piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos/colores),
-                          cerrar-sesion (tarjeta de Ajustes y botón de la pantalla de alta)
+                          cerrar-sesion (tarjeta de Ajustes y botón de la pantalla de alta), mapa corporal
+                          (mapa-corporal.jsx y sus trazados MIT, mapa-trazados.js)
   marco/                Shell (variables de tema y estilos de impresión), cabecera, menú lateral,
                           navegacion.js (áreas, pestañas y menú) y barra-inferior.jsx (barra de cristal)
   menu/ catalogo/ perfil/ onboarding/ peso/ premium/ ajustes/ despensa/ entreno/ cuerpo/   una carpeta por área
@@ -92,9 +93,17 @@ logica/entreno-sesion.js       → operaciones puras de la sesión en curso (ser
 logica/entreno-almacen.js      → claves, migraciones, meses, índice, borrador, cola de envíos y CSV
 logica/entreno-importar.js     → importar de Hevy y Lyfta: leerCSV, adaptadores, emparejar con la biblioteca,
                                   prepararImportacion (vista previa) y construirImportacion
-logica/informes.js             → informes cruzados del área Cuerpo (informeCruzadoMes, declaradoPorSemana),
+logica/informes.js             → informes cruzados del área Cuerpo: los 15 predefinidos (INFORMES,
+                                  informesVisibles) y los de antes (informeCruzadoMes, declaradoPorSemana),
                                   aviso de actividad (sesionesPorSemana, evaluarAvisoActividad) y de grupos
                                   musculares sin entrenar (ultimaVezPorGrupo, gruposSinEntrenar)
+logica/cuerpo-diario.js        → sueño y pasos de cada día (migrarDiario, apuntarSueno, apuntarPasos...) y
+                                  favoritos de los informes (migrarFavoritos, alternarFavorito, idDeConstructor)
+logica/cuerpo-series.js        → la serie de cada día con los datos reales (construirSerie), VARIABLES, valores
+                                  por día o semana, estadística honesta (pearson, pista, relacion, porCategoria,
+                                  tablaXYZ) y las preguntas del constructor (PREGUNTAS, FORMAS, resolverMontaje)
+logica/mapa-corporal.js        → mapa corporal: SLUG_A_GRUPO (trazo → 14 grupos), escala de verdes,
+                                  seriesDeRutina, valoresDeEjercicio, generoMapa
 ```
 
 Todos los módulos de `logica/` son **sin JSX, sin React**, y solo se importan entre sí, nunca nada
@@ -106,7 +115,9 @@ de `ui/` ni de `app.jsx`. Los cruces que existen hoy: `peso.js` → `i18n.js` (m
 (`nevera.js` no importa nada). Del entreno:
 `entreno-sesion.js` → `comun.js`, `entreno-importar.js` → `comun.js` y `entreno-ejercicios.js`,
 `entreno-almacen.js` → `entreno-calculo.js` e `informes.js` →
-`entreno-calculo.js`, `resumen-mensual.js` y `objetivos.js` (solo lee de él); `entreno-ejercicios.js`,
+`entreno-calculo.js`, `resumen-mensual.js`, `objetivos.js` (solo lee de él) y `cuerpo-series.js`; del área
+Cuerpo, `cuerpo-series.js` → `entreno-calculo.js` y `periodo.js` (`cuerpo-diario.js` y `mapa-corporal.js` no
+importan nada); `entreno-ejercicios.js`,
 `entreno-nombres.js` y `entreno-calculo.js` no importan nada (reciben `ejercicioDe(id)` y `nombreDe` como
 funciones, para no depender de la biblioteca ni de los nombres). La interfaz importa `logica/` por **nombre corto** y otros
 archivos de `ui/` por **ruta relativa con extensión** (`"../comun/modal.jsx"`). Los archivos de
@@ -526,9 +537,64 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   `ui/entreno/comun.jsx` (que también tiene los formatos: números y fechas con el idioma, con tablas propias
   de meses y días para cuando el navegador no trae gallego o euskera, unidades de pantalla y duraciones).
 
-## Área Cuerpo: resumen, informes cruzados y aviso de actividad
+## Área Cuerpo: resumen, informes cruzados, constructor, sueño, pasos y aviso de actividad
 
-- **Resúmenes** (`ui/peso/resumen-mensual.jsx`, gratis; pestaña «Resúmenes»): un mes cualquiera con un
+Desde el 26-oct-2026 (bloque CUERPO de `local/ideas/esteticas/registro.md`, «DECISIONES FINALES»; maquetas
+`v3-04` a `v3-08` de esa carpeta) el área tiene informes cruzados nuevos, un constructor, sueño, pasos, la
+báscula y el criterio de gráficas. Todo es **solo lectura**: nada cambia objetivos ni menús. Hambre y energía
+están **descartadas** (no existen como variables).
+
+- **Datos nuevos** (`useCuerpo`, `ui/estado/cuerpo.js`; lógica y migraciones en `logica/cuerpo-diario.js`, grupo
+  «Cuerpo: sueño, pasos y favoritos» de `validacion/`; **no pasan por `migrateData`**):
+
+  | Clave | Contenido |
+  |---|---|
+  | `rueda-de-platos:cuerpo-diario-v1` | `{ version, dias: { "AAAA-MM-DD": { sueno?: { horas, calidad }, pasos? } } }` |
+  | `rueda-de-platos:informes-favoritos-v1` | `{ version, lista: [{ id, tipo: "pre" \| "cons", spec? }] }` (las estrellas, en la cuenta) |
+
+  El sueño va con la fecha del día en que uno **se despierta** («anoche» = hoy), para cruzarlo con la comida y el
+  entreno de ese día. Horas de 3 a 11 de cuarto en cuarto; calidad, cinco caras guardadas como 2, 4, 6, 8 y 10.
+  Pasos: vacío = sin dato (no es 0). No se crea ningún documento hasta que se apunta algo.
+- **La serie de cada día** (`construirSerie`, `logica/cuerpo-series.js`, grupo «Cuerpo: la serie de cada día y la
+  estadística honesta»): peso (sin atípicos), kcal y macros **solo de los días con todas las comidas marcadas y sus
+  macros** (como `cumplimientoMacrosMes`), % de comidas hechas, entrenos, volumen (t), esfuerzo, duración, 1RM
+  estimado por ejercicio, series por músculo, récords (por la fecha del índice), sueño, pasos y la fase del ciclo
+  (**solo si se pasa el período, que vive en el dispositivo**: `leerPeriodoLocal` de `ui/cuerpo/periodo.jsx`, con
+  perfil de mujer). Un hueco es `null`, nunca un 0 inventado. Como mucho dos años hacia atrás. **Honestidad**: una
+  relación es una «pista»; mínimo 14 días o 6 semanas con las dos cosas; |r| < 0,2 sin relación, 0,2-0,4 débil,
+  0,4-0,6 pista, ≥ 0,6 clara; la interfaz siempre dice que no implica causa.
+- **Informes cruzados** (`ui/cuerpo/informes.jsx`, destino `cuerpo-informes`, premium; `INFORMES` en `informes.js`,
+  grupo «Cuerpo: informes predefinidos y constructor»): los **15** de la v3-04, tres por cruce (comida × entreno,
+  peso × comida, peso × entreno, ciclo) y tres de más de dos cosas; los tres que usaban el hambre se cambiaron por
+  «¿los días que comes más se nota al día siguiente en la báscula?», «¿comes distinto según la fase?» y «peso, kcal
+  y sueño con las fases de fondo». Los del ciclo (cuatro) solo con perfil de mujer. Cada fila: pregunta, cifra,
+  mini gráfica, botón «Gráfica» (hoja con rango, lectura al tocar, frase y de qué datos sale) y estrella. Panel de
+  **favoritos** arriba. Cada informe devuelve solo números y qué dibujar; las frases están en `textosInforme`. Las
+  cuatro tarjetas del mes de antes ya no se ven (`informeCruzadoMes` sigue, con sus casos).
+- **Constructor** (`ui/cuerpo/constructor.jsx`, destino `cuerpo-constructor`, cuelga de la pestaña Informes,
+  premium; `params.spec` abre un favorito): la interfaz C de la v3-05, **frase con huecos**. 25 preguntas por temas
+  (peso, comida, entreno, sueño, ciclo) que son cinco formas (`FORMAS`: tiempo, relación, categoría, tabla, juntas)
+  con los huecos ya puestos, más la **pregunta libre** de 3 o 4 variables; con 3 o más, las cinco vistas (apiladas,
+  juntas, tabla, color, tiras). Cada hueco enseña su texto en la frase («el sueño») con el `select` nativo invisible
+  encima. Las variables con parámetro: `rm:<ejercicioId>` y `series:<músculo>`.
+- **Gráficas del área** (`ui/cuerpo/graficas.jsx`): el **criterio de gráficas** (`09-graficas.html`): verde = lo
+  tuyo, mostaza = referencia, óxido = fuera de rango, gris = sin dato; varias variables, en verde, naranja, ciruela
+  y café; tocar escribe el valor en una línea fija (`Lectura`); botón verde «Gráfica»; un solo selector de rango
+  (1 mes · 3 meses · 1 año · Todo). También `useSerieCuerpo` y los nombres de las variables.
+- **Sueño** (`ui/cuerpo/sueno.jsx`, destino `cuerpo-sueno`, **en el menú lateral, no en la barra**, gratis): la
+  opción C de la v3-06: deslizador y cinco caras, apuntar «anoche» de un toque (sale lo de la última vez), «Últimas 7
+  noches» (tocar una barra corrige esa noche), «Últimos 30 días» con la raya de 7 h (mínimo recomendado para
+  adultos: AASM/SRS, Watson et al., 2015) y enlace al constructor.
+- **Pasos** (`ui/cuerpo/pasos.jsx`, al final de Actividad diaria, gratis): la opción A de la v3-06 sin interruptor:
+  campo con −1000 / +1000 y barras de la semana. Solo para los informes; no cambian el gasto.
+- **Báscula** (`ui/peso/bascula.jsx`, en el registro de peso): la opción A de la v3-08 (cinta bajo la línea roja,
+  lupa donde se escribe, pies que se suben) con la ventana algo menos de un tercio más estrecha. Sin nada escrito,
+  la cinta descansa en el peso del perfil (no en el del día: el ciclo abierto no enseña cifras). Con «reducir
+  movimiento», sin animaciones.
+
+- **Resúmenes** (`ui/peso/resumen-mensual.jsx`, gratis; pestaña «Resúmenes»; con el criterio de gráficas desde el
+  26-oct: botón «Gráfica» en Nutrición y Peso, la grasa en oliva y las series por músculo en el mapa corporal): un
+  mes cualquiera con un
   selector **Nutrición / Entreno** (B2, 25-oct-2026; el lado elegido se recuerda en `localStorage`,
   `fooddraft:resumen-lado`). Nutrición: comidas hechas y objetivo, **cumplimiento de macros**
   (`cumplimientoMacrosMes`, `logica/resumen-mensual.js`: de los días con todas las comidas marcadas y sus
@@ -536,7 +602,7 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   y Peso (premium, porque sale del seguimiento de peso). Entreno (`resumenEntrenoMes`): entrenos, días,
   volumen, tiempo, récords del mes, músculos más trabajados, comparación con el mes anterior y las series por
   músculo del mes.
-- **Informes cruzados** (`ui/cuerpo/informes.jsx`, destino `cuerpo-informes`, premium; cálculos en
+- **Informes cruzados de antes** (fase K2, ya no se enseñan; `informeCruzadoMes` en
   `informes.js`, grupo «Informes cruzados» de `validacion/`): entreno y peso, constancia en la comida en días
   con y sin entreno (solo lo marcado como hecho: la app no sabe qué plato se comió), declarado frente a
   registrado (sesiones por semana y kcal de entrenamiento al día, con la misma fórmula MET del objetivo) y
@@ -563,6 +629,27 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   meses. No avisa si no se ha entrenado nada en esas 3 semanas ni con una pausa en ellas. La ✕ guarda en
   `catalogo.aviso.grupos[grupo]` el día y ese grupo no vuelve en 14 días. Tarjeta provisional: la
   ilustración es de la parte estética.
+
+## Mapa corporal
+
+El mapa corporal (26-oct-2026; `v3-07-mapa-corporal.html`, camino 1) es la familia «reparto por músculo» del
+criterio de gráficas: sustituye a las barras por músculo. Se usa en **Progreso** (grande, series de la semana; al
+tocar, también la media de las 4 anteriores), en la **ficha del ejercicio** (principal y secundarios), en la **lista
+de rutinas** (pequeño, series previstas) y en las series por músculo del **resumen mensual**.
+
+- **Trazados**: `ui/comun/mapa-trazados.js`, de **react-native-body-highlighter 3.2.0, licencia MIT, Copyright (c)
+  2022 ELABBASSI Hicham**, con el aviso MIT entero arriba (texto A aprobado por el usuario el 26-oct). Hombre y
+  mujer, frente y espalda, con contorno. **No quites el aviso**; va de la mano de la sección «Licencias de terceros»
+  de Ajustes (`ui/ajustes/licencias.jsx`, texto B, con la licencia entera en inglés y las librerías que carga la
+  app, con su licencia comprobada), del párrafo de terceros del `LICENSE` (texto C) y de la frase de
+  `terminos.propiedadTexto` en los cinco idiomas (texto D). Hay una duda abierta del autor (issue #102 de su
+  repositorio); si hubiera una reclamación, el plan B es el redibujado propio (camino 2 de la v3-07), sin construir.
+- **Lógica** (`logica/mapa-corporal.js`, grupo «Cuerpo: mapa corporal»): `SLUG_A_GRUPO` lleva cada trazo a uno de
+  los 14 grupos de la biblioteca (oblicuos y abdominales → abdomen; «upper-back» → dorsales; trapecio → espalda
+  alta); escala de cinco verdes (0 · 1-3 · 4-6 · 7-9 · 10+); hombre o mujer según el sexo del perfil (sin sexo,
+  hombre; `entreno.perfil` lo lleva a las pantallas de entreno).
+- **Componente** (`ui/comun/mapa-corporal.jsx`, `MapaCorporal`): grande (con rótulos, leyenda y la línea fija de
+  lectura al tocar) o pequeño (64 px, sin interacción, lectura en su `aria-label`).
 
 ## Internacionalización
 

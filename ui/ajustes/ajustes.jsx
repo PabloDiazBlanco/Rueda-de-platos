@@ -10,6 +10,7 @@ import { SectionIntro } from "../comun/tarjetas.jsx";
 import { LanguageDropdown } from "../comun/idioma.jsx";
 import { TarjetaCerrarSesion } from "../comun/cerrar-sesion.jsx";
 import { SeccionAjustesEntreno } from "../entreno/ajustes.jsx";
+import { SeccionLicencias } from "./licencias.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Requiere reautenticación (contraseña, o pop-up de Google si la cuenta usa ese login) antes de
@@ -283,6 +284,9 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
           <SeccionAjustesEntreno entreno={entreno} idioma={idioma} />
         </div>
       )}
+
+      {/* Licencias de terceros (26-oct-2026): al final, justo antes de cerrar sesión. */}
+      <SeccionLicencias idioma={idioma} />
 
       <TarjetaCerrarSesion idioma={idioma} />
 

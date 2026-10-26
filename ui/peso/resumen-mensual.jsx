@@ -8,6 +8,10 @@
 //   series por músculo.
 // Los informes cruzados (premium) siguen en su pestaña, aparte.
 //
+// Criterio de gráficas (26-oct-2026; local/ideas/esteticas/09-graficas.html): verde = lo tuyo, mostaza = la
+// referencia, la grasa en oliva (ya no en mostaza); el botón verde «Gráfica» abre en una hoja la gráfica
+// entera, donde tocar escribe el valor en una línea fija; y el reparto por músculo es el mapa corporal.
+//
 // Desde octubre de 2026 es gratis (decisión del 23-oct, local/ideas/gimnasio/03-diseno-modulo-entreno.md,
 // §9): los resúmenes por separado son información del propio usuario que se calcula en el móvil, sin coste
 // de servidor. Solo el apartado de Peso sigue necesitando premium, porque sus datos salen del seguimiento
@@ -25,7 +29,9 @@ import { SectionIntro } from "../comun/tarjetas.jsx";
 import { PesoLineChart } from "./grafica.jsx";
 import { PremiumRequiredNotice } from "../premium/premium.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
-import { nombreMes, textoPeso, duracionTexto, formatoNumero } from "../entreno/comun.jsx";
+import { nombreMes, textoPeso, duracionTexto, formatoNumero, HojaInferior } from "../entreno/comun.jsx";
+import { BotonGrafica, Linea, Lectura, aDatos } from "../cuerpo/graficas.jsx";
+import { MapaCorporal } from "../comun/mapa-corporal.jsx";
 
 function sumarMes(mes, n) {
   const [a, m] = mes.split("-").map(Number);
@@ -33,10 +39,14 @@ function sumarMes(mes, n) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function Apartado({ titulo, children }) {
+// `onGrafica`: si se pasa, el botón verde «Gráfica» junto al título (criterio de gráficas).
+function Apartado({ titulo, children, onGrafica, idioma }) {
   return (
     <section style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "16px 18px", marginBottom: 14, maxWidth: 480 }}>
-      <h3 style={{ margin: "0 0 10px", fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 18, color: "var(--green-dark)" }}>{titulo}</h3>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 10px" }}>
+        <h3 style={{ flex: 1, margin: 0, fontFamily: FUENTE_TITULOS, fontWeight: 400, fontSize: 18, color: "var(--green-dark)" }}>{titulo}</h3>
+        {onGrafica && <BotonGrafica onClick={onGrafica} idioma={idioma} />}
+      </div>
       {children}
     </section>
   );
@@ -72,7 +82,21 @@ function BarraCumplimiento({ etiqueta, dato, color, idioma }) {
   );
 }
 
+// La gráfica entera de un apartado, en una hoja inferior, con la lectura al tocar.
+function HojaGrafica({ titulo, datos, unidad, dec, barras, idioma, onCerrar, minimo = null, maximo = null }) {
+  const [lectura, setLectura] = useState(null);
+  return (
+    <HojaInferior titulo={titulo} onCerrar={onCerrar} idioma={idioma}>
+      <Linea datos={datos} unidad={unidad} dec={dec} barras={barras} onLeer={setLectura} idioma={idioma} alto={150} minimo={minimo} maximo={maximo} />
+      <Lectura texto={lectura} idioma={idioma} />
+    </HojaInferior>
+  );
+}
+
+const dos = (n) => String(n).padStart(2, "0");
+
 export function ResumenMensualView({ data, premium, onGoPremium, idioma, entreno }) {
+  const [hoja, setHoja] = useState(null); // "comidas" | "peso"
   const hoy = new Date();
   const actual = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`;
   const [mes, setMes] = useState(actual);
@@ -129,7 +153,7 @@ export function ResumenMensualView({ data, premium, onGoPremium, idioma, entreno
       </div>
 
       {lado === "nutricion" && (<>
-      <Apartado titulo={t(idioma, "cuerpo.resumen.nutricion")}>
+      <Apartado titulo={t(idioma, "cuerpo.resumen.nutricion")} onGrafica={() => setHoja("comidas")} idioma={idioma}>
         <SectionIntro text={t(idioma, "resumenMensual.intro")} />
         <div style={{ fontFamily: FUENTE_TITULOS, fontSize: 40, color: "var(--green-dark)", lineHeight: 1 }}>{resumen.porcentaje}%</div>
         <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", margin: "4px 0 10px" }}>
@@ -154,7 +178,7 @@ export function ResumenMensualView({ data, premium, onGoPremium, idioma, entreno
             </div>
             <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.proteina")} dato={cumplimiento.prot} color="var(--green)" idioma={idioma} />
             <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.carbos")} dato={cumplimiento.carb} color="var(--coffee)" idioma={idioma} />
-            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.grasa")} dato={cumplimiento.fat} color="var(--mustard)" idioma={idioma} />
+            <BarraCumplimiento etiqueta={t(idioma, "objetivosModal.grasa")} dato={cumplimiento.fat} color="var(--olive)" idioma={idioma} />
           </>
         ) : (
           <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)", lineHeight: 1.5 }}>{t(idioma, "cuerpo.resumen.macrosSinDias")}</div>
@@ -196,17 +220,17 @@ export function ResumenMensualView({ data, premium, onGoPremium, idioma, entreno
         </Apartado>
       )}
 
+      {/* El reparto por músculo, en el mapa corporal (criterio de gráficas): tocar un músculo escribe sus series. */}
       {lado === "entreno" && ent && porMusculo.length > 0 && (
         <Apartado titulo={t(idioma, "cuerpo.resumen.porMusculo")}>
           <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginBottom: 6 }}>{t(idioma, "cuerpo.resumen.porMusculoAyuda")}</div>
-          {porMusculo.map(([m, n]) => (
-            <Fila key={m} etiqueta={t(idioma, "musculo." + m)} valor={formatoNumero(n, idioma)} />
-          ))}
+          <MapaCorporal valores={Object.fromEntries(porMusculo)} perfil={data.perfil} idioma={idioma} etiqueta={t(idioma, "cuerpo.resumen.porMusculo")}
+            textoDe={(m, n) => t(idioma, "cuerpo.mapa.series", { n: formatoNumero(n, idioma) })} />
         </Apartado>
       )}
 
       {lado === "nutricion" && (premium.active ? (
-        <Apartado titulo={t(idioma, "cuerpo.resumen.peso")}>
+        <Apartado titulo={t(idioma, "cuerpo.resumen.peso")} onGrafica={pesoDelMes ? () => setHoja("peso") : null} idioma={idioma}>
           <Fila
             etiqueta={t(idioma, "resumenMensual.pesoEsteMes")}
             valor={pesoDelMes ? (
@@ -242,6 +266,26 @@ export function ResumenMensualView({ data, premium, onGoPremium, idioma, entreno
           />
         </div>
       ))}
+
+      {hoja === "comidas" && (
+        <HojaGrafica
+          titulo={t(idioma, "cuerpo.resumen.nutricion")} idioma={idioma} onCerrar={() => setHoja(null)} unidad="%" dec={0} barras minimo={0} maximo={100}
+          datos={aDatos(Array.from({ length: new Date(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0).getDate() }, (_, i) => {
+            const fecha = `${mes}-${dos(i + 1)}`;
+            const delDia = (data.comidasCompletadas || {})[fecha] || {};
+            const tipos = Object.keys((data.perfil && data.perfil.repartoComidas) || {});
+            const n = tipos.length || resumen.comidasPorDia || 4;
+            const hechas = (tipos.length ? tipos : Object.keys(delDia)).filter((m) => delDia[m]).length;
+            return { fecha, valor: fecha > `${actual}-${dos(hoy.getDate())}` ? null : Math.round((Math.min(hechas, n) / n) * 100) };
+          }), "dia", idioma)}
+        />
+      )}
+      {hoja === "peso" && pesoDelMes && (
+        <HojaGrafica
+          titulo={t(idioma, "cuerpo.resumen.peso")} idioma={idioma} onCerrar={() => setHoja(null)} unidad="kg" dec={1}
+          datos={aDatos(pesoDelMes.entradas.map((e) => ({ fecha: e.fecha, valor: e.peso })), "dia", idioma)}
+        />
+      )}
     </>
   );
 }
