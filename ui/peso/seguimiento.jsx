@@ -6,6 +6,7 @@ import { t } from "i18n";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
 import { PesoLineChart, PrintSeguimiento } from "./grafica.jsx";
+import { Bascula } from "./bascula.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // DIAS_SEMANA_CORTO (logica/peso.js) ya viene abreviado en español ("Dom","Lun"...) — para
@@ -262,20 +263,22 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
         </div>
       ) : (
         <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 12, padding: "18px 18px 20px", marginBottom: 16 }}>
+          {/* El peso se escribe en la lupa de la báscula (ui/peso/bascula.jsx, 26-oct-2026). */}
           <Field label={yaRegistradoHoy ? t(idioma, "pesoView.corregirPesoHoy") : t(idioma, "pesoView.pesoDeHoy")}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                type="number" min={30} max={300} step="0.1" value={pesoInput}
-                onChange={(e) => setPesoInput(e.target.value)}
-                placeholder="kg" style={{ ...inputStyle, flex: 1 }}
-              />
-              <button
-                onClick={intentarGuardar}
-                style={{ background: "var(--green)", color: "#fff", border: "none", borderRadius: 7, padding: "0 16px", fontSize: 13, fontWeight: 700, fontFamily: FUENTE_TEXTO, cursor: "pointer" }}
-              >
-                {t(idioma, "pesoView.guardar")}
-              </button>
-            </div>
+            <Bascula
+              valor={pesoInput}
+              onCambiar={setPesoInput}
+              onEnter={intentarGuardar}
+              pesoPerfil={perfil?.peso}
+              idioma={idioma}
+              etiqueta={yaRegistradoHoy ? t(idioma, "pesoView.corregirPesoHoy") : t(idioma, "pesoView.pesoDeHoy")}
+            />
+            <button
+              onClick={intentarGuardar}
+              style={{ display: "block", width: "100%", maxWidth: 280, margin: "10px auto 0", minHeight: 44, background: "var(--green)", color: "#fff", border: "none", borderRadius: 9, padding: "0 16px", fontSize: 14, fontWeight: 700, fontFamily: FUENTE_TEXTO, cursor: "pointer" }}
+            >
+              {t(idioma, "pesoView.guardar")}
+            </button>
           </Field>
 
           <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--ink-soft)", marginTop: 4 }}>

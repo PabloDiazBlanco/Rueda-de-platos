@@ -85,7 +85,9 @@ export function PerfilView({ perfil, onSave, idioma }) {
 // comentario de handleSave en PerfilView, arriba): siempre "...perfil" como base.
 // `aviso` (opcional): el aviso de actividad del módulo de entreno (ui/entreno/aviso-actividad.jsx), que
 // llega ya montado desde ui/pantallas.jsx para que este archivo no dependa del entreno.
-export function ActividadDiariaView({ perfil, onSave, idioma, aviso }) {
+// `pasos` (26-oct-2026): la tarjeta de los pasos de hoy (ui/cuerpo/pasos.jsx), que se guarda sola, sin
+// depender del botón de guardar de esta pantalla; va al final.
+export function ActividadDiariaView({ perfil, onSave, idioma, aviso, pasos }) {
   const [palBase, setPalBase] = useState(
     perfil?.palBase ?? (perfil?.actividad ? NIVELES_ACTIVIDAD_LEGACY[perfil.actividad]?.palBaseKey : null) ?? "escritorio"
   );
@@ -155,6 +157,7 @@ export function ActividadDiariaView({ perfil, onSave, idioma, aviso }) {
           </div>
         )}
       </div>
+      {pasos}
     </>
   );
 }

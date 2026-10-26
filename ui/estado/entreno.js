@@ -326,6 +326,8 @@ export function useEntreno(data) {
   return {
     cargar, cargado: !!catalogo, catalogo, ajustes, lista, indice, borrador, meses, cola, nube, pesoCorporal,
     ejercicioDe, anteriorDe, descansoInicial,
+    // El perfil, para el mapa corporal (hombre o mujer según su sexo; ui/comun/mapa-corporal.jsx).
+    perfil: (data && data.perfil) || null,
     recordsDe: (id) => ((indice.ejercicios || {})[id] || {}).records || {},
     cargarMes, cargarTodosLosMeses, sesionesDeMes, mesActual, reconstruir,
 
