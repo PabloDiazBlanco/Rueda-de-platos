@@ -18,6 +18,7 @@
   "ui/despensa/anadir.jsx",
   "ui/despensa/cocina.jsx",
   "ui/despensa/despensa.jsx",
+  "ui/despensa/detalles.jsx",
   "ui/despensa/dibujos.jsx",
   "ui/despensa/editar.jsx",
   "ui/despensa/fregadero.jsx",

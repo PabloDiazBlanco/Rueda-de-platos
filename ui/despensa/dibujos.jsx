@@ -509,8 +509,9 @@ export function Estante({ tema, huecos }) {
 // ---------- La cocina de alrededor (capas 2 y 3) ----------
 // Medidas de la escena completa (unidades del viewBox). La nevera y el estante no se dibujan aquí: son
 // piezas aparte que se tocan y se animan (ui/despensa/cocina.jsx las coloca encima, en estas mismas
-// unidades); esto es el fondo: pared, azulejos, encimera con sus muebles, suelo, lámpara y planta, más
-// el fregadero con su grifo y la vitrocerámica, que también se pueden tocar.
+// unidades); esto es el fondo: pared, azulejos, encimera con sus muebles y suelo, más el fregadero con
+// su grifo y la vitrocerámica, que también se pueden tocar. La lámpara, la planta y el frutero, que se
+// mueven al tocarlos, van aparte (ui/despensa/detalles.jsx).
 export const ESCENA_ANCHO = 360;
 export const ESCENA_ALTO = 470;
 export const SUELO_Y = 440;
@@ -648,14 +649,8 @@ export function FondoCocina({ tema, fuegoEncendido, gota, reducido, cosasFregade
         <ellipse cx="152" cy={ENCIMERA_Y + 4} rx="15" ry="4.2" fill="#55554f" />
         <rect x="164" y={ENCIMERA_Y + 1.5} width="14" height="3.4" rx="1.7" fill="#55554f" />
 
-        {/* lámpara colgando del techo, sobre la nevera */}
-        <rect x="299" y="0" width="2" height="34" fill="#8a7a5c" />
-        <path d="M282,52 Q282,34 300,34 Q318,34 318,52 Z" fill={tema.cuerpo} />
-        <ellipse cx="300" cy="54" rx="8" ry="3" fill={tema.luz} />
-
-        {/* planta encima de la nevera (que empieza en y ≈ 98) */}
-        <path d="M232,82 Q220,62 228,52 M238,82 Q240,58 252,50 M244,82 Q258,68 266,66" stroke={tema.planta} strokeWidth="5" fill="none" strokeLinecap="round" />
-        <path d="M222,80 L258,80 L253,98 L227,98 Z" fill={tema.maceta} />
+        {/* La lámpara del techo, la planta de encima de la nevera y el frutero de la repisa se tocan y se
+            mueven: están en ui/despensa/detalles.jsx, encima de este fondo. */}
       </g>
     </svg>
   );

@@ -1436,6 +1436,12 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Período</strong> (solo si usas esa sección): los días de regla y de relaciones que marques son datos de salud y <strong>se guardan únicamente en tu dispositivo</strong>; no se envían a nuestros servidores ni a nadie. Desaparecen si borras los datos de la app o del navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificaciones</strong>: si activas los avisos (recordatorio de pesaje, aviso para descongelar), se guarda un identificador técnico de tu dispositivo para poder enviártelos. Se borra al desactivarlos desde Ajustes.",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Hacer saltar la fruta del frutero",
+    "cocina.planta": "Menear la planta",
+    "cocina.lampara": "Balancear la lámpara",
+    "cocina.mosca": "Aplastar la mosca",
   },
   en: {
     "app.eslogan": "Eat a varied diet, without thinking about it every day.",
@@ -2811,6 +2817,12 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Period</strong> (only if you use that section): the period and intimacy days you mark are health data and <strong>are stored only on your device</strong>; they are not sent to our servers or to anyone else. They disappear if you clear the app’s or browser’s data.",
     "privacidad.datosNotificaciones": "<strong>Notifications</strong>: if you turn on reminders (weigh-in reminder, defrost reminder), a technical identifier of your device is stored so we can send them to you. It is deleted when you turn them off in Settings.",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Make the fruit in the bowl jump",
+    "cocina.planta": "Shake the plant",
+    "cocina.lampara": "Swing the lamp",
+    "cocina.mosca": "Swat the fly",
   },
   ca: {
     "app.eslogan": "Menja variat, sense haver de pensar-hi cada dia.",
@@ -4186,6 +4198,12 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Període</strong> (només si fas servir aquesta secció): els dies de regla i de relacions que marquis són dades de salut i <strong>es desen únicament al teu dispositiu</strong>; no s'envien als nostres servidors ni a ningú. Desapareixen si esborres les dades de l'app o del navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificacions</strong>: si actives els avisos (recordatori de pesada, avís per descongelar), es desa un identificador tècnic del teu dispositiu per poder enviar-te'ls. S'esborra en desactivar-los des d'Ajustos.",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Fes saltar la fruita de la fruitera",
+    "cocina.planta": "Belluga la planta",
+    "cocina.lampara": "Gronxa el llum",
+    "cocina.mosca": "Aixafa la mosca",
   },
   gl: {
     "app.eslogan": "Come variado, sen ter que pensalo cada día.",
@@ -5561,6 +5579,12 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Período</strong> (só se usas esa sección): os días de regra e de relacións que marques son datos de saúde e <strong>gárdanse unicamente no teu dispositivo</strong>; non se envían aos nosos servidores nin a ninguén. Desaparecen se borras os datos da app ou do navegador.",
     "privacidad.datosNotificaciones": "<strong>Notificacións</strong>: se activas os avisos (recordatorio de pesaxe, aviso para descongelar), gárdase un identificador técnico do teu dispositivo para poder enviarchos. Bórrase ao desactivalos desde Axustes.",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Facer saltar a froita do froiteiro",
+    "cocina.planta": "Abanear a planta",
+    "cocina.lampara": "Abanear a lámpada",
+    "cocina.mosca": "Esmagar a mosca",
   },
   eu: {
     "app.eslogan": "Jan aldakor, egunero pentsatu beharrik gabe.",
@@ -6936,6 +6960,12 @@ const TEXTOS = {
 
     "privacidad.datosPeriodo": "<strong>Aldia</strong> (atal hori erabiltzen baduzu soilik): markatzen dituzun hileroko eta harremanen egunak osasun-datuak dira eta <strong>zure gailuan soilik gordetzen dira</strong>; ez dira gure zerbitzarietara ez inorri bidaltzen. Aplikazioaren edo nabigatzailearen datuak ezabatzen badituzu, desagertu egiten dira.",
     "privacidad.datosNotificaciones": "<strong>Jakinarazpenak</strong>: abisuak aktibatzen badituzu (pisatze-gogorarazpena, desizozteko abisua), zure gailuaren identifikatzaile tekniko bat gordetzen da horiek bidali ahal izateko. Ezarpenetan desaktibatzean ezabatzen da.",
+
+    // Cocina dibujada de «¿Qué tengo?»: los detalles que se tocan (ui/despensa/detalles.jsx, 26-oct-2026).
+    "cocina.frutero": "Fruta-ontziko fruta salto eginarazi",
+    "cocina.planta": "Mugitu landarea",
+    "cocina.lampara": "Kulunkatu lanpara",
+    "cocina.mosca": "Zapaldu eulia",
   },
 };
 
