@@ -353,6 +353,8 @@ export function useEntreno(data) {
     descansoEjercicio: (inst, seg) => cambiar((s) => S.descansoEjercicio(s, inst, seg)),
     // Superseries (G11): unir un ejercicio con el siguiente o sacarlo de su superserie.
     unirSuperserie: (inst) => cambiar((s) => ({ ...s, ejercicios: S.unirSuperserie(s.ejercicios, s.ejercicios.findIndex((e) => e.inst === inst)) })),
+    // «Superserie con…» (27-oct-2026): con el ejercicio elegido, esté donde esté (se coloca tras el grupo).
+    superserieCon: (inst, otro) => cambiar((s) => ({ ...s, ejercicios: S.superserieCon(s.ejercicios, s.ejercicios.findIndex((e) => e.inst === inst), s.ejercicios.findIndex((e) => e.inst === otro)) })),
     separarSuperserie: (inst) => cambiar((s) => ({ ...s, ejercicios: S.separarSuperserie(s.ejercicios, s.ejercicios.findIndex((e) => e.inst === inst)) })),
     saltarDescanso: () => cambiar(S.saltarDescanso),
     // Descanso a mano (botón ⏱ de la barra de la sesión), sin marcar ninguna serie.

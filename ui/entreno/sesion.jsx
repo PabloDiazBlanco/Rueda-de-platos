@@ -16,15 +16,16 @@ import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff,
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
 import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
-import { estaPausada, siguienteSerie, grupoDe } from "entreno-sesion";
+import { estaPausada, siguienteSerie, grupoDe, ordenDeSeries } from "entreno-sesion";
 import { pasoEntreEjercicios } from "gimnasio";
 import { inputStyle } from "../comun/modal.jsx";
 import { useBloqueoScroll } from "../comun/bloqueo-scroll.js";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
   reloj, duracionTexto, formatoNumero, textoPeso, nombreDe, HojaInferior, OpcionHoja, BotonPrincipal, BotonTexto,
-  TextoSuave, pesoAPantalla,
+  TextoSuave, pesoAPantalla, prefiereMenosMovimiento,
 } from "./comun.jsx";
+import { HojaSuperserieCon } from "./superserie.jsx";
 import { FilaSerie, HojaTipoSerie, etiquetasSeries, plantillaColumnas, columnasDe } from "./fila-serie.jsx";
 import { BarraDescanso, prepararAudio, BotonDescanso, HojaDescanso } from "./descanso.jsx";
 import { MiniMapaPaseo } from "./mini-mapa.jsx";
@@ -89,6 +90,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const [nota, setNota] = useState(null); // { inst, texto } mientras se escribe la nota de hoy de un ejercicio
   const [hojaTipo, setHojaTipo] = useState(null); // { inst, serie }
   const [menuEjercicio, setMenuEjercicio] = useState(null); // inst
+  const [superserieDe, setSuperserieDe] = useState(null); // inst del ejercicio que busca pareja de superserie
   const [avisos, setAvisos] = useState({}); // id de serie → [avisos]
   const [terminando, setTerminando] = useState(false);
   const [discos, setDiscos] = useState(null); // kg de partida de la calculadora de discos, si está abierta
@@ -111,9 +113,24 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   // Tras marcar una serie ya NO se enfoca la siguiente (27-oct-2026): el foco en un campo abre el teclado
   // del móvil, que tapaba la animación del ✓ y sobraba casi siempre (los valores suelen venir precargados).
   // El teclado solo sale al tocar un campo (peso, repeticiones, RIR, una nota).
+  //
+  // Lo que sí hace (27-oct-2026, petición del usuario, como en Hevy): si la siguiente serie que toca es de
+  // otro ejercicio, pliega este y despliega aquel, y lo trae a la vista. Sin superserie, eso pasa al acabar
+  // un ejercicio; en una superserie (G11), con cada serie: A se cierra y se abre B, B se cierra y vuelve A,
+  // ronda a ronda, en el orden de siguienteSerie (logica/entreno-sesion.js).
   function confirmarSerie(ej, serie) {
+    const sig = siguienteSerie(s, ej.inst, serie.id);
     entreno.marcarHecha(ej.inst, serie.id);
     setAvisos((a) => { const { [serie.id]: _, ...resto } = a; return resto; });
+    if (sig && sig.inst !== ej.inst) {
+      setPlegados((p) => ({ ...p, [ej.inst]: true, [sig.inst]: false }));
+      setTimeout(() => {
+        const el = document.getElementById(`ejercicio-${sig.inst}`);
+        if (el) el.scrollIntoView({ block: "start", behavior: prefiereMenosMovimiento() ? "auto" : "smooth" });
+      }, 80);
+    } else if (!sig && ej.series.every((x) => x.hecha || x.id === serie.id)) {
+      setPlegados((p) => ({ ...p, [ej.inst]: true }));
+    }
   }
 
   function marcar(ej, serie) {
@@ -125,7 +142,10 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
     confirmarSerie(ej, serie);
   }
 
-  const estaPlegado = (ej) => plegados[ej.inst] ?? (ej.series.length > 0 && ej.series.every((x) => x.hecha));
+  // Por defecto solo está abierto el ejercicio que toca ahora (el de la primera serie sin hacer, en el orden
+  // de las rondas) y los que aún no tienen series; tocar la cabecera de cualquiera lo abre o lo cierra a mano.
+  const actual = ordenDeSeries(s).find((x) => !((s.ejercicios.find((e) => e.inst === x.inst) || { series: [] }).series.find((y) => y.id === x.id) || {}).hecha);
+  const estaPlegado = (ej) => plegados[ej.inst] ?? (ej.series.length > 0 && (!actual || actual.inst !== ej.inst));
 
   return (
     <div
@@ -214,7 +234,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
             return (
               <section
                 key={ej.inst}
+                id={`ejercicio-${ej.inst}`}
                 style={{
+                  scrollMarginTop: 8,
                   background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden",
                   borderLeft: grupo ? "5px solid var(--mustard)" : "1px solid var(--line)",
                   marginBottom: grupo && posicion < grupo.fin ? 4 : 10,
@@ -396,6 +418,17 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
 
       {terminando && <TerminarEntreno entreno={entreno} idioma={idioma} onVolver={() => setTerminando(false)} onGuardado={onGuardado} />}
 
+      {superserieDe && s.ejercicios.some((e) => e.inst === superserieDe) && (
+        <HojaSuperserieCon
+          lista={s.ejercicios}
+          indice={s.ejercicios.findIndex((e) => e.inst === superserieDe)}
+          nombre={(ej) => nombreDe(entreno, ej.ejercicioId, idioma)}
+          onElegir={(k) => { entreno.superserieCon(superserieDe, s.ejercicios[k].inst); setSuperserieDe(null); }}
+          onCerrar={() => setSuperserieDe(null)}
+          idioma={idioma}
+        />
+      )}
+
       {menuEjercicio && (
         <HojaInferior titulo={nombreDe(entreno, (s.ejercicios.find((e) => e.inst === menuEjercicio) || {}).ejercicioId, idioma)} onCerrar={() => setMenuEjercicio(null)} idioma={idioma}>
           <OpcionHoja icono={Repeat} onClick={() => { setSelector({ modo: "sustituir", inst: menuEjercicio }); setMenuEjercicio(null); }} detalle={t(idioma, "entreno.sesion.sustituirAyuda")}>
@@ -424,9 +457,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
               {t(idioma, "entreno.discos.titulo")}
             </OpcionHoja>
           )}
-          {idxMenu < s.ejercicios.length - 1 && !(grupoMenu && idxMenu < grupoMenu.fin) && (
-            <OpcionHoja icono={Link2} onClick={() => { entreno.unirSuperserie(menuEjercicio); setMenuEjercicio(null); }} detalle={t(idioma, "entreno.superserie.unirAyuda")}>
-              {t(idioma, "entreno.superserie.unir")}
+          {s.ejercicios.length > 1 && (
+            <OpcionHoja icono={Link2} onClick={() => { setSuperserieDe(menuEjercicio); setMenuEjercicio(null); }}>
+              {t(idioma, "entreno.superserie.con")}
             </OpcionHoja>
           )}
           {grupoMenu && (

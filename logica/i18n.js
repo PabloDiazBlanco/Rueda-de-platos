@@ -1356,6 +1356,9 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Se hacen alternando, por rondas: una serie de cada uno y vuelta a empezar. Cada uno conserva su descanso.",
     "entreno.superserie.separar": "Sacar de la superserie",
     "entreno.superserie.separarCorto": "Separar",
+    "entreno.superserie.con": "Superserie con…",
+    "entreno.superserie.conTitulo": "¿Con qué ejercicio?",
+    "entreno.superserie.sinOtros": "Añade otro ejercicio para poder hacer una superserie.",
 
     "entreno.gimnasio.campo": "Gimnasio (opcional)",
     "entreno.gimnasio.placeholder": "Cadena o nombre del sitio",
@@ -3204,6 +3207,9 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Done alternately, in rounds: one set of each and back to the start. Each keeps its own rest.",
     "entreno.superserie.separar": "Remove from superset",
     "entreno.superserie.separarCorto": "Split",
+    "entreno.superserie.con": "Superset with…",
+    "entreno.superserie.conTitulo": "With which exercise?",
+    "entreno.superserie.sinOtros": "Add another exercise to make a superset.",
 
     "entreno.gimnasio.campo": "Gym (optional)",
     "entreno.gimnasio.placeholder": "Chain or place name",
@@ -5052,6 +5058,9 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Es fan alternant, per rondes: una sèrie de cadascun i tornar a començar. Cadascun conserva el seu descans.",
     "entreno.superserie.separar": "Treure de la supersèrie",
     "entreno.superserie.separarCorto": "Separar",
+    "entreno.superserie.con": "Superserie amb…",
+    "entreno.superserie.conTitulo": "Amb quin exercici?",
+    "entreno.superserie.sinOtros": "Afegeix un altre exercici per poder fer una superserie.",
 
     "entreno.gimnasio.campo": "Gimnàs (opcional)",
     "entreno.gimnasio.placeholder": "Cadena o nom del lloc",
@@ -6900,6 +6909,9 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Fanse alternando, por roldas: unha serie de cada un e volta a empezar. Cada un conserva o seu descanso.",
     "entreno.superserie.separar": "Sacar da superserie",
     "entreno.superserie.separarCorto": "Separar",
+    "entreno.superserie.con": "Superserie con…",
+    "entreno.superserie.conTitulo": "Con que exercicio?",
+    "entreno.superserie.sinOtros": "Engade outro exercicio para poder facer unha superserie.",
 
     "entreno.gimnasio.campo": "Ximnasio (opcional)",
     "entreno.gimnasio.placeholder": "Cadea ou nome do sitio",
@@ -8748,6 +8760,9 @@ const TEXTOS = {
     "entreno.superserie.unirAyuda": "Txandaka egiten dira, errondaka: bakoitzaren serie bat eta berriro hasieratik. Bakoitzak bere atsedena mantentzen du.",
     "entreno.superserie.separar": "Atera superserietik",
     "entreno.superserie.separarCorto": "Banandu",
+    "entreno.superserie.con": "Superseriea honekin…",
+    "entreno.superserie.conTitulo": "Zein ariketarekin?",
+    "entreno.superserie.sinOtros": "Gehitu beste ariketa bat superserie bat egiteko.",
 
     "entreno.gimnasio.campo": "Gimnasioa (aukerakoa)",
     "entreno.gimnasio.placeholder": "Katea edo lekuaren izena",

@@ -372,6 +372,21 @@ export function unirSuperserie(lista, i) {
   });
 }
 
+// Superserie «con…» (27-oct-2026): desde el ⋮ de un ejercicio se elige con cuál hacerla, esté donde esté. El
+// elegido (j) sale de su grupo anterior, si tenía, y se coloca justo detrás del grupo del ejercicio i (o de i,
+// si va suelto), y los dos quedan unidos con unirSuperserie. Si j ya estaba en el grupo de i, no cambia nada.
+export function superserieCon(lista, i, j) {
+  if (i === j || !lista[i] || !lista[j]) return lista;
+  const g = grupoDe(lista, i);
+  if (g && j >= g.inicio && j <= g.fin) return lista;
+  const fin = g ? g.fin : i;
+  const resto = lista.filter((_, k) => k !== j);
+  // Al quitar j, todo lo que iba detrás se adelanta un puesto.
+  const finEnResto = j < fin ? fin - 1 : fin;
+  resto.splice(finEnResto + 1, 0, { ...lista[j], superserie: null });
+  return unirSuperserie(resto, finEnResto);
+}
+
 // Saca el ejercicio i de su superserie (los demás siguen juntos si quedan dos o más seguidos).
 export function separarSuperserie(lista, i) {
   if (!lista[i] || !lista[i].superserie) return lista;

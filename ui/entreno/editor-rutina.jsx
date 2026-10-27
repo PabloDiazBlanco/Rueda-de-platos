@@ -7,17 +7,20 @@
 // ajustes, y se cambia con el botón del reloj de su tarjeta (BotonDescanso / HojaDescanso).
 // Superseries (G11): entre dos tarjetas, «Superserie con el siguiente» los une (o suma el siguiente al
 // grupo); dentro de un grupo, «Separar» saca al ejercicio. Los del grupo llevan una franja mostaza.
+// Desde el 27-oct-2026 cada tarjeta tiene su ⋮ (como en el entreno en curso): subir, bajar, «Superserie
+// con…» (eligiendo el otro, esté donde esté), sacar de la superserie y quitar.
 // Añadir ejercicios abre el gimnasio dibujado (bloque FitDraft, 26-oct-2026; ui/entreno/mapa-rutina.jsx): la
 // rutina se ve como una ruta con sus paradas; desde ahí, «Buscar» abre el selector de siempre.
 import React, { useState } from "react";
-import { Plus, ArrowUp, ArrowDown, X, Link2, Link2Off } from "lucide-react";
+import { Plus, ArrowUp, ArrowDown, X, Link2, Link2Off, MoreVertical, Trash2 } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo, TIPOS_SERIE, LETRA_SERIE } from "entreno-ejercicios";
-import { grupoDe, unirSuperserie, separarSuperserie } from "entreno-sesion";
+import { grupoDe, unirSuperserie, separarSuperserie, superserieCon } from "entreno-sesion";
 import { Field, inputStyle } from "../comun/modal.jsx";
 import { BackLink } from "../comun/tarjetas.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
-import { BotonPrincipal, BotonTexto, TextoSuave, nombreDe, pesoAPantalla, formatoNumero } from "./comun.jsx";
+import { BotonPrincipal, BotonTexto, TextoSuave, nombreDe, pesoAPantalla, formatoNumero, HojaInferior, OpcionHoja } from "./comun.jsx";
+import { HojaSuperserieCon } from "./superserie.jsx";
 import { SelectorEjercicio } from "./selector-ejercicio.jsx";
 import { COLOR_SERIE, deTexto, unidadTiempo } from "./fila-serie.jsx";
 import { BotonDescanso, HojaDescanso } from "./descanso.jsx";
@@ -55,6 +58,8 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
   const [selector, setSelector] = useState(false);
   const [mapa, setMapa] = useState(false);
   const [descanso, setDescanso] = useState(null); // índice del ejercicio cuyo descanso se está eligiendo
+  const [menu, setMenu] = useState(null); // índice del ejercicio con el ⋮ abierto
+  const [superserieDe, setSuperserieDe] = useState(null); // índice del que busca pareja de superserie
   const [error, setError] = useState("");
   const ajustes = entreno.ajustes;
 
@@ -149,9 +154,7 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
               <div style={{ flex: 1, minWidth: 0, fontFamily: FUENTE_TEXTO, fontSize: 15, fontWeight: 700, color: "var(--green-dark)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {nombreDe(entreno, re.ejercicioId, idioma)}
               </div>
-              <button onClick={() => mover(i, -1)} disabled={i === 0} aria-label={t(idioma, "entreno.rutinas.subir")} style={botonIcono(i === 0)}><ArrowUp size={17} /></button>
-              <button onClick={() => mover(i, 1)} disabled={i === rutina.ejercicios.length - 1} aria-label={t(idioma, "entreno.rutinas.bajar")} style={botonIcono(i === rutina.ejercicios.length - 1)}><ArrowDown size={17} /></button>
-              <button onClick={() => setRutina((r) => ({ ...r, ejercicios: r.ejercicios.filter((_, k) => k !== i) }))} aria-label={t(idioma, "entreno.rutinas.quitar")} style={botonIcono(false)}><X size={17} /></button>
+              <button onClick={() => setMenu(i)} aria-label={t(idioma, "entreno.sesion.opcionesEjercicio")} style={botonIcono(false)}><MoreVertical size={18} /></button>
             </div>
 
             {re.series.map((sr, j) => (
@@ -256,6 +259,30 @@ export function EditorRutinaView({ entreno, idioma, navegar, params }) {
           ayuda={t(idioma, "entreno.descanso.ayudaRutina")}
           onElegir={(seg) => cambiarEjercicio(descanso, (x) => ({ ...x, descansoSeg: seg }))}
           onCerrar={() => setDescanso(null)}
+          idioma={idioma}
+        />
+      )}
+
+      {menu !== null && rutina.ejercicios[menu] && (() => {
+        const grupo = grupoDe(rutina.ejercicios, menu);
+        return (
+          <HojaInferior titulo={nombreDe(entreno, rutina.ejercicios[menu].ejercicioId, idioma)} onCerrar={() => setMenu(null)} idioma={idioma}>
+            {menu > 0 && <OpcionHoja icono={ArrowUp} onClick={() => { mover(menu, -1); setMenu(null); }}>{t(idioma, "entreno.rutinas.subir")}</OpcionHoja>}
+            {menu < rutina.ejercicios.length - 1 && <OpcionHoja icono={ArrowDown} onClick={() => { mover(menu, 1); setMenu(null); }}>{t(idioma, "entreno.rutinas.bajar")}</OpcionHoja>}
+            {rutina.ejercicios.length > 1 && <OpcionHoja icono={Link2} onClick={() => { setSuperserieDe(menu); setMenu(null); }}>{t(idioma, "entreno.superserie.con")}</OpcionHoja>}
+            {grupo && <OpcionHoja icono={Link2Off} onClick={() => { setRutina((r) => ({ ...r, ejercicios: separarSuperserie(r.ejercicios, menu) })); setMenu(null); }}>{t(idioma, "entreno.superserie.separar")}</OpcionHoja>}
+            <OpcionHoja icono={Trash2} peligro onClick={() => { setRutina((r) => ({ ...r, ejercicios: r.ejercicios.filter((_, k) => k !== menu) })); setMenu(null); }}>{t(idioma, "entreno.rutinas.quitar")}</OpcionHoja>
+          </HojaInferior>
+        );
+      })()}
+
+      {superserieDe !== null && rutina.ejercicios[superserieDe] && (
+        <HojaSuperserieCon
+          lista={rutina.ejercicios}
+          indice={superserieDe}
+          nombre={(re) => nombreDe(entreno, re.ejercicioId, idioma)}
+          onElegir={(k) => { setRutina((r) => ({ ...r, ejercicios: superserieCon(r.ejercicios, superserieDe, k) })); setSuperserieDe(null); }}
+          onCerrar={() => setSuperserieDe(null)}
           idioma={idioma}
         />
       )}

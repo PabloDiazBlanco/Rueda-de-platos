@@ -34,7 +34,7 @@ import {
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
   terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion, anadirEjercicios, descansoEjercicio,
-  gruposSuperserie, grupoDe, unirSuperserie, separarSuperserie, ordenDeSeries, siguienteSerie,
+  gruposSuperserie, grupoDe, unirSuperserie, separarSuperserie, superserieCon, ordenDeSeries, siguienteSerie,
 } from "entreno-sesion";
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
@@ -2014,6 +2014,25 @@ function grupoEntrenoSesion() {
           return comparar(
             { ab: forma(ab), abc: forma(abc), sinB: forma(sinB), mismoId: abc[0].superserie === abc[2].superserie, grupoD: grupoDe(abc, 3), numero: grupoDe(abc, 2).numero, ultimoSinSiguiente: unirSuperserie(lista, 3) === lista },
             { ab: "[ab] c d", abc: "[abc] d", sinB: "a b c d", mismoId: true, grupoD: null, numero: 1, ultimoSinSiguiente: true }
+          );
+        },
+      },
+      {
+        nombre: "Superserie «con…» (27-oct): el elegido se coloca tras el grupo, sale del suyo y no se duplica",
+        ejecutar: () => {
+          const lista = ["a", "b", "c", "d", "e"].map((x) => ({ ejercicioId: x, superserie: null }));
+          const forma = (l) => gruposSuperserie(l).map((g) => (g.fin > g.inicio ? `[${l.slice(g.inicio, g.fin + 1).map((e) => e.ejercicioId).join("")}]` : l[g.inicio].ejercicioId)).join(" ");
+          // a con d: d sube detrás de a. b con a (a va antes): a baja detrás de b.
+          const ad = superserieCon(lista, 0, 3);
+          const ba = superserieCon(lista, 1, 0);
+          // Con un grupo ya hecho [ad], e se suma detrás de d; c con [ad] (pidiéndolo desde d) también.
+          const ade = superserieCon(ad, 0, 4);
+          const desdeD = superserieCon(ad, 1, 3);
+          // d sale de [ad] para irse con e: [ad] se deshace.
+          const de = superserieCon(ad, 4, 1);
+          return comparar(
+            { ad: forma(ad), ba: forma(ba), ade: forma(ade), desdeD: forma(desdeD), de: forma(de), mismo: superserieCon(ad, 0, 1) === ad, total: ade.length },
+            { ad: "[ad] b c e", ba: "[ba] c d e", ade: "[ade] b c", desdeD: "[adc] b e", de: "a b c [ed]", mismo: true, total: 5 }
           );
         },
       },
