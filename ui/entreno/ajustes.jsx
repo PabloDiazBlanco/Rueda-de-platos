@@ -148,7 +148,7 @@ export function SeccionAjustesEntreno({ entreno, idioma }) {
         <BotonSecundario onClick={() => exportar("csv")}><Download size={14} /> {t(idioma, "entreno.ajustes.exportarCSV")}</BotonSecundario>
         <BotonSecundario onClick={() => exportar("json")}><Download size={14} /> {t(idioma, "entreno.ajustes.exportarJSON")}</BotonSecundario>
       </div>
-      {/* Importar de Hevy o Lyfta (G10). */}
+      {/* Importar de otra app (G10; hoy, Hevy o Lyfta, pero la interfaz no las nombra desde el 27-oct-2026). */}
       <ImportarEntrenos entreno={entreno} idioma={idioma} />
       <div style={{ marginTop: 14 }}>
         <BotonSecundario onClick={reconstruir}><RefreshCw size={14} /> {t(idioma, "entreno.ajustes.reconstruir")}</BotonSecundario>

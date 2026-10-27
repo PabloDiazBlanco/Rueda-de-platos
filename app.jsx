@@ -25,6 +25,7 @@ import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
 import { BotonCerrarSesionAlta } from "./ui/comun/cerrar-sesion.jsx";
+import { BackLink } from "./ui/comun/tarjetas.jsx";
 import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
 import { AREAS, COMUNES, TITULO_COMUN, areaDe, pestanaDe, areaPorClave } from "./ui/marco/navegacion.js";
 import { ModalesCatalogo } from "./ui/catalogo/modales.jsx";
@@ -58,11 +59,22 @@ export default function RuedaDePlatos() {
   // Destino actual y, opcionalmente, datos para él (la ficha de un ejercicio concreto, la ayuda con un
   // ejercicio ya indicado...). Las pantallas de siempre siguen usando setTab(destino), que es navegar
   // sin datos.
-  const [nav, setNav] = useState({ tab: "menu", params: null });
+  //
+  // `volver` (27-oct-2026): la pantalla desde la que se llegó, cuando quien navega lo pide con
+  // `{ volver: true }` (hoy, el gimnasio dibujado de FitDraft al abrir Progreso, Historial, Rutinas o la
+  // ficha de un ejercicio). Mientras se siga dentro de la misma pestaña (la lista de rutinas y su editor, por
+  // ejemplo), arriba sale «← Gimnasio» para regresar sin buscar la barra inferior; navegar a otra pestaña
+  // lo olvida. Basta con un paso, no hace falta una pila entera: solo se vuelve al punto de partida.
+  const [nav, setNav] = useState({ tab: "menu", params: null, volver: null });
   const { tab, params } = nav;
   const [ultimaPantalla, setUltimaPantalla] = useState(leerUltimaPantalla);
-  function navegar(destino, nuevosParams = null) {
-    setNav({ tab: destino, params: nuevosParams });
+  function navegar(destino, nuevosParams = null, opciones = {}) {
+    setNav((prev) => {
+      let volver = null;
+      if (opciones.volver) volver = { tab: prev.tab, params: prev.params };
+      else if (prev.volver && pestanaDe(destino) && pestanaDe(destino) === pestanaDe(prev.tab)) volver = prev.volver;
+      return { tab: destino, params: nuevosParams, volver };
+    });
     const area = areaDe(destino);
     if (!area) return;
     setUltimaPantalla((prev) => {
@@ -156,6 +168,7 @@ export default function RuedaDePlatos() {
       {/* Con barra inferior (y con la pastilla del entreno en curso), <main> deja libre abajo lo que
           ocupan, para que lo último de cada pantalla no quede escondido detrás. */}
       <main style={{ padding: "20px 22px 60px", paddingBottom: `calc(${area ? RELLENO_BARRA : "60px"} + ${hayPastilla ? ALTO_PASTILLA : 0}px)` }}>
+        {nav.volver && <BackLink label={t(idioma, "fitdraft.volverGimnasio")} onClick={() => navegar(nav.volver.tab, nav.volver.params)} />}
         <Pantalla tab={tab} ctx={ctx} />
       </main>
 
