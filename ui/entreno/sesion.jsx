@@ -15,7 +15,7 @@ import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal, BookOpen, Calculator, Link2, Link2Off } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
-import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
+import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo, seriePorLados } from "entreno-calculo";
 import { estaPausada, siguienteSerie, grupoDe, ordenDeSeries } from "entreno-sesion";
 import { pasoEntreEjercicios } from "gimnasio";
 import { inputStyle } from "../comun/modal.jsx";
@@ -224,8 +224,12 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
             const etiquetas = etiquetasSeries(ej.series);
             const hechas = ej.series.filter((x) => x.hecha).length;
             const plegado = estaPlegado(ej);
-            const columnas = plantillaColumnas(campos.length, ajustes.mostrarEsfuerzo);
             const ejercicio = entreno.ejercicioDe(ej.ejercicioId);
+            // ×2 y unilateral (27-oct-2026): del ejercicio; cada serie puede ir o no por lados.
+            const pareja = !!(ejercicio && ejercicio.pareja && tipo === "peso_reps");
+            const unilateral = !!(ejercicio && ejercicio.unilateral);
+            const conLados = campos.includes("reps") && ej.series.some((sr) => seriePorLados(sr, unilateral));
+            const columnas = plantillaColumnas(campos.length, ajustes.mostrarEsfuerzo, conLados);
             // «Anterior» por clase: el calentamiento con el calentamiento y el resto con el resto, en orden.
             const antCal = anterior.filter((a) => a.tipo === "calentamiento");
             const antResto = anterior.filter((a) => a.tipo !== "calentamiento");
@@ -274,7 +278,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
                     <div style={{ display: "grid", gridTemplateColumns: columnas, gap: 6, padding: "2px 4px", fontFamily: FUENTE_TEXTO, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "var(--ink-soft)" }}>
                       <span style={{ textAlign: "center" }}>{t(idioma, "entreno.sesion.serie")}</span>
                       <span>{t(idioma, "entreno.sesion.anterior")}</span>
-                      {columnasDe(campos, tipo, ajustes).map((c) => <span key={c} style={{ textAlign: "center" }}>{c}</span>)}
+                      {columnasDe(campos, tipo, ajustes, { pareja, lados: conLados ? `${t(idioma, "entreno.sesion.izq")} · ${t(idioma, "entreno.sesion.der")}` : null }).map((c, k) => (
+                        <span key={k} title={pareja && campos[k] === "kg" ? t(idioma, "entreno.sesion.x2Ayuda") : undefined} style={{ textAlign: "center" }}>{c}</span>
+                      ))}
                       {ajustes.mostrarEsfuerzo && <span style={{ textAlign: "center" }}>RIR</span>}
                       <span />
                     </div>
@@ -290,6 +296,8 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
                         mostrarEsfuerzo={ajustes.mostrarEsfuerzo}
                         idioma={idioma}
                         plantillaColumnas={columnas}
+                        pareja={pareja}
+                        unilateral={unilateral}
                         onEditar={(valores) => {
                           entreno.editarSerie(ej.inst, sr.id, valores);
                           if (avisos[sr.id]) setAvisos((a) => { const { [sr.id]: _, ...resto } = a; return resto; });
@@ -297,7 +305,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
                         onMarcar={() => marcar(ej, sr)}
                         onDesmarcar={() => entreno.desmarcar(ej.inst, sr.id)}
                         onAbrirTipo={() => setHojaTipo({ inst: ej.inst, serie: sr })}
-                        aviso={!avisos[sr.id] ? (sr.hecha && <AvisoRecord records={recordsEnVivo(ej, sr.id, tipo, entreno.pesoCorporal, entreno.recordsDe(ej.ejercicioId))} ajustes={ajustes} idioma={idioma} />) : (
+                        aviso={!avisos[sr.id] ? (sr.hecha && <AvisoRecord records={recordsEnVivo(ej, sr.id, ejercicio || tipo, entreno.pesoCorporal, entreno.recordsDe(ej.ejercicioId))} ajustes={ajustes} idioma={idioma} />) : (
                           <div role="alert" style={{ margin: "0 6px 6px", padding: "8px 10px", borderRadius: 8, background: "var(--rust-soft)", fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink)" }}>
                             {avisos[sr.id].map((a) => <div key={a}>{textoAviso(a, sr, ajustes, idioma)}</div>)}
                             <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
@@ -390,15 +398,29 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
         </HojaInferior>
       )}
 
-      {hojaTipo && (
+      {hojaTipo && (() => {
+        // Unilateral (27-oct-2026): con las dos casillas ya rellenas con las repeticiones que hubiera.
+        const ej = s.ejercicios.find((e) => e.inst === hojaTipo.inst);
+        const sr = ej && ej.series.find((x) => x.id === hojaTipo.serie.id);
+        if (!sr) return null;
+        const e = entreno.ejercicioDe(ej.ejercicioId);
+        const porLados = seriePorLados(sr, e && e.unilateral);
+        const conReps = camposDeTipo(tipoDe(ej.ejercicioId)).includes("reps");
+        return (
         <HojaTipoSerie
-          serie={hojaTipo.serie}
+          serie={sr}
           idioma={idioma}
+          porLados={porLados}
+          onLados={conReps ? () => {
+            entreno.editarSerie(hojaTipo.inst, sr.id, porLados ? { lados: false } : { lados: true, repsIzq: sr.reps ?? null, repsDer: sr.reps ?? null });
+            setHojaTipo(null);
+          } : undefined}
           onCerrar={() => setHojaTipo(null)}
           onElegir={(tipo) => { entreno.cambiarTipoSerie(hojaTipo.inst, hojaTipo.serie.id, tipo); setHojaTipo(null); }}
           onQuitar={() => { entreno.quitarSerie(hojaTipo.inst, hojaTipo.serie.id); setHojaTipo(null); }}
         />
-      )}
+        );
+      })()}
 
       {discos && <HojaDiscos kg={discos.kg} ajustes={ajustes} idioma={idioma} onCerrar={() => setDiscos(null)} />}
 

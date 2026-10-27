@@ -139,8 +139,24 @@ const FILAS_SEMILLA = [
   ["ex_caminar", "distancia_duracion", "cardio", [], "peso_corporal"],
 ];
 
+// Con dos mancuernas a la vez (27-oct-2026): se escribe el peso de una y los cálculos lo cuentan doble (ver
+// «Mancuernas a pares» en entreno-calculo.js). Son todos los de mancuernas salvo el remo a una mano, que es de
+// una sola. La búlgara se hace con una en cada mano, así que lleva pareja Y es unilateral.
+const CON_PAREJA = new Set([
+  "ex_press_banca_mancuernas", "ex_press_inclinado_mancuernas", "ex_aperturas_mancuernas", "ex_encogimientos",
+  "ex_press_hombro_mancuernas", "ex_laterales_mancuernas", "ex_frontales", "ex_pajaros_mancuernas",
+  "ex_curl_mancuernas", "ex_curl_martillo", "ex_curl_inclinado", "ex_curl_muneca", "ex_zancadas", "ex_bulgara",
+]);
+// Unilaterales por naturaleza: sus series salen ya divididas en izquierda y derecha (se puede deshacer en
+// cada serie, y cualquier otro ejercicio se puede hacer unilateral desde el tipo de serie). Solo los que se
+// hacen un lado y luego el otro contando repeticiones: las zancadas alternas se cuentan juntas, y la plancha
+// lateral es de tiempo.
+const UNILATERALES = new Set(["ex_remo_mancuerna", "ex_laterales_polea", "ex_bulgara", "ex_patada_gluteo"]);
+
 export const EJERCICIOS_SEMILLA = FILAS_SEMILLA.map(([id, tipo, musculo, secundarios, equipo]) => ({
   id, tipo, musculo, secundarios, equipo,
+  ...(CON_PAREJA.has(id) ? { pareja: true } : {}),
+  ...(UNILATERALES.has(id) ? { unilateral: true } : {}),
 }));
 
 const SEMILLA_POR_ID = Object.fromEntries(EJERCICIOS_SEMILLA.map((e) => [e.id, e]));

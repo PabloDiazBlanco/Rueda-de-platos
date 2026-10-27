@@ -220,7 +220,7 @@ export function DetalleSesionView({ entreno, idioma, navegar, params, onAbrirEje
         const campos = camposDeTipo(tipo);
         const etiquetas = etiquetasSeries(ej.series);
         // Medalla junto a las series que tienen hoy un récord de su ejercicio (fase C2).
-        const conMedalla = editando ? new Set() : seriesConRecord((entreno.indice.ejercicios || {})[ej.ejercicioId], sesion.id, ej, tipo, entreno.pesoCorporal);
+        const conMedalla = editando ? new Set() : seriesConRecord((entreno.indice.ejercicios || {})[ej.ejercicioId], sesion.id, ej, entreno.ejercicioDe(ej.ejercicioId) || tipo, entreno.pesoCorporal);
         return (
           <section key={ej.inst} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px", marginTop: 10 }}>
             <button

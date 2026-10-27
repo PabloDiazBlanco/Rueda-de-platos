@@ -29,7 +29,7 @@ import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
   pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes, discosPorLado,
-  anteriorEquivalente,
+  anteriorEquivalente, repsLadoDebil,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -1717,6 +1717,39 @@ function grupoEntrenoCalculos() {
         ejecutar: () => {
           const sesion = { ejercicios: [{ ejercicioId: "banca", series: [serieP("normal", 60, 10), serieP("calentamiento", 40, 10), serieP("normal", 60, 8, false)] }] };
           return comparar({ v: volumenSesion(sesion, ejercicioPrueba, 80) }, { v: 600 });
+        },
+      },
+      {
+        // 27-oct-2026. A mano: 20 kg por mancuerna × 10 = 400 kg de volumen; 1RM con 40 kg y 10 reps =
+        // 40 × (1 + 10/30) = 53,3; el peso máximo se queda en 20 (lo tecleado). Unilateral 10/8 a 20 kg: volumen
+        // 20 × 18 = 360; 1RM con el lado débil (8): 20 × (1 + 8/30) = 25,3; mejor serie 20 × 8 = 160.
+        nombre: "×2 con dos mancuernas y series unilaterales: volumen, 1RM y récords",
+        ejecutar: () => {
+          const conPareja = { tipo: "peso_reps", pareja: true };
+          const par = serieP("normal", 20, 10);
+          const mPar = mejoresDeEjercicioEnSesion({ series: [par] }, conPareja, 80);
+          const lado = { ...serieP("normal", 20, 8), lados: true, repsIzq: 10, repsDer: 8 };
+          const mLado = mejoresDeEjercicioEnSesion({ series: [lado] }, "peso_reps", 80);
+          // Ejercicio unilateral por naturaleza: una serie sin `lados` cuenta las mismas repeticiones a cada lado.
+          const uni = { tipo: "peso_reps", unilateral: true };
+          const deFabrica = (id) => EJERCICIOS_SEMILLA.find((e) => e.id === id);
+          return comparar(
+            {
+              volPar: volumenSerie(par, conPareja, 80), volTexto: volumenSerie(par, "peso_reps", 80),
+              e1rmPar: mPar.e1rm, pesoMaxPar: mPar.pesoMax, mejorPar: mPar.mejorSerie.valor,
+              volLado: volumenSerie(lado, "peso_reps", 80), e1rmLado: mLado.e1rm, mejorLado: mLado.mejorSerie.valor,
+              volUniDefecto: volumenSerie(serieP("normal", 10, 12), uni, 80), volUniApagado: volumenSerie({ ...serieP("normal", 10, 12), lados: false }, uni, 80),
+              debil: [repsLadoDebil(10, 8), repsLadoDebil(null, 7), repsLadoDebil(null, null)].join(" "),
+              bancaMancuernas: !!deFabrica("ex_press_banca_mancuernas").pareja, remoUnaMano: [!!deFabrica("ex_remo_mancuerna").pareja, !!deFabrica("ex_remo_mancuerna").unilateral].join(" "),
+              bancaBarra: !!deFabrica("ex_press_banca_barra").pareja,
+              indiceViejo: migrarIndice({ version: 1, meses: {}, ejercicios: {}, rutinas: {} }).reconstruir,
+            },
+            {
+              volPar: 400, volTexto: 200, e1rmPar: 53.3, pesoMaxPar: 20, mejorPar: 400,
+              volLado: 360, e1rmLado: 25.3, mejorLado: 160, volUniDefecto: 240, volUniApagado: 120,
+              debil: "8 7 ", bancaMancuernas: true, remoUnaMano: "false true", bancaBarra: false, indiceViejo: true,
+            }
+          );
         },
       },
       {

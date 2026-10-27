@@ -51,7 +51,8 @@ export function textoSerie(sr, tipo, ajustes, idioma) {
     const v = sr[c];
     if (v === null || v === undefined) return;
     if (c === "kg") partes.push(`${tipo === "lastre_reps" ? "+" : tipo === "asistido_reps" ? "−" : ""}${formatoNumero(pesoAPantalla(v, ajustes.unidadPeso), idioma)} ${ajustes.unidadPeso}`);
-    else if (c === "reps") partes.push(`× ${v}`);
+    // Unilateral (27-oct-2026): «× 10/8», izquierda/derecha.
+    else if (c === "reps") partes.push(sr.lados && (sr.repsIzq != null || sr.repsDer != null) ? `× ${sr.repsIzq ?? v}/${sr.repsDer ?? v}` : `× ${v}`);
     else if (c === "km") partes.push(textoDistancia(v, ajustes, idioma));
     else if (c === "seg") partes.push(tipo === "duracion" ? `${v} s` : reloj(v));
   });
@@ -75,7 +76,7 @@ export function recordsDeSesion(sesion, entreno) {
   const lista = [];
   sesion.ejercicios.forEach((ej) => {
     const e = entreno.ejercicioDe(ej.ejercicioId);
-    const mejores = mejoresDeEjercicioEnSesion(ej, (e && e.tipo) || "peso_reps", entreno.pesoCorporal);
+    const mejores = mejoresDeEjercicioEnSesion(ej, e || "peso_reps", entreno.pesoCorporal);
     recordsBatidos(entreno.recordsDe(ej.ejercicioId), mejores).forEach((r) => lista.push({ ...r, ejercicioId: ej.ejercicioId }));
   });
   return lista;

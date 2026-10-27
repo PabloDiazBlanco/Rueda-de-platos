@@ -43,7 +43,9 @@ function precargarSeries(series, anterior) {
     else if (esCalentamiento(s)) a = deCalentamiento[iCal++];
     else a = resto[iResto++];
     if (!a) return s;
-    return { ...s, kg: a.kg ?? null, reps: a.reps ?? null, seg: a.seg ?? null, km: a.km ?? null };
+    // Una serie unilateral (27-oct-2026) se precarga con sus dos lados.
+    const lados = a.lados !== undefined ? { lados: a.lados, repsIzq: a.repsIzq ?? null, repsDer: a.repsDer ?? null } : {};
+    return { ...s, kg: a.kg ?? null, reps: a.reps ?? null, seg: a.seg ?? null, km: a.km ?? null, ...lados };
   });
 }
 
