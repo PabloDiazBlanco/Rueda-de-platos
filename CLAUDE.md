@@ -209,7 +209,13 @@ el aspecto de cada pieza están en `local/ideas/gimnasio/03-diseno-modulo-entren
 - **Capas (`z-index`)**: gimnasio dibujado de Entrenar 5 (fijo debajo de la cabecera; sus botones, 6-7) ·
   barra inferior 30 · pastilla de entreno en curso 31 · menú lateral 40/41 ·
   sesión de entreno y paneles de la nevera 45 · modales 50 · `HistoriaScreen` de `auth-bootstrap.jsx`
-  9999.
+  9999. Las capas a pantalla completa (sesión, `CapaCompleta`, paneles de la nevera) bloquean el scroll de la
+  página con `useBloqueoScroll` (`ui/comun/bloqueo-scroll.js`), un contador común: **nunca** guardes y
+  devuelvas `document.body.style.overflow` a mano en una capa nueva (hasta el 27-oct-2026 cada una lo hacía y,
+  al cerrarse en otro orden, la página se quedaba sin scroll hasta recargar).
+- **«← Gimnasio»**: `navegar(destino, params, { volver: true })` recuerda de dónde se viene, y `app.jsx` pinta
+  arriba la vuelta mientras se siga en esa pestaña. Hoy solo lo usa el gimnasio dibujado (Progreso, Historial,
+  Rutinas y la ficha de un ejercicio).
 - **Cerrar sesión** (`ui/comun/cerrar-sesion.jsx`, con una confirmación breve) está en **Ajustes** y,
   en pequeño arriba a la derecha, en la **pantalla de alta** (asistente de perfil y cuestionario), por si
   se ha entrado con otra cuenta. Lo cierra `window.signOutUser` (`auth-bootstrap.jsx`). Hasta octubre de
@@ -465,6 +471,19 @@ cada secundario 0,5 (el cardio no cuenta); récords por tipo de ejercicio (`RECO
 «baten» si había uno anterior; `validarSerie` avisa, sin bloquear, de errores de dedo (más de 2,5 × el
 máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0, más de 4 horas).
 
+**×2 y unilaterales** (27-oct-2026; «Mancuernas a pares y series unilaterales» en `entreno-calculo.js`):
+- Los ejercicios con dos mancuernas a la vez llevan `pareja: true` (`CON_PAREJA` en `entreno-ejercicios.js`, y una
+  casilla en los propios): se escribe y se guarda el peso de **una**, la cabecera dice «kg ×2» y volumen, 1RM y mejor
+  serie lo cuentan doble; el peso máximo sigue siendo el de una (lo que compara `validarSerie`).
+- Una serie unilateral (`lados: true`, `repsIzq`, `repsDer`) es una sola fila con dos casillas y cuenta como una
+  serie; el volumen suma los dos lados y `reps` guarda siempre el lado más débil, que es el que usan el 1RM y los
+  récords. Se activa en la hoja del tipo de serie; los unilaterales por naturaleza (`UNILATERALES`) tratan como
+  divididas las series sin `lados`.
+- Para que los cálculos lo sepan, `volumenSerie`, `mejoresDeEjercicioEnSesion`, `recordsEnVivo` y `seriesConRecord`
+  aceptan el ejercicio entero en lugar del texto del tipo: **pásales el ejercicio** donde lo tengas. Cuando cambie
+  cómo se calcula un récord, sube `CALCULO_INDICE` (`entreno-almacen.js`) y los índices guardados se reconstruyen
+  una vez.
+
 **Interfaz** (`ui/entreno/` y `ui/estado/entreno.js`):
 - **`useEntreno(data)`** lleva todo: catálogo, índice, borrador, meses (se leen **bajo demanda** con
   `cargarMes`; `sesionesDeMes` junta los del mes con los que esperan en la cola), cola y las acciones, que
@@ -487,12 +506,15 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   descanso repintados cada segundo en piezas aparte (la tabla no), y la pantalla de debajo inmóvil.
 - **La tabla** (`fila-serie.jsx`): columnas según `camposDeTipo`; cada campo guarda su propio texto mientras
   se escribe (coma decimal, unidades de pantalla) y manda el valor convertido en cada cambio; ✓ valida con
-  `validarSerie` (aviso con «Corregir» / «Es correcto»), marca, arranca el descanso y pasa el foco a la
-  siguiente serie. El descanso (`descanso.jsx`) se calcula con `descanso.hasta` y avisa una vez con un
+  `validarSerie` (aviso con «Corregir» / «Es correcto»), marca y arranca el descanso, **sin enfocar nada**
+  (desde el 27-oct-2026: el foco abría el teclado del móvil). Solo está abierto el ejercicio que toca; si la
+  siguiente serie (`siguienteSerie`) es de otro ejercicio, este se pliega y aquel se abre y se trae a la vista
+  (en una superserie, ronda a ronda). Tocar la cabecera abre o cierra cualquiera a mano. El descanso (`descanso.jsx`) se calcula con `descanso.hasta` y avisa una vez con un
   pitido de Web Audio (el contexto se crea con el primer toque) y vibración donde exista.
 - **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca), récords
   batidos, «actualizar la rutina» si cambió su estructura (o el descanso de algún ejercicio), guardar,
-  compartir (`documentoSesion` con `BotonCompartir`) y descartar con confirmación.
+  compartir (`documentoSesion` con `BotonCompartir`) y descartar con confirmación. Desde el 27-oct-2026 enseña
+  también el mapa corporal con los músculos trabajados (`MapaSesion`, que sale igual en el detalle del historial).
 - **«Anterior» equivalente** (G4, 25-oct-2026): en un entreno que viene de una rutina, la columna
   «anterior» y la precarga usan lo que se hizo en la **última sesión de esa misma rutina**
   (`anteriorEquivalente`, `entreno-calculo.js`; el mismo ejercicio dos veces, cada uno con el suyo por
@@ -523,7 +545,8 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
   rango como referencia mostaza, lectura al tocar y botón «Gráfica»; el volumen pasó de oliva a verde). «¿Datos erróneos o que faltan?» de la
   ficha navega a `feedback` con `params: { categoria: "ejercicio", ejercicioId }`, y `FeedbackView` ofrece
   arriba el correo ya rellenado (nunca lo abre solo).
-- **Importar de Hevy y Lyfta** (G10, 25-oct-2026; `ui/entreno/importar.jsx`, en Ajustes → Entrenamiento):
+- **Importar de Hevy y Lyfta** (G10, 25-oct-2026; `ui/entreno/importar.jsx`, en Ajustes → Entrenamiento; desde el
+  27-oct-2026 la interfaz no las nombra, habla de «otra app»):
   se elige el CSV exportado, se ve un resumen (entrenos nuevos, los que ya estaban, ejercicios reconocidos y
   los que se crearán como propios, con la opción de elegir uno de la biblioteca) y se importa por el mismo
   camino que un entreno terminado (por meses + `reconstruir`). Las sesiones llevan `origen:
@@ -544,7 +567,9 @@ máximo histórico, más de 400 kg sin histórico, más de 100 repeticiones o 0,
 - **Superseries** (G11, 25-oct-2026): `superserie: id` en cada ejercicio de la rutina y de la sesión; los
   **seguidos** con el mismo id forman el grupo (2 o más), así que reordenar no deja restos (`gruposSuperserie`,
   `grupoDe`, `unirSuperserie`, `separarSuperserie` en `entreno-sesion.js`). Se crean en el editor de la
-  rutina (entre tarjetas, «Superserie con el siguiente») y en el ⋮ de la sesión; franja mostaza y «Superserie
+  rutina (entre tarjetas, «Superserie con el siguiente») y, desde el 27-oct-2026, con «Superserie con…» en el ⋮
+  de cada ejercicio, de la sesión y del editor (`HojaSuperserieCon`, `ui/entreno/superserie.jsx`): se elige el
+  otro, esté donde esté, y `superserieCon` lo coloca detrás del grupo; franja mostaza y «Superserie
   N». Al marcar una serie, el foco va por rondas (`ordenDeSeries`/`siguienteSerie`: A1 B1 A2 B2…). Cada
   ejercicio conserva su descanso, como sin superserie. Crear o deshacer una durante el entreno cuenta como
   cambio de la rutina; las importadas (G10) llegan con el mismo modelo.
@@ -649,7 +674,8 @@ están **descartadas** (no existen como variables).
   tuyo, mostaza = referencia, óxido = fuera de rango, gris = sin dato; varias variables, en verde, naranja, ciruela
   y café; tocar escribe el valor en una línea fija (`Lectura`); botón verde «Gráfica»; un solo selector de rango
   (1 mes · 3 meses · 1 año · Todo). También `useSerieCuerpo` y los nombres de las variables.
-- **Sueño** (`ui/cuerpo/sueno.jsx`, destino `cuerpo-sueno`, **en el menú lateral, no en la barra**, gratis): la
+- **Sueño** (`ui/cuerpo/sueno.jsx`, destino `cuerpo-sueno`, en el menú lateral y, desde el 27-oct-2026, también
+  como pestaña de la barra; con Período, Resúmenes sale de la barra para que quepan, `ocultaConPeriodo`; gratis): la
   opción C de la v3-06: deslizador y cinco caras, apuntar «anoche» de un toque (sale lo de la última vez), «Últimas 7
   noches» (tocar una barra corrige esa noche), «Últimos 30 días» con la raya de 7 h (mínimo recomendado para
   adultos: AASM/SRS, Watson et al., 2015) y enlace al constructor.
