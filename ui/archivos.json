@@ -8,6 +8,7 @@
   "ui/catalogo/platos.jsx",
   "ui/catalogo/reglas.jsx",
   "ui/comun/avatar.jsx",
+  "ui/comun/bloqueo-scroll.js",
   "ui/comun/categorias.js",
   "ui/comun/cerrar-sesion.jsx",
   "ui/comun/compartir.jsx",

@@ -19,6 +19,7 @@ import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "en
 import { estaPausada, siguienteSerie, grupoDe } from "entreno-sesion";
 import { pasoEntreEjercicios } from "gimnasio";
 import { inputStyle } from "../comun/modal.jsx";
+import { useBloqueoScroll } from "../comun/bloqueo-scroll.js";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
   reloj, duracionTexto, formatoNumero, textoPeso, nombreDe, HojaInferior, OpcionHoja, BotonPrincipal, BotonTexto,
@@ -96,11 +97,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const onTerminar = () => setTerminando(true);
 
   usePantallaEncendida();
-  useEffect(() => {
-    const antes = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = antes; };
-  }, []);
+  useBloqueoScroll();
 
   if (!s) return null;
   const resumen = resumenSesion(s, entreno.ejercicioDe, entreno.pesoCorporal);

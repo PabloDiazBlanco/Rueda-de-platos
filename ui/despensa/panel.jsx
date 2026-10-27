@@ -16,6 +16,7 @@ import { IconoAlimento } from "./dibujos.jsx";
 import { nombreCorto, formatoGramos } from "./piezas.jsx";
 import { EditarEntradaModal } from "./editar.jsx";
 import { AnadirAlimentoModal } from "./anadir.jsx";
+import { useBloqueoScroll } from "../comun/bloqueo-scroll.js";
 
 // Etiqueta de cada hueco. Lácteos y embutido reutilizan el nombre de su carpeta del catálogo.
 const ETIQUETA_HUECO = {
@@ -43,11 +44,7 @@ export function MarcoPanel({ titulo, fondo, tema, reducido, onCerrar, escapeActi
   }, []);
 
   // Mientras está abierto, la pantalla de debajo no se desplaza.
-  useEffect(() => {
-    const antes = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = antes; };
-  }, []);
+  useBloqueoScroll();
 
   function cerrar() {
     if (cerrando.current) return;
