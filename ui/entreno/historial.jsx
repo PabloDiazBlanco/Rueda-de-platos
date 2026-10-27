@@ -19,7 +19,7 @@ import {
   formatoNumero, pesoAPantalla, distanciaAPantalla, fechaDia, DIAS_CORTOS, Chip,
 } from "./comun.jsx";
 import { FilaSesion } from "./inicio.jsx";
-import { textoSerie, documentoSesion } from "./terminar.jsx";
+import { textoSerie, documentoSesion, MapaSesion } from "./terminar.jsx";
 import { etiquetasSeries, deTexto, unidadTiempo, COLOR_SERIE } from "./fila-serie.jsx";
 
 function sumarMes(mes, n) {
@@ -213,6 +213,7 @@ export function DetalleSesionView({ entreno, idioma, navegar, params, onAbrirEje
       </div>
       {sesion.nota && !editando && <TextoSuave style={{ fontStyle: "italic", margin: "6px 0" }}>{sesion.nota}</TextoSuave>}
       {pendiente && <TextoSuave style={{ margin: "6px 0" }}>{t(idioma, "entreno.detalle.pendiente")}</TextoSuave>}
+      {!editando && <MapaSesion sesion={sesion} entreno={entreno} idioma={idioma} />}
 
       {vista.ejercicios.map((ej) => {
         const tipo = (entreno.ejercicioDe(ej.ejercicioId) || {}).tipo || "peso_reps";
