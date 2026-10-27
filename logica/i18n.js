@@ -906,6 +906,7 @@ const TEXTOS = {
     "barra.alimentos": "Alimentos",
     "barra.peso": "Peso",
     "barra.actividad": "Actividad",
+    "barra.sueno": "Sueño",
     "barra.resumen": "Resúmenes",
 
     // Módulo de entreno (oct. 2026)
@@ -2757,6 +2758,7 @@ const TEXTOS = {
     "barra.alimentos": "Foods",
     "barra.peso": "Weight",
     "barra.actividad": "Activity",
+    "barra.sueno": "Sleep",
     "barra.resumen": "Summaries",
 
     // Módulo de entreno (oct. 2026)
@@ -4608,6 +4610,7 @@ const TEXTOS = {
     "barra.alimentos": "Aliments",
     "barra.peso": "Pes",
     "barra.actividad": "Activitat",
+    "barra.sueno": "Son",
     "barra.resumen": "Resums",
 
     // Módulo de entreno (oct. 2026)
@@ -6459,6 +6462,7 @@ const TEXTOS = {
     "barra.alimentos": "Alimentos",
     "barra.peso": "Peso",
     "barra.actividad": "Actividade",
+    "barra.sueno": "Sono",
     "barra.resumen": "Resumos",
 
     // Módulo de entreno (oct. 2026)
@@ -8310,6 +8314,7 @@ const TEXTOS = {
     "barra.alimentos": "Elikagaiak",
     "barra.peso": "Pisua",
     "barra.actividad": "Jarduera",
+    "barra.sueno": "Loa",
     "barra.resumen": "Laburpenak",
 
     // Módulo de entreno (oct. 2026)

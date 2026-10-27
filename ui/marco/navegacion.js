@@ -83,16 +83,21 @@ export const AREAS = [
       { clave: "peso", destino: "perfil-peso", etiqueta: "barra.peso", icono: Scale,
         incluye: ["perfil-peso", "perfil-medidas"] },
       { clave: "actividad", destino: "actividad-diaria", etiqueta: "barra.actividad", icono: Activity, incluye: ["actividad-diaria"] },
-      { clave: "resumen", destino: "perfil-resumen", etiqueta: "barra.resumen", icono: PieChart, incluye: ["perfil-resumen"] },
+      // Sueño (27-oct-2026, petición del usuario): también como pestaña.
+      { clave: "sueno", destino: "cuerpo-sueno", etiqueta: "barra.sueno", icono: Moon, incluye: ["cuerpo-sueno"] },
+      // Con Período serían seis pestañas, y en un móvil de 375 px el nombre de la activa ya no se lee entero
+      // («Resú…»): entonces Resúmenes sale de la barra (decisión del usuario, 27-oct-2026) y queda en el menú
+      // lateral (`ocultaConPeriodo`, ver visibleCon).
+      { clave: "resumen", destino: "perfil-resumen", etiqueta: "barra.resumen", icono: PieChart, incluye: ["perfil-resumen"], ocultaConPeriodo: true },
       { clave: "informes", destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles, incluye: ["cuerpo-informes", "cuerpo-constructor"] },
-      // I1: solo si el perfil tiene sexo femenino (`soloMujer`, ver visibleCon). Es la quinta: no cabe otra.
+      // I1: solo si el perfil tiene sexo femenino (`soloMujer`, ver visibleCon).
       { clave: "periodo", destino: "cuerpo-periodo", etiqueta: "barra.periodo", icono: Droplet, incluye: ["cuerpo-periodo"], soloMujer: true },
     ],
     menu: [
       { destino: "perfil-peso", etiqueta: "drawer.registroPeso", icono: Scale },
       { destino: "perfil-medidas", etiqueta: "perfilRoot.medidasCorporales", icono: Ruler },
       { destino: "actividad-diaria", etiqueta: "drawer.actividadDiaria", icono: Activity },
-      // Sueño (26-oct-2026): solo en el menú lateral; las cinco pestañas de abajo no cambian.
+      // Sueño (26-oct-2026): en el menú lateral y, desde el 27-oct-2026, también en la barra.
       { destino: "cuerpo-sueno", etiqueta: "cuerpo.sueno.menu", icono: Moon },
       { destino: "perfil-resumen", etiqueta: "perfilRoot.resumenMensual", icono: PieChart },
       { destino: "cuerpo-informes", etiqueta: "barra.informes", icono: Sparkles },
@@ -136,10 +141,12 @@ export function pestanaDe(destino) {
   return null;
 }
 
-// ¿Se enseña esta pestaña o entrada del menú con este perfil? Hoy solo «Período» (I1) depende de él: sale si
-// el perfil tiene sexo femenino. La barra inferior y el menú lateral filtran con esto.
+// ¿Se enseña esta pestaña o entrada del menú con este perfil? «Período» (I1) sale si el perfil tiene sexo
+// femenino, y entonces la pestaña Resúmenes se quita para que quepan (`ocultaConPeriodo`). La barra inferior y
+// el menú lateral filtran con esto.
 export function visibleCon(item, perfil) {
-  return !item.soloMujer || !!(perfil && perfil.sexo === "mujer");
+  const mujer = !!(perfil && perfil.sexo === "mujer");
+  return (!item.soloMujer || mujer) && (!item.ocultaConPeriodo || !mujer);
 }
 
 // La descripción completa de un área por su clave (o undefined).
