@@ -100,7 +100,7 @@ export function FichaEjercicioView({ entreno, idioma, navegar, params }) {
           {veces.map(({ sesion, ej }) => {
             const hechas = ej.series.filter((s) => s.hecha);
             const etiquetas = etiquetasSeries(hechas);
-            const medallas = seriesConRecord(registro, sesion.id, ej, e.tipo, entreno.pesoCorporal);
+            const medallas = seriesConRecord(registro, sesion.id, ej, e, entreno.pesoCorporal);
             return (
               <button
                 key={sesion.id + ej.inst}

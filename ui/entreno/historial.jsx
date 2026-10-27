@@ -19,7 +19,7 @@ import {
   formatoNumero, pesoAPantalla, distanciaAPantalla, fechaDia, DIAS_CORTOS, Chip,
 } from "./comun.jsx";
 import { FilaSesion } from "./inicio.jsx";
-import { textoSerie, documentoSesion } from "./terminar.jsx";
+import { textoSerie, documentoSesion, MapaSesion } from "./terminar.jsx";
 import { etiquetasSeries, deTexto, unidadTiempo, COLOR_SERIE } from "./fila-serie.jsx";
 
 function sumarMes(mes, n) {
@@ -213,13 +213,14 @@ export function DetalleSesionView({ entreno, idioma, navegar, params, onAbrirEje
       </div>
       {sesion.nota && !editando && <TextoSuave style={{ fontStyle: "italic", margin: "6px 0" }}>{sesion.nota}</TextoSuave>}
       {pendiente && <TextoSuave style={{ margin: "6px 0" }}>{t(idioma, "entreno.detalle.pendiente")}</TextoSuave>}
+      {!editando && <MapaSesion sesion={sesion} entreno={entreno} idioma={idioma} />}
 
       {vista.ejercicios.map((ej) => {
         const tipo = (entreno.ejercicioDe(ej.ejercicioId) || {}).tipo || "peso_reps";
         const campos = camposDeTipo(tipo);
         const etiquetas = etiquetasSeries(ej.series);
         // Medalla junto a las series que tienen hoy un récord de su ejercicio (fase C2).
-        const conMedalla = editando ? new Set() : seriesConRecord((entreno.indice.ejercicios || {})[ej.ejercicioId], sesion.id, ej, tipo, entreno.pesoCorporal);
+        const conMedalla = editando ? new Set() : seriesConRecord((entreno.indice.ejercicios || {})[ej.ejercicioId], sesion.id, ej, entreno.ejercicioDe(ej.ejercicioId) || tipo, entreno.pesoCorporal);
         return (
           <section key={ej.inst} style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px", marginTop: 10 }}>
             <button

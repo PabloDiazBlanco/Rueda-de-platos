@@ -116,12 +116,12 @@ export function GraficasEjercicio({ veces, ejercicio, entreno, idioma, listo }) 
   const barras = [];
   elegidas.forEach(({ sesion, ej }) => {
     const x = new Date(sesion.inicio).getTime();
-    const mejores = mejoresDeEjercicioEnSesion(ej, ejercicio.tipo, entreno.pesoCorporal);
+    const mejores = mejoresDeEjercicioEnSesion(ej, ejercicio, entreno.pesoCorporal);
     if (mejores[m.linea]) linea.push({ x, y: mejores[m.linea] });
     const cuentan = ej.series.filter((s) => s.hecha && s.tipo !== "calentamiento");
     const y = m.barras === "tiempo"
       ? cuentan.reduce((t2, s) => t2 + (Number(s.seg) || 0), 0)
-      : cuentan.reduce((t2, s) => t2 + volumenSerie(s, ejercicio.tipo, entreno.pesoCorporal), 0);
+      : cuentan.reduce((t2, s) => t2 + volumenSerie(s, ejercicio, entreno.pesoCorporal), 0);
     if (y > 0) barras.push({ x, y });
   });
   const titulo = (clave) => <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--ink-soft)", margin: "10px 0 4px" }}>{t(idioma, clave)}</div>;

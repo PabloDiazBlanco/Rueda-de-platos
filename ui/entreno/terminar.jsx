@@ -9,16 +9,33 @@ import React, { useState, useMemo } from "react";
 import { Medal } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo, GIMNASIOS_HABITUALES } from "entreno-ejercicios";
-import { resumenSesion, mejoresDeEjercicioEnSesion, recordsBatidos } from "entreno-calculo";
+import { resumenSesion, mejoresDeEjercicioEnSesion, recordsBatidos, seriesPorMusculo } from "entreno-calculo";
 import { terminarSesion, cambiosEstructurales } from "entreno-sesion";
 import { Field, inputStyle, ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { BotonCompartir } from "../comun/compartir.jsx";
+import { MapaCorporal } from "../comun/mapa-corporal.jsx";
 import { FUENTE_TEXTO, FUENTE_MONO } from "../estilos.js";
 import {
   CapaCompleta, BotonPrincipal, BotonSecundario, TextoSuave, duracionTexto, textoPeso, textoDistancia, nombreDe,
   formatoNumero, pesoAPantalla, reloj, fechaLarga,
 } from "./comun.jsx";
 import { etiquetasSeries } from "./fila-serie.jsx";
+
+// Los músculos trabajados en un entreno (27-oct-2026, petición del usuario): el mapa corporal grande con las
+// series por músculo de esa sesión (principal 1, cada secundario 0,5, como en Progreso). Sale al terminar y en
+// el detalle de cada entreno del historial. Si solo hubo cardio (no cuenta), no se enseña.
+export function MapaSesion({ sesion, entreno, idioma }) {
+  const valores = seriesPorMusculo([sesion], entreno.ejercicioDe, null, null);
+  if (!Object.values(valores).some((n) => n > 0)) return null;
+  return (
+    <div style={{ background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, padding: "10px 12px", margin: "10px 0 14px" }}>
+      <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "var(--ink-soft)", marginBottom: 4 }}>
+        {t(idioma, "entreno.detalle.mapa")}
+      </div>
+      <MapaCorporal valores={valores} perfil={entreno.perfil} idioma={idioma} etiqueta={t(idioma, "entreno.detalle.mapa")} />
+    </div>
+  );
+}
 
 // «AAAA-MM-DDTHH:MM» en hora local (lo que entiende <input type="datetime-local">) y vuelta a ISO.
 function aLocal(iso) {
@@ -34,7 +51,8 @@ export function textoSerie(sr, tipo, ajustes, idioma) {
     const v = sr[c];
     if (v === null || v === undefined) return;
     if (c === "kg") partes.push(`${tipo === "lastre_reps" ? "+" : tipo === "asistido_reps" ? "−" : ""}${formatoNumero(pesoAPantalla(v, ajustes.unidadPeso), idioma)} ${ajustes.unidadPeso}`);
-    else if (c === "reps") partes.push(`× ${v}`);
+    // Unilateral (27-oct-2026): «× 10/8», izquierda/derecha.
+    else if (c === "reps") partes.push(sr.lados && (sr.repsIzq != null || sr.repsDer != null) ? `× ${sr.repsIzq ?? v}/${sr.repsDer ?? v}` : `× ${v}`);
     else if (c === "km") partes.push(textoDistancia(v, ajustes, idioma));
     else if (c === "seg") partes.push(tipo === "duracion" ? `${v} s` : reloj(v));
   });
@@ -58,7 +76,7 @@ export function recordsDeSesion(sesion, entreno) {
   const lista = [];
   sesion.ejercicios.forEach((ej) => {
     const e = entreno.ejercicioDe(ej.ejercicioId);
-    const mejores = mejoresDeEjercicioEnSesion(ej, (e && e.tipo) || "peso_reps", entreno.pesoCorporal);
+    const mejores = mejoresDeEjercicioEnSesion(ej, e || "peso_reps", entreno.pesoCorporal);
     recordsBatidos(entreno.recordsDe(ej.ejercicioId), mejores).forEach((r) => lista.push({ ...r, ejercicioId: ej.ejercicioId }));
   });
   return lista;
@@ -155,6 +173,8 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
           ))}
         </div>
       )}
+
+      <MapaSesion sesion={final} entreno={entreno} idioma={idioma} />
 
       <Field label={t(idioma, "entreno.terminar.duro")}>
         <div style={{ display: "flex", gap: 6 }} role="radiogroup" aria-label={t(idioma, "entreno.terminar.duro")}>

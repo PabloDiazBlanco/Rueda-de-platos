@@ -184,9 +184,11 @@ export function VistaGimnasio({ entreno, idioma, navegar, empezar, onVista }) {
   }
 
   function alSitio(id) {
-    if (id === "progreso") return navegar("entreno-progreso");
-    if (id === "historial") return navegar("entreno-historial");
-    if (id === "rutinas") return navegar("entreno-rutinas");
+    // Con «volver» (27-oct-2026): esas pantallas enseñan arriba «← Gimnasio» para regresar aquí sin
+    // buscar la barra inferior (ver navegar en app.jsx).
+    if (id === "progreso") return navegar("entreno-progreso", null, { volver: true });
+    if (id === "historial") return navegar("entreno-historial", null, { volver: true });
+    if (id === "rutinas") return navegar("entreno-rutinas", null, { volver: true });
     if (id === "monitor") return hablar(fraseDeHoy());
     setHoja({ tipo: id }); // "empezar" (el torno) o "semana" (el corcho)
   }
@@ -293,7 +295,7 @@ export function VistaGimnasio({ entreno, idioma, navegar, empezar, onVista }) {
       {hoja && hoja.tipo === "zona" && (
         <HojaZona
           entreno={entreno} idioma={idioma} zona={hoja.zona} estacion={hoja.estacion} estado={tinte ? estados[hoja.zona] : null}
-          onFicha={(id) => navegar("entreno-ejercicio", { id })}
+          onFicha={(id) => navegar("entreno-ejercicio", { id }, { volver: true })}
           onCerrar={() => setHoja(null)}
         />
       )}

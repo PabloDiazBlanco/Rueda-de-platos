@@ -6,7 +6,8 @@
 //
 // Formas de los datos (ver la sección «Entrenamiento» de CLAUDE.md):
 //   sesión  = { id, inicio, fin, pausas: [{ inicio, fin }], ejercicios: [{ inst, ejercicioId, series }] }
-//   serie   = { id, tipo: "normal"|"calentamiento"|"fallo"|"drop", kg, reps, seg, km, rir, hecha }
+//   serie   = { id, tipo: "normal"|"calentamiento"|"fallo"|"drop", kg, reps, seg, km, rir, hecha,
+//               lados?, repsIzq?, repsDer? }   (unilateral: ver «Mancuernas a pares y series unilaterales»)
 // Las horas son texto ISO («2026-10-23T17:55:00.000Z») o milisegundos; los kilos y kilómetros se guardan
 // siempre en kg y km (las libras y millas son solo de pantalla).
 //
@@ -46,18 +47,72 @@ export function e1rmFiable(reps, rir) {
   return (Number(reps) || 0) + (Number(rir) || 0) <= 12;
 }
 
+// ---------- Mancuernas a pares (×2) y series unilaterales (27-oct-2026) ----------
+// Dos decisiones del usuario, para no tener que hacer cuentas en el gimnasio:
+// - **×2**: en los ejercicios con dos mancuernas a la vez (`pareja: true` en la biblioteca, o marcado en uno
+//   propio) se escribe el peso de UNA. Lo guardado es siempre eso, el peso de una (también lo de antes y lo
+//   importado, que ya se apuntaba así); el doble se aplica solo aquí, al calcular volumen, 1RM y mejor serie.
+//   El peso máximo se queda en el de una mancuerna, que es la cifra que se teclea y con la que se compara
+//   validarSerie. Los unilaterales de una mancuerna (remo a una mano) no llevan pareja.
+// - **Unilateral**: una serie con `lados: true` guarda las repeticiones de cada lado (`repsIzq`, `repsDer`) y
+//   cuenta como UNA serie. El volumen suma los dos lados; el 1RM y los récords de repeticiones usan el lado
+//   más débil (decisión del usuario, que la interfaz explica), y por eso `reps` guarda siempre ese mínimo: así
+//   todo lo que lee `reps` (1RM, récords, «anterior», exportar) ya usa el lado más débil sin tocarlo. Los
+//   ejercicios unilaterales por naturaleza (`unilateral: true`) tratan como divididas las series que no dicen
+//   lo contrario (`lados` sin poner), con las mismas repeticiones a cada lado mientras no se cambien.
+// Las funciones de abajo aceptan en `tipo` el texto del tipo («peso_reps») o el ejercicio entero ({ tipo,
+// pareja, unilateral }): con el texto no hay ni ×2 ni unilateral por defecto, como hasta ahora.
+function descriptor(tipoOEjercicio) {
+  if (tipoOEjercicio && typeof tipoOEjercicio === "object") {
+    return { tipo: tipoOEjercicio.tipo || "peso_reps", pareja: !!tipoOEjercicio.pareja, unilateral: !!tipoOEjercicio.unilateral };
+  }
+  return { tipo: tipoOEjercicio || "peso_reps", pareja: false, unilateral: false };
+}
+
+// Kilos que se mueven de verdad en una serie (el doble con dos mancuernas).
+export function cargaSerie(serie, pareja) {
+  return (Number(serie.kg) || 0) * (pareja ? 2 : 1);
+}
+
+// ¿Va dividida en izquierda y derecha? Lo que diga la serie; si no dice nada, lo del ejercicio.
+export function seriePorLados(serie, unilateral) {
+  return serie.lados ?? !!unilateral;
+}
+
+// Repeticiones de un lado ("izq" | "der"): las suyas o, si aún no se tocaron, las de la serie.
+export function repsDeLado(serie, lado) {
+  const propias = lado === "izq" ? serie.repsIzq : serie.repsDer;
+  return propias ?? serie.reps ?? null;
+}
+
+// El lado más débil: lo que se guarda en `reps` de una serie unilateral (con un solo lado escrito, ese).
+export function repsLadoDebil(izq, der) {
+  const vale = (x) => x !== null && x !== undefined && x !== "";
+  if (vale(izq) && vale(der)) return Math.min(Number(izq), Number(der));
+  if (vale(izq)) return Number(izq);
+  if (vale(der)) return Number(der);
+  return null;
+}
+
+// Repeticiones para el volumen: los dos lados sumados en una serie unilateral.
+export function repsTotales(serie, unilateral) {
+  if (!seriePorLados(serie, unilateral)) return Number(serie.reps) || 0;
+  return (Number(repsDeLado(serie, "izq")) || 0) + (Number(repsDeLado(serie, "der")) || 0);
+}
+
 // ---------- Volumen ----------
 // kg × repeticiones de las series que cuentan. En los de peso corporal se usa el peso del perfil: sin
 // él no se puede saber, así que cuenta 0 (mejor nada que un número inventado). En los asistidos, la
 // máquina quita kilos: se mueve el peso corporal menos la ayuda (nunca menos de 0). Los de duración y
 // distancia no tienen volumen en kilos.
-export function volumenSerie(serie, tipo, pesoCorporal) {
+export function volumenSerie(serie, tipoOEjercicio, pesoCorporal) {
   if (!cuenta(serie)) return 0;
+  const { tipo, pareja, unilateral } = descriptor(tipoOEjercicio);
   const kg = Number(serie.kg) || 0;
-  const reps = Number(serie.reps) || 0;
+  const reps = repsTotales(serie, unilateral);
   const pc = Number(pesoCorporal) || 0;
   switch (tipo) {
-    case "peso_reps": return kg * reps;
+    case "peso_reps": return cargaSerie(serie, pareja) * reps;
     case "reps": return pc * reps;
     case "lastre_reps": return pc ? (pc + kg) * reps : 0;
     case "asistido_reps": return pc ? Math.max(0, pc - kg) * reps : 0;
@@ -65,15 +120,11 @@ export function volumenSerie(serie, tipo, pesoCorporal) {
   }
 }
 
-function tipoDe(ejercicioDe, id) {
-  const e = ejercicioDe(id);
-  return (e && e.tipo) || "peso_reps";
-}
-
 export function volumenSesion(sesion, ejercicioDe, pesoCorporal) {
   return redondear1((sesion.ejercicios || []).reduce((total, ej) => {
-    const tipo = tipoDe(ejercicioDe, ej.ejercicioId);
-    return total + (ej.series || []).reduce((s, serie) => s + volumenSerie(serie, tipo, pesoCorporal), 0);
+    // El ejercicio entero (por el ×2 y el unilateral) o, si ya no se conoce, el tipo por defecto.
+    const e = ejercicioDe(ej.ejercicioId) || "peso_reps";
+    return total + (ej.series || []).reduce((s, serie) => s + volumenSerie(serie, e, pesoCorporal), 0);
   }, 0));
 }
 
@@ -121,7 +172,10 @@ export const RECORDS_POR_TIPO = {
 
 // Lo mejor de un ejercicio dentro de una sesión, solo con los récords de su tipo. Cada valor es un
 // número, salvo `mejorSerie`, que es { kg, reps, valor } (valor = kg × reps, lo que se compara).
-export function mejoresDeEjercicioEnSesion(ej, tipo, pesoCorporal) {
+// Con ×2, el 1RM y la mejor serie usan la carga doble (el peso máximo no: ver más arriba); en una serie
+// unilateral, `reps` ya es el lado más débil, y las repeticiones de la sesión suman los dos lados.
+export function mejoresDeEjercicioEnSesion(ej, tipoOEjercicio, pesoCorporal) {
+  const { tipo, pareja, unilateral } = descriptor(tipoOEjercicio);
   const series = (ej.series || []).filter(cuenta);
   const claves = RECORDS_POR_TIPO[tipo] || RECORDS_POR_TIPO.peso_reps;
   const mejores = {};
@@ -130,13 +184,13 @@ export function mejoresDeEjercicioEnSesion(ej, tipo, pesoCorporal) {
   claves.forEach((clave) => {
     let valor = null;
     if (clave === "pesoMax") valor = max((s) => s.kg);
-    else if (clave === "e1rm") valor = Math.max(0, ...series.map((s) => e1rm(s.kg, s.reps, s.rir) || 0));
+    else if (clave === "e1rm") valor = Math.max(0, ...series.map((s) => e1rm(cargaSerie(s, pareja), s.reps, s.rir) || 0));
     else if (clave === "mejorSerie") {
-      const mejor = series.reduce((m, s) => ((Number(s.kg) || 0) * (Number(s.reps) || 0) > m.valor ? { kg: Number(s.kg) || 0, reps: Number(s.reps) || 0, valor: (Number(s.kg) || 0) * (Number(s.reps) || 0) } : m), { kg: 0, reps: 0, valor: 0 });
+      const mejor = series.reduce((m, s) => (cargaSerie(s, pareja) * (Number(s.reps) || 0) > m.valor ? { kg: Number(s.kg) || 0, reps: Number(s.reps) || 0, valor: cargaSerie(s, pareja) * (Number(s.reps) || 0) } : m), { kg: 0, reps: 0, valor: 0 });
       valor = mejor.valor > 0 ? mejor : null;
-    } else if (clave === "volumenSesion") valor = redondear1(series.reduce((t, s) => t + volumenSerie(s, tipo, pesoCorporal), 0));
+    } else if (clave === "volumenSesion") valor = redondear1(series.reduce((t, s) => t + volumenSerie(s, tipoOEjercicio, pesoCorporal), 0));
     else if (clave === "repsSerie") valor = max((s) => s.reps);
-    else if (clave === "repsSesion") valor = series.reduce((t, s) => t + (Number(s.reps) || 0), 0);
+    else if (clave === "repsSesion") valor = series.reduce((t, s) => t + repsTotales(s, unilateral), 0);
     else if (clave === "segMax") valor = max((s) => s.seg);
     else if (clave === "kmMax") valor = max((s) => s.km);
     if (valor !== null && (typeof valor === "object" || valor > 0)) mejores[clave] = valor;

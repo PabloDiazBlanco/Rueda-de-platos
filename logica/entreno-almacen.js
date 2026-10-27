@@ -105,8 +105,13 @@ export function migrarMes(guardado, mes) {
   return { valor, changed };
 }
 
+// Versión de los cálculos con que se hicieron los récords del índice. Sube cuando cambia cómo se calcula un
+// récord, para que los índices guardados se reconstruyan una vez con la regla nueva. 2 (27-oct-2026): ×2 de
+// las mancuernas a pares y series unilaterales.
+const CALCULO_INDICE = 2;
+
 export function indiceVacio() {
-  return { version: VERSION, meses: {}, ejercicios: {}, rutinas: {} };
+  return { version: VERSION, calculo: CALCULO_INDICE, meses: {}, ejercicios: {}, rutinas: {} };
 }
 
 // `reconstruir`: el índice guardado es de antes de que existiera `rutinas` (G4): no se puede completar
@@ -120,6 +125,8 @@ export function migrarIndice(guardado) {
   if (!valor.meses || typeof valor.meses !== "object") { valor.meses = {}; changed = true; }
   if (!valor.ejercicios || typeof valor.ejercicios !== "object") { valor.ejercicios = {}; changed = true; }
   if (!valor.rutinas || typeof valor.rutinas !== "object") { valor.rutinas = {}; changed = true; reconstruir = true; }
+  // Récords calculados con una regla anterior (ver CALCULO_INDICE): se rehacen releyendo los meses.
+  if (valor.calculo !== CALCULO_INDICE) { valor.calculo = CALCULO_INDICE; changed = true; reconstruir = true; }
   if (valor.version !== VERSION) { valor.version = VERSION; changed = true; }
   return { valor, changed, reconstruir };
 }
@@ -173,7 +180,11 @@ export function fusionarMeses(a, b) {
 // por rutina (G4), los ejercicios de su última sesión con sus series, en orden, para el «anterior»
 // equivalente (ver anteriorEquivalente en entreno-calculo.js).
 
-const copiaSerie = ({ tipo, kg, reps, seg, km, rir }) => ({ tipo, kg: kg ?? null, reps: reps ?? null, seg: seg ?? null, km: km ?? null, rir: rir ?? null });
+// Las series unilaterales (27-oct-2026) llevan además sus dos lados, para que «anterior» los enseñe.
+const copiaSerie = ({ tipo, kg, reps, seg, km, rir, lados, repsIzq, repsDer }) => ({
+  tipo, kg: kg ?? null, reps: reps ?? null, seg: seg ?? null, km: km ?? null, rir: rir ?? null,
+  ...(lados !== undefined ? { lados, repsIzq: repsIzq ?? null, repsDer: repsDer ?? null } : {}),
+});
 const valorRecord = (r) => (r === null || r === undefined ? null : typeof r === "object" ? r.valor : r);
 
 // Mete una sesión en el índice (sin tocar el recuento de meses). Los récords se actualizan solo si la
@@ -194,7 +205,7 @@ function anotarSesion(indice, sesion, ejercicioDe, pesoCorporal) {
       nuevo.ultima = { sesionId: sesion.id, fecha, inicio: sesion.inicio, series };
     }
     const e = ejercicioDe(ej.ejercicioId);
-    const mejores = mejoresDeEjercicioEnSesion(ej, (e && e.tipo) || "peso_reps", pesoCorporal);
+    const mejores = mejoresDeEjercicioEnSesion(ej, e || "peso_reps", pesoCorporal);
     Object.keys(mejores).forEach((clave) => {
       const m = mejores[clave];
       if (valorRecord(m) > (valorRecord(nuevo.records[clave]) ?? -Infinity)) {

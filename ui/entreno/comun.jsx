@@ -9,6 +9,7 @@ import { t } from "i18n";
 import { nombreEjercicio } from "entreno-nombres";
 import { pesoAPantalla, distanciaAPantalla } from "entreno-calculo";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
+import { useBloqueoScroll } from "../comun/bloqueo-scroll.js";
 
 // ---------- Capa a pantalla completa ----------
 // Para lo que no cabe en un modal pequeño (elegir entre 80 ejercicios, crear uno, la sesión en curso):
@@ -16,17 +17,16 @@ import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 // opcional (el botón principal), y la pantalla de debajo inmóvil. `capa`: z-index (45 la sesión, como
 // los paneles de la nevera; 50 lo que se abre encima de ella, como los modales).
 export function CapaCompleta({ titulo, onCerrar, icono = "cerrar", pie, capa = 50, accionesTitulo, children, idioma }) {
+  // El bloqueo, aparte y solo al montar: antes iba en el mismo efecto que la tecla Escape, que se repite
+  // con cada `onCerrar` nuevo (casi siempre una función escrita en línea), y lo soltaba y retomaba en cada
+  // repintado del padre (ver ui/comun/bloqueo-scroll.js).
+  useBloqueoScroll();
   useEffect(() => {
-    const antes = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
     function alPulsar(e) {
       if (e.key === "Escape") onCerrar();
     }
     window.addEventListener("keydown", alPulsar);
-    return () => {
-      document.body.style.overflow = antes;
-      window.removeEventListener("keydown", alPulsar);
-    };
+    return () => window.removeEventListener("keydown", alPulsar);
   }, [onCerrar]);
   const Icono = icono === "volver" ? ArrowLeft : X;
   return (

@@ -29,12 +29,12 @@ import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
   pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes, discosPorLado,
-  anteriorEquivalente,
+  anteriorEquivalente, repsLadoDebil,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
   terminarSesion, cambiosEstructurales, aplicarARutina, rutinaDesdeSesion, anadirEjercicios, descansoEjercicio,
-  gruposSuperserie, grupoDe, unirSuperserie, separarSuperserie, ordenDeSeries, siguienteSerie,
+  gruposSuperserie, grupoDe, unirSuperserie, separarSuperserie, superserieCon, ordenDeSeries, siguienteSerie,
 } from "entreno-sesion";
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
@@ -1720,6 +1720,39 @@ function grupoEntrenoCalculos() {
         },
       },
       {
+        // 27-oct-2026. A mano: 20 kg por mancuerna × 10 = 400 kg de volumen; 1RM con 40 kg y 10 reps =
+        // 40 × (1 + 10/30) = 53,3; el peso máximo se queda en 20 (lo tecleado). Unilateral 10/8 a 20 kg: volumen
+        // 20 × 18 = 360; 1RM con el lado débil (8): 20 × (1 + 8/30) = 25,3; mejor serie 20 × 8 = 160.
+        nombre: "×2 con dos mancuernas y series unilaterales: volumen, 1RM y récords",
+        ejecutar: () => {
+          const conPareja = { tipo: "peso_reps", pareja: true };
+          const par = serieP("normal", 20, 10);
+          const mPar = mejoresDeEjercicioEnSesion({ series: [par] }, conPareja, 80);
+          const lado = { ...serieP("normal", 20, 8), lados: true, repsIzq: 10, repsDer: 8 };
+          const mLado = mejoresDeEjercicioEnSesion({ series: [lado] }, "peso_reps", 80);
+          // Ejercicio unilateral por naturaleza: una serie sin `lados` cuenta las mismas repeticiones a cada lado.
+          const uni = { tipo: "peso_reps", unilateral: true };
+          const deFabrica = (id) => EJERCICIOS_SEMILLA.find((e) => e.id === id);
+          return comparar(
+            {
+              volPar: volumenSerie(par, conPareja, 80), volTexto: volumenSerie(par, "peso_reps", 80),
+              e1rmPar: mPar.e1rm, pesoMaxPar: mPar.pesoMax, mejorPar: mPar.mejorSerie.valor,
+              volLado: volumenSerie(lado, "peso_reps", 80), e1rmLado: mLado.e1rm, mejorLado: mLado.mejorSerie.valor,
+              volUniDefecto: volumenSerie(serieP("normal", 10, 12), uni, 80), volUniApagado: volumenSerie({ ...serieP("normal", 10, 12), lados: false }, uni, 80),
+              debil: [repsLadoDebil(10, 8), repsLadoDebil(null, 7), repsLadoDebil(null, null)].join(" "),
+              bancaMancuernas: !!deFabrica("ex_press_banca_mancuernas").pareja, remoUnaMano: [!!deFabrica("ex_remo_mancuerna").pareja, !!deFabrica("ex_remo_mancuerna").unilateral].join(" "),
+              bancaBarra: !!deFabrica("ex_press_banca_barra").pareja,
+              indiceViejo: migrarIndice({ version: 1, meses: {}, ejercicios: {}, rutinas: {} }).reconstruir,
+            },
+            {
+              volPar: 400, volTexto: 200, e1rmPar: 53.3, pesoMaxPar: 20, mejorPar: 400,
+              volLado: 360, e1rmLado: 25.3, mejorLado: 160, volUniDefecto: 240, volUniApagado: 120,
+              debil: "8 7 ", bancaMancuernas: true, remoUnaMano: "false true", bancaBarra: false, indiceViejo: true,
+            }
+          );
+        },
+      },
+      {
         nombre: "Volumen por tipo: peso corporal, lastre, asistido y duración",
         ejecutar: () => comparar(
           {
@@ -2014,6 +2047,25 @@ function grupoEntrenoSesion() {
           return comparar(
             { ab: forma(ab), abc: forma(abc), sinB: forma(sinB), mismoId: abc[0].superserie === abc[2].superserie, grupoD: grupoDe(abc, 3), numero: grupoDe(abc, 2).numero, ultimoSinSiguiente: unirSuperserie(lista, 3) === lista },
             { ab: "[ab] c d", abc: "[abc] d", sinB: "a b c d", mismoId: true, grupoD: null, numero: 1, ultimoSinSiguiente: true }
+          );
+        },
+      },
+      {
+        nombre: "Superserie «con…» (27-oct): el elegido se coloca tras el grupo, sale del suyo y no se duplica",
+        ejecutar: () => {
+          const lista = ["a", "b", "c", "d", "e"].map((x) => ({ ejercicioId: x, superserie: null }));
+          const forma = (l) => gruposSuperserie(l).map((g) => (g.fin > g.inicio ? `[${l.slice(g.inicio, g.fin + 1).map((e) => e.ejercicioId).join("")}]` : l[g.inicio].ejercicioId)).join(" ");
+          // a con d: d sube detrás de a. b con a (a va antes): a baja detrás de b.
+          const ad = superserieCon(lista, 0, 3);
+          const ba = superserieCon(lista, 1, 0);
+          // Con un grupo ya hecho [ad], e se suma detrás de d; c con [ad] (pidiéndolo desde d) también.
+          const ade = superserieCon(ad, 0, 4);
+          const desdeD = superserieCon(ad, 1, 3);
+          // d sale de [ad] para irse con e: [ad] se deshace.
+          const de = superserieCon(ad, 4, 1);
+          return comparar(
+            { ad: forma(ad), ba: forma(ba), ade: forma(ade), desdeD: forma(desdeD), de: forma(de), mismo: superserieCon(ad, 0, 1) === ad, total: ade.length },
+            { ad: "[ad] b c e", ba: "[ba] c d e", ade: "[ade] b c", desdeD: "[adc] b e", de: "a b c [ed]", mismo: true, total: 5 }
           );
         },
       },

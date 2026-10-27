@@ -5,7 +5,7 @@
 // (queda la pastilla «Entreno en curso» en cualquier pantalla) y «Terminar» lleva al resumen final.
 //
 // Reglas de oro de la tabla (las pone en práctica fila-serie.jsx): «anterior» = lo de la última vez,
-// serie a serie; ✓ guarda la serie, arranca el descanso y pasa el foco a la siguiente; teclado numérico
+// serie a serie; ✓ guarda la serie y arranca el descanso (sin enfocar nada, para no abrir el teclado); teclado numérico
 // con el campo seleccionado; tocar el número de serie cambia su tipo. Si lo tecleado parece un error de
 // dedo («1005» en vez de «100,5»), al marcar pregunta antes (validarSerie).
 //
@@ -15,15 +15,17 @@ import React, { useState, useEffect } from "react";
 import { ChevronDown, ChevronRight, MoreVertical, Plus, Timer, Trash2, CloudOff, Check, Pause, Play, ArrowUp, ArrowDown, Repeat, StickyNote, Medal, BookOpen, Calculator, Link2, Link2Off } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo } from "entreno-ejercicios";
-import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo } from "entreno-calculo";
-import { estaPausada, siguienteSerie, grupoDe } from "entreno-sesion";
+import { resumenSesion, duracionEfectiva, validarSerie, recordsEnVivo, seriePorLados } from "entreno-calculo";
+import { estaPausada, siguienteSerie, grupoDe, ordenDeSeries } from "entreno-sesion";
 import { pasoEntreEjercicios } from "gimnasio";
 import { inputStyle } from "../comun/modal.jsx";
+import { useBloqueoScroll } from "../comun/bloqueo-scroll.js";
 import { FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO } from "../estilos.js";
 import {
   reloj, duracionTexto, formatoNumero, textoPeso, nombreDe, HojaInferior, OpcionHoja, BotonPrincipal, BotonTexto,
-  TextoSuave, pesoAPantalla,
+  TextoSuave, pesoAPantalla, prefiereMenosMovimiento,
 } from "./comun.jsx";
+import { HojaSuperserieCon } from "./superserie.jsx";
 import { FilaSerie, HojaTipoSerie, etiquetasSeries, plantillaColumnas, columnasDe } from "./fila-serie.jsx";
 import { BarraDescanso, prepararAudio, BotonDescanso, HojaDescanso } from "./descanso.jsx";
 import { MiniMapaPaseo } from "./mini-mapa.jsx";
@@ -88,6 +90,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const [nota, setNota] = useState(null); // { inst, texto } mientras se escribe la nota de hoy de un ejercicio
   const [hojaTipo, setHojaTipo] = useState(null); // { inst, serie }
   const [menuEjercicio, setMenuEjercicio] = useState(null); // inst
+  const [superserieDe, setSuperserieDe] = useState(null); // inst del ejercicio que busca pareja de superserie
   const [avisos, setAvisos] = useState({}); // id de serie → [avisos]
   const [terminando, setTerminando] = useState(false);
   const [discos, setDiscos] = useState(null); // kg de partida de la calculadora de discos, si está abierta
@@ -96,11 +99,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const onTerminar = () => setTerminando(true);
 
   usePantallaEncendida();
-  useEffect(() => {
-    const antes = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = antes; };
-  }, []);
+  useBloqueoScroll();
 
   if (!s) return null;
   const resumen = resumenSesion(s, entreno.ejercicioDe, entreno.pesoCorporal);
@@ -111,18 +110,27 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const idxMenu = menuEjercicio ? s.ejercicios.findIndex((e) => e.inst === menuEjercicio) : -1;
   const grupoMenu = idxMenu >= 0 ? grupoDe(s.ejercicios, idxMenu) : null;
 
-  // Tras marcar una serie, el foco salta a la siguiente sin hacer (de este ejercicio o de los siguientes). En
-  // una superserie (G11), a la equivalente del siguiente ejercicio del grupo y, al acabar la ronda, a la
-  // siguiente del primero: el orden lo decide siguienteSerie (logica/entreno-sesion.js).
-  function enfocarSiguiente(inst, serieId) {
-    const sig = siguienteSerie(s, inst, serieId);
-    if (sig) setTimeout(() => { const el = document.getElementById(`campo-${sig.id}`); if (el) el.focus(); }, 60);
-  }
-
+  // Tras marcar una serie ya NO se enfoca la siguiente (27-oct-2026): el foco en un campo abre el teclado
+  // del móvil, que tapaba la animación del ✓ y sobraba casi siempre (los valores suelen venir precargados).
+  // El teclado solo sale al tocar un campo (peso, repeticiones, RIR, una nota).
+  //
+  // Lo que sí hace (27-oct-2026, petición del usuario, como en Hevy): si la siguiente serie que toca es de
+  // otro ejercicio, pliega este y despliega aquel, y lo trae a la vista. Sin superserie, eso pasa al acabar
+  // un ejercicio; en una superserie (G11), con cada serie: A se cierra y se abre B, B se cierra y vuelve A,
+  // ronda a ronda, en el orden de siguienteSerie (logica/entreno-sesion.js).
   function confirmarSerie(ej, serie) {
+    const sig = siguienteSerie(s, ej.inst, serie.id);
     entreno.marcarHecha(ej.inst, serie.id);
     setAvisos((a) => { const { [serie.id]: _, ...resto } = a; return resto; });
-    enfocarSiguiente(ej.inst, serie.id);
+    if (sig && sig.inst !== ej.inst) {
+      setPlegados((p) => ({ ...p, [ej.inst]: true, [sig.inst]: false }));
+      setTimeout(() => {
+        const el = document.getElementById(`ejercicio-${sig.inst}`);
+        if (el) el.scrollIntoView({ block: "start", behavior: prefiereMenosMovimiento() ? "auto" : "smooth" });
+      }, 80);
+    } else if (!sig && ej.series.every((x) => x.hecha || x.id === serie.id)) {
+      setPlegados((p) => ({ ...p, [ej.inst]: true }));
+    }
   }
 
   function marcar(ej, serie) {
@@ -134,7 +142,10 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
     confirmarSerie(ej, serie);
   }
 
-  const estaPlegado = (ej) => plegados[ej.inst] ?? (ej.series.length > 0 && ej.series.every((x) => x.hecha));
+  // Por defecto solo está abierto el ejercicio que toca ahora (el de la primera serie sin hacer, en el orden
+  // de las rondas) y los que aún no tienen series; tocar la cabecera de cualquiera lo abre o lo cierra a mano.
+  const actual = ordenDeSeries(s).find((x) => !((s.ejercicios.find((e) => e.inst === x.inst) || { series: [] }).series.find((y) => y.id === x.id) || {}).hecha);
+  const estaPlegado = (ej) => plegados[ej.inst] ?? (ej.series.length > 0 && (!actual || actual.inst !== ej.inst));
 
   return (
     <div
@@ -213,8 +224,12 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
             const etiquetas = etiquetasSeries(ej.series);
             const hechas = ej.series.filter((x) => x.hecha).length;
             const plegado = estaPlegado(ej);
-            const columnas = plantillaColumnas(campos.length, ajustes.mostrarEsfuerzo);
             const ejercicio = entreno.ejercicioDe(ej.ejercicioId);
+            // ×2 y unilateral (27-oct-2026): del ejercicio; cada serie puede ir o no por lados.
+            const pareja = !!(ejercicio && ejercicio.pareja && tipo === "peso_reps");
+            const unilateral = !!(ejercicio && ejercicio.unilateral);
+            const conLados = campos.includes("reps") && ej.series.some((sr) => seriePorLados(sr, unilateral));
+            const columnas = plantillaColumnas(campos.length, ajustes.mostrarEsfuerzo, conLados);
             // «Anterior» por clase: el calentamiento con el calentamiento y el resto con el resto, en orden.
             const antCal = anterior.filter((a) => a.tipo === "calentamiento");
             const antResto = anterior.filter((a) => a.tipo !== "calentamiento");
@@ -223,7 +238,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
             return (
               <section
                 key={ej.inst}
+                id={`ejercicio-${ej.inst}`}
                 style={{
+                  scrollMarginTop: 8,
                   background: "var(--card)", border: "1px solid var(--line)", borderRadius: 10, overflow: "hidden",
                   borderLeft: grupo ? "5px solid var(--mustard)" : "1px solid var(--line)",
                   marginBottom: grupo && posicion < grupo.fin ? 4 : 10,
@@ -261,7 +278,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
                     <div style={{ display: "grid", gridTemplateColumns: columnas, gap: 6, padding: "2px 4px", fontFamily: FUENTE_TEXTO, fontSize: 10.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "var(--ink-soft)" }}>
                       <span style={{ textAlign: "center" }}>{t(idioma, "entreno.sesion.serie")}</span>
                       <span>{t(idioma, "entreno.sesion.anterior")}</span>
-                      {columnasDe(campos, tipo, ajustes).map((c) => <span key={c} style={{ textAlign: "center" }}>{c}</span>)}
+                      {columnasDe(campos, tipo, ajustes, { pareja, lados: conLados ? `${t(idioma, "entreno.sesion.izq")} · ${t(idioma, "entreno.sesion.der")}` : null }).map((c, k) => (
+                        <span key={k} title={pareja && campos[k] === "kg" ? t(idioma, "entreno.sesion.x2Ayuda") : undefined} style={{ textAlign: "center" }}>{c}</span>
+                      ))}
                       {ajustes.mostrarEsfuerzo && <span style={{ textAlign: "center" }}>RIR</span>}
                       <span />
                     </div>
@@ -277,6 +296,8 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
                         mostrarEsfuerzo={ajustes.mostrarEsfuerzo}
                         idioma={idioma}
                         plantillaColumnas={columnas}
+                        pareja={pareja}
+                        unilateral={unilateral}
                         onEditar={(valores) => {
                           entreno.editarSerie(ej.inst, sr.id, valores);
                           if (avisos[sr.id]) setAvisos((a) => { const { [sr.id]: _, ...resto } = a; return resto; });
@@ -284,7 +305,7 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
                         onMarcar={() => marcar(ej, sr)}
                         onDesmarcar={() => entreno.desmarcar(ej.inst, sr.id)}
                         onAbrirTipo={() => setHojaTipo({ inst: ej.inst, serie: sr })}
-                        aviso={!avisos[sr.id] ? (sr.hecha && <AvisoRecord records={recordsEnVivo(ej, sr.id, tipo, entreno.pesoCorporal, entreno.recordsDe(ej.ejercicioId))} ajustes={ajustes} idioma={idioma} />) : (
+                        aviso={!avisos[sr.id] ? (sr.hecha && <AvisoRecord records={recordsEnVivo(ej, sr.id, ejercicio || tipo, entreno.pesoCorporal, entreno.recordsDe(ej.ejercicioId))} ajustes={ajustes} idioma={idioma} />) : (
                           <div role="alert" style={{ margin: "0 6px 6px", padding: "8px 10px", borderRadius: 8, background: "var(--rust-soft)", fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink)" }}>
                             {avisos[sr.id].map((a) => <div key={a}>{textoAviso(a, sr, ajustes, idioma)}</div>)}
                             <div style={{ display: "flex", gap: 14, marginTop: 4 }}>
@@ -377,15 +398,29 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
         </HojaInferior>
       )}
 
-      {hojaTipo && (
+      {hojaTipo && (() => {
+        // Unilateral (27-oct-2026): con las dos casillas ya rellenas con las repeticiones que hubiera.
+        const ej = s.ejercicios.find((e) => e.inst === hojaTipo.inst);
+        const sr = ej && ej.series.find((x) => x.id === hojaTipo.serie.id);
+        if (!sr) return null;
+        const e = entreno.ejercicioDe(ej.ejercicioId);
+        const porLados = seriePorLados(sr, e && e.unilateral);
+        const conReps = camposDeTipo(tipoDe(ej.ejercicioId)).includes("reps");
+        return (
         <HojaTipoSerie
-          serie={hojaTipo.serie}
+          serie={sr}
           idioma={idioma}
+          porLados={porLados}
+          onLados={conReps ? () => {
+            entreno.editarSerie(hojaTipo.inst, sr.id, porLados ? { lados: false } : { lados: true, repsIzq: sr.reps ?? null, repsDer: sr.reps ?? null });
+            setHojaTipo(null);
+          } : undefined}
           onCerrar={() => setHojaTipo(null)}
           onElegir={(tipo) => { entreno.cambiarTipoSerie(hojaTipo.inst, hojaTipo.serie.id, tipo); setHojaTipo(null); }}
           onQuitar={() => { entreno.quitarSerie(hojaTipo.inst, hojaTipo.serie.id); setHojaTipo(null); }}
         />
-      )}
+        );
+      })()}
 
       {discos && <HojaDiscos kg={discos.kg} ajustes={ajustes} idioma={idioma} onCerrar={() => setDiscos(null)} />}
 
@@ -404,6 +439,17 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
       })()}
 
       {terminando && <TerminarEntreno entreno={entreno} idioma={idioma} onVolver={() => setTerminando(false)} onGuardado={onGuardado} />}
+
+      {superserieDe && s.ejercicios.some((e) => e.inst === superserieDe) && (
+        <HojaSuperserieCon
+          lista={s.ejercicios}
+          indice={s.ejercicios.findIndex((e) => e.inst === superserieDe)}
+          nombre={(ej) => nombreDe(entreno, ej.ejercicioId, idioma)}
+          onElegir={(k) => { entreno.superserieCon(superserieDe, s.ejercicios[k].inst); setSuperserieDe(null); }}
+          onCerrar={() => setSuperserieDe(null)}
+          idioma={idioma}
+        />
+      )}
 
       {menuEjercicio && (
         <HojaInferior titulo={nombreDe(entreno, (s.ejercicios.find((e) => e.inst === menuEjercicio) || {}).ejercicioId, idioma)} onCerrar={() => setMenuEjercicio(null)} idioma={idioma}>
@@ -433,9 +479,9 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
               {t(idioma, "entreno.discos.titulo")}
             </OpcionHoja>
           )}
-          {idxMenu < s.ejercicios.length - 1 && !(grupoMenu && idxMenu < grupoMenu.fin) && (
-            <OpcionHoja icono={Link2} onClick={() => { entreno.unirSuperserie(menuEjercicio); setMenuEjercicio(null); }} detalle={t(idioma, "entreno.superserie.unirAyuda")}>
-              {t(idioma, "entreno.superserie.unir")}
+          {s.ejercicios.length > 1 && (
+            <OpcionHoja icono={Link2} onClick={() => { setSuperserieDe(menuEjercicio); setMenuEjercicio(null); }}>
+              {t(idioma, "entreno.superserie.con")}
             </OpcionHoja>
           )}
           {grupoMenu && (

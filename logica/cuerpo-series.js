@@ -26,7 +26,7 @@
 //    al menos 14 días o 6 semanas con las dos cosas apuntadas; si no, «aún no hay suficiente». Con la
 //    correlación de Pearson r: |r| < 0,2 = sin relación a la vista; 0,2-0,4 pista débil; 0,4-0,6 pista;
 //    ≥ 0,6 pista clara. La interfaz siempre añade que no dice que una cosa cause la otra.
-import { e1rm, fechaLocal, semanaDe, sumarDias, seriesPorMusculo, volumenSesion, duracionEfectiva } from "entreno-calculo";
+import { e1rm, cargaSerie, fechaLocal, semanaDe, sumarDias, seriesPorMusculo, volumenSesion, duracionEfectiva } from "entreno-calculo";
 import { iniciosDeRegla } from "periodo";
 
 // Como mucho dos años hacia atrás: suficiente para «Todo» y barato de recorrer en el móvil.
@@ -147,7 +147,7 @@ export function construirSerie(ctx) {
       const e = ejercicioDe(ej.ejercicioId);
       if (e && e.tipo && e.tipo !== "peso_reps") return;
       (ej.series || []).filter(cuentaSerie).forEach((sr) => {
-        const v = e1rm(Number(sr.kg), Number(sr.reps), Number(sr.rir));
+        const v = e1rm(cargaSerie(sr, e && e.pareja), Number(sr.reps), Number(sr.rir)); // ×2 con mancuernas a pares
         if (v && (!d.rm[ej.ejercicioId] || v > d.rm[ej.ejercicioId])) d.rm[ej.ejercicioId] = v;
       });
     }));

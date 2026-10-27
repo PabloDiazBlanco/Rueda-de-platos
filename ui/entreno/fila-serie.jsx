@@ -9,9 +9,10 @@
 // Va memorizada (React.memo): el cronómetro y el descanso se repintan cada segundo, pero las filas solo
 // cuando cambia su serie.
 import React, { useState, useEffect, memo } from "react";
-import { Check, Trash2, HelpCircle } from "lucide-react";
+import { Check, Trash2, HelpCircle, Columns2 } from "lucide-react";
 import { t } from "i18n";
 import { LETRA_SERIE, TIPOS_SERIE } from "entreno-ejercicios";
+import { repsDeLado, repsLadoDebil, seriePorLados } from "entreno-calculo";
 import { FUENTE_MONO } from "../estilos.js";
 import {
   formatoNumero, pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, HojaInferior, OpcionHoja,
@@ -26,13 +27,14 @@ const FONDO_SERIE = { calentamiento: "var(--mustard-soft)" };
 // distancia y tiempo, en minutos (20 min de cinta). Se guarda siempre en segundos.
 export const unidadTiempo = (tipo) => (tipo === "duracion" ? "seg" : "min");
 
-// Cabeceras de las columnas de un tipo de ejercicio.
-export function columnasDe(campos, tipo, ajustes) {
+// Cabeceras de las columnas de un tipo de ejercicio. Con dos mancuernas, «kg ×2» (se escribe el peso de una,
+// 27-oct-2026); con series unilaterales, la de repeticiones dice qué lado es cada casilla.
+export function columnasDe(campos, tipo, ajustes, { pareja = false, lados = null } = {}) {
   return campos.map((c) => {
-    if (c === "kg") return tipo === "lastre_reps" ? `+${ajustes.unidadPeso}` : tipo === "asistido_reps" ? `−${ajustes.unidadPeso}` : ajustes.unidadPeso;
+    if (c === "kg") return tipo === "lastre_reps" ? `+${ajustes.unidadPeso}` : tipo === "asistido_reps" ? `−${ajustes.unidadPeso}` : pareja ? `${ajustes.unidadPeso} ×2` : ajustes.unidadPeso;
     if (c === "km") return ajustes.unidadDistancia;
     if (c === "seg") return unidadTiempo(tipo);
-    return "reps";
+    return lados || "reps";
   });
 }
 
@@ -64,7 +66,9 @@ export function deTexto(campo, texto, tipo, ajustes) {
 export function textoAnterior(a, tipo, ajustes, idioma) {
   if (!a) return "—";
   const kg = a.kg !== null && a.kg !== undefined ? formatoNumero(pesoAPantalla(a.kg, ajustes.unidadPeso), idioma) : null;
-  const reps = a.reps !== null && a.reps !== undefined ? a.reps : null;
+  // Unilateral: «20 × 10/8» (izquierda/derecha).
+  const reps = a.lados && (a.repsIzq != null || a.repsDer != null) ? `${a.repsIzq ?? a.reps ?? "—"}/${a.repsDer ?? a.reps ?? "—"}`
+    : a.reps !== null && a.reps !== undefined ? a.reps : null;
   if (tipo === "peso_reps") return kg !== null && reps !== null ? `${kg} × ${reps}` : kg ?? (reps !== null ? `× ${reps}` : "—");
   if (tipo === "reps") return reps !== null ? `× ${reps}` : "—";
   if (tipo === "lastre_reps") return `+${kg ?? 0} × ${reps ?? "—"}`;
@@ -79,7 +83,7 @@ export function textoAnterior(a, tipo, ajustes, idioma) {
 // Campo numérico de la tabla. Guarda su propio texto mientras se escribe (para que «61,» no se convierta
 // en «61» a mitad de teclear) y manda el valor ya convertido en cada cambio, así nada se pierde si la app
 // se cierra a media serie.
-function CampoNumero({ id, valor, campo, tipo, ajustes, idioma, onCambio, etiqueta, hecha }) {
+function CampoNumero({ id, valor, campo, tipo, ajustes, idioma, onCambio, etiqueta, hecha, marcador }) {
   const [texto, setTexto] = useState(() => aTexto(campo, valor, tipo, ajustes, idioma));
   useEffect(() => {
     // Si el valor cambia desde fuera (copiar «anterior», precarga, otra unidad), se actualiza el texto,
@@ -93,6 +97,7 @@ function CampoNumero({ id, valor, campo, tipo, ajustes, idioma, onCambio, etique
       inputMode={campo === "reps" || campo === "rir" || (campo === "seg" && tipo === "duracion") ? "numeric" : "decimal"}
       enterKeyHint="next"
       aria-label={etiqueta}
+      placeholder={marcador}
       onFocus={(e) => e.target.select()}
       onChange={(e) => {
         setTexto(e.target.value);
@@ -108,10 +113,28 @@ function CampoNumero({ id, valor, campo, tipo, ajustes, idioma, onCambio, etique
   );
 }
 
-function FilaSerieSinMemo({ serie, etiqueta, tipo, campos, anterior, ajustes, mostrarEsfuerzo, idioma, plantillaColumnas, onEditar, onMarcar, onDesmarcar, onAbrirTipo, aviso }) {
+// Repeticiones de una serie unilateral (27-oct-2026): dos casillas en la misma celda, izquierda y derecha, de
+// tamaño normal (la columna se ensancha, ver plantillaColumnas). Cada cambio guarda los dos lados y, en
+// `reps`, el más débil (ver «Mancuernas a pares y series unilaterales» en entreno-calculo.js).
+function CampoLados({ id, serie, tipo, ajustes, idioma, hecha, etiqueta, onEditar }) {
+  const izq = repsDeLado(serie, "izq");
+  const der = repsDeLado(serie, "der");
+  const guardar = (nuevoIzq, nuevoDer) => onEditar({ lados: true, repsIzq: nuevoIzq, repsDer: nuevoDer, reps: repsLadoDebil(nuevoIzq, nuevoDer) });
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4, minWidth: 0 }}>
+      <CampoNumero id={id} valor={izq} campo="reps" tipo={tipo} ajustes={ajustes} idioma={idioma} hecha={hecha} marcador={t(idioma, "entreno.sesion.izq")}
+        etiqueta={`${t(idioma, "entreno.sesion.ladoIzq")} · ${etiqueta}`} onCambio={(v) => guardar(v, der)} />
+      <CampoNumero valor={der} campo="reps" tipo={tipo} ajustes={ajustes} idioma={idioma} hecha={hecha} marcador={t(idioma, "entreno.sesion.der")}
+        etiqueta={`${t(idioma, "entreno.sesion.ladoDer")} · ${etiqueta}`} onCambio={(v) => guardar(izq, v)} />
+    </div>
+  );
+}
+
+function FilaSerieSinMemo({ serie, etiqueta, tipo, campos, anterior, ajustes, mostrarEsfuerzo, idioma, plantillaColumnas, onEditar, onMarcar, onDesmarcar, onAbrirTipo, aviso, unilateral = false, pareja = false }) {
   const hecha = serie.hecha;
   const color = COLOR_SERIE[serie.tipo] || COLOR_SERIE.normal;
-  const nombresCampo = columnasDe(campos, tipo, ajustes);
+  const nombresCampo = columnasDe(campos, tipo, ajustes, { pareja });
+  const porLados = seriePorLados(serie, unilateral);
   return (
     <div style={{ borderRadius: 8, background: hecha ? "var(--green-soft)" : FONDO_SERIE[serie.tipo] || "transparent", transition: prefiereMenosMovimiento() ? "none" : "background 120ms" }}>
       <div style={{ display: "grid", gridTemplateColumns: plantillaColumnas, alignItems: "center", gap: 6, padding: "3px 4px", minHeight: 46 }}>
@@ -123,7 +146,10 @@ function FilaSerieSinMemo({ serie, etiqueta, tipo, campos, anterior, ajustes, mo
           {etiqueta}
         </button>
         <button
-          onClick={() => anterior && onEditar({ kg: anterior.kg ?? null, reps: anterior.reps ?? null, seg: anterior.seg ?? null, km: anterior.km ?? null })}
+          onClick={() => anterior && onEditar({
+            kg: anterior.kg ?? null, reps: anterior.reps ?? null, seg: anterior.seg ?? null, km: anterior.km ?? null,
+            ...(anterior.lados !== undefined ? { lados: anterior.lados, repsIzq: anterior.repsIzq ?? null, repsDer: anterior.repsDer ?? null } : {}),
+          })}
           disabled={!anterior}
           aria-label={anterior ? t(idioma, "entreno.sesion.copiarAnterior") : undefined}
           style={{
@@ -133,7 +159,9 @@ function FilaSerieSinMemo({ serie, etiqueta, tipo, campos, anterior, ajustes, mo
         >
           {textoAnterior(anterior, tipo, ajustes, idioma)}
         </button>
-        {campos.map((c, i) => (
+        {campos.map((c, i) => (c === "reps" && porLados ? (
+          <CampoLados key={c} id={i === 0 ? `campo-${serie.id}` : undefined} serie={serie} tipo={tipo} ajustes={ajustes} idioma={idioma} hecha={hecha} etiqueta={etiqueta} onEditar={onEditar} />
+        ) : (
           <CampoNumero
             key={c}
             id={i === 0 ? `campo-${serie.id}` : undefined}
@@ -146,7 +174,7 @@ function FilaSerieSinMemo({ serie, etiqueta, tipo, campos, anterior, ajustes, mo
             etiqueta={`${nombresCampo[i]} · ${etiqueta}`}
             onCambio={(v) => onEditar({ [c]: v })}
           />
-        ))}
+        )))}
         {mostrarEsfuerzo && (
           <CampoNumero valor={serie.rir} campo="rir" tipo={tipo} ajustes={ajustes} idioma={idioma} hecha={hecha} etiqueta={`RIR · ${etiqueta}`} onCambio={(v) => onEditar({ rir: v })} />
         )}
@@ -170,7 +198,10 @@ function FilaSerieSinMemo({ serie, etiqueta, tipo, campos, anterior, ajustes, mo
 export const FilaSerie = memo(FilaSerieSinMemo);
 
 // Hoja inferior para cambiar el tipo de una serie, con su explicación («?») y la opción de quitarla.
-export function HojaTipoSerie({ serie, idioma, onElegir, onQuitar, onCerrar }) {
+// Unilateral (27-oct-2026) no es un tipo más sino un interruptor aparte: una serie de calentamiento o una de
+// fallo también pueden ir por lados. Su explicación (cuenta como una serie, el volumen suma los dos lados y el
+// 1RM y los récords usan el más débil) se ve siempre, porque cambia cómo se cuenta.
+export function HojaTipoSerie({ serie, idioma, onElegir, onQuitar, onCerrar, porLados = false, onLados }) {
   const [ayuda, setAyuda] = useState(false);
   return (
     <HojaInferior titulo={t(idioma, "entreno.sesion.tipoSerieTitulo")} onCerrar={onCerrar} idioma={idioma}>
@@ -185,6 +216,11 @@ export function HojaTipoSerie({ serie, idioma, onElegir, onQuitar, onCerrar }) {
           {t(idioma, `tipoSerie.${tipo}`)}
         </OpcionHoja>
       ))}
+      {onLados && (
+        <OpcionHoja icono={Columns2} activa={porLados} onClick={onLados} detalle={t(idioma, "entreno.sesion.porLadosAyuda")}>
+          {t(idioma, "entreno.sesion.porLados")}
+        </OpcionHoja>
+      )}
       <OpcionHoja icono={HelpCircle} onClick={() => setAyuda(!ayuda)}>{t(idioma, "entreno.sesion.queEs")}</OpcionHoja>
       <OpcionHoja icono={Trash2} peligro onClick={onQuitar}>{t(idioma, "entreno.sesion.quitarSerie")}</OpcionHoja>
     </HojaInferior>
@@ -202,7 +238,10 @@ export function etiquetasSeries(series) {
   });
 }
 
-// Plantilla de columnas de la tabla según cuántos campos hay.
-export function plantillaColumnas(nCampos, conEsfuerzo) {
-  return ["34px", "minmax(0, 1fr)", ...Array(nCampos).fill("minmax(52px, 68px)"), ...(conEsfuerzo ? ["44px"] : []), "40px"].join(" ");
+// Plantilla de columnas de la tabla según cuántos campos hay. Con alguna serie unilateral, la última columna
+// de campos (la de repeticiones) es más ancha, para que sus dos casillas sean de tamaño normal.
+export function plantillaColumnas(nCampos, conEsfuerzo, conLados = false) {
+  const campos = Array(nCampos).fill("minmax(52px, 68px)");
+  if (conLados && nCampos) campos[nCampos - 1] = "minmax(96px, 116px)";
+  return ["34px", "minmax(0, 1fr)", ...campos, ...(conEsfuerzo ? ["44px"] : []), "40px"].join(" ");
 }
