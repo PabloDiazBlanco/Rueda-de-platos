@@ -5,7 +5,7 @@
 // (queda la pastilla «Entreno en curso» en cualquier pantalla) y «Terminar» lleva al resumen final.
 //
 // Reglas de oro de la tabla (las pone en práctica fila-serie.jsx): «anterior» = lo de la última vez,
-// serie a serie; ✓ guarda la serie, arranca el descanso y pasa el foco a la siguiente; teclado numérico
+// serie a serie; ✓ guarda la serie y arranca el descanso (sin enfocar nada, para no abrir el teclado); teclado numérico
 // con el campo seleccionado; tocar el número de serie cambia su tipo. Si lo tecleado parece un error de
 // dedo («1005» en vez de «100,5»), al marcar pregunta antes (validarSerie).
 //
@@ -108,18 +108,12 @@ export function SesionEnCurso({ entreno, idioma, onGuardado, navegar }) {
   const idxMenu = menuEjercicio ? s.ejercicios.findIndex((e) => e.inst === menuEjercicio) : -1;
   const grupoMenu = idxMenu >= 0 ? grupoDe(s.ejercicios, idxMenu) : null;
 
-  // Tras marcar una serie, el foco salta a la siguiente sin hacer (de este ejercicio o de los siguientes). En
-  // una superserie (G11), a la equivalente del siguiente ejercicio del grupo y, al acabar la ronda, a la
-  // siguiente del primero: el orden lo decide siguienteSerie (logica/entreno-sesion.js).
-  function enfocarSiguiente(inst, serieId) {
-    const sig = siguienteSerie(s, inst, serieId);
-    if (sig) setTimeout(() => { const el = document.getElementById(`campo-${sig.id}`); if (el) el.focus(); }, 60);
-  }
-
+  // Tras marcar una serie ya NO se enfoca la siguiente (27-oct-2026): el foco en un campo abre el teclado
+  // del móvil, que tapaba la animación del ✓ y sobraba casi siempre (los valores suelen venir precargados).
+  // El teclado solo sale al tocar un campo (peso, repeticiones, RIR, una nota).
   function confirmarSerie(ej, serie) {
     entreno.marcarHecha(ej.inst, serie.id);
     setAvisos((a) => { const { [serie.id]: _, ...resto } = a; return resto; });
-    enfocarSiguiente(ej.inst, serie.id);
   }
 
   function marcar(ej, serie) {
