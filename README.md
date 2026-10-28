@@ -25,13 +25,15 @@ número día a día, solo la tendencia al cerrar el ciclo) y calibración asisti
 Nació como herramienta de uso personal y desde septiembre de 2026 se está abriendo a más usuarios
 (registro por email o Google) con vistas a publicarla en Google Play. El núcleo es gratis para
 siempre — generador de menús, objetivos nutricionales, catálogo de alimentos, Menú simple, lista
-de la compra, despensa, un módulo de entreno completo (rutinas, registro de series con descanso,
-historial, récords, gráficas, exportación) y el resumen mensual de nutrición y entreno. Un plan premium
-(2,99 €/mes, con Stripe) añade lo que tiene coste de servidor o valor claramente extra: seguimiento de
-peso, lector de etiquetas por foto, «¿qué puedo cocinar con lo que tengo?» y los informes cruzados de
-entreno, comida y peso. La app se organiza en tres áreas — FoodDraft (nutrición), Entrenamiento y
-Cuerpo —, cada una con su barra inferior. La interfaz está disponible en español, inglés, catalán,
-gallego y euskera.
+de la compra, despensa con su cocina dibujada, un módulo de entreno completo (rutinas, registro de
+series con descanso y superseries, historial, récords, gráficas, mapa corporal, un gimnasio dibujado
+por el que se pasea, importar entrenos de otras apps, exportación), sueño, pasos, período y el resumen
+mensual de nutrición y entreno. Un plan premium (2,99 €/mes, con Stripe) añade lo que tiene coste de
+servidor o valor claramente extra: seguimiento de peso (con su báscula), lector de etiquetas por foto,
+«¿Qué cocino?» (recetas con lo que hay en casa) y los informes cruzados y el constructor de preguntas de
+entreno, comida, peso, sueño y ciclo. La app se organiza en tres áreas — FoodDraft (nutrición), FitDraft
+(entreno) y Cuerpo —, cada una con su barra inferior. La interfaz está disponible en español, inglés,
+catalán, gallego y euskera.
 
 La idea de fondo — por qué existe, qué papel juega la ciencia en cada decisión de diseño — está
 desarrollada en los documentos explicativos del proyecto, que no se publican en este repositorio
@@ -39,7 +41,7 @@ desarrollada en los documentos explicativos del proyecto, que no se publican en 
 
 ## Arquitectura: cero build, a propósito
 
-No hay bundler, no hay `npm install`, no hay `package.json`. El navegador hace todo el trabajo:
+La app no tiene bundler, ni `npm install`, ni `package.json`. El navegador hace todo el trabajo:
 
 ```
 index.html
@@ -49,19 +51,20 @@ index.html
 auth-bootstrap.jsx   (login, Firestore, App Check, puente con las Cloud Functions)
   │  cargador-ui.js: descarga, pasa por Babel y enlaza app.jsx + ui/ (import/export normales)
   ▼
-app.jsx + ui/        (componente principal + 72 archivos de interfaz, por pantalla)
+app.jsx + ui/        (componente principal + la interfaz, un archivo por pantalla o pieza)
   │  import { ... } from "nombre-corto"     ← resuelto por el importmap
   ▼
-logica/*.js          (22 módulos de lógica pura, sin JSX, sin React)
+logica/*.js          (módulos de lógica pura, sin JSX, sin React)
 ```
 
 La única pieza de servidor es `functions/` (Cloud Functions de Firebase: pagos con Stripe, Gemini
-con cuota mensual y el recordatorio de pesaje por notificación push). Es un proyecto Node aparte,
-con su propio `package.json`, y no forma parte de cómo carga el navegador la app.
+con cuota mensual y dos avisos programados por notificación push). Es un proyecto Node aparte, con su
+propio `package.json`, y no forma parte de cómo carga el navegador la app.
 
-Esta decisión está documentada con su porqué técnico completo (incluido cómo se reparte la
-interfaz en varios archivos sin build) en [`CLAUDE.md`](./CLAUDE.md) — léelo antes de tocar cómo
-carga la app.
+Las reglas del proyecto están en [`CLAUDE.md`](./CLAUDE.md), y el porqué técnico completo (incluido
+cómo se reparte la interfaz en varios archivos sin build) en
+[`documentacion/arquitectura.md`](./documentacion/arquitectura.md) — léelos antes de tocar cómo carga
+la app.
 
 ## Estructura del repositorio
 
@@ -78,49 +81,47 @@ Rueda-de-platos/
 ├── ui/                              la interfaz (React), un archivo por pantalla o pieza
 │   ├── archivos.json                  lista de archivos de ui/ (cargador + modo sin conexión)
 │   ├── estilos.js, pantallas.jsx      tipografías; tabla destino → pantalla
-│   ├── estado/                        hooks: datos, menú, catálogo, perfil, peso, despensa, entreno
-│   ├── comun/                         piezas reutilizadas
+│   ├── estado/                        hooks: datos, menú, catálogo, perfil, peso, despensa, entreno, cuerpo
+│   ├── comun/                         piezas reutilizadas (modal, compartir, mapa corporal, avatar...)
 │   ├── marco/                         Shell, cabecera, menú lateral, barra inferior de cristal y
-│   │                                  navegacion.js (áreas FoodDraft · Entrenamiento · Cuerpo)
+│   │                                  navegacion.js (áreas FoodDraft · FitDraft · Cuerpo)
 │   └── menu/, catalogo/, perfil/, onboarding/, peso/, premium/, ajustes/, despensa/, entreno/, cuerpo/
 │
 ├── logica/                          lógica de negocio, sin JSX ni React
-│   ├── comun.js                       uid(), DAYS
-│   ├── macros.js                      cálculo de macros por alimento
-│   ├── seleccion.js                   sorteo ponderado + reglas de combinación
-│   ├── comida-calculo.js              totales por comida/día, lista de la compra
-│   ├── objetivos.js                   BMR/TDEE/macros objetivo, presets de reparto de comidas
-│   ├── menu-generador.js              el motor de generación del menú
-│   ├── peso.js                        tendencia de peso, cambios atípicos
-│   ├── salud-publica.js               sal/azúcares/fibra frente a los umbrales de la OMS
-│   ├── resumen-mensual.js             resumen del mes (comidas completadas + peso)
-│   ├── datos-iniciales.js             catálogo base de alimentos y datos de una cuenta nueva
-│   ├── cuestionario.js                cuestionario de catálogo del alta
-│   ├── migraciones.js                 migrateData (datos guardados de versiones anteriores)
-│   ├── despensa.js                    lo que hay en casa: zonas, consumos y compras
-│   ├── lista-compra-neta.js           lista de la compra menos lo que ya tienes
-│   ├── nevera.js                      dónde va cada cosa en la nevera dibujada y con qué dibujo
-│   ├── entreno-ejercicios.js          biblioteca de ejercicios (80 de serie) y su búsqueda
-│   ├── entreno-nombres.js             nombres de los ejercicios en los cinco idiomas
-│   ├── entreno-calculo.js             1RM, volumen, récords, series por músculo, validación
-│   ├── entreno-sesion.js              el entreno en curso: series, descanso, pausa, terminar
-│   ├── entreno-almacen.js             entrenos por meses, índice, borrador, cola y CSV
-│   ├── informes.js                    informes cruzados y aviso de actividad (área Cuerpo)
-│   └── i18n.js                        diccionario de textos ES/EN/CA/GL/EU
+│   ├── comun.js, macros.js, seleccion.js         utilidades, macros por alimento, sorteo ponderado
+│   ├── comida-calculo.js, comida-real.js         totales por comida y día; lo comido de verdad
+│   ├── objetivos.js, menu-generador.js           BMR/TDEE/macros objetivo; el motor del menú
+│   ├── peso.js, salud-publica.js                 tendencia de peso; sal/azúcares/fibra (OMS)
+│   ├── resumen-mensual.js, informes.js           resumen del mes; informes cruzados y avisos
+│   ├── cuerpo-series.js, cuerpo-diario.js        series diarias y estadística; sueño, pasos y favoritos
+│   ├── periodo.js, mapa-corporal.js              período; mapa corporal por músculos
+│   ├── datos-iniciales.js, cuestionario.js       catálogo base; cuestionario del alta
+│   ├── migraciones.js                            migrateData (datos de versiones anteriores)
+│   ├── despensa.js, lista-compra-neta.js         lo que hay en casa; lista de la compra neta
+│   ├── nevera.js                                 dónde va cada cosa en la nevera dibujada
+│   ├── entreno-ejercicios.js, entreno-nombres.js biblioteca de 80 ejercicios y sus nombres
+│   ├── entreno-calculo.js, entreno-sesion.js     1RM, volumen, récords; el entreno en curso
+│   ├── entreno-almacen.js, entreno-importar.js   entrenos por meses, índice y cola; importar CSV
+│   ├── gimnasio.js                               el gimnasio dibujado de FitDraft
+│   └── i18n.js                                   diccionario de textos ES/EN/CA/GL/EU
 │
 ├── functions/                       Cloud Functions de Firebase (Node 22, proyecto aparte)
+│   ├── index.js                       reexporta las funciones y fija el techo de instancias
 │   ├── stripeWebhook.js               activa/desactiva el premium según Stripe
 │   ├── createCheckoutSession.js       inicia la suscripción
 │   ├── createPortalSession.js         gestión de la suscripción
 │   ├── analyzeFoodPhoto.js            lector de etiquetas por foto (Gemini, con cuota)
-│   ├── suggestMeals.js                «qué puedo cocinar» (Gemini, con cuota)
-│   └── sendWeighInReminders.js        push diario de recordatorio de pesaje
+│   ├── suggestRecipes.js              «¿Qué cocino?»: recetas en dos modos (Gemini, con cuota)
+│   ├── suggestMeals.js                versión anterior de «¿Qué cocino?» (para copias sin actualizar)
+│   ├── sendWeighInReminders.js        push diario de recordatorio de pesaje (09:00)
+│   └── sendDefrostReminders.js        push nocturno para descongelar o comprar (21:30)
 │
 ├── validacion/                      arnés de pruebas de regresión (no es parte de la app)
 │   ├── index.html
 │   └── tests.js
 │
-├── CLAUDE.md                        convenciones del proyecto
+├── documentacion/                   un documento por área (arquitectura, menú, despensa, entreno...)
+├── CLAUDE.md                        reglas del proyecto (y uno corto en cada carpeta de área)
 ├── LICENSE                          todos los derechos reservados
 └── README.md                        este archivo
 ```
@@ -135,12 +136,14 @@ No abras `index.html` con doble clic (`file://`) — los `fetch` y los imports d
 resuelven igual y algunas cosas fallan en silencio. Sirve la carpeta por HTTP:
 
 ```bash
-python -m http.server 8420
+py -3 -m http.server 8420
 ```
+
+(en Windows; en macOS o Linux, `python3 -m http.server 8420`)
 
 y abre `http://localhost:8420/`. El inicio de sesión real necesita conexión a Firebase, así que
 para probar solo los cálculos (sin login) usa en su lugar `validacion/index.html` — carga
-`app.jsx` tal cual y ejecuta un conjunto de casos de prueba contra resultados ya verificados a
+`app.jsx` y `ui/` con el mismo cargador que la app y ejecuta un conjunto de casos de prueba contra resultados ya verificados a
 mano. Las Cloud Functions no se pueden probar así: viven en `functions/` y se despliegan aparte
 (`firebase deploy --only functions`).
 
@@ -161,8 +164,8 @@ nada. Las Cloud Functions, en cambio, se despliegan a mano.
 | **Firebase App Check** | protege Firestore, Auth y las funciones callable de tráfico que no venga de la propia app |
 | **Cloud Functions (Node 22)** | pagos, Gemini con cuota mensual y recordatorios programados |
 | **Stripe** | suscripción premium (Checkout y portal de facturación) |
-| **Gemini (`@google/genai`)** | lee tablas nutricionales de una foto y sugiere platos con lo que hay en casa |
-| **Firebase Cloud Messaging** | notificaciones push del recordatorio de pesaje |
+| **Gemini (`@google/genai`)** | lee tablas nutricionales de una foto y sugiere recetas con lo que hay en casa |
+| **Firebase Cloud Messaging** | notificaciones push: recordatorio de pesaje y aviso para descongelar |
 | **GitHub Pages** | hosting de la app |
 | **lucide-react** | iconos |
 
@@ -174,7 +177,8 @@ de la app lo recogen en su sección «Propiedad intelectual».
 
 ## Documentación relacionada
 
-- [`CLAUDE.md`](./CLAUDE.md) — convenciones técnicas del proyecto (qué hacer, qué no, y por qué)
+- [`CLAUDE.md`](./CLAUDE.md) — reglas técnicas del proyecto (qué hacer, qué no, y por qué)
+- [`documentacion/`](./documentacion/) — cómo funciona cada área por dentro
 - [Política de privacidad](./privacidad.html) y [términos de uso](./terminos.html)
 
 <div align="center">
