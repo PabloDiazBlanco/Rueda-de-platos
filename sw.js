@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v32";
+const CACHE_NAME = "fooddraft-v33";
 const FILES_TO_CACHE = [
   "./", "./index.html", "./app.jsx", "./auth-bootstrap.jsx", "./cargador-ui.js", "./ui/archivos.json",
   "./manifest.json", "./icon.svg",
@@ -79,16 +79,20 @@ self.addEventListener("activate", (event) => {
 // (y la guarda en caché de paso). Solo usa la copia guardada si no hay conexión.
 // Así, cada vez que actualices los archivos en GitHub, se refleja solo la próxima vez que abras
 // la app con internet, sin tener que borrar nada a mano.
-// { cache: "no-store" } es la parte que hace esto de verdad "red primero": sin esto, un fetch()
+// { cache: "no-cache" } es la parte que hace esto de verdad "red primero": sin esto, un fetch()
 // normal puede devolver la copia que el propio navegador tenga en su caché HTTP (GitHub Pages
 // sirve estos archivos con Cache-Control: max-age=600) sin llegar a tocar el servidor — el service
 // worker "cree" que pidió lo último, pero recibe una copia de hasta 10 minutos de antigüedad.
+// «no-cache» pregunta siempre al servidor, pero con la copia que tenga (If-None-Match / ETag): si el
+// archivo no ha cambiado, la respuesta es un 304 de unos bytes y se usa esa copia. Hasta octubre de 2026
+// era «no-store», que también iba siempre al servidor pero sin preguntar nada: cada apertura descargaba
+// enteros los ~140 archivos propios (~2,3 MB), aunque no hubiera cambiado ninguno.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
-    fetch(event.request, { cache: "no-store" })
+    fetch(event.request, { cache: "no-cache" })
       .then((response) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
