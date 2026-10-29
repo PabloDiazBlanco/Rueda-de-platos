@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v34";
+const CACHE_NAME = "fooddraft-v35";
 // Las páginas legales van también: se enlazan desde la app (Ajustes, alta) y tienen que abrirse sin conexión
 // (solo usan logica/i18n.js, que ya está en la lista).
 const FILES_TO_CACHE = [

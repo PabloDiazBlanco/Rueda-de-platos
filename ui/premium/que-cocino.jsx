@@ -15,6 +15,7 @@ import { Camera, ShoppingBag, ChefHat, Sparkles } from "lucide-react";
 import { getFood } from "macros";
 import { resumenDespensaParaIA } from "despensa";
 import { t } from "i18n";
+import { mensajeErrorFuncion } from "../comun/errores.js";
 import { inputStyle } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { PensandoCocina, esperaMinimaPensando } from "./cocinando.jsx";
@@ -64,7 +65,7 @@ export function SuggestMealsView({ data, despensa, onGuardarComoCerrado, idioma 
       setRecetas(r);
     } catch (err) {
       await esperarMinimo();
-      setError(err.message);
+      setError(mensajeErrorFuncion(err, idioma, "cocinar"));
     } finally {
       setLoading(false);
     }

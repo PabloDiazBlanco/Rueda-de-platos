@@ -7,6 +7,7 @@ import { fmt } from "macros";
 import { uid, primerEmoji } from "comun";
 import { fechaISO, formatFechaCorta } from "peso";
 import { t } from "i18n";
+import { mensajeErrorFuncion } from "../comun/errores.js";
 import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
@@ -334,10 +335,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
       if (!fuente) setFuente("Foto (IA) — revisar");
       setAnalyzed(true);
     } catch (err) {
-      setAnalyzeError(
-        (err && err.message) ||
-        t(idioma, "foodEditModal.errorLectura")
-      );
+      setAnalyzeError(mensajeErrorFuncion(err, idioma, "fotos"));
     } finally {
       setAnalyzing(false);
     }

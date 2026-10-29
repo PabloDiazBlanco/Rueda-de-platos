@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { Sparkles, CalendarDays, Camera, Scale, ThumbsUp } from "lucide-react";
 import { t } from "i18n";
+import { mensajeErrorFuncion } from "../comun/errores.js";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // ---------- Premium ----------
@@ -25,7 +26,7 @@ export function PremiumView({ premium, idioma }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function irA(crearSesion) {
+  async function irA(crearSesion, contexto) {
     setError("");
     setLoading(true);
     try {
@@ -33,7 +34,7 @@ export function PremiumView({ premium, idioma }) {
       window.location.href = url;
     } catch (err) {
       setLoading(false);
-      setError(err.message);
+      setError(mensajeErrorFuncion(err, idioma, contexto));
     }
   }
 
@@ -75,7 +76,7 @@ export function PremiumView({ premium, idioma }) {
 
       {premium.active ? (
         <button
-          onClick={() => irA(window.createPortalSession)}
+          onClick={() => irA(window.createPortalSession, "portal")}
           disabled={loading}
           style={{
             width: "100%", fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
@@ -87,7 +88,7 @@ export function PremiumView({ premium, idioma }) {
         </button>
       ) : (
         <button
-          onClick={() => irA(window.createCheckoutSession)}
+          onClick={() => irA(window.createCheckoutSession, "pago")}
           disabled={loading}
           style={{
             width: "100%", fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,

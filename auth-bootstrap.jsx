@@ -63,6 +63,15 @@ const functions = getFunctions(firebaseApp);
 // usuarios (ver la hoja de ruta de publicación, Fase 2). Aquí solo queda invocar la función y
 // traducir sus posibles errores; el resto de la app (app.jsx) sigue llamando a
 // window.analyzeFoodPhoto exactamente igual que siempre, sin enterarse del cambio.
+// Error de una Cloud Function hacia la interfaz: el mensaje (en español, de la función) como último recurso y,
+// sobre todo, el código (`functions/resource-exhausted`...), con el que ui/comun/errores.js elige el texto en
+// el idioma de la app. Antes solo pasaba el mensaje y fuera del español se veía en español.
+function errorDeFuncion(err, porDefecto) {
+  const e = new Error((err && err.message) || porDefecto);
+  e.code = err && err.code;
+  return e;
+}
+
 const analyzeFoodPhotoCallable = httpsCallable(functions, "analyzeFoodPhoto");
 
 window.analyzeFoodPhoto = async function (photoDataUrl) {
@@ -70,9 +79,7 @@ window.analyzeFoodPhoto = async function (photoDataUrl) {
     const respuesta = await analyzeFoodPhotoCallable({ photoDataUrl });
     return respuesta.data;
   } catch (err) {
-    // Los mensajes de error que lanza la función ya vienen en español y listos para mostrar
-    // (ver HttpsError en analyzeFoodPhoto.js) — err.message los trae tal cual.
-    throw new Error(err.message || "No se ha podido analizar la foto. Inténtalo de nuevo.");
+    throw errorDeFuncion(err, "No se ha podido analizar la foto. Inténtalo de nuevo.");
   }
 };
 
@@ -89,7 +96,7 @@ window.createCheckoutSession = async function () {
     const respuesta = await createCheckoutSessionCallable();
     return respuesta.data.url;
   } catch (err) {
-    throw new Error(err.message || "No se ha podido iniciar el pago. Inténtalo de nuevo.");
+    throw errorDeFuncion(err, "No se ha podido iniciar el pago. Inténtalo de nuevo.");
   }
 };
 
@@ -98,7 +105,7 @@ window.createPortalSession = async function () {
     const respuesta = await createPortalSessionCallable();
     return respuesta.data.url;
   } catch (err) {
-    throw new Error(err.message || "No se ha podido abrir la gestión de tu suscripción. Inténtalo de nuevo.");
+    throw errorDeFuncion(err, "No se ha podido abrir la gestión de tu suscripción. Inténtalo de nuevo.");
   }
 };
 
@@ -115,7 +122,7 @@ window.suggestMeals = async function ({ photoDataUrl, especias, otrosIngrediente
     const respuesta = await suggestMealsCallable({ photoDataUrl, especias, otrosIngredientes, catalogo });
     return respuesta.data.sugerencias;
   } catch (err) {
-    throw new Error(err.message || "No se han podido generar sugerencias. Inténtalo de nuevo.");
+    throw errorDeFuncion(err, "No se han podido generar sugerencias. Inténtalo de nuevo.");
   }
 };
 
@@ -130,7 +137,7 @@ window.suggestRecipes = async function ({ modo, photoDataUrl, especias, otrosIng
     const respuesta = await suggestRecipesCallable({ modo, photoDataUrl, especias, otrosIngredientes, despensa, catalogo, idioma });
     return respuesta.data.recetas;
   } catch (err) {
-    throw new Error(err.message || "No se han podido generar sugerencias. Inténtalo de nuevo.");
+    throw errorDeFuncion(err, "No se han podido generar sugerencias. Inténtalo de nuevo.");
   }
 };
 

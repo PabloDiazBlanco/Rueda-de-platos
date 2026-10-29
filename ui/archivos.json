@@ -13,6 +13,7 @@
   "ui/comun/cerrar-sesion.jsx",
   "ui/comun/compartir.jsx",
   "ui/comun/error-carga.jsx",
+  "ui/comun/errores.js",
   "ui/comun/idioma.jsx",
   "ui/comun/mapa-corporal.jsx",
   "ui/comun/mapa-trazados.js",
