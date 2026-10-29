@@ -139,8 +139,9 @@
 
   // Mismo cargador que la app real (cargador-ui.js), así que se prueba la interfaz tal cual se
   // sirve: app.jsx y todos los archivos de ui/, nunca una copia.
+  // Sin la caché del código transformado: las pruebas transforman siempre, para probar la transformación real.
   async function cargarAppJsx() {
-    return cargarApp({ base: "../" });
+    return cargarApp({ base: "../", cacheTransformado: false });
   }
 
   function renderResultados(grupos) {

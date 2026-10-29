@@ -24,6 +24,75 @@
 
 let cargados = []; // rutas efectivamente cargadas en la última carga (para validacion/)
 
+// ---------- Caché del código ya transformado (IndexedDB) ----------
+// Babel transforma toda la interfaz en cada arranque: 1,1-1,5 s de CPU en escritorio y varias veces más en
+// un móvil (medido en el diagnóstico de octubre de 2026, local/diagnostico-2026-10/04-rendimiento.md § 5).
+// Aquí se guarda el resultado de cada archivo entre visitas, con una clave que cambia en cuanto cambia
+// cualquier cosa que influya en él: la versión de Babel, las opciones de abajo y el contenido exacto del
+// archivo (su SHA-256). Lo importante:
+//  - La fuente se sigue pidiendo SIEMPRE (con no-cache, así que suele ser un 304 barato). La caché solo
+//    recuerda transformar(fuente); nunca decide qué versión de un archivo se usa, así que tras un despliegue
+//    no puede mezclar archivos viejos con nuevos.
+//  - Si algo falla (sin IndexedDB, sin crypto.subtle fuera de https/localhost, cuota llena, navegación
+//    privada...), se transforma como siempre. Solo se guarda después de que la interfaz se haya ejecutado
+//    sin errores, así que un resultado roto no llega a guardarse.
+//  - IndexedDB y no localStorage: el código transformado pesa ~1,4 MB y localStorage (≈5 MB por origen) lo
+//    comparten el entreno y el período; llenarlo los rompería.
+const OPCIONES_BABEL = { presets: ["react"], plugins: ["transform-modules-commonjs"], sourceType: "module" };
+// Súbelo si cambian OPCIONES_BABEL o lo que se hace con el resultado: invalida todo lo guardado.
+const VERSION_OPCIONES = 1;
+const BASE_DATOS = "fooddraft-codigo-transformado";
+
+function abrirAlmacen() {
+  return new Promise((ok) => {
+    let req;
+    try {
+      req = indexedDB.open(BASE_DATOS, 1);
+    } catch (e) {
+      ok(null);
+      return;
+    }
+    req.onupgradeneeded = () => req.result.createObjectStore("codigo", { keyPath: "ruta" });
+    req.onsuccess = () => ok(req.result);
+    req.onerror = () => ok(null);
+    req.onblocked = () => ok(null);
+  });
+}
+
+function leerTodo(db) {
+  if (!db) return Promise.resolve(new Map());
+  return new Promise((ok) => {
+    try {
+      const r = db.transaction("codigo").objectStore("codigo").getAll();
+      r.onsuccess = () => ok(new Map(r.result.map((e) => [e.ruta, e])));
+      r.onerror = () => ok(new Map());
+    } catch (e) {
+      ok(new Map());
+    }
+  });
+}
+
+// En segundo plano (nadie lo espera). `vivas`: si se pasa, se quitan las rutas guardadas que ya no existen.
+function guardarTransformados(db, nuevos, vivas) {
+  try {
+    const tx = db.transaction("codigo", "readwrite");
+    const almacen = tx.objectStore("codigo");
+    nuevos.forEach((e) => almacen.put(e));
+    if (vivas) {
+      const r = almacen.getAllKeys();
+      r.onsuccess = () => r.result.forEach((ruta) => { if (!vivas.has(ruta)) almacen.delete(ruta); });
+    }
+    tx.oncomplete = tx.onerror = tx.onabort = () => db.close();
+  } catch (e) {
+    try { db.close(); } catch (e2) { /* nada */ }
+  }
+}
+
+async function huella(texto) {
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(texto));
+  return Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
 // Rutas relativas a la raíz de la app ("ui/menu/menu-completo.jsx"), sin "./" ni "..".
 function resolver(desde, especificador) {
   const base = desde.includes("/") ? desde.slice(0, desde.lastIndexOf("/") + 1) : "";
@@ -46,10 +115,19 @@ function comoModuloBabel(ns) {
   return { __esModule: true, ...ns };
 }
 
-export async function cargarApp({ base = "./", entrada = "app.jsx" } = {}) {
+// `cacheTransformado: false` transforma siempre (lo usa validacion/, para probar siempre la transformación
+// real).
+export async function cargarApp({ base = "./", entrada = "app.jsx", cacheTransformado = true } = {}) {
   const raiz = new URL(base, document.baseURI);
   const codigo = new Map();     // ruta -> código ya transformado
   const externos = new Set();   // nombres cortos que hay que traer con import()
+
+  // Caché del código transformado: solo con crypto.subtle (https o localhost) y Babel cargado.
+  const conCache = cacheTransformado && typeof indexedDB !== "undefined" && !!(globalThis.crypto && crypto.subtle) && !!globalThis.Babel;
+  const db = conCache ? await abrirAlmacen() : null;
+  const guardados = await leerTodo(db);
+  const prefijoClave = `babel-${globalThis.Babel && Babel.version}|opciones-${VERSION_OPCIONES}|`;
+  const nuevos = [];
 
   async function descargar(ruta) {
     if (codigo.has(ruta)) return;
@@ -63,15 +141,24 @@ export async function cargarApp({ base = "./", entrada = "app.jsx" } = {}) {
     if (!resp.ok) throw new Error(`No se ha podido cargar ${ruta} (HTTP ${resp.status})`);
     const fuente = await resp.text();
     let js;
-    try {
-      js = Babel.transform(fuente, {
-        presets: ["react"],
-        plugins: ["transform-modules-commonjs"],
-        sourceType: "module",
-        filename: ruta,
-      }).code;
-    } catch (e) {
-      throw new Error(`Error de sintaxis en ${ruta}: ${e.message}`);
+    let clave = null;
+    if (db) {
+      try {
+        clave = prefijoClave + (await huella(fuente));
+      } catch (e) {
+        clave = null;
+      }
+    }
+    const guardado = clave && guardados.get(ruta);
+    if (guardado && guardado.clave === clave) {
+      js = guardado.js;
+    } else {
+      try {
+        js = Babel.transform(fuente, { ...OPCIONES_BABEL, filename: ruta }).code;
+      } catch (e) {
+        throw new Error(`Error de sintaxis en ${ruta}: ${e.message}`);
+      }
+      if (clave) nuevos.push({ ruta, clave, js });
     }
     // sourceURL: en las herramientas del navegador cada archivo aparece con su nombre real.
     codigo.set(ruta, js + `\n//# sourceURL=${new URL(ruta, raiz).href}`);
@@ -120,7 +207,10 @@ export async function cargarApp({ base = "./", entrada = "app.jsx" } = {}) {
     new Function("require", "module", "exports", fuente)((e) => requerir(ruta, e), modulo, modulo.exports);
     return modulo.exports;
   }
-  return requerir("", "./" + entrada);
+  const resultado = requerir("", "./" + entrada); // si lanza, no se guarda nada
+  // Solo una carga completa de la app (con la lista) sabe qué rutas ya no existen y puede quitarlas.
+  if (db) guardarTransformados(db, nuevos, entrada === "app.jsx" && lista.length ? new Set(codigo.keys()) : null);
+  return resultado;
 }
 
 // Archivos de ui/ que se cargaron de verdad en la última llamada a cargarApp (sin app.jsx). Lo usa
