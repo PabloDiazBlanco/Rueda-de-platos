@@ -11,6 +11,7 @@ import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
 import { mealComponents, ingredientePorNombre } from "comida-calculo";
 import { allocateCounts } from "seleccion";
+import { formatFechaCorta } from "peso";
 import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario, huecosProteinaSemana, arquetiposSinAlimentos } from "cuestionario";
 import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
@@ -207,6 +208,14 @@ export function crearGrupos(mod, carga) {
     {
       grupo: "Seguimiento de peso — tendencia y evaluación",
       casos: [
+        {
+          // A-H5 (diagnóstico de octubre de 2026): en catalán, gallego y euskera salían meses españoles.
+          nombre: "formatFechaCorta en los cinco idiomas (en euskera, el mes delante)",
+          ejecutar: () => comparar(
+            Object.fromEntries(["es", "en", "ca", "gl", "eu"].map((i) => [i, formatFechaCorta("2026-10-28", i)])),
+            { es: "28 oct", en: "28 Oct", ca: "28 oct.", gl: "28 out.", eu: "urr. 28" }
+          ),
+        },
         {
           nombre: "Definición, ritmo dentro de lo esperado → óptimo",
           ejecutar: () => {

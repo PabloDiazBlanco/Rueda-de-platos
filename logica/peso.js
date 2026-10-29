@@ -58,14 +58,20 @@ export function fechaISO(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// Las abreviaturas de catalán, gallego y euskera son las de ui/entreno/comun.jsx (hasta octubre de 2026 aquí
+// solo había español e inglés, y en esos tres idiomas la gráfica de peso salía con meses españoles). En
+// euskera el mes va delante del día («urr. 28»), como en el resto de la app.
 const MESES_CORTOS = {
   es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"],
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  ca: ["gen.", "febr.", "març", "abr.", "maig", "juny", "jul.", "ag.", "set.", "oct.", "nov.", "des."],
+  gl: ["xan.", "feb.", "mar.", "abr.", "mai.", "xuñ.", "xul.", "ago.", "set.", "out.", "nov.", "dec."],
+  eu: ["urt.", "ots.", "mar.", "api.", "mai.", "eka.", "uzt.", "abu.", "ira.", "urr.", "aza.", "abe."],
 };
 export function formatFechaCorta(fechaStr, idioma = "es") {
   const [y, m, d] = fechaStr.split("-").map(Number);
   const meses = MESES_CORTOS[idioma] || MESES_CORTOS.es;
-  return `${d} ${meses[m - 1]}`;
+  return idioma === "eu" ? `${meses[m - 1]} ${d}` : `${d} ${meses[m - 1]}`;
 }
 
 // Descarga una copia de todos los datos guardados (perfil, ingredientes, seguimiento de peso...)
