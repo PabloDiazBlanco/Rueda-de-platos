@@ -178,10 +178,17 @@ propio importmap, con las rutas un nivel arriba (`"../logica/x.js"`), y carga la
 - Estrategia «red primero con cacheo de paso», con `fetch(..., { cache: "no-cache" })`: siempre pregunta al
   servidor, pero un archivo sin cambios vuelve como 304. `FILES_TO_CACHE` lleva los archivos de arranque,
   las páginas legales y los 29 módulos de `logica/`; los de `ui/` los lee de `ui/archivos.json`.
-- Los CDN no pasan por el SW: sin conexión dependen de la caché HTTP del navegador. Todos se cachean un año
-  salvo `esm.sh/scheduler@^0.23.2` (lo pide `react-dom` con un rango; caduca a los 10 min) y reCAPTCHA (App
-  Check), que necesita red. Sin conexión, con la sesión ya iniciada, lo esperable es la pantalla «No se han
-  podido cargar tus datos» (Firestore no tiene caché persistente).
+- Las librerías de los CDN (`esm.sh`, `unpkg.com` y `www.gstatic.com/firebasejs/`) van a una caché aparte,
+  `CACHE_CDN`, con la misma estrategia (red primero, la copia solo sin conexión) pero sin `no-cache`: sus
+  direcciones llevan la versión. Esa caché no se vacía al subir `CACHE_NAME`. Solo GET y solo respuestas CORS
+  correctas; Firestore, Authentication y reCAPTCHA (App Check) no pasan por ahí, porque necesitan red. Hace
+  falta porque la caché HTTP no basta: `esm.sh/scheduler@^0.23.2` (lo pide `react-dom` con un rango) caduca a
+  los 10 minutos y, sin copia, la app se quedaba en el marcador de arranque. Sin conexión, con la sesión ya
+  iniciada, lo esperable es la pantalla «No se han podido cargar tus datos» (Firestore no tiene caché
+  persistente).
+- Para probar el arranque sin conexión: DevTools → Network → «Disable cache» (simula la caché HTTP caducada) y
+  «Offline», tras haber cargado la app con red con el service worker ya activo. El navegador del panel de
+  Claude no registra service workers: esta prueba se hace en Chrome.
 - Para cambiar la versión de Babel: URL nueva y su `sha384` en `index.html` y `validacion/index.html` a la vez.
 - Si no se sube `CACHE_NAME` al añadir archivos, el service worker instalado no se reinstala y el archivo
   nuevo solo queda disponible sin conexión después de haberse pedido con conexión una vez (falla si alguien
