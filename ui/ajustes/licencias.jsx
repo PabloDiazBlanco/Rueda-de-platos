@@ -6,10 +6,10 @@
 // ui/comun/mapa-trazados.js, del párrafo de terceros del `LICENSE` y de terminos.propiedadTexto.
 //
 // Además, las librerías que carga la app, con su licencia comprobada el 26-oct-2026 en el archivo LICENSE /
-// package.json de la versión que usa el importmap de index.html (React 18.3.1 y react-dom: MIT, Facebook;
+// package.json de la versión que carga index.html, en su importmap (React 18.3.1 y react-dom: MIT, Facebook;
 // lucide-react 0.383.0: ISC, Lucide Contributors y Cole Bemis por Feather; Firebase JS SDK 12.17.1:
-// Apache-2.0, Google; Babel Standalone 7: MIT, Sebastian McKenzie y colaboradores). Todas se cargan desde
-// su CDN, no se copian al repositorio.
+// Apache-2.0, Google) o en su <script> de Babel (Babel Standalone 7.29.11: MIT, Sebastian McKenzie y
+// colaboradores). Todas se cargan desde su CDN, no se copian al repositorio.
 import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { t } from "i18n";
