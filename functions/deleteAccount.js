@@ -1,6 +1,6 @@
 // ---------- Eliminar la cuenta de verdad: Stripe, users/{uid} y la cuenta de Auth ----------
-// ESCRITA EN LA FASE 2 DEL DIAGNÓSTICO (29-oct-2026) Y SIN DESPLEGAR: hay que desplegarla
-// (`firebase deploy --only functions`) ANTES de subir la versión de la app que la llama.
+// Escrita en la Fase 2 del diagnóstico (29-oct-2026). Como cualquier función que llama la app, se despliega
+// (`firebase deploy --only functions`) ANTES de subir la versión de la app que la usa.
 //
 // Hasta ahora «Eliminar cuenta» lo hacía el cliente: borraba los documentos de users/{uid}/keys y su cuenta
 // de Auth, pero no podía tocar el documento padre users/{uid} (es de solo lectura para el cliente: guarda el
@@ -32,12 +32,24 @@ const SESION_RECIENTE_SEG = 5 * 60;
 // Estados de una suscripción de Stripe que todavía pueden cobrar o reactivarse.
 const ESTADOS_VIVOS = ["active", "trialing", "past_due", "unpaid", "incomplete", "paused"];
 
+// Stripe responde «resource_missing» cuando el cliente o la suscripción guardados ya no existen en la cuenta de
+// Stripe con la que trabaja la función: se borraron en el panel, o se cambió de cuenta de Stripe (el traspaso a
+// la cuenta de draftedfood está pendiente). Lo que no existe no puede cobrar, así que no hay nada que cancelar.
+// Sin esto, la función devolvía «inténtalo de nuevo» para siempre y esa cuenta no se podía eliminar nunca.
+const noExiste = (err) => !!err && err.code === "resource_missing";
+
 async function cancelarSuscripciones(stripe, premium) {
   const canceladas = [];
   const customer = premium && premium.stripeCustomerId;
   if (customer) {
     // Todas las del cliente, no solo la última guardada: si alguna vez hubo dos, ninguna sigue cobrando.
-    const lista = await stripe.subscriptions.list({ customer, status: "all", limit: 100 });
+    let lista;
+    try {
+      lista = await stripe.subscriptions.list({ customer, status: "all", limit: 100 });
+    } catch (err) {
+      if (noExiste(err)) return canceladas;
+      throw err;
+    }
     for (const sub of lista.data) {
       if (ESTADOS_VIVOS.includes(sub.status)) {
         await stripe.subscriptions.cancel(sub.id);
@@ -45,7 +57,13 @@ async function cancelarSuscripciones(stripe, premium) {
       }
     }
   } else if (premium && premium.subscriptionId) {
-    const sub = await stripe.subscriptions.retrieve(premium.subscriptionId);
+    let sub;
+    try {
+      sub = await stripe.subscriptions.retrieve(premium.subscriptionId);
+    } catch (err) {
+      if (noExiste(err)) return canceladas;
+      throw err;
+    }
     if (ESTADOS_VIVOS.includes(sub.status)) {
       await stripe.subscriptions.cancel(sub.id);
       canceladas.push(sub.id);

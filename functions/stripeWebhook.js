@@ -49,20 +49,32 @@ async function guardarEstadoPremium(uid, { activo, stripeCustomerId, subscriptio
     }
     throw err;
   }
-  await admin
-    .firestore()
-    .doc(`users/${uid}`)
-    .set(
-      {
-        premium: {
-          active: activo,
-          stripeCustomerId,
-          subscriptionId,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-      },
-      { merge: true }
-    );
+  const ref = admin.firestore().doc(`users/${uid}`);
+  const premium = {
+    active: activo,
+    stripeCustomerId,
+    subscriptionId,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  if (activo) {
+    await ref.set({ premium }, { merge: true });
+    return;
+  }
+  // Desactivar solo actualiza un documento que ya existe; nunca lo crea. La comprobación de Auth de arriba no
+  // basta: deleteAccount cancela la suscripción ANTES de borrar el usuario, así que el aviso de Stripe puede
+  // pasar esa comprobación y llegar a escribir justo después de que deleteAccount haya borrado users/{uid},
+  // recreándolo con los datos de facturación de alguien que pidió borrarlo todo. `update` falla si el documento
+  // no existe, y eso es lo correcto: sin documento, el usuario ya no tiene premium. Un usuario que cancela
+  // normalmente sí lo tiene (se creó al activarse la suscripción).
+  try {
+    await ref.update({ premium });
+  } catch (err) {
+    if (err && (err.code === 5 || err.code === "not-found")) {
+      logger.info("Desactivación de premium sin documento (cuenta eliminada o nunca activada): no se crea.", { uid, subscriptionId });
+      return;
+    }
+    throw err;
+  }
 }
 
 exports.stripeWebhook = onRequest(
