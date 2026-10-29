@@ -37,6 +37,18 @@ async function guardarEstadoPremium(uid, { activo, stripeCustomerId, subscriptio
     );
     return;
   }
+  // Una cuenta eliminada (functions/deleteAccount.js) cancela su suscripción y Stripe avisa después con
+  // customer.subscription.deleted: escribir aquí recrearía users/{uid} para alguien que ya no existe. Si el
+  // usuario no está en Auth, no se escribe nada.
+  try {
+    await admin.auth().getUser(uid);
+  } catch (err) {
+    if (err && err.code === "auth/user-not-found") {
+      logger.info("Evento de Stripe de una cuenta ya eliminada: no se escribe nada.", { uid, subscriptionId });
+      return;
+    }
+    throw err;
+  }
   await admin
     .firestore()
     .doc(`users/${uid}`)

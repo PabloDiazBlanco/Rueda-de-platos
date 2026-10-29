@@ -19,3 +19,5 @@ exports.suggestMeals = require("./suggestMeals").suggestMeals;
 exports.suggestRecipes = require("./suggestRecipes").suggestRecipes;
 exports.sendWeighInReminders = require("./sendWeighInReminders").sendWeighInReminders;
 exports.sendDefrostReminders = require("./sendDefrostReminders").sendDefrostReminders;
+// Escrita en la Fase 2 del diagnóstico (29-oct-2026): desplegar antes de subir la app que la llama.
+exports.deleteAccount = require("./deleteAccount").deleteAccount;
