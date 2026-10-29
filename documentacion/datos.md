@@ -68,6 +68,9 @@ La primera vez que una cuenta entra en un navegador con datos antiguos en `local
 haya (sin contar las marcas `:migrated:`), y deja la marca `rueda-de-platos:migrated:<uid>` en el
 dispositivo. Nunca bloquea la carga de la app: si falla, se queda en un aviso de consola.
 
+Eliminar la cuenta borra `users/{uid}` entero en el servidor (`functions/deleteAccount.js`, ver `backend.md`) y,
+en el dispositivo desde el que se elimina, las claves de esa cuenta (las que acaban en `:<uid>`).
+
 ## Claves en el dispositivo (`localStorage`)
 
 | Clave | Qué es | ¿Por cuenta? |

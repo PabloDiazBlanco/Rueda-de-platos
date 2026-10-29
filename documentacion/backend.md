@@ -16,6 +16,7 @@ reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modul
 | `analyzeFoodPhoto` / `suggestRecipes` | callable | Gemini con premium + cuota (ver `ia.md`) |
 | `suggestMeals` | callable | Versión anterior de «¿Qué cocino?»; se conserva para las copias de la app sin actualizar |
 | `sendWeighInReminders` | programada, 09:00 Europe/Madrid | Push diario de recordatorio de pesaje (no a quien lo tenga desactivado) |
+| `deleteAccount` | callable | Elimina la cuenta de verdad: cancela la suscripción de Stripe, borra `users/{uid}` entero (`recursiveDelete`) y la cuenta de Auth. La llama `window.deleteAccount` tras reautenticar |
 | `sendDefrostReminders` | programada, 21:30 Europe/Madrid | Push «revisa las comidas de mañana por si tienes que descongelar algo o comprar» a quien tenga `perfil.avisoDescongelar` (C8, gratis; no lee el menú) |
 
 ## Reglas de esta área
@@ -53,6 +54,18 @@ reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modul
   resumen mensual (nutrición y entreno), sueño, pasos y período.
 - **Premium**: seguimiento de peso (y con él el apartado de peso del resumen), las funciones de Gemini y los
   informes cruzados y el constructor del área Cuerpo.
+
+## Eliminar la cuenta
+
+- Lo hace `deleteAccount` en el servidor, porque el cliente no puede borrar `users/{uid}` ni cancelar Stripe.
+  Exige sesión de menos de 5 minutos (el cliente reautentica antes). Orden: cancelar en Stripe las
+  suscripciones vivas del cliente (si falla, no se borra nada) → `recursiveDelete(users/{uid})` → borrar el
+  usuario de Auth → `recursiveDelete` otra vez (escrituras tardías). El cliente de Stripe no se borra (la
+  facturación se conserva por ley).
+- `stripeWebhook` no escribe nada para un uid que ya no existe en Auth (si no, el evento de la cancelación
+  recrearía `users/{uid}`).
+- El cliente limpia después las claves de `localStorage` de esa cuenta (las que acaban en `:<uid>`) y cierra
+  la sesión. Si la función falla, no se borra nada: no hay borrado a medias desde el cliente.
 
 ## Notificaciones push
 
