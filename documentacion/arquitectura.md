@@ -152,10 +152,17 @@ los módulos de `logica/`) se siguen resolviendo con el importmap. Lo usan `auth
 - Pide los archivos con `cache: "no-cache"` para no mezclar archivos nuevos y viejos tras un despliegue.
 - Un error de sintaxis dice en qué archivo está, y en las herramientas del navegador cada archivo aparece
   con su nombre real.
-- **Coste de arranque**: Babel transforma toda la interfaz en cada carga: **1,2-1,5 s de CPU en
-  escritorio** (más en móvil), medido con Babel 7.29.11 (`local/diagnostico-2026-10/04-rendimiento.md`).
-- **Mejora pendiente**: guardar el código transformado entre visitas (IndexedDB), invalidándolo bien tras
-  cada despliegue. Es el mayor ahorro posible sin build.
+- **Caché del código transformado** (IndexedDB `fooddraft-codigo-transformado`): cada archivo se guarda con la
+  clave `babel-<versión>|opciones-<VERSION_OPCIONES>|<SHA-256 de la fuente>`. La fuente se pide siempre (la
+  caché nunca decide qué versión se usa) y solo se guarda tras ejecutarse la interfaz sin errores; sin
+  IndexedDB o sin `crypto.subtle`, se transforma como siempre. **Si cambian las opciones de Babel o lo que se
+  hace con el resultado, sube `VERSION_OPCIONES`.** `validacion/` carga con `cacheTransformado: false` para
+  probar siempre la transformación real.
+- **Coste de arranque** (escritorio, 8 núcleos): sin caché, 1,1-1,2 s; con la caché llena, ~0,2 s. En frío
+  (primera visita o tras cambiar todos los archivos) cuesta lo mismo que sin caché (las huellas SHA-256 de los
+  106 archivos, ~10 ms). Medidas en `local/diagnostico-2026-10/13-informe-fase-2.md` (bloque 9).
+- **Pendiente**: no descargar ni analizar Babel (3,15 MB) cuando todo está en caché, pasando
+  `auth-bootstrap.jsx` por el cargador (`04-rendimiento.md` § 5, paso 2).
 
 ## Cómo usa `validacion/tests.js` las funciones
 
