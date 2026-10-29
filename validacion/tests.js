@@ -38,7 +38,7 @@ import {
 } from "entreno-sesion";
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
-  elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV, migrarIndice,
+  elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV, migrarIndice, mesesAReconstruir, indiceVacio,
 } from "entreno-almacen";
 import {
   lineasComida, redondearRazonable, propuestaGramos, opcionesCambio, comidaReal, registroComida, necesidadesComidaReal,
@@ -2248,6 +2248,36 @@ function grupoEntrenoAlmacen() {
           const incremental = actualizarIndiceConSesion(reconstruirIndice([septiembre, octubre], ejercicioPrueba, 80), nueva, ejercicioPrueba, 80);
           const completo = reconstruirIndice([septiembre, anadirSesionAMes(octubre, nueva)], ejercicioPrueba, 80);
           return comparar({ iguales: JSON.stringify(incremental) === JSON.stringify(completo), pesoMax: incremental.ejercicios.banca.records.pesoMax.valor }, { iguales: true, pesoMax: 70 });
+        },
+      },
+      {
+        // Riesgo D3 (diagnóstico de octubre de 2026): la app se abre sin conexión en el gimnasio, el índice no
+        // se lee y en memoria queda uno vacío; al terminar, el índice calculado solo conoce octubre. Antes se
+        // escribía tal cual y julio, agosto y septiembre quedaban huérfanos para siempre. Ahora el hook une los
+        // meses del índice de la nube con los del calculado antes de reconstruir.
+        nombre: "D3: índice de la nube con 3 meses + carga fallida + sesión nueva → se releen y conservan los 3 meses",
+        ejecutar: () => {
+          const mesDoc = (mes, id, dia) => ({ version: 1, mes, sesiones: [sesionAlmacen(id, `${mes}-${dia}T17:00:00.000Z`, [[60, 10]])] });
+          const julio = mesDoc("2026-07", "j1", "08"), agosto = mesDoc("2026-08", "a1", "12");
+          const remoto = reconstruirIndice([julio, agosto, septiembre], ejercicioPrueba, 80);
+          const nueva = sesionAlmacen("s9", "2026-10-28T17:00:00.000Z", [[62.5, 8]]);
+          const calculadoSobreVacio = actualizarIndiceConSesion(indiceVacio(), nueva, ejercicioPrueba, 80);
+          // Lo que hace el hook: base = el de la nube; meses = los suyos ∪ los del calculado ∪ el actual.
+          const meses = mesesAReconstruir([remoto], [...mesesAReconstruir([calculadoSobreVacio]), "2026-10"]);
+          const docs = { "2026-07": julio, "2026-08": agosto, "2026-09": septiembre, "2026-10": { version: 1, mes: "2026-10", sesiones: [nueva] } };
+          const final = reconstruirIndice(meses.map((m) => docs[m]), ejercicioPrueba, 80);
+          return comparar(
+            { soloCalculado: mesesAReconstruir([calculadoSobreVacio]).join(","), meses: meses.join(","), mesesFinal: Object.keys(final.meses).sort().join(","), sesiones: final.ejercicios.banca.sesiones },
+            { soloCalculado: "2026-10", meses: "2026-07,2026-08,2026-09,2026-10", mesesFinal: "2026-07,2026-08,2026-09,2026-10", sesiones: 4 }
+          );
+        },
+      },
+      {
+        nombre: "mesesAReconstruir: sin repetir, en orden, ignora meses a 0 y huecos de `extra`",
+        ejecutar: () => {
+          const a = { meses: { "2026-09": 2, "2026-05": 1, "2026-06": 0 } };
+          const b = { meses: { "2026-09": 1, "2026-10": 3 } };
+          return comparar({ r: mesesAReconstruir([a, b, null], ["2026-10", "2026-01", null]).join(",") }, { r: "2026-01,2026-05,2026-09,2026-10" });
         },
       },
       // ---------- «Anterior» equivalente (G4, 25-oct-2026) ----------

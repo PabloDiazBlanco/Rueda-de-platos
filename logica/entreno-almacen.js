@@ -252,6 +252,18 @@ export function actualizarIndiceConSesion(indice, sesion, ejercicioDe, pesoCorpo
 // Meses con sesiones, del más antiguo al más reciente.
 export const mesesDelIndice = (indice) => Object.keys((indice && indice.meses) || {}).filter((m) => indice.meses[m] > 0).sort();
 
+// Meses que hay que leer para reconstruir el índice: los de todos los índices que se pasan (el de la nube y
+// el que hay en memoria), más los sueltos de `extra` (el mes actual, los que acaba de escribir una
+// importación), sin repetir y en orden. Los meses solo se conocen por el índice (nunca `storage.list()`), así
+// que un mes que se quede fuera de aquí desaparece para siempre del historial: por eso, cuando el índice en
+// memoria se construyó sobre uno vacío (la app se abrió sin conexión), hay que unirlo con el de la nube en vez
+// de escribirlo tal cual (riesgo D3 del diagnóstico de octubre de 2026).
+export function mesesAReconstruir(indices, extra = []) {
+  const todos = new Set(extra.filter(Boolean));
+  (indices || []).forEach((indice) => mesesDelIndice(indice).forEach((m) => todos.add(m)));
+  return [...todos].sort();
+}
+
 // ---------- Borrador y cola ----------
 // Si hay borrador en este dispositivo y en la nube, gana el que se cambió más tarde (el de otro móvil
 // puede ser más nuevo; el de este, más nuevo que lo que llegó a subirse).

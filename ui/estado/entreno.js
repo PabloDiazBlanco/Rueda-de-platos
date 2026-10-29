@@ -21,7 +21,7 @@ import * as S from "entreno-sesion";
 import {
   CLAVE_CATALOGO, CLAVE_INDICE, CLAVE_BORRADOR, claveMes, mesDe, migrarCatalogo, migrarMes, migrarIndice,
   migrarBorrador, anadirSesionAMes, quitarSesionDeMes, reconstruirIndice, actualizarIndiceConSesion,
-  elegirBorrador, encolar, quitarDeCola, mesesDelIndice, indiceVacio,
+  elegirBorrador, encolar, quitarDeCola, mesesAReconstruir, indiceVacio,
 } from "entreno-almacen";
 
 // Copias de este dispositivo (comodidad y red de seguridad, ver la excepción documentada en el diseño:
@@ -135,13 +135,19 @@ export function useEntreno(data) {
   }
 
   // Lee un mes (una sola vez: queda en memoria). Devuelve su documento.
-  async function cargarMes(mes, { forzar = false } = {}) {
+  // Si la lectura falla, lo que se devuelve (lo que ya hubiera en memoria, o un mes vacío) **no** se guarda
+  // en memoria: un mes vacío por error parecería un mes sin entrenos, y quien reconstruyera el índice o
+  // exportara con él lo daría por bueno (riesgo D4). Con `estricto`, el error se lanza en vez de devolver
+  // nada: lo usan reconstruir el índice, exportar, deshacer una importación y corregir sesiones pasadas, que
+  // no pueden seguir con un mes que no se ha leído.
+  async function cargarMes(mes, { forzar = false, estricto = false } = {}) {
     if (!forzar && ref.current.meses[mes]) return ref.current.meses[mes];
     let doc;
     try {
       doc = migrarMes(await leerNube(claveMes(mes)), mes).valor;
     } catch (e) {
-      doc = ref.current.meses[mes] || migrarMes(null, mes).valor;
+      if (estricto) throw e;
+      return ref.current.meses[mes] || migrarMes(null, mes).valor;
     }
     ref.current.meses = { ...ref.current.meses, [mes]: doc };
     setMeses((m) => ({ ...m, [mes]: doc }));
@@ -149,21 +155,38 @@ export function useEntreno(data) {
   }
 
   // Todos los meses que tienen entrenos (exportar, gráficas de todo el periodo, reconstruir el índice).
-  // `extra`: meses que aún no están en el índice (los que acaba de escribir una importación).
+  // `extra`: meses que aún no están en el índice (los que acaba de escribir una importación). Si alguno no se
+  // puede leer, lanza: mejor un aviso de «hace falta conexión» que un resultado al que le faltan meses.
   async function cargarTodosLosMeses(extra = []) {
-    const lista = [...new Set([...mesesDelIndice(ref.current.indice), mesActual(), ...extra])].sort();
+    const lista = mesesAReconstruir([ref.current.indice], [mesActual(), ...extra]);
     const docs = [];
-    for (const mes of lista) docs.push(await cargarMes(mes));
+    for (const mes of lista) docs.push(await cargarMes(mes, { estricto: true }));
     return docs;
   }
 
   async function guardarIndice(nuevo) {
+    if (!cargaFiable.current.indice) {
+      // El índice no se leyó bien al abrir (sin conexión), así que `nuevo` se calculó sobre uno vacío: solo
+      // conoce los meses que se han tocado desde entonces. Escribirlo tal cual dejaría huérfanos todos los
+      // meses anteriores, porque los meses solo se conocen por el índice (riesgo D3). Se lee ahora el de la
+      // nube y se reconstruye a partir de la unión de sus meses y los de `nuevo`. Si tampoco se puede leer,
+      // se queda en memoria sin escribir nada.
+      let remoto;
+      try {
+        remoto = migrarIndice(await leerNube(CLAVE_INDICE)).valor;
+      } catch (e) {
+        ref.current.indice = nuevo;
+        setIndice(nuevo);
+        return;
+      }
+      cargaFiable.current.indice = true;
+      ref.current.indice = remoto;
+      setIndice(remoto);
+      await reconstruir(mesesAReconstruir([nuevo]));
+      return;
+    }
     ref.current.indice = nuevo;
     setIndice(nuevo);
-    if (!cargaFiable.current.indice) {
-      // No se leyó bien al abrir: se intenta leer ahora antes de pisar nada.
-      try { migrarIndice(await leerNube(CLAVE_INDICE)); cargaFiable.current.indice = true; } catch (e) { return; }
-    }
     try { await escribirNube(CLAVE_INDICE, nuevo); } catch (e) { /* se corrige solo: ver comprobarIndice */ }
   }
 
@@ -179,7 +202,7 @@ export function useEntreno(data) {
   // reconstruye leyendo los meses.
   async function comprobarIndice() {
     const mes = mesActual();
-    const doc = await cargarMes(mes);
+    const doc = await cargarMes(mes, { estricto: true });
     const enIndice = (ref.current.indice.meses || {})[mes] || 0;
     if ((doc.sesiones || []).length !== enIndice) await reconstruir();
   }
@@ -399,7 +422,7 @@ export function useEntreno(data) {
     // Historial: corregir o borrar una sesión pasada (reescribe su mes y reconstruye el índice).
     async guardarSesionPasada(sesion) {
       const mes = mesDe(sesion.inicio);
-      const doc = anadirSesionAMes(await cargarMes(mes, { forzar: true }), { ...sesion, actualizado: Date.now() });
+      const doc = anadirSesionAMes(await cargarMes(mes, { forzar: true, estricto: true }), { ...sesion, actualizado: Date.now() });
       await escribirNube(claveMes(mes), doc);
       ref.current.meses = { ...ref.current.meses, [mes]: doc };
       setMeses((m) => ({ ...m, [mes]: doc }));
@@ -407,7 +430,7 @@ export function useEntreno(data) {
     },
     async borrarSesionPasada(sesion) {
       const mes = mesDe(sesion.inicio);
-      const doc = quitarSesionDeMes(await cargarMes(mes, { forzar: true }), sesion.id);
+      const doc = quitarSesionDeMes(await cargarMes(mes, { forzar: true, estricto: true }), sesion.id);
       await escribirNube(claveMes(mes), doc);
       ref.current.meses = { ...ref.current.meses, [mes]: doc };
       setMeses((m) => ({ ...m, [mes]: doc }));
