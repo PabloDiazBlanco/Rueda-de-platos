@@ -14,10 +14,21 @@ export function weightedPick(items, weightKey) {
   return items[items.length - 1];
 }
 
-// Reparte "totalSlots" huecos entre miembros según su peso relativo (método del resto mayor)
+// Reparte "totalSlots" huecos entre miembros según su peso relativo (método del resto mayor).
+// Un peso 0 es 0 (una merienda al 0 % no sale nunca), como en weightedPick y pickWithRules; solo un peso
+// que falta o no es un número cuenta como 1. Hasta octubre de 2026 el 0 se convertía en 1 (`|| 1`) y una
+// opción al 0 % recibía huecos igualmente (A-H4 del diagnóstico). Si todos son 0, reparto uniforme: mejor
+// eso que dejar la comida vacía todo el ciclo.
 export function allocateCounts(members, weightKey, totalSlots) {
-  const totalWeight = members.reduce((s, m) => s + (Number(m[weightKey]) || 1), 0) || 1;
-  const raw = members.map((m) => ((Number(m[weightKey]) || 1) / totalWeight) * totalSlots);
+  const pesoDe = (m) => {
+    const v = m[weightKey];
+    const n = Number(v);
+    return v === null || v === undefined || v === "" || !Number.isFinite(n) ? 1 : Math.max(0, n);
+  };
+  let pesos = members.map(pesoDe);
+  if (!pesos.some((p) => p > 0)) pesos = members.map(() => 1);
+  const totalWeight = pesos.reduce((s, p) => s + p, 0) || 1;
+  const raw = pesos.map((p) => (p / totalWeight) * totalSlots);
   const floors = raw.map(Math.floor);
   let allocated = floors.reduce((a, b) => a + b, 0);
   let remainder = totalSlots - allocated;

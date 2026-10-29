@@ -10,6 +10,7 @@ import { objetivosPorComida, recomendacionPreentreno } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
 import { mealComponents, ingredientePorNombre } from "comida-calculo";
+import { allocateCounts } from "seleccion";
 import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario, huecosProteinaSemana, arquetiposSinAlimentos } from "cuestionario";
 import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
@@ -758,6 +759,24 @@ export function crearGrupos(mod, carga) {
             },
             { varios: "🍕", tono: "👍🏽", unidos: "🧑‍🍳", bandera: "🇪🇸", tecla: "1️⃣", letras: "", vacio: "", nulo: "" }
           ),
+        },
+      ],
+    },
+    {
+      // El motor (generateMenu) es aleatorio y no tiene casos con valores fijos; sus piezas deterministas, sí.
+      grupo: "Motor de menús: reparto exacto (allocateCounts)",
+      casos: [
+        {
+          // A-H4 (diagnóstico de octubre de 2026): un peso 0 contaba como 1 y una opción al 0 % recibía huecos.
+          // 14 huecos, pesos 10/0/0/0 → todo al primero (antes: 11, 1, 1, 1).
+          nombre: "A-H4: peso 0 = 0 huecos; sin peso = 1; todos a 0 = reparto uniforme",
+          ejecutar: () => {
+            const n = (miembros, total) => allocateCounts(miembros, "p", total).map((a) => a.count).join(",");
+            return comparar(
+              { ceros: n([{ p: 10 }, { p: 0 }, { p: 0 }, { p: 0 }], 14), sinPeso: n([{}, { p: 3 }], 8), todosCero: n([{ p: 0 }, { p: 0 }], 14), restoMayor: n([{ p: 1 }, { p: 1 }, { p: 1 }], 14) },
+              { ceros: "14,0,0,0", sinPeso: "2,6", todosCero: "7,7", restoMayor: "5,5,4" }
+            );
+          },
         },
       ],
     },
