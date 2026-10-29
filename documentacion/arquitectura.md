@@ -7,7 +7,8 @@ archivo nuevo, cómo se escribe en `ui/`) están en el `CLAUDE.md` de la raíz y
 ## Archivos de arranque (en la raíz)
 
 ```
-index.html             → importmap + carga auth-bootstrap.jsx (Babel Standalone desde unpkg)
+index.html             → importmap + carga auth-bootstrap.jsx (Babel Standalone 7.29.11 desde unpkg, versión
+                          exacta con integrity; validacion/index.html usa la misma URL y el mismo hash)
 auth-bootstrap.jsx     → login, Firestore, App Check, puente con las Cloud Functions (window.*);
                           luego carga la interfaz con cargador-ui.js
 cargador-ui.js         → carga app.jsx y ui/ (Babel + registro de módulos propio, sin build)
@@ -164,8 +165,14 @@ propio importmap, con las rutas un nivel arriba (`"../logica/x.js"`), y carga la
 
 ## Service worker (`sw.js`)
 
-- Estrategia «red primero con cacheo de paso». `FILES_TO_CACHE` lleva los archivos de arranque y los 29
-  módulos de `logica/`; los de `ui/` los lee de `ui/archivos.json`.
+- Estrategia «red primero con cacheo de paso», con `fetch(..., { cache: "no-cache" })`: siempre pregunta al
+  servidor, pero un archivo sin cambios vuelve como 304. `FILES_TO_CACHE` lleva los archivos de arranque,
+  las páginas legales y los 29 módulos de `logica/`; los de `ui/` los lee de `ui/archivos.json`.
+- Los CDN no pasan por el SW: sin conexión dependen de la caché HTTP del navegador. Todos se cachean un año
+  salvo `esm.sh/scheduler@^0.23.2` (lo pide `react-dom` con un rango; caduca a los 10 min) y reCAPTCHA (App
+  Check), que necesita red. Sin conexión, con la sesión ya iniciada, lo esperable es la pantalla «No se han
+  podido cargar tus datos» (Firestore no tiene caché persistente).
+- Para cambiar la versión de Babel: URL nueva y su `sha384` en `index.html` y `validacion/index.html` a la vez.
 - Si no se sube `CACHE_NAME` al añadir archivos, el service worker instalado no se reinstala y el archivo
   nuevo solo queda disponible sin conexión después de haberse pedido con conexión una vez (falla si alguien
   instala la PWA estando ya sin conexión). Basta una subida de versión por push que añada archivos.
