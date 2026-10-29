@@ -62,10 +62,19 @@ reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modul
   suscripciones vivas del cliente (si falla, no se borra nada) → `recursiveDelete(users/{uid})` → borrar el
   usuario de Auth → `recursiveDelete` otra vez (escrituras tardías). El cliente de Stripe no se borra (la
   facturación se conserva por ley).
-- `stripeWebhook` no escribe nada para un uid que ya no existe en Auth (si no, el evento de la cancelación
-  recrearía `users/{uid}`).
-- El cliente limpia después las claves de `localStorage` de esa cuenta (las que acaban en `:<uid>`) y cierra
-  la sesión. Si la función falla, no se borra nada: no hay borrado a medias desde el cliente.
+- Si Stripe responde `resource_missing` (el cliente o la suscripción guardados ya no existen: borrados en el
+  panel o de otra cuenta de Stripe), no hay nada que cancelar y el borrado sigue. Cualquier otro error de
+  Stripe para el borrado entero.
+- `stripeWebhook` no escribe nada para un uid que ya no existe en Auth, y **desactivar el premium solo
+  actualiza un `users/{uid}` que ya existe, nunca lo crea** (`update`, no `set`): el aviso de la cancelación
+  puede llegar justo después de que `deleteAccount` haya borrado el documento, cuando el usuario aún está en
+  Auth. Activar (checkout) sí lo crea.
+- El cliente (`window.deleteAccount`) bloquea las escrituras de `window.storage` mientras la función trabaja,
+  para que un guardado automático pendiente no recree documentos de la cuenta borrada; si la función falla,
+  las devuelve. Después limpia las claves de `localStorage` de esa cuenta (las que acaban en `:<uid>`) y
+  cierra la sesión. Si la función falla, no se borra nada: no hay borrado a medias desde el cliente.
+- Las simulaciones con Stripe, Firestore y Auth falsos que se usaron para comprobar estos casos no están en el
+  repositorio; `validacion/` no cubre `functions/`.
 
 ## Notificaciones push
 

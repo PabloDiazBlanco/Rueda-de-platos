@@ -68,8 +68,14 @@ hasta, inst, avisado }`.
    escribe tal cual, porque dejaría huérfanos los meses que no conoce.
 5. Un mes que no se puede leer no se guarda en memoria como vacío. `cargarMes(mes, { estricto: true })`
    lanza el error; lo usan reconstruir, exportar, deshacer una importación y corregir o borrar una sesión
-   pasada, que avisan de que hace falta conexión en vez de seguir con meses que faltan.
-6. Las copias del dispositivo son por cuenta (`fooddraft:entreno-borrador:<uid>`,
+   pasada, que avisan de que hace falta conexión en vez de seguir con meses que faltan. Lo que solo pinta
+   (ficha, Progreso, informes y constructor de Cuerpo, por `useTodasLasSesiones`) usa
+   `leerMesesDisponibles`: lee todos los que puede y, si falta alguno, enseña `AvisoMesesSinLeer`
+   (`ficha.jsx`, `entreno.mesesSinLeer`) en vez de dar por completo lo que ve.
+6. `useEntreno.cargar` lanza si no ha podido leer el catálogo o el índice, para que la pantalla de reintento
+   de `app.jsx` los vuelva a leer (si no, tras abrir sin conexión y reintentar, FitDraft seguiría sin rutinas
+   ni historial hasta recargar). El borrador no cuenta: tiene su copia en el dispositivo.
+7. Las copias del dispositivo son por cuenta (`fooddraft:entreno-borrador:<uid>`,
    `fooddraft:entreno-pendientes:<uid>`, `clavesLocalesEntreno`). `migrarLocalesEntreno` pasa una vez las
    de antes (sin cuenta) a la primera cuenta que abre la app.
 

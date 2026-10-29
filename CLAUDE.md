@@ -46,6 +46,7 @@ Mapa completo de módulos e imports reales: `documentacion/arquitectura.md`.
 | Módulo de `logica/` | `index.html` → `"x": "./logica/x.js"` · `validacion/index.html` → `"x": "../logica/x.js"` · `FILES_TO_CACHE` de `sw.js` |
 | Archivo de `ui/` | `ui/archivos.json` (no se toca ningún importmap) |
 | Cualquiera de los dos | Sube en uno `CACHE_NAME` de `sw.js` (una vez por push que añada archivos) |
+| Otra versión de una librería (importmaps, Babel, Firebase de `sw.js`) | Los dos importmaps a la vez y sube en uno `CACHE_CDN` de `sw.js` (si no, las copias viejas se quedan en cada dispositivo) |
 | Pantalla nueva | Su destino en `PANTALLAS` (`ui/pantallas.jsx`) y su sitio en `ui/marco/navegacion.js` |
 | Pestaña nueva | Entrada en `pestanas` con icono de `lucide-react` y etiqueta `barra.*` en los 5 idiomas (máx. 5 por área) |
 

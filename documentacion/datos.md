@@ -35,8 +35,14 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   a la vez (no dependen entre sí), lo
   recoge y `app.jsx` enseña «No se han podido cargar tus datos · Reintentar» (`ui/comun/error-carga.jsx`),
   que reintenta solo lo que falló. Mientras tanto no se guarda nada. Un hook nuevo que lea de la nube tiene
-  que seguir el mismo patrón: lanzar en el cargador y no autoguardar sin haber leído bien. El entreno es la
-  excepción: se puede usar sin conexión y lleva sus propias reglas (`entreno.md`).
+  que seguir el mismo patrón: lanzar en el cargador y no autoguardar sin haber leído bien. El entreno se
+  puede usar sin conexión y lleva sus propias reglas (`entreno.md`), pero su cargador también lanza si no ha
+  podido leer el catálogo o el índice, para que «Reintentar» los vuelva a leer.
+- **Leído pero inservible** (JSON roto, una migración que falla) tampoco es una cuenta nueva, y tampoco es la
+  conexión: el cargador marca el error con `error.ilegible = true` (datos principales, despensa y cuerpo) y la
+  pantalla de reintento lo dice así, con el correo de contacto (`carga.error.textoIlegible`). No se escribe
+  nada encima. Los menús son la excepción: un menú o un historial ilegibles se ignoran (el historial se
+  empieza de nuevo), porque no hay nada que proteger en ellos.
 - Si un guardado de los datos principales falla, la cabecera dice «Sin guardar» y se reintenta al volver la
   conexión; despensa y cuerpo lo dejan en la consola y lo reintentan con el siguiente cambio.
 - El documento padre `users/{uid}` guarda el estado premium (`premium { active, stripeCustomerId,

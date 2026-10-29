@@ -180,7 +180,9 @@ propio importmap, con las rutas un nivel arriba (`"../logica/x.js"`), y carga la
   las páginas legales y los 29 módulos de `logica/`; los de `ui/` los lee de `ui/archivos.json`.
 - Las librerías de los CDN (`esm.sh`, `unpkg.com` y `www.gstatic.com/firebasejs/`) van a una caché aparte,
   `CACHE_CDN`, con la misma estrategia (red primero, la copia solo sin conexión) pero sin `no-cache`: sus
-  direcciones llevan la versión. Esa caché no se vacía al subir `CACHE_NAME`. Solo GET y solo respuestas CORS
+  direcciones llevan la versión. Esa caché no se vacía al subir `CACHE_NAME`; **al cambiar la versión de una
+  librería (importmaps, Babel, Firebase de `sw.js`) se sube `CACHE_CDN`**, y activate borra la anterior (si
+  no, cada versión dejaría sus copias para siempre en cada dispositivo). Solo GET y solo respuestas CORS
   correctas; Firestore, Authentication y reCAPTCHA (App Check) no pasan por ahí, porque necesitan red. Hace
   falta porque la caché HTTP no basta: `esm.sh/scheduler@^0.23.2` (lo pide `react-dom` con un rango) caduca a
   los 10 minutos y, sin copia, la app se quedaba en el marcador de arranque. Sin conexión, con la sesión ya
