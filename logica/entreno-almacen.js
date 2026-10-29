@@ -282,6 +282,48 @@ export function quitarDeCola(cola, id) {
   return (cola || []).filter((s) => s.id !== id);
 }
 
+// ---------- Copias en el dispositivo, por cuenta ----------
+// El borrador y la cola se copian en localStorage para que un entreno no dependa de la red. Hasta octubre de
+// 2026 esas claves no llevaban la cuenta: si en el mismo móvil entraba otra persona, veía el entreno a medias
+// de la anterior como suyo y la cola se subía a su cuenta (riesgo D7 del diagnóstico). Ahora llevan el
+// identificador de la cuenta, como el período (`window.cuentaId`, que pone auth-bootstrap.jsx).
+export const LOCAL_BORRADOR_SIN_CUENTA = "fooddraft:entreno-borrador";
+export const LOCAL_COLA_SIN_CUENTA = "fooddraft:entreno-pendientes";
+export const clavesLocalesEntreno = (cuenta) => ({
+  borrador: `${LOCAL_BORRADOR_SIN_CUENTA}:${cuenta}`,
+  cola: `${LOCAL_COLA_SIN_CUENTA}:${cuenta}`,
+});
+
+// Pasa las copias de antes (sin cuenta) a la cuenta que abra primero la app en ese dispositivo y las quita
+// de la clave vieja, para que ninguna otra las herede. No se sabe de quién eran: la primera cuenta que entra
+// es, casi siempre, la de quien entrenó. Nunca se pierde nada: si la cuenta ya tenía copia propia (otra
+// pestaña con la versión anterior de la app), las colas se juntan por `id` y del borrador gana el más
+// reciente. `almacen` es localStorage (o uno falso en las pruebas); devuelve cuántas claves movió.
+export function migrarLocalesEntreno(almacen, cuenta) {
+  const nuevas = clavesLocalesEntreno(cuenta);
+  const leer = (clave) => {
+    const v = almacen.getItem(clave);
+    if (v === null || v === undefined) return null;
+    try { return JSON.parse(v); } catch (e) { return null; }
+  };
+  let movidas = 0;
+  const colaVieja = leer(LOCAL_COLA_SIN_CUENTA);
+  if (colaVieja) {
+    const cola = (Array.isArray(colaVieja) ? colaVieja : []).reduce((c, s) => encolar(c, s), leer(nuevas.cola) || []);
+    almacen.setItem(nuevas.cola, JSON.stringify(cola));
+    movidas++;
+  }
+  const borradorViejo = leer(LOCAL_BORRADOR_SIN_CUENTA);
+  if (borradorViejo) {
+    almacen.setItem(nuevas.borrador, JSON.stringify(elegirBorrador(leer(nuevas.borrador), borradorViejo)));
+    movidas++;
+  }
+  // Se quitan después de haber escrito las nuevas: si algo fallara a medias, la vieja seguiría ahí.
+  if (almacen.getItem(LOCAL_COLA_SIN_CUENTA) !== null) almacen.removeItem(LOCAL_COLA_SIN_CUENTA);
+  if (almacen.getItem(LOCAL_BORRADOR_SIN_CUENTA) !== null) almacen.removeItem(LOCAL_BORRADOR_SIN_CUENTA);
+  return movidas;
+}
+
 // ---------- Exportar ----------
 // CSV con una fila por serie, separado por «;» y con coma decimal salvo en inglés: es lo que abre bien
 // Excel con la configuración regional española (con «,» de separador, partiría los decimales). Los

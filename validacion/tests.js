@@ -39,6 +39,7 @@ import {
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
   elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV, migrarIndice, mesesAReconstruir, indiceVacio,
+  migrarLocalesEntreno, clavesLocalesEntreno,
 } from "entreno-almacen";
 import {
   lineasComida, redondearRazonable, propuestaGramos, opcionesCambio, comidaReal, registroComida, necesidadesComidaReal,
@@ -2141,6 +2142,17 @@ function grupoEntrenoSesion() {
 }
 
 // Sesión mínima terminada para los casos del almacén: un ejercicio con sus series (todas hechas).
+// localStorage de mentira (getItem/setItem/removeItem sobre un objeto), para probar migraciones de claves del
+// dispositivo sin tocar el de verdad.
+function falsoLocalStorage(inicial = {}) {
+  const d = { ...inicial };
+  return {
+    getItem: (k) => (Object.prototype.hasOwnProperty.call(d, k) ? d[k] : null),
+    setItem: (k, v) => { d[k] = String(v); },
+    removeItem: (k) => { delete d[k]; },
+  };
+}
+
 function sesionAlmacen(id, inicio, series, { actualizado = 1, ejercicioId = "banca", nombre = "Torso" } = {}) {
   return { id, nombre, inicio, fin: inicio, pausas: [], actualizado, ejercicios: [{ inst: "ei_" + id, ejercicioId, nota: "", series: series.map(([kg, reps]) => serieP("normal", kg, reps)) }] };
 }
@@ -2278,6 +2290,39 @@ function grupoEntrenoAlmacen() {
           const a = { meses: { "2026-09": 2, "2026-05": 1, "2026-06": 0 } };
           const b = { meses: { "2026-09": 1, "2026-10": 3 } };
           return comparar({ r: mesesAReconstruir([a, b, null], ["2026-10", "2026-01", null]).join(",") }, { r: "2026-01,2026-05,2026-09,2026-10" });
+        },
+      },
+      {
+        // Riesgo D7: las copias del dispositivo sin cuenta pasan a la primera cuenta que abre y desaparecen de la
+        // clave vieja (otra cuenta del mismo móvil ya no las hereda). Una segunda llamada no mueve nada.
+        nombre: "D7: borrador y cola sin cuenta → a la primera cuenta que abre; la clave vieja se vacía",
+        ejecutar: () => {
+          const almacen = falsoLocalStorage({
+            "fooddraft:entreno-borrador": JSON.stringify({ sesion: { id: "b1" }, actualizado: 5 }),
+            "fooddraft:entreno-pendientes": JSON.stringify([{ id: "c1" }, { id: "c2" }]),
+          });
+          const movidas = migrarLocalesEntreno(almacen, "uidA");
+          const otraVez = migrarLocalesEntreno(almacen, "uidB");
+          const colaA = JSON.parse(almacen.getItem("fooddraft:entreno-pendientes:uidA"));
+          const borrA = JSON.parse(almacen.getItem("fooddraft:entreno-borrador:uidA"));
+          return comparar(
+            { movidas, otraVez, colaA: colaA.map((s) => s.id).join(","), borrA: borrA.sesion.id, viejaCola: almacen.getItem("fooddraft:entreno-pendientes"), viejoBorr: almacen.getItem("fooddraft:entreno-borrador"), deB: almacen.getItem("fooddraft:entreno-pendientes:uidB") },
+            { movidas: 2, otraVez: 0, colaA: "c1,c2", borrA: "b1", viejaCola: null, viejoBorr: null, deB: null }
+          );
+        },
+      },
+      {
+        nombre: "D7: si la cuenta ya tenía copia propia, las colas se juntan por id y gana el borrador más reciente",
+        ejecutar: () => {
+          const almacen = falsoLocalStorage({
+            "fooddraft:entreno-borrador": JSON.stringify({ sesion: { id: "viejo" }, actualizado: 5 }),
+            "fooddraft:entreno-pendientes": JSON.stringify([{ id: "c1" }, { id: "c2" }]),
+            "fooddraft:entreno-borrador:uidA": JSON.stringify({ sesion: { id: "nuevo" }, actualizado: 9 }),
+            "fooddraft:entreno-pendientes:uidA": JSON.stringify([{ id: "c2" }, { id: "c3" }]),
+          });
+          migrarLocalesEntreno(almacen, "uidA");
+          const cola = JSON.parse(almacen.getItem("fooddraft:entreno-pendientes:uidA")).map((s) => s.id).sort().join(",");
+          return comparar({ cola, borrador: JSON.parse(almacen.getItem("fooddraft:entreno-borrador:uidA")).sesion.id, claves: clavesLocalesEntreno("x").cola }, { cola: "c1,c2,c3", borrador: "nuevo", claves: "fooddraft:entreno-pendientes:x" });
         },
       },
       // ---------- «Anterior» equivalente (G4, 25-oct-2026) ----------

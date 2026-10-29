@@ -21,15 +21,25 @@ import * as S from "entreno-sesion";
 import {
   CLAVE_CATALOGO, CLAVE_INDICE, CLAVE_BORRADOR, claveMes, mesDe, migrarCatalogo, migrarMes, migrarIndice,
   migrarBorrador, anadirSesionAMes, quitarSesionDeMes, reconstruirIndice, actualizarIndiceConSesion,
-  elegirBorrador, encolar, quitarDeCola, mesesAReconstruir, indiceVacio,
+  elegirBorrador, encolar, quitarDeCola, mesesAReconstruir, indiceVacio, clavesLocalesEntreno, migrarLocalesEntreno,
 } from "entreno-almacen";
 
 // Copias de este dispositivo (comodidad y red de seguridad, ver la excepción documentada en el diseño:
 // aquí localStorage guarda el borrador para que no dependa de la red, pero los datos definitivos siguen
-// en la cuenta).
-const LOCAL_BORRADOR = "fooddraft:entreno-borrador";
-const LOCAL_COLA = "fooddraft:entreno-pendientes";
+// en la cuenta). Sus claves llevan la cuenta (clavesLocalesEntreno): ver useEntreno.
 const RETRASO_NUBE_MS = 2500;
+
+// Claves locales de la cuenta que ha iniciado sesión. La primera vez, pasa a ella las copias de antes, que
+// no llevaban cuenta (migrarLocalesEntreno, logica/entreno-almacen.js).
+function clavesLocalesDeLaCuenta() {
+  const cuenta = window.cuentaId || "sin-cuenta";
+  try {
+    migrarLocalesEntreno(localStorage, cuenta);
+  } catch (e) {
+    // sin localStorage: no hay nada que migrar
+  }
+  return clavesLocalesEntreno(cuenta);
+}
 
 function leerLocal(clave, porDefecto) {
   try {
@@ -56,6 +66,11 @@ const escribirNube = (clave, valor) => window.storage.set(clave, JSON.stringify(
 const mesActual = () => fechaLocal(Date.now()).slice(0, 7);
 
 export function useEntreno(data) {
+  // Se calculan una vez, antes de la primera lectura de la cola (el estado inicial de `cola`).
+  const locales = useRef(null);
+  if (!locales.current) locales.current = clavesLocalesDeLaCuenta();
+  const LOCAL_BORRADOR = locales.current.borrador;
+  const LOCAL_COLA = locales.current.cola;
   const [catalogo, setCatalogo] = useState(null);
   const [indice, setIndice] = useState(indiceVacio());
   const [borrador, setBorrador] = useState(null);
