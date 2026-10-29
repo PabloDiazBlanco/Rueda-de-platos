@@ -3,6 +3,7 @@
 // calcula sus componentes con macros ya escalados, los totales, y las listas para
 // exportar/imprimir o para la lista de la compra. Depende solo de macros.js.
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros } from "macros";
+import { t } from "i18n";
 
 // ---------- De un nombre del menú a su ingrediente ----------
 // El menú guarda cada componente por su nombre (`protein: "Pollo"`, `item: "Tostadas"`...), no por id,
@@ -41,11 +42,14 @@ export function mealComponents(data, meal) {
   // Fila de grasa de ajuste fino, compartida entre el plato cerrado y la comida normal.
   // meal.grasaExtra es el mecanismo actual (elige entre tus opciones de la pestaña "Grasas");
   // meal.aceiteExtra se mantiene por compatibilidad con menús generados antes de que existiera esa pestaña.
+  // `note` es un código («ajusteFino», «mitad»), no un texto: la interfaz lo traduce (`menu.nota.*`). Hasta
+  // octubre de 2026 el «(ajuste fino)» se pegaba aquí en español y salía así en todos los idiomas.
   function grasaExtraRow() {
     if (meal.grasaExtra) {
       return {
         slotKey: "grasaExtra",
-        label: `${meal.grasaExtra.nombre} (ajuste fino)`,
+        label: meal.grasaExtra.nombre,
+        note: "ajusteFino",
         ingredient: { foodId: meal.grasaExtra.foodId, gramos: meal.grasaExtra.gramos },
       };
     }
@@ -53,7 +57,8 @@ export function mealComponents(data, meal) {
       const aove = data.foods && data.foods.find((f) => f.id === "f_aove");
       return {
         slotKey: "aceiteExtra",
-        label: "Aceite de oliva (ajuste fino)",
+        label: aove ? aove.name : "Aceite de oliva",
+        note: "ajusteFino",
         ingredient: aove ? { foodId: aove.id, gramos: meal.aceiteExtra } : null,
       };
     }
@@ -124,7 +129,7 @@ export function dayTotals(data, menu, week, day) {
 // `conCantidades: false` (Menú simple, Tanda 3 del rediseño) deja los mismos nombres pero sin el
 // gramaje — sigue abriendo los platos compuestos en sus componentes, porque aunque no se sepa
 // cuánto pesar, sigue haciendo falta saber que hay que comprar pan Y jamón, no solo "el plato".
-export function mealExportParts(data, meal, { conCantidades = true } = {}) {
+export function mealExportParts(data, meal, { conCantidades = true, idioma = "es" } = {}) {
   const components = mealComponents(data, meal);
   const parts = [];
   components.forEach((c) => {
@@ -139,7 +144,7 @@ export function mealExportParts(data, meal, { conCantidades = true } = {}) {
       });
     } else if (c.macros) {
       if (!conCantidades) { parts.push(c.label); return; }
-      const suffix = c.note ? ` ${c.note}` : "";
+      const suffix = c.note ? ` (${t(idioma, "menu.nota." + c.note)})` : "";
       parts.push(`${c.label}${suffix} (${Math.round(c.macros.gramos)}g)`);
     } else {
       parts.push(c.label);

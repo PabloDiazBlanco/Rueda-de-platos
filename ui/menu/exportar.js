@@ -25,7 +25,7 @@ export function documentoMenu(data, menu, semana, idioma, { conCantidades = true
       titulo: t(idioma, "dia." + day),
       lineas: comidas.map((m) => {
         const etiqueta = t(idioma, "mealType." + m.mealType);
-        if (formato === "texto") return { etiqueta, texto: mealExportParts(data, m, { conCantidades }).join(", ") || "—" };
+        if (formato === "texto") return { etiqueta, texto: mealExportParts(data, m, { conCantidades, idioma }).join(", ") || "—" };
         const kcal = conCantidades ? Math.round(mealTotals(data, m).kcal) : 0;
         return { etiqueta, texto: nombrePlato(m, idioma), detalle: kcal > 0 ? t(idioma, "menu.kcal", { n: kcal }) : null };
       }),

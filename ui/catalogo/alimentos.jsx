@@ -370,7 +370,7 @@ export function FoodEditModal({ state, onClose, onSave, idioma }) {
         <div style={{ marginBottom: 14 }}>
           <img
             src={state.photo}
-            alt="Foto de la etiqueta"
+            alt={t(idioma, "foodEditModal.fotoAlt")}
             style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 8, border: "1px solid var(--line)" }}
           />
 

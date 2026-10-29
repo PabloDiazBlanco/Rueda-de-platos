@@ -5,7 +5,7 @@ import React from "react";
 import { AlertCircle } from "lucide-react";
 import { fmt } from "macros";
 import { totalesDiaReal } from "comida-real";
-import { OBJETIVO_ETAPAS, calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
+import { calcularObjetivosPerfil, objetivosPorComida } from "objetivos";
 import { resumenNutrientesSemana } from "salud-publica";
 import { t } from "i18n";
 import { ModalShell, ModalBtn } from "../comun/modal.jsx";
@@ -167,7 +167,7 @@ export function ResumenSaludPublica({ data, menu, week, objetivos, idioma }) {
           <div key={f.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink)" }}>
-                {f.label}: <strong>{fmt(f.info.media)} {f.unidad}/día</strong>
+                {f.label}: <strong>{t(idioma, "saludPublica.porDia", { valor: fmt(f.info.media), unidad: f.unidad })}</strong>
               </div>
               <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 10.5, color: "var(--ink-soft)" }}>{f.detalle}</div>
             </div>
@@ -220,7 +220,7 @@ export function ObjetivosModal({ objetivos, perfil, onClose, idioma }) {
               <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 2 }}>
                 {t(idioma, "objetivosModal.tdee", {
                   kcal: objetivosCalculados.kcalMantenimiento,
-                  etapa: OBJETIVO_ETAPAS[objetivosCalculados.objetivo].label,
+                  etapa: t(idioma, "objetivoEtapa." + objetivosCalculados.objetivo),
                   signo: objetivosCalculados.ajustePct > 0 ? "+" : "",
                   pct: objetivosCalculados.ajustePct,
                 })}

@@ -2,6 +2,7 @@
 // Historial de ciclos de menú generados (compartido por Menú completo y Menú simple).
 import React from "react";
 import { t } from "i18n";
+import { diaYMes } from "../entreno/comun.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 export function HistoryPanel({ history, idioma }) {
@@ -16,7 +17,9 @@ export function HistoryPanel({ history, idioma }) {
         {history.map((h) => {
           const closed = h.slots.find((s) => s.closedDish);
           const date = new Date(h.generatedAt);
-          const dateLabel = date.toLocaleDateString(idioma === "en" ? "en-US" : "es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+          // Día y mes en el idioma de la app (diaYMes, con tablas propias si el navegador no trae gallego o
+          // euskera); antes era siempre en-US o es-ES, y en catalán, gallego y euskera salían meses españoles.
+          const dateLabel = `${diaYMes(date, idioma, true)}, ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
           return (
             <div
               key={h.id}

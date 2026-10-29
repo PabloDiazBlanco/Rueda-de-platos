@@ -330,10 +330,7 @@ async function migrateLocalDataIfNeeded(uid) {
       return;
     }
 
-    const quiere = window.confirm(
-      "Hemos encontrado datos guardados en este dispositivo (ingredientes, menús...).\n\n" +
-      "¿Quieres importarlos a tu cuenta nueva? Se copiarán una sola vez."
-    );
+    const quiere = window.confirm(t(leerIdiomaGuardado(), "migracionLocal.pregunta"));
     if (quiere) {
       for (const key of localKeys) {
         const value = localStorage.getItem(key);
@@ -482,6 +479,9 @@ function WelcomeScreen({ onLogin, idioma, onChangeIdioma }) {
 function LoggedOutFlow() {
   const [showLogin, setShowLogin] = useState(false);
   const [idioma, setIdioma] = useState(() => leerIdiomaGuardado());
+  // <html lang> al día con el idioma elegido (lectores de pantalla, guiones, traductor del navegador): el de
+  // index.html es fijo («es»). Dentro de la app lo pone app.jsx.
+  React.useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
 
   function cambiarIdioma(nuevo) {
     setIdioma(nuevo);

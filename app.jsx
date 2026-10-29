@@ -4,7 +4,7 @@
 // de la app (los hooks de ui/estado/), decide si toca la pantalla de carga, el alta o la app, y
 // pinta la pantalla elegida en el menú lateral (ui/pantallas.jsx). Las pantallas y piezas de
 // interfaz viven en ui/ y la lógica pura en logica/ (ver CLAUDE.md, "Arquitectura de módulos").
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { calcularListaCompra } from "comida-calculo";
 import { calcularObjetivosPerfil } from "objetivos";
 import { fechaISO, esDiaSugeridoPeso, esCambioRadical, calcularTendenciaPeso, evaluarTendencia } from "peso";
@@ -110,6 +110,9 @@ export default function RuedaDePlatos() {
 
   const premium = usePremium();
   const { data, setData, saveState, idioma, idiomaFallback, cargar: cargarDatos } = useDatos(loading);
+  // <html lang> con el idioma de la interfaz (el de index.html es fijo, «es»): lo usan los lectores de pantalla,
+  // la partición de palabras y el traductor del navegador.
+  useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
   const menuCompleto = useMenu(MENU_COMPLETO, data, setData);
   const menuSimple = useMenu(MENU_SIMPLE, data, setData);
   const toggleComidaCompletada = useComidasCompletadas(setData);

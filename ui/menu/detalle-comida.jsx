@@ -175,7 +175,7 @@ export function MealDetailModal({ meal, data, onUpdateMeal, onUpsertRule, onClos
                 <div style={{ fontSize: 13.5, color: "var(--ink)" }}>
                   {c.label}
                   {c.note && !c.sinCalculo && (
-                    <span style={{ fontSize: 10.5, color: "var(--mustard-dark)", fontWeight: 700 }}> · {c.note}</span>
+                    <span style={{ fontSize: 10.5, color: "var(--mustard-dark)", fontWeight: 700 }}> · {t(idioma, "menu.nota." + c.note)}</span>
                   )}
                 </div>
                 {!c.sinCalculo && (
