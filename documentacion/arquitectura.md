@@ -163,7 +163,9 @@ los módulos de `logica/`) se siguen resolviendo con el importmap. Lo usan `auth
   (primera visita o tras cambiar todos los archivos) cuesta lo mismo que sin caché (las huellas SHA-256 de los
   106 archivos, ~10 ms). Medidas en `local/diagnostico-2026-10/13-informe-fase-2.md` (bloque 9).
 - **Pendiente**: no descargar ni analizar Babel (3,15 MB) cuando todo está en caché, pasando
-  `auth-bootstrap.jsx` por el cargador (`04-rendimiento.md` § 5, paso 2).
+  `auth-bootstrap.jsx` por el cargador (`04-rendimiento.md` § 5, paso 2). Ésta y el resto de mejoras de
+  rendimiento sin aplicar (traducciones por idioma, trazados del mapa y iconos bajo demanda...), con ahorro,
+  riesgo y esfuerzo de cada una, están en `rendimiento-pendiente.md`.
 
 ## Cómo usa `validacion/tests.js` las funciones
 

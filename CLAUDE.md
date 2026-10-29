@@ -144,7 +144,7 @@ compromiso: no cambies una sin la otra. El aviso MIT de `ui/comun/mapa-trazados.
 ## Antes de tocar un área, lee
 | Si tocas... | Lee |
 |---|---|
-| Módulos, `cargador-ui.js`, arranque, `sw.js`, rendimiento | `documentacion/arquitectura.md` |
+| Módulos, `cargador-ui.js`, arranque, `sw.js`, rendimiento | `documentacion/arquitectura.md` (y las ideas de mejora pendientes, `documentacion/rendimiento-pendiente.md`) |
 | Navegación, barra inferior, menú lateral, cabecera, capas | `documentacion/navegacion.md` |
 | Menús, generar, preentreno, «Hecha»/«Cambié algo», compartir | `documentacion/menu.md` |
 | Despensa, nevera, cocina dibujada, lista de la compra neta | `documentacion/despensa.md` |
