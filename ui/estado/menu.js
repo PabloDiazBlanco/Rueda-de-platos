@@ -45,19 +45,27 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
   // null | { inicio, duracion } (ms) mientras dura la espera de C11.
   const [generando, setGenerando] = useState(null);
   const temporizadorGenerar = useRef(null);
+  const leidoBien = useRef(false);
 
+  // Que no haya menú o historial todavía no es un error (`get` devuelve null). Una lectura que falla sí: se
+  // lanza para que app.jsx enseñe la pantalla de reintento, porque generar con el historial vacío por error
+  // escribiría un historial de un solo ciclo encima del de verdad (riesgo D2 del diagnóstico de octubre de
+  // 2026). Mientras no se haya leído bien, el historial no se escribe (`leidoBien`). Un documento ilegible
+  // (JSON roto) no bloquea la app, que sería desproporcionado para un menú: se ignora como antes, pero un
+  // historial ilegible tampoco se sobrescribe.
   async function cargar() {
+    const menuRes = await window.storage.get(claveMenu, false);
+    const historyRes = await window.storage.get(claveHistorial, false);
     try {
-      const menuRes = await window.storage.get(claveMenu, false);
       if (menuRes && menuRes.value) setMenu(JSON.parse(menuRes.value));
     } catch (e) {
-      // no hay menú generado todavía, no pasa nada
+      console.warn("Menú guardado ilegible (" + claveMenu + "):", e.message);
     }
     try {
-      const historyRes = await window.storage.get(claveHistorial, false);
       if (historyRes && historyRes.value) setHistorial(JSON.parse(historyRes.value));
+      leidoBien.current = true;
     } catch (e) {
-      // no hay historial todavía, no pasa nada
+      console.warn("Historial guardado ilegible (" + claveHistorial + "):", e.message);
     }
   }
 
@@ -93,7 +101,7 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
     const newHistory = [entry, ...historial].slice(0, HISTORY_MAX);
     setHistorial(newHistory);
     try {
-      await window.storage.set(claveHistorial, JSON.stringify(newHistory), false);
+      if (leidoBien.current) await window.storage.set(claveHistorial, JSON.stringify(newHistory), false);
     } catch (e) {
       // el historial no es crítico: si falla el guardado, seguimos igualmente
     }
@@ -118,7 +126,7 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
       // si falla el guardado, el menú sigue visible en pantalla igualmente
     }
     try {
-      await window.storage.set(claveHistorial, JSON.stringify(newHistory), false);
+      if (leidoBien.current) await window.storage.set(claveHistorial, JSON.stringify(newHistory), false);
     } catch (e) {
       // el historial no es crítico: si falla el guardado, seguimos igualmente
     }

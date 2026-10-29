@@ -16,16 +16,17 @@ import {
 export const CLAVE_DIARIO = "rueda-de-platos:cuerpo-diario-v1";
 export const CLAVE_FAVORITOS = "rueda-de-platos:informes-favoritos-v1";
 
+// Sin documento todavía, `null` (se empieza vacío). Si la lectura falla, el error se lanza: empezar vacío y
+// apuntar «anoche» escribiría un diario con una sola noche encima de meses de datos (riesgo D2 del
+// diagnóstico de octubre de 2026). Así diario y favoritos se quedan en `null` y no se cambia ni se guarda
+// nada hasta que la carga vaya bien (app.jsx enseña la pantalla de reintento).
 async function leer(clave) {
-  try {
-    const res = await window.storage.get(clave, false);
-    return res && res.value ? JSON.parse(res.value) : null;
-  } catch (e) {
-    return null; // sin documento todavía (o ilegible): se empieza vacío, como la despensa
-  }
+  const res = await window.storage.get(clave, false);
+  return res && res.value ? JSON.parse(res.value) : null;
 }
 
-// Guardado automático con retardo de un documento: no reescribe lo que se acaba de leer.
+// Guardado automático con retardo de un documento: no reescribe lo que se acaba de leer. Si falla, queda
+// pendiente y se reintenta con el siguiente cambio.
 function useGuardado(clave, valor, ultimo) {
   const temporizador = useRef(null);
   useEffect(() => {
@@ -34,7 +35,9 @@ function useGuardado(clave, valor, ultimo) {
     if (texto === ultimo.current) return;
     if (temporizador.current) clearTimeout(temporizador.current);
     temporizador.current = setTimeout(() => {
-      window.storage.set(clave, texto, false).then(() => { ultimo.current = texto; }).catch(() => {});
+      window.storage.set(clave, texto, false)
+        .then(() => { ultimo.current = texto; })
+        .catch((e) => console.warn("No se ha podido guardar " + clave + ":", (e && (e.code || e.message)) || e));
     }, 500);
     return () => clearTimeout(temporizador.current);
   }, [valor]);

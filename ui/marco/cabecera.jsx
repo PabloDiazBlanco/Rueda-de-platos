@@ -127,14 +127,17 @@ export function Header({ saveState, idioma, onOpenMenu, titulo = "header.tuRecet
 }
 
 function SaveIndicator({ state, idioma }) {
-  const label = state === "saving" ? t(idioma, "header.guardando") : state === "saved" ? t(idioma, "header.guardado") : "";
+  // «Sin guardar»: el último guardado falló (ui/estado/datos.js lo reintenta al volver la conexión o con el
+  // siguiente cambio). Antes el indicador simplemente desaparecía y el fallo no lo veía nadie.
+  const label = state === "saving" ? t(idioma, "header.guardando") : state === "saved" ? t(idioma, "header.guardado") : state === "error" ? t(idioma, "header.sinGuardar") : "";
   if (!label) return <div style={{ width: 1 }} />;
   return (
     <div
       style={{
         fontFamily: FUENTE_TEXTO,
         fontSize: 11,
-        opacity: 0.75,
+        opacity: state === "error" ? 1 : 0.75,
+        fontWeight: state === "error" ? 700 : undefined,
         display: "flex",
         alignItems: "center",
         gap: 6,

@@ -33,28 +33,31 @@ export function useDespensa(data, menu) {
   // apunta algo.
   const ultimoGuardado = useRef(null);
 
+  // Sin despensa guardada todavía, se empieza vacía (sin escribir nada hasta que se apunte algo). Si la
+  // lectura falla, en cambio, se lanza el error y la despensa se queda sin cargar (`null`), como useDatos:
+  // empezar vacía y guardar el primer cambio escribiría una despensa vacía encima de la de verdad (riesgo D2
+  // del diagnóstico de octubre de 2026). Con la despensa en `null`, `cambiar` no hace nada.
   async function cargar() {
     let guardado = null;
-    try {
-      const res = await window.storage.get(CLAVE_DESPENSA, false);
-      if (res && res.value) guardado = JSON.parse(res.value);
-    } catch (e) {
-      // sin despensa guardada todavía (o ilegible): se empieza vacía, igual que useDatos
-    }
+    const res = await window.storage.get(CLAVE_DESPENSA, false);
+    if (res && res.value) guardado = JSON.parse(res.value);
     const { despensa: migrada, changed } = migrarDespensa(guardado, hoy());
     ultimoGuardado.current = guardado && changed ? null : JSON.stringify(migrada);
     setDespensa(migrada);
   }
 
   // Guardado automático con un pequeño retardo, como los datos principales: varias acciones
-  // seguidas (tachar media lista de la compra) acaban en una sola escritura.
+  // seguidas (tachar media lista de la compra) acaban en una sola escritura. Si falla, queda pendiente
+  // (`ultimoGuardado` no cambia) y se reintenta con el siguiente cambio.
   useEffect(() => {
     if (!despensa) return;
     const texto = JSON.stringify(despensa);
     if (texto === ultimoGuardado.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      window.storage.set(CLAVE_DESPENSA, texto, false).then(() => { ultimoGuardado.current = texto; }).catch(() => {});
+      window.storage.set(CLAVE_DESPENSA, texto, false)
+        .then(() => { ultimoGuardado.current = texto; })
+        .catch((e) => console.warn("No se ha podido guardar la despensa:", (e && (e.code || e.message)) || e));
     }, 500);
     return () => clearTimeout(saveTimer.current);
   }, [despensa]);

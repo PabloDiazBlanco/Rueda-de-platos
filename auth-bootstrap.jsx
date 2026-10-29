@@ -556,9 +556,14 @@ function watchForFirstProfileCompletion(uid) {
     );
   }
 
+  // Si la lectura falla (sin conexión al abrir), no se sabe si el usuario es nuevo: no se vigila nada. Antes
+  // se tomaba por nuevo, se ponía a escuchar y, al volver la red, enseñaba la pantalla a un usuario de
+  // siempre (parte del riesgo D1 del diagnóstico de octubre de 2026). Un usuario nuevo de verdad que abra la
+  // app sin conexión solo se pierde esta pantalla de bienvenida.
   getDoc(dataDocRef)
-    .catch(() => null)
+    .catch(() => "error")
     .then((snap) => {
+      if (snap === "error") return;
       let yaResuelto = false;
       if (snap && snap.exists()) {
         try {

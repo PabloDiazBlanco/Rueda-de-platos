@@ -25,6 +25,7 @@ import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
 import { BotonCerrarSesionAlta } from "./ui/comun/cerrar-sesion.jsx";
+import { ErrorCarga } from "./ui/comun/error-carga.jsx";
 import { BackLink } from "./ui/comun/tarjetas.jsx";
 import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
 import { AREAS, COMUNES, TITULO_COMUN, areaDe, pestanaDe, areaPorClave } from "./ui/marco/navegacion.js";
@@ -103,6 +104,9 @@ export default function RuedaDePlatos() {
   // Abarca toda la carga inicial (datos, los dos menús, la despensa y el entreno): mientras dura se enseña
   // "Cargando…" y no se dispara el guardado automático (ver useDatos).
   const [loading, setLoading] = useState(true);
+  // Si algo de lo guardado no se ha podido leer (sin conexión al abrir), no se sigue con datos vacíos: se
+  // enseña «No se han podido cargar tus datos · Reintentar» (ver useCargaInicial y ui/comun/error-carga.jsx).
+  const [errorCarga, setErrorCarga] = useState(false);
 
   const premium = usePremium();
   const { data, setData, saveState, idioma, idiomaFallback, cargar: cargarDatos } = useDatos(loading);
@@ -115,7 +119,22 @@ export default function RuedaDePlatos() {
   const peso = usePeso(setData);
   const entreno = useEntreno(data);
   const cuerpo = useCuerpo();
-  useCargaInicial([cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar, entreno.cargar, cuerpo.cargar], () => setLoading(false));
+  const reintentarCarga = useCargaInicial(
+    [cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar, entreno.cargar, cuerpo.cargar],
+    (fallos) => {
+      setErrorCarga(fallos.length > 0);
+      setLoading(false);
+    }
+  );
+
+  if (errorCarga) {
+    return (
+      <Shell>
+        {/* Con `loading` el guardado automático no salta: lo recién leído no se reescribe en la nube. */}
+        <ErrorCarga idioma={idioma} onReintentar={() => { setLoading(true); return reintentarCarga(); }} />
+      </Shell>
+    );
+  }
 
   if (loading || !data) {
     return (
