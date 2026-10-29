@@ -487,8 +487,11 @@ function LoggedOutFlow() {
 }
 
 // ---------- Pantalla de "por qué existe esta app" (se muestra una sola vez, justo tras completar
-// o saltar el perfil por primera vez). No toca nada de app.jsx: vigila los datos guardados desde fuera. ----------
-function HistoriaScreen({ onClose }) {
+// o saltar el perfil por primera vez). No toca nada de app.jsx: vigila los datos guardados desde fuera.
+// Textos en los cinco idiomas (`historia.*`), con el idioma del perfil recién creado. ----------
+function HistoriaScreen({ onClose, idioma }) {
+  // «fatiga de decisión» va en cursiva dentro del primer párrafo: el texto trae el hueco {fatiga}.
+  const [antesFatiga, despuesFatiga] = t(idioma, "historia.p1").split("{fatiga}");
   return (
     <div
       style={{
@@ -499,29 +502,22 @@ function HistoriaScreen({ onClose }) {
     >
       <div style={{ width: "100%", maxWidth: 420 }}>
         <div style={{ textAlign: "center", marginBottom: 20 }}>
-          <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 22, color: "#1f4d38" }}>Por qué existe esta app</div>
+          <div style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 22, color: "#1f4d38" }}>{t(idioma, "historia.titulo")}</div>
         </div>
 
         <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 14.5, lineHeight: 1.7, color: "#2b2b26", margin: "0 0 14px" }}>
-          Cada día se toman cientos de pequeñas decisiones sobre comida: qué preparar, qué pedir, qué picar entre
-          horas. Ese desgaste tiene nombre — <em>fatiga de decisión</em> — y la psicología lleva décadas
-          estudiándolo en ámbitos como la medicina o la justicia. La evidencia es clara: cuanto más agotada está
-          la capacidad de decidir, más se recurre a lo automático e impulsivo, y con la comida eso suele
-          traducirse en menos autocontrol y elecciones menos saludables.
+          {antesFatiga}<em>{t(idioma, "historia.fatiga")}</em>{despuesFatiga}
         </p>
         <p style={{ fontFamily: "Georgia, 'Times New Roman', serif", fontSize: 14.5, lineHeight: 1.7, color: "#2b2b26", margin: "0 0 22px" }}>
-          Esta app parte de esa idea: si las comidas de siempre rotan solas, se ahorra ese desgaste diario — y
-          con menos decisiones que tomar, hay menos margen para que la fatiga acabe en un atracón. No busca
-          controlar las calorías al gramo. Busca algo más simple: quitar peso mental de encima, para que comer
-          deje de ser una decisión más que arrastrar cada día.
+          {t(idioma, "historia.p2")}
         </p>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 26 }}>
           {[
-            ["🔄", "Variedad automática", "para no caer siempre en lo mismo"],
-            ["🧠", "Menos decisiones", "la app elige, tú solo cocinas"],
-            ["🌱", "Sin obsesión", "los números guían, no condenan"],
-          ].map(([icon, title, desc]) => (
+            ["🔄", "historia.variedad"],
+            ["🧠", "historia.decisiones"],
+            ["🌱", "historia.obsesion"],
+          ].map(([icon, clave]) => [icon, t(idioma, clave + ".titulo"), t(idioma, clave + ".desc")]).map(([icon, title, desc]) => (
             <div key={title} style={{ background: "#fffdf7", border: "1px solid #ddd6bf", borderRadius: 9, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ fontSize: 18 }}>{icon}</span>
               <div>
@@ -536,14 +532,14 @@ function HistoriaScreen({ onClose }) {
           onClick={onClose}
           style={{ width: "100%", background: "#2f6b4f", color: "#fff", border: "none", borderRadius: 9, padding: 12, fontSize: 14, fontWeight: 700, fontFamily: "inherit", cursor: "pointer" }}
         >
-          Vamos allá
+          {t(idioma, "historia.vamos")}
         </button>
         <div style={{ textAlign: "center", marginTop: 10 }}>
           <button
             onClick={onClose}
             style={{ background: "none", border: "none", color: "#6b6a5e", fontSize: 12, textDecoration: "underline", cursor: "pointer", fontFamily: "inherit" }}
           >
-            Saltar
+            {t(idioma, "historia.saltar")}
           </button>
         </div>
       </div>
@@ -558,12 +554,13 @@ function watchForFirstProfileCompletion(uid) {
   const dataDocRef = doc(db, "users", uid, "keys", "rueda-de-platos:data-v1");
   let unsub = null;
 
-  function showOverlay() {
+  function showOverlay(idioma) {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const overlayRoot = ReactDOM.createRoot(container);
     overlayRoot.render(
       <HistoriaScreen
+        idioma={idioma}
         onClose={() => {
           overlayRoot.unmount();
           container.remove();
@@ -591,8 +588,9 @@ function watchForFirstProfileCompletion(uid) {
       unsub = onSnapshot(dataDocRef, (s) => {
         if (!s.exists()) return;
         try {
-          if (JSON.parse(s.data().value).perfilOnboardingDone) {
-            showOverlay();
+          const guardado = JSON.parse(s.data().value);
+          if (guardado.perfilOnboardingDone) {
+            showOverlay((guardado.perfil && guardado.perfil.idioma) || leerIdiomaGuardado());
             if (unsub) unsub();
           }
         } catch (e) {}
