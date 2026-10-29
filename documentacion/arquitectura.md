@@ -8,7 +8,8 @@ archivo nuevo, cómo se escribe en `ui/`) están en el `CLAUDE.md` de la raíz y
 
 ```
 index.html             → importmap + carga auth-bootstrap.jsx (Babel Standalone 7.29.11 desde unpkg, versión
-                          exacta con integrity; validacion/index.html usa la misma URL y el mismo hash)
+                          exacta con integrity y `defer`; validacion/index.html usa la misma URL y el mismo
+                          hash). #root trae un marcador sin texto que React sustituye; preconnect a los CDN
 auth-bootstrap.jsx     → login, Firestore, App Check, puente con las Cloud Functions (window.*);
                           luego carga la interfaz con cargador-ui.js
 cargador-ui.js         → carga app.jsx y ui/ (Babel + registro de módulos propio, sin build)

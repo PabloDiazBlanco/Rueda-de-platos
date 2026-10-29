@@ -31,7 +31,8 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   antes, se pierde).
 - **«No existe» no es «no se pudo leer».** `get` devuelve `null` si el documento no existe (cuenta nueva o
   función sin usar: se empieza vacío) y **lanza** si no se puede leer. Los cargadores de `useDatos`,
-  `useMenu`, `useDespensa` y `useCuerpo` dejan pasar ese error; `useCargaInicial` (`ui/estado/datos.js`) lo
+  `useMenu`, `useDespensa` y `useCuerpo` dejan pasar ese error; `useCargaInicial` (`ui/estado/datos.js`), que lanza todos los cargadores
+  a la vez (no dependen entre sí), lo
   recoge y `app.jsx` enseña «No se han podido cargar tus datos · Reintentar» (`ui/comun/error-carga.jsx`),
   que reintenta solo lo que falló. Mientras tanto no se guarda nada. Un hook nuevo que lea de la nube tiene
   que seguir el mismo patrón: lanzar en el cargador y no autoguardar sin haber leído bien. El entreno es la
