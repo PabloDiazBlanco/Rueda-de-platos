@@ -1,5 +1,5 @@
 // ---------- «¿Qué cocino?» con dos modos: recetas (E2, 25-oct-2026) ----------
-// ESCRITA PERO SIN DESPLEGAR (noche del 25-oct-2026). La usa la pantalla nueva de «¿Qué cocino?»
+// Desplegada (comprobado con `firebase functions:list` el 29-oct-2026). La usa la pantalla de «¿Qué cocino?»
 // (ui/premium/que-cocino.jsx, vía window.suggestRecipes de auth-bootstrap.jsx): **la función y el cliente
 // tienen que desplegarse juntos** (primero `firebase deploy --only functions`, después subir la app); si
 // se sube la app sin la función, la pantalla dará error al pedir sugerencias. suggestMeals.js se conserva tal

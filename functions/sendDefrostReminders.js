@@ -4,8 +4,7 @@
 // tienes que descongelar algo o comprar». Decisión del usuario: **no hace falta leer el menú** (no se sabe qué
 // día del ciclo se come cada cosa, y un aviso genérico basta), así que esta función solo lee el perfil.
 //
-// ESCRITA PERO SIN DESPLEGAR (noche del 25-oct-2026): hasta `firebase deploy --only functions` no llega
-// ningún aviso, aunque el interruptor de Ajustes ya exista. Ver los pasos en el registro de esa noche.
+// Desplegada (comprobado con `firebase functions:list` el 29-oct-2026).
 //
 // Sigue el patrón de sendWeighInReminders.js (mismo token de FCM, mismas reglas de seguridad). La búsqueda
 // de cuentas con token se repite aquí en vez de compartirse para no tocar esa función, que ya está desplegada
