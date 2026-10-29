@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v35";
+const CACHE_NAME = "fooddraft-v36";
 // Las páginas legales van también: se enlazan desde la app (Ajustes, alta) y tienen que abrirse sin conexión
 // (solo usan logica/i18n.js, que ya está en la lista).
 const FILES_TO_CACHE = [
@@ -71,11 +71,31 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((k) => k !== CACHE_NAME && k !== CACHE_CDN).map((k) => caches.delete(k)))
     )
   );
   self.clients.claim();
 });
+
+// ---------- Librerías de los CDN (React, lucide, Babel, Firebase) ----------
+// La app no arranca sin React, Babel y Firebase, que no son archivos nuestros: los sirven esm.sh, unpkg y
+// gstatic. Hasta octubre de 2026 este service worker los dejaba pasar sin guardar copia, y solo estaban en la
+// caché HTTP del navegador, que caduca: esm.sh sirve algunas piezas intermedias (p. ej. el `scheduler` que
+// importa react-dom) con max-age=600. Comprobado a mano el 29-oct-2026: con la app abierta por última vez hacía
+// más de 10 minutos y sin red, esa pieza fallaba y la app se quedaba en el marcador de arranque, sin llegar
+// siquiera a la pantalla de «No se han podido cargar tus datos».
+//
+// Ahora se guardan en una caché propia, con la misma estrategia que lo nuestro (red primero, la copia solo sin
+// conexión), así que con red nada cambia. Va aparte de CACHE_NAME para que subir de versión no la vacíe: sus
+// direcciones llevan la versión de la librería, así que una copia vieja nunca se confunde con una nueva. Solo
+// los hosts de la lista (nunca Firestore, Authentication ni App Check, que son datos y llamadas en vivo), solo
+// GET y solo respuestas correctas y legibles (CORS: las de módulos y la de Babel con `crossorigin` lo son; el
+// `integrity` de Babel se sigue comprobando igual sobre la copia).
+const CACHE_CDN = "fooddraft-cdn-v1";
+function esLibreriaDeCDN(url) {
+  if (url.hostname === "esm.sh" || url.hostname === "unpkg.com") return true;
+  return url.hostname === "www.gstatic.com" && url.pathname.startsWith("/firebasejs/");
+}
 
 // Estrategia "red primero": si hay conexión, siempre coge la versión más reciente del servidor
 // (y la guarda en caché de paso). Solo usa la copia guardada si no hay conexión.
@@ -91,7 +111,26 @@ self.addEventListener("activate", (event) => {
 // enteros los ~140 archivos propios (~2,3 MB), aunque no hubiera cambiado ninguno.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
+  if (url.origin !== self.location.origin) {
+    if (event.request.method !== "GET" || !esLibreriaDeCDN(url)) return;
+    // Sin `cache: "no-cache"`: estas direcciones llevan la versión, así que la caché HTTP del navegador
+    // puede servirlas mientras le dure (como hasta ahora). `ignoreVary`: esm.sh varía la respuesta por
+    // cabeceras que el service worker no ve (User-Agent, Origin), y sin esto la copia podría no encontrarse.
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok && response.type === "cors") {
+            const clone = response.clone();
+            caches.open(CACHE_CDN).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() =>
+          caches.match(event.request, { ignoreVary: true }).then((copia) => copia || Promise.reject(new Error("sin red y sin copia")))
+        )
+    );
+    return;
+  }
 
   event.respondWith(
     fetch(event.request, { cache: "no-cache" })
