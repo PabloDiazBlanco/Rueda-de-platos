@@ -142,11 +142,9 @@ export function useEntreno(data) {
     setBorrador(sesion);
   }
 
+  // Las cuatro lecturas no dependen entre sí y cada una se ocupa de sus errores: a la vez.
   async function cargar() {
-    await cargarCatalogo();
-    await cargarIndice();
-    await cargarBorrador();
-    await cargarMes(mesActual());
+    await Promise.all([cargarCatalogo(), cargarIndice(), cargarBorrador(), cargarMes(mesActual())]);
   }
 
   // Lee un mes (una sola vez: queda en memoria). Devuelve su documento.

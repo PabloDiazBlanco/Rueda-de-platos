@@ -98,8 +98,10 @@ export function usePremium() {
   return premium;
 }
 
-// Carga inicial de todo lo guardado, una sola vez al montar y en orden (datos, menú completo y su
-// historial, menú simple y su historial, despensa, entreno, cuerpo). Que algo no exista todavía (no hay
+// Carga inicial de todo lo guardado, una sola vez al montar y a la vez (datos, menú completo y su
+// historial, menú simple y su historial, despensa, entreno, cuerpo): los cargadores no dependen entre sí
+// (cada uno lee sus claves), así que no hace falta esperar a uno para empezar el siguiente. Antes iban en
+// serie: ~11 idas y vueltas a Firestore antes de pintar nada. Que algo no exista todavía (no hay
 // menú generado, nunca se usó la despensa) no es un error: cada cargador lo resuelve solo. Un cargador
 // que lanza es que **no se ha podido leer** lo que hay: los demás se cargan igual y `alTerminar(fallos)`
 // recibe la lista, para que app.jsx enseñe la pantalla de reintento en vez de seguir con datos vacíos.
@@ -113,15 +115,13 @@ export function useCargaInicial(cargadores, alTerminar) {
 
   async function ejecutar() {
     const indices = pendientes.current || actuales.current.map((_, i) => i);
+    const resultados = await Promise.allSettled(indices.map((i) => actuales.current[i]()));
     const fallos = [];
-    for (const i of indices) {
-      try {
-        await actuales.current[i]();
-      } catch (e) {
-        console.warn("No se ha podido cargar una parte de los datos:", (e && (e.code || e.message)) || e);
-        fallos.push(i);
-      }
-    }
+    resultados.forEach((r, n) => {
+      if (r.status === "fulfilled") return;
+      console.warn("No se ha podido cargar una parte de los datos:", (r.reason && (r.reason.code || r.reason.message)) || r.reason);
+      fallos.push(indices[n]);
+    });
     pendientes.current = fallos.length ? fallos : null;
     fin.current(fallos);
   }

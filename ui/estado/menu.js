@@ -54,8 +54,7 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
   // (JSON roto) no bloquea la app, que sería desproporcionado para un menú: se ignora como antes, pero un
   // historial ilegible tampoco se sobrescribe.
   async function cargar() {
-    const menuRes = await window.storage.get(claveMenu, false);
-    const historyRes = await window.storage.get(claveHistorial, false);
+    const [menuRes, historyRes] = await Promise.all([window.storage.get(claveMenu, false), window.storage.get(claveHistorial, false)]);
     try {
       if (menuRes && menuRes.value) setMenu(JSON.parse(menuRes.value));
     } catch (e) {
