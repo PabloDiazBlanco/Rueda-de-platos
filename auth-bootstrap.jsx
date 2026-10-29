@@ -296,31 +296,47 @@ window.subscribePremiumStatus = function (callback) {
 };
 
 // ---------- Migración: traer, una sola vez, los datos que ya hubiera en este navegador ----------
+// Nunca impide cargar la app: cualquier fallo (sin conexión, localStorage bloqueado...) se queda en un aviso
+// de consola. Antes, un getDoc sin conexión lanzaba dentro de onAuthStateChanged y la interfaz no llegaba a
+// cargarse. Las marcas `rueda-de-platos:migrated:<uid>` son del dispositivo, no datos: no cuentan ni se copian
+// (antes, en un móvil compartido, la marca de otra cuenta acababa como documento en la cuenta nueva).
 async function migrateLocalDataIfNeeded(uid) {
-  const localKeys = Object.keys(localStorage).filter((k) => k.startsWith("rueda-de-platos:"));
-  if (!localKeys.length) return;
+  try {
+    const localKeys = Object.keys(localStorage).filter(
+      (k) => k.startsWith("rueda-de-platos:") && !k.startsWith("rueda-de-platos:migrated:")
+    );
+    if (!localKeys.length) return;
 
-  const marker = `rueda-de-platos:migrated:${uid}`;
-  if (localStorage.getItem(marker)) return; // ya se preguntó antes para esta cuenta en este dispositivo
+    const marker = `rueda-de-platos:migrated:${uid}`;
+    if (localStorage.getItem(marker)) return; // ya se preguntó antes para esta cuenta en este dispositivo
 
-  const existing = await getDoc(doc(db, "users", uid, "keys", "rueda-de-platos:data-v1"));
-  if (existing.exists()) {
-    // Ya hay datos en la cuenta (quizá de otro dispositivo): no pisamos nada sin preguntar.
-    localStorage.setItem(marker, "1");
-    return;
-  }
-
-  const quiere = window.confirm(
-    "Hemos encontrado datos guardados en este dispositivo (ingredientes, menús...).\n\n" +
-    "¿Quieres importarlos a tu cuenta nueva? Se copiarán una sola vez."
-  );
-  if (quiere) {
-    for (const key of localKeys) {
-      const value = localStorage.getItem(key);
-      await setDoc(doc(db, "users", uid, "keys", key), { value });
+    let existing;
+    try {
+      existing = await getDoc(doc(db, "users", uid, "keys", "rueda-de-platos:data-v1"));
+    } catch (e) {
+      // Sin poder leer la cuenta no se sabe si ya tiene datos: no se pregunta ni se marca; la próxima vez.
+      return;
     }
+    if (existing.exists()) {
+      // Ya hay datos en la cuenta (quizá de otro dispositivo): no pisamos nada sin preguntar.
+      localStorage.setItem(marker, "1");
+      return;
+    }
+
+    const quiere = window.confirm(
+      "Hemos encontrado datos guardados en este dispositivo (ingredientes, menús...).\n\n" +
+      "¿Quieres importarlos a tu cuenta nueva? Se copiarán una sola vez."
+    );
+    if (quiere) {
+      for (const key of localKeys) {
+        const value = localStorage.getItem(key);
+        await setDoc(doc(db, "users", uid, "keys", key), { value });
+      }
+    }
+    localStorage.setItem(marker, "1");
+  } catch (e) {
+    console.warn("No se ha podido revisar si había datos en este dispositivo:", (e && (e.code || e.message)) || e);
   }
-  localStorage.setItem(marker, "1");
 }
 
 // ---------- Cerrar sesión ----------
