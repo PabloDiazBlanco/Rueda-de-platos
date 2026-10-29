@@ -10,7 +10,7 @@ import { objetivosPorComida, recomendacionPreentreno } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
 import { mealComponents, ingredientePorNombre } from "comida-calculo";
-import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario, huecosProteinaSemana } from "cuestionario";
+import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario, huecosProteinaSemana, arquetiposSinAlimentos } from "cuestionario";
 import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
   quitarConfirmacion, descontarComida, devolverComida, marcarComprado, desmarcarComprado,
@@ -833,6 +833,30 @@ export function crearGrupos(mod, carga) {
             return comparar(
               { nombres: ingredients.map((i) => i.name).join(","), desayuno: alimentosDe("Desayuno"), merienda: alimentosDe("Merienda"), verdura: (ingredientePorNombre(data, "Tostadas", "verdura") || {}).category },
               { nombres: "Tostadas,Tostadas", desayuno: "desayuno:f_pan_molde+f_jamon", merienda: "merienda:f_pan_molde+f_mozzarella", verdura: "desayuno" }
+            );
+          },
+        },
+        {
+          // Bug conocido del cuestionario (B1 de 07, H2 de 03): un arquetipo marcado sin alimentos no genera nada
+          // y, si era el último, los demás no sumaban 100 (antes, tostadas 50 %). Ahora el reparto es solo entre
+          // los que tienen algo, y la pantalla no deja avanzar mientras haya uno vacío.
+          nombre: "Cuestionario: un arquetipo marcado y vacío no cuenta en el reparto (suma 100) y se detecta",
+          ejecutar: () => {
+            const merienda = { tostadas: { nivel: 1, grupos: { 0: ["f_pan_molde"] } }, combinado: { nivel: 1, grupos: {} } };
+            const r = construirIngredientesDesdeCuestionario({ frecuencias: {}, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {}, comidasLigeras: { merienda } });
+            const tres = construirIngredientesDesdeCuestionario({
+              frecuencias: {}, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {},
+              comidasLigeras: { desayuno: { tostadas: { nivel: 2, grupos: { 0: ["f_pan_molde"] } }, cereales_lacteo: { nivel: 1, grupos: { 0: [] } }, combinado: { nivel: 1, grupos: { 0: ["f_jamon"] } } } },
+            });
+            return comparar(
+              {
+                merienda: r.map((i) => `${i.name}:${i.probabilidad}`).join(","),
+                desayuno: tres.map((i) => i.probabilidad).join(","),
+                vacios: arquetiposSinAlimentos(merienda).join(","),
+                vaciosTres: arquetiposSinAlimentos({ cereales_lacteo: { nivel: 1, grupos: { 0: [], 1: [] } }, tostadas: { nivel: 1, grupos: { 1: ["f_jamon"] } }, combinado: { nivel: 1, grupos: { 1: ["f_jamon"] } } }).join(","),
+                ninguno: arquetiposSinAlimentos(null).length + arquetiposSinAlimentos({}).length,
+              },
+              { merienda: "Tostadas:100", desayuno: "67,33", vacios: "combinado", vaciosTres: "cereales_lacteo,combinado", ninguno: 0 }
             );
           },
         },

@@ -136,6 +136,18 @@ export const ARQUETIPOS_COMIDA_LIGERA = [
 // `predeterminado` (A9, opcional): el foodId de una de las proteínas elegidas, que pasa a ser la «base»
 // del motor (`ruleType: "base"`): rellena todos los huecos de proteína que no cubren las frecuencias de
 // las demás (si de 14 comidas las frecuencias cubren 5, las otras 9 son de ella). Su frecuencia no cuenta.
+// Arquetipos de una comida ligera que están marcados pero sin ningún alimento elegido dentro (sus claves,
+// en el orden del catálogo). Es el bug conocido del cuestionario: la tarjeta parece «elegida» al tocarla y
+// es fácil no ver que hay que escoger también el pan o el acompañamiento, así que se avanzaba y esa comida
+// quedaba vacía en todos los menús sin ningún aviso. La pantalla no deja avanzar mientras haya alguno.
+export function arquetiposSinAlimentos(seleccion) {
+  if (!seleccion) return [];
+  // Solo cuentan los grupos que tiene el arquetipo, igual que al construir los ingredientes.
+  return ARQUETIPOS_COMIDA_LIGERA
+    .filter((a) => seleccion[a.key] && !a.grupos.some((_, gi) => ((seleccion[a.key].grupos || {})[gi] || []).length))
+    .map((a) => a.key);
+}
+
 export function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo, pesosVerdura, pesosGrasa, comidasLigeras, predeterminado = null }) {
   const ingredients = [];
 
@@ -182,11 +194,13 @@ export function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo
   // aunque compartan el mismo catálogo de arquetipos.
   function agregarComidaLigera(seleccion, category) {
     if (!seleccion) return;
-    const entradas = Object.entries(seleccion);
-    const sumaNiveles = entradas.reduce((s, [, v]) => s + v.nivel, 0);
-    if (sumaNiveles <= 0) return;
-    let acumulado = 0;
-    entradas.forEach(([arqKey, v], i) => {
+    // Primero, los arquetipos que tienen algo dentro. Uno marcado pero sin ningún alimento elegido no
+    // genera nada (para no dejar un "plato" vacío sin composición real) y tampoco cuenta en el reparto:
+    // antes sí contaba, y si era el último, al que le toca cerrar el 100 %, los demás se quedaban sin
+    // sumar 100 (el catálogo enseñaba, por ejemplo, «50 %»). La pantalla del cuestionario ya no deja
+    // avanzar así (arquetiposSinAlimentos), pero la lógica no depende de ello.
+    const llenos = [];
+    Object.entries(seleccion).forEach(([arqKey, v]) => {
       const arquetipo = ARQUETIPOS_COMIDA_LIGERA.find((a) => a.key === arqKey);
       if (!arquetipo) return;
       const composicion = [];
@@ -197,10 +211,13 @@ export function construirIngredientesDesdeCuestionario({ frecuencias, pesosCarbo
           composicion.push({ id: uid(), foodId, gramos: cat ? cat.gramosDefecto : 50 });
         });
       });
-      // Arquetipo marcado pero sin ningún alimento elegido dentro: no genera nada, para no dejar
-      // un "plato" vacío sin composición real.
-      if (!composicion.length) return;
-      const probabilidad = i === entradas.length - 1 ? 100 - acumulado : Math.round((v.nivel / sumaNiveles) * 100);
+      if (composicion.length) llenos.push({ arquetipo, nivel: v.nivel, composicion });
+    });
+    const sumaNiveles = llenos.reduce((s, e) => s + e.nivel, 0);
+    if (sumaNiveles <= 0) return;
+    let acumulado = 0;
+    llenos.forEach(({ arquetipo, nivel, composicion }, i) => {
+      const probabilidad = i === llenos.length - 1 ? 100 - acumulado : Math.round((nivel / sumaNiveles) * 100);
       acumulado += probabilidad;
       ingredients.push({
         id: uid(), name: arquetipo.nombreEs, category, ruleType: "probabilidad",

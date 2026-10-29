@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { t } from "i18n";
 import { FOODS_SEED, CATEGORIAS_ALIMENTOS } from "datos-iniciales";
-import { CUESTIONARIO_PROTEINAS, CUESTIONARIO_CARBOS, CUESTIONARIO_VERDURAS, CUESTIONARIO_GRASAS, EXCLUSIONES_DISPONIBLES, pasosCuestionario, NIVELES_PESO, ARQUETIPOS_COMIDA_LIGERA, construirIngredientesDesdeCuestionario, huecosProteinaSemana, PROTEINA_PREDETERMINADA_RECOMENDADA } from "cuestionario";
+import { CUESTIONARIO_PROTEINAS, CUESTIONARIO_CARBOS, CUESTIONARIO_VERDURAS, CUESTIONARIO_GRASAS, EXCLUSIONES_DISPONIBLES, pasosCuestionario, NIVELES_PESO, ARQUETIPOS_COMIDA_LIGERA, construirIngredientesDesdeCuestionario, huecosProteinaSemana, PROTEINA_PREDETERMINADA_RECOMENDADA, arquetiposSinAlimentos } from "cuestionario";
 import { PasosIndicador } from "./asistente-perfil.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
@@ -77,7 +77,18 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
     });
   }
 
+  // En los pasos de comida ligera, un arquetipo marcado sin ningún alimento dentro dejaría esa comida
+  // vacía en todos los menús (arquetiposSinAlimentos, logica/cuestionario.js): no se avanza y se dice cuál.
+  const seleccionDelPaso = { desayuno: desayunoSeleccion, media_manana: mediaMananaSeleccion, merienda: meriendaSeleccion }[pasos[paso]];
+  const vaciosDelPaso = arquetiposSinAlimentos(seleccionDelPaso);
+  const [avisoVacios, setAvisoVacios] = useState(false);
+
   function siguiente() {
+    if (vaciosDelPaso.length) {
+      setAvisoVacios(true);
+      return;
+    }
+    setAvisoVacios(false);
     if (paso === pasos.length - 1) setFase("cierre");
     else setPaso((p) => p + 1);
   }
@@ -259,10 +270,21 @@ export function CatalogoOnboarding({ idioma, repartoComidas, onComplete, onSkipA
           />
         )}
 
+        {avisoVacios && vaciosDelPaso.length > 0 && (
+          <div role="alert" style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 16, padding: "10px 12px", borderRadius: 9, background: "var(--rust-soft)", color: "var(--rust)", fontFamily: FUENTE_TEXTO, fontSize: 13, lineHeight: 1.45 }}>
+            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>
+              {t(idioma, "cuestionario.comidaLigera.vacio", {
+                nombres: vaciosDelPaso.map((k) => "«" + t(idioma, ARQUETIPOS_COMIDA_LIGERA.find((a) => a.key === k).labelKey) + "»").join(", "),
+              })}
+            </span>
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
           {paso > 0 && (
             <button
-              onClick={() => setPaso((p) => p - 1)}
+              onClick={() => { setAvisoVacios(false); setPaso((p) => p - 1); }}
               style={{
                 fontFamily: FUENTE_TEXTO, fontSize: 14, fontWeight: 700,
                 color: "var(--ink)", background: "#fff", border: "1px solid var(--line)",
