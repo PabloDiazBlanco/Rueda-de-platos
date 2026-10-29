@@ -32,7 +32,8 @@ ui/estado/              hooks: datos.js (useDatos, usePremium, useCargaInicial),
                           para Menú completo y simple), catalogo.js, perfil.js, peso.js, despensa.js
                           (useDespensa), entreno.js (useEntreno), cuerpo.js (useCuerpo)
 ui/comun/               piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos y colores),
-                          cerrar-sesion, compartir (BotonCompartir), bloqueo-scroll (useBloqueoScroll),
+                          cerrar-sesion, compartir (BotonCompartir), bloqueo-scroll (useBloqueoScroll), error-carga
+                          (pantalla de reintento), errores (mensajeErrorFuncion),
                           mapa-corporal.jsx y sus trazados MIT (mapa-trazados.js), avatar.jsx (el chibi
                           de FitDraft y el monitor)
 ui/marco/               Shell (variables de tema y estilos de impresión, en cabecera.jsx), cabecera, menú
@@ -54,7 +55,8 @@ Sin JSX ni React. Se importan entre sí por **nombre corto** (el del importmap),
 comun.js               uid(), DAYS, primerEmoji: utilidades mínimas compartidas
 macros.js              getFood, macrosFor, emptyMacros, addMacros, composedMacros, fmt
 seleccion.js           sorteo ponderado y reglas de combinación (weightedPick, pickWithRules, allocateCounts...)
-comida-calculo.js      mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra
+comida-calculo.js      mealComponents, mealTotals, dayTotals, mealExportParts, calcularListaCompra,
+                         ingredientePorNombre y carpetaDeHueco (nombre del menú → ingrediente, por carpeta)
 objetivos.js           PAL/TDEE/macros objetivo, calcularObjetivosPerfil, objetivosPorComida, presets de
                          reparto de comidas (PRESETS_COMIDAS) y la recomendación de preentreno
                          (recomendacionPreentreno: no toca ninguna fórmula)
@@ -111,7 +113,7 @@ nada:
 
 | Módulo | Importa |
 |---|---|
-| `comida-calculo` | macros |
+| `comida-calculo` | macros, i18n (las notas «mitad» / «ajuste fino» de `mealExportParts`) |
 | `menu-generador` | comida-calculo, comun, macros, objetivos, seleccion |
 | `salud-publica` | comida-calculo, comun, macros |
 | `peso` | i18n (mensaje de `evaluarTendencia` y meses de `formatFechaCorta`) |

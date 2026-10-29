@@ -22,8 +22,15 @@ Léelo antes de tocar `ui/menu/`, `ui/estado/menu.js`, `logica/menu-generador.js
   `-suave` para las pastillas. Nunca el color a mano.
 - «Cambié algo» y «Hecha» **no reajustan nada** del menú ni del ciclo: solo apuntan lo comido.
 - El preentreno es una **recomendación** transparente: no toca el reparto de macros.
-- `generateMenu` es aleatorio y no tiene casos con valores fijos en `validacion/`: al tocarlo, prueba aparte
-  (ver «Verificar» en el `CLAUDE.md` raíz).
+- `generateMenu` es aleatorio y no tiene casos con valores fijos en `validacion/` (sí sus piezas deterministas,
+  como `allocateCounts`): al tocarlo, prueba aparte (ver «Verificar» en el `CLAUDE.md` raíz).
+- **Del nombre guardado en el menú al ingrediente, siempre con su carpeta**: `ingredientePorNombre(data, nombre,
+  carpeta)` (`comida-calculo.js`; la carpeta de cada hueco, `carpetaDeHueco`). Dos ingredientes de carpetas
+  distintas pueden llamarse igual (el cuestionario crea «Tostadas» en desayuno y en merienda); un `find` solo
+  por nombre mezcla sus composiciones.
+- La lógica no escribe texto de interfaz: las notas de una fila de comida son códigos (`note: "mitad" |
+  "ajusteFino"`) que traduce la interfaz (`menu.nota.*`); `mealExportParts` recibe el idioma.
+- En el reparto exacto de comidas ligeras (`allocateCounts`), un peso 0 es 0: una opción al 0 % no sale.
 
 ## Modelo de datos
 

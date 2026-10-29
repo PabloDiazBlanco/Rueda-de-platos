@@ -33,6 +33,10 @@ reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modul
   el repositorio.
 - Las funciones callable exigen App Check (`enforceAppCheck: true`); el webhook no, porque quien llama es
   Stripe.
+- **Los mensajes de error de las funciones están en español y la app no los enseña tal cual**: los puentes de
+  `auth-bootstrap.jsx` conservan `err.code` y `ui/comun/errores.js` (`mensajeErrorFuncion`) elige el texto por
+  código y por función (`errorFuncion.*`, cinco idiomas). Si una función empieza a lanzar un código nuevo o
+  con otro significado, añádelo ahí.
 - **Código duplicado a mano**: `sendWeighInReminders.js` repite `esDiaSugeridoPeso`, `fechaISO` y la tabla de
   días sugeridos de `logica/peso.js`, porque `peso.js` es un módulo ESM de navegador (usa nombres cortos del
   importmap) y esta carpeta es Node CommonJS, sin build que las una. **Si cambias la regla de días sugeridos
