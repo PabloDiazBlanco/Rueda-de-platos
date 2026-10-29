@@ -42,7 +42,7 @@ export function MomentoEntrenoFields({ valor, onCambio, comidas, idioma }) {
                 aria-label={t(idioma, "dia." + d)}
                 style={{ ...chip(activo), minWidth: 40 }}
               >
-                {t(idioma, "dia." + d).slice(0, 2)}
+                {t(idioma, "menu.diaCorto." + d)}
               </button>
             );
           })}

@@ -389,7 +389,7 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
             <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "var(--ink-soft)", marginTop: 6 }}>
               {t(idioma, "pesoView.diasSugeridos", {
                 lista: (DIAS_SUGERIDOS_PESO[pesoTracking.vecesSemana] || [])
-                  .map((d) => t(idioma, "dia." + DIA_CORTO_A_COMPLETO[DIAS_SEMANA_CORTO[d]]).slice(0, 3))
+                  .map((d) => t(idioma, "menu.diaCorto." + DIA_CORTO_A_COMPLETO[DIAS_SEMANA_CORTO[d]]))
                   .join(", "),
               })}
             </div>
