@@ -9,7 +9,7 @@
 // que se puede comparar con lo que hay en la despensa. Un caso de validacion/tests.js comprueba que
 // las dos piden los mismos gramos de cada alimento para el mismo menú.
 import { getFood } from "macros";
-import { mealComponents } from "comida-calculo";
+import { mealComponents, ingredientePorNombre } from "comida-calculo";
 import { usaCantidad, stockAlimento, slotsConsumidos } from "despensa";
 
 // Qué alimentos (y cuántos gramos) lleva una comida del menú, ya con sus raciones ajustadas. Sale de
@@ -27,7 +27,7 @@ export function necesidadesComida(data, meal) {
   const necesidades = [];
   mealComponents(data, meal).forEach((c) => {
     if (c.sinCalculo) {
-      const ingVerdura = data.ingredients.find((i) => i.name === c.label);
+      const ingVerdura = ingredientePorNombre(data, c.label, "verdura");
       const food = ingVerdura ? getFood(data, ingVerdura.foodId) : null;
       if (!food) necesidades.push({ foodId: null, nombre: c.label, gramos: null });
       // Raro, pero posible: una "verdura" enlazada a un alimento de otra carpeta (que sí lleva

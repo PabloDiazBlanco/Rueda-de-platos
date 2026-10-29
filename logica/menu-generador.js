@@ -3,7 +3,7 @@
 // genera los 28 huecos del ciclo de dos semanas y ajusta las raciones a los objetivos nutricionales.
 import { uid, DAYS } from "comun";
 import { getFood, composedMacros } from "macros";
-import { mealTotals } from "comida-calculo";
+import { mealTotals, ingredientePorNombre, CARPETA_COMIDA_LIGERA } from "comida-calculo";
 import { objetivosPorComida } from "objetivos";
 import { weightedPick, allocateCounts, shuffle, clamp, ruleModifier, pickWithRules, sampleIndicesWithRules } from "seleccion";
 
@@ -14,10 +14,12 @@ export function generateMenu(data, avoid = {}) {
   // que el motor no reviente si alguna vez se llama así: un menú vacío, no un error.
   if (!data.perfil || !data.perfil.repartoComidas) return [];
 
-  // Mapa nombre -> id, para poder evaluar las reglas de combinación (que se guardan por id)
-  // contra los valores del menú (que se guardan por nombre, por legibilidad).
-  const idByName = {};
-  data.ingredients.forEach((i) => { idByName[i.name] = i.id; });
+  // Nombre -> id, para poder evaluar las reglas de combinación (que se guardan por id) contra los
+  // valores del menú (que se guardan por nombre, por legibilidad). Siempre con la carpeta de la que sale
+  // ese hueco: dos ingredientes de carpetas distintas pueden llamarse igual (ver ingredientePorNombre en
+  // comida-calculo.js); antes un mapa por nombre se quedaba con el último y una regla podía evaluarse
+  // contra el ingrediente equivocado.
+  const idDe = (nombre, carpeta) => { const ing = ingredientePorNombre(data, nombre, carpeta); return ing ? ing.id : undefined; };
   const rules = data.rules || [];
 
   // 28 huecos: 2 semanas x 7 días x (Comida, Cena)
@@ -155,7 +157,7 @@ export function generateMenu(data, avoid = {}) {
   const mainMealIdx = (idx) => (slots[idx].mealType === "Comida" || slots[idx].mealType === "Cena") && !slots[idx].closedDish;
   function evaluateGarbanzosCandidates(idxs) {
     return idxs.map((idx) => {
-      const proteinId = idByName[slots[idx].protein];
+      const proteinId = idDe(slots[idx].protein, "proteina");
       const { mult, forced } = ruleModifier(rules, proteinId ? [proteinId] : [], garbanzos.id);
       return { idx, mult, forced };
     });
@@ -181,11 +183,11 @@ export function generateMenu(data, avoid = {}) {
     .filter((s) => s.mealType === "Comida" || s.mealType === "Cena")
     .forEach((s) => {
       if (s.closedDish) return;
-      const proteinId = idByName[s.protein];
+      const proteinId = idDe(s.protein, "proteina");
       const decidedForCarbo = [proteinId, ...(s.garbanzos && garbanzos ? [garbanzos.id] : [])].filter(Boolean);
       if (carbos.length) s.carbo = pickWithRules(carbos, "probabilidad", rules, decidedForCarbo).name;
 
-      const carboId = idByName[s.carbo];
+      const carboId = idDe(s.carbo, "carbo");
       const decidedForVerdura = [proteinId, carboId, ...(s.garbanzos && garbanzos ? [garbanzos.id] : [])].filter(Boolean);
       if (verduras.length) s.verdura = pickWithRules(verduras, "probabilidad", rules, decidedForVerdura).name;
     });
@@ -196,7 +198,7 @@ export function generateMenu(data, avoid = {}) {
   slots.forEach((s) => {
     if (s.closedDish || (s.mealType !== "Comida" && s.mealType !== "Cena")) return;
     const present = new Set();
-    [s.protein, s.carbo, s.verdura].forEach((name) => { const id = idByName[name]; if (id) present.add(id); });
+    [[s.protein, "proteina"], [s.carbo, "carbo"], [s.verdura, "verdura"]].forEach(([name, carpeta]) => { const id = idDe(name, carpeta); if (id) present.add(id); });
     if (s.garbanzos && garbanzos) present.add(garbanzos.id);
     const matched = rules.filter((r) => r.itemIds.every((id) => present.has(id)));
     if (matched.length) s.rulesApplied = matched.map((r) => ({ id: r.id, itemIds: r.itemIds, level: r.level }));
@@ -289,8 +291,8 @@ export function generateMenu(data, avoid = {}) {
         const objetivoComida = objetivosPorComida(data.objetivos, s.mealType, data.perfil.repartoComidas);
         if (!objetivoComida) return;
 
-        const proteinIng = data.ingredients.find((i) => i.name === s.protein);
-        const carboIng = data.ingredients.find((i) => i.name === s.carbo);
+        const proteinIng = ingredientePorNombre(data, s.protein, "proteina");
+        const carboIng = ingredientePorNombre(data, s.carbo, "carbo");
         const garbanzosIng = s.garbanzos ? data.ingredients.find((i) => i.category === "especial") : null;
         const proteinFood = proteinIng ? getFood(data, proteinIng.foodId) : null;
         const carboFood = carboIng ? getFood(data, carboIng.foodId) : null;
@@ -323,7 +325,7 @@ export function generateMenu(data, avoid = {}) {
           s.raciones = { ...(s.raciones || {}), ...nuevasRaciones };
         }
 
-        const decididosGrasa = [idByName[s.protein], idByName[s.carbo], s.garbanzos && garbanzosIng ? garbanzosIng.id : null].filter(Boolean);
+        const decididosGrasa = [idDe(s.protein, "proteina"), idDe(s.carbo, "carbo"), s.garbanzos && garbanzosIng ? garbanzosIng.id : null].filter(Boolean);
         completarGrasa(s, objetivoComida, decididosGrasa);
       });
 
@@ -336,7 +338,7 @@ export function generateMenu(data, avoid = {}) {
       .forEach((s) => {
         const objetivoComida = objetivosPorComida(data.objetivos, s.mealType, data.perfil.repartoComidas);
         if (!objetivoComida) return;
-        const platoIng = data.ingredients.find((i) => i.name === s.closedDish);
+        const platoIng = ingredientePorNombre(data, s.closedDish, "cerrado");
         if (!platoIng) return;
         const base = composedMacros(data, platoIng, 1);
         if (!base || !base.kcal) return;
@@ -362,7 +364,7 @@ export function generateMenu(data, avoid = {}) {
       .forEach((s) => {
         const objetivoComida = objetivosPorComida(data.objetivos, s.mealType, data.perfil.repartoComidas);
         if (!objetivoComida) return;
-        const itemIng = data.ingredients.find((i) => i.name === s.item);
+        const itemIng = ingredientePorNombre(data, s.item, CARPETA_COMIDA_LIGERA[s.mealType]);
         if (!itemIng) return;
         const base = composedMacros(data, itemIng, 1);
         if (!base || !base.kcal) return;

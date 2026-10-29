@@ -23,7 +23,7 @@
 //     cambios: { [clave de la línea]: { foodId, gramos } | { omitido: true } } }   // solo si hubo cambios
 // Un registro migrado de antes (`{ hecha: true }` sin más) cuenta como comida hecha, sin detalle.
 import { getFood, macrosFor, emptyMacros, addMacros } from "macros";
-import { mealComponents, mealTotals } from "comida-calculo";
+import { mealComponents, mealTotals, ingredientePorNombre } from "comida-calculo";
 import { usaCantidad } from "despensa";
 import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 
@@ -43,7 +43,7 @@ export function lineasComida(data, meal) {
   const lineas = [];
   mealComponents(data, meal).forEach((c) => {
     if (c.sinCalculo) {
-      const ing = (data.ingredients || []).find((i) => i.name === c.label);
+      const ing = ingredientePorNombre(data, c.label, "verdura");
       const food = ing ? getFood(data, ing.foodId) : null;
       lineas.push({ clave: c.slotKey, componente: c.slotKey, foodId: food ? food.id : null, nombre: food ? food.name : c.label, gramos: food ? Number(ing.gramos) || 0 : 0, cuenta: false });
       return;

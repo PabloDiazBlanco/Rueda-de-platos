@@ -4,13 +4,37 @@
 // exportar/imprimir o para la lista de la compra. Depende solo de macros.js.
 import { getFood, macrosFor, emptyMacros, addMacros, composedMacros } from "macros";
 
+// ---------- De un nombre del menú a su ingrediente ----------
+// El menú guarda cada componente por su nombre (`protein: "Pollo"`, `item: "Tostadas"`...), no por id,
+// para que se lea bien. Pero el nombre no basta: dos ingredientes de carpetas distintas pueden llamarse
+// igual, y el cuestionario de alta lo provoca solo (elegir «Tostadas» en el desayuno y en la merienda crea
+// dos «Tostadas» con composición distinta). Buscando solo por nombre, la merienda se calculaba, se compraba
+// y se descontaba con la composición del desayuno (A-H1 del diagnóstico de octubre de 2026). Cada hueco
+// sale siempre de una carpeta fija, así que se busca primero en esa carpeta; si ahí no está (datos raros:
+// un ingrediente que cambió de carpeta después de generar el menú), se cae al primero con ese nombre,
+// como antes. No cambia nada de lo guardado.
+export const CARPETA_COMIDA_LIGERA = { "Desayuno": "desayuno", "Media mañana": "media_manana", "Merienda": "merienda" };
+export function carpetaDeHueco(slotKey, mealType) {
+  if (slotKey === "protein") return "proteina";
+  if (slotKey === "carbo") return "carbo";
+  if (slotKey === "verdura") return "verdura";
+  if (slotKey === "closedDish") return "cerrado";
+  if (slotKey === "item") return CARPETA_COMIDA_LIGERA[mealType] || null;
+  return null;
+}
+export function ingredientePorNombre(data, nombre, carpeta) {
+  if (!data || !nombre) return null;
+  const lista = data.ingredients || [];
+  return (carpeta && lista.find((i) => i.name === nombre && i.category === carpeta)) || lista.find((i) => i.name === nombre) || null;
+}
+
 // Devuelve los componentes de una comida del menú, cada uno con su ingrediente, sus raciones
 // y sus macros ya escalados. Es la fuente única de la que tiran el detalle de comida y las
 // estadísticas del menú, para que nunca puedan discrepar entre sí.
 // `slotKey` identifica cada componente dentro de la comida (así se guardan las raciones por separado).
 export function mealComponents(data, meal) {
   if (!data || !meal) return [];
-  const byName = (name) => (name ? data.ingredients.find((i) => i.name === name) : null);
+  const byName = (name, slotKey) => ingredientePorNombre(data, name, carpetaDeHueco(slotKey, meal.mealType));
   const raciones = meal.raciones || {};
   const rowsFor = [];
 
@@ -37,18 +61,18 @@ export function mealComponents(data, meal) {
   }
 
   if (meal.closedDish) {
-    rowsFor.push({ slotKey: "closedDish", label: meal.closedDish, ingredient: byName(meal.closedDish) });
+    rowsFor.push({ slotKey: "closedDish", label: meal.closedDish, ingredient: byName(meal.closedDish, "closedDish") });
     const gRow = grasaExtraRow();
     if (gRow) rowsFor.push(gRow);
   } else if (meal.item) {
-    rowsFor.push({ slotKey: "item", label: meal.item, ingredient: byName(meal.item) });
+    rowsFor.push({ slotKey: "item", label: meal.item, ingredient: byName(meal.item, "item") });
   } else {
-    if (meal.protein) rowsFor.push({ slotKey: "protein", label: meal.protein, ingredient: byName(meal.protein) });
+    if (meal.protein) rowsFor.push({ slotKey: "protein", label: meal.protein, ingredient: byName(meal.protein, "protein") });
     if (meal.carbo) {
       rowsFor.push({
         slotKey: "carbo",
         label: meal.carbo,
-        ingredient: byName(meal.carbo),
+        ingredient: byName(meal.carbo, "carbo"),
         // En los días de garbanzos el carbo va al 50%, así que su ración base es la mitad.
         baseFactor: meal.garbanzos ? 0.5 : 1,
         note: meal.garbanzos ? "mitad" : null,

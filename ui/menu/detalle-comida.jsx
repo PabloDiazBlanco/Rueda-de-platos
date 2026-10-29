@@ -7,7 +7,7 @@ import React, { useState } from "react";
 import { Check, ThumbsUp, ThumbsDown, Pencil } from "lucide-react";
 import { fmt } from "macros";
 import { RULE_LEVELS } from "seleccion";
-import { mealComponents, mealTotals } from "comida-calculo";
+import { mealComponents, mealTotals, ingredientePorNombre } from "comida-calculo";
 import { uid } from "comun";
 import { t } from "i18n";
 import { ModalShell } from "../comun/modal.jsx";
@@ -20,10 +20,11 @@ import { FUENTE_TEXTO } from "../estilos.js";
 // verdura y garbanzos si los lleva) — los mismos que ya evalúa el motor de reglas. La grasa de
 // ajuste fino se deja fuera a propósito: no es una elección, es un relleno calórico automático.
 function comboItemIds(data, meal) {
-  const byName = (name) => (name ? data.ingredients.find((i) => i.name === name) : null);
-  const proteinIng = byName(meal.protein);
-  const carboIng = byName(meal.carbo);
-  const verduraIng = byName(meal.verdura);
+  // Por nombre y carpeta, como el motor (ingredientePorNombre): dos ingredientes de carpetas distintas
+  // pueden llamarse igual.
+  const proteinIng = ingredientePorNombre(data, meal.protein, "proteina");
+  const carboIng = ingredientePorNombre(data, meal.carbo, "carbo");
+  const verduraIng = ingredientePorNombre(data, meal.verdura, "verdura");
   const garbanzosIng = meal.garbanzos ? data.ingredients.find((i) => i.category === "especial") : null;
   const ids = [proteinIng, carboIng, verduraIng, garbanzosIng].filter(Boolean).map((i) => i.id);
   return [...new Set(ids)];

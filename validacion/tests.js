@@ -9,6 +9,7 @@ import { migrarPeriodo, alternarDia, iniciosDeRegla, prediccionPeriodo } from "p
 import { objetivosPorComida, recomendacionPreentreno } from "objetivos";
 import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
+import { mealComponents, ingredientePorNombre } from "comida-calculo";
 import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario, huecosProteinaSemana } from "cuestionario";
 import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
@@ -808,6 +809,30 @@ export function crearGrupos(mod, carga) {
                 cuatro: huecosProteinaSemana({ Desayuno: 0.2, Comida: 0.35, Merienda: 0.15, Cena: 0.3 }), soloComida: huecosProteinaSemana({ Desayuno: 0.3, Comida: 0.7 }), sinReparto: huecosProteinaSemana(null),
               },
               { salmon: "frecuencia:5", pollo: "base", polloSinFrecuencia: true, sinBase: "frecuencia", cuatro: 14, soloComida: 7, sinReparto: 14 }
+            );
+          },
+        },
+        {
+          // A-H1 (diagnóstico de octubre de 2026): elegir el mismo arquetipo en dos comidas ligeras crea dos
+          // ingredientes con el mismo nombre en carpetas distintas. Antes, la merienda se calculaba, se compraba
+          // y se descontaba con la composición del desayuno (el primero con ese nombre).
+          nombre: "A-H1: «Tostadas» en desayuno y en merienda con composiciones distintas → cada comida usa la suya",
+          ejecutar: () => {
+            const ingredients = construirIngredientesDesdeCuestionario({
+              frecuencias: {}, pesosCarbo: {}, pesosVerdura: {}, pesosGrasa: {},
+              comidasLigeras: {
+                desayuno: { tostadas: { nivel: 1, grupos: [["f_pan_molde"], ["f_jamon"]] } },
+                merienda: { tostadas: { nivel: 1, grupos: [["f_pan_molde"], ["f_mozzarella"]] } },
+              },
+            });
+            const data = { foods: FOODS_SEED, ingredients };
+            const alimentosDe = (mealType) => {
+              const [c] = mealComponents(data, { mealType, item: "Tostadas" });
+              return `${c.ingredient.category}:${c.ingredient.composicion.map((x) => x.foodId).join("+")}`;
+            };
+            return comparar(
+              { nombres: ingredients.map((i) => i.name).join(","), desayuno: alimentosDe("Desayuno"), merienda: alimentosDe("Merienda"), verdura: (ingredientePorNombre(data, "Tostadas", "verdura") || {}).category },
+              { nombres: "Tostadas,Tostadas", desayuno: "desayuno:f_pan_molde+f_jamon", merienda: "merienda:f_pan_molde+f_mozzarella", verdura: "desayuno" }
             );
           },
         },
