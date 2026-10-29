@@ -43,7 +43,7 @@ tiene su propio documento (`fitdraft-gimnasio.md`). Diseño y porqué:
 | `rueda-de-platos:entreno-AAAA-MM-v1` | las sesiones **terminadas** de ese mes |
 | `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes; por ejercicio, la última vez y sus récords; por rutina (`rutinas`), los ejercicios de su última sesión |
 | `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion }`: la sesión en curso (o `null`) |
-| `localStorage` `fooddraft:entreno-borrador` / `fooddraft:entreno-pendientes` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube |
+| `localStorage` `fooddraft:entreno-borrador:<uid>` / `fooddraft:entreno-pendientes:<uid>` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube, de esa cuenta |
 
 Los ajustes del catálogo incluyen `paseoDescanso` (el mini-mapa del descanso; `true` por defecto, lo completa
 `migrarCatalogo`) y `gimnasio` (el habitual).
@@ -62,8 +62,16 @@ hasta, inst, avisado }`.
    la app y con el evento `online`.
 3. Editar o borrar una sesión pasada reescribe su mes y **reconstruye el índice**; también se reconstruye si
    el nº de sesiones del mes actual no cuadra con `indice.meses`.
-4. Si la carga del catálogo falla (sin conexión al abrir), no se escribe encima hasta haberlo leído bien
-   (`cargaFiable`).
+4. Si la carga del catálogo o del índice falla (sin conexión al abrir), no se escribe encima hasta haberlos
+   leído bien (`cargaFiable`). Para el índice, `guardarIndice` lee el de la nube y reconstruye con la unión
+   de sus meses y los del calculado (`mesesAReconstruir`): un índice calculado sobre uno vacío nunca se
+   escribe tal cual, porque dejaría huérfanos los meses que no conoce.
+5. Un mes que no se puede leer no se guarda en memoria como vacío. `cargarMes(mes, { estricto: true })`
+   lanza el error; lo usan reconstruir, exportar, deshacer una importación y corregir o borrar una sesión
+   pasada, que avisan de que hace falta conexión en vez de seguir con meses que faltan.
+6. Las copias del dispositivo son por cuenta (`fooddraft:entreno-borrador:<uid>`,
+   `fooddraft:entreno-pendientes:<uid>`, `clavesLocalesEntreno`). `migrarLocalesEntreno` pasa una vez las
+   de antes (sin cuenta) a la primera cuenta que abre la app.
 
 ## Cálculos
 

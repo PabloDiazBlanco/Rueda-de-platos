@@ -26,10 +26,18 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   `localStorage`, pero en la nube). Protegido por las reglas de Firestore con `request.auth.uid == userId`. App
   Check aplicado para Firestore y Authentication. No hay `firestore.rules` en el repositorio: las reglas viven
   solo en la consola de Firebase del proyecto `rueda-de-platos`.
-- Firestore se inicializa **sin caché persistente** (caché en memoria): sin red, una lectura falla y una
-  escritura queda en cola en memoria hasta que vuelve la conexión (si se cierra la app antes, se pierde).
-  Cada hook tiene que distinguir «no existe» (cuenta nueva) de «no se pudo leer», y no escribir encima
-  mientras la lectura no haya ido bien.
+- Firestore se inicializa **sin caché persistente** (caché en memoria, decisión de Pablo): sin red, una
+  lectura falla y una escritura queda en cola en memoria hasta que vuelve la conexión (si se cierra la app
+  antes, se pierde).
+- **«No existe» no es «no se pudo leer».** `get` devuelve `null` si el documento no existe (cuenta nueva o
+  función sin usar: se empieza vacío) y **lanza** si no se puede leer. Los cargadores de `useDatos`,
+  `useMenu`, `useDespensa` y `useCuerpo` dejan pasar ese error; `useCargaInicial` (`ui/estado/datos.js`) lo
+  recoge y `app.jsx` enseña «No se han podido cargar tus datos · Reintentar» (`ui/comun/error-carga.jsx`),
+  que reintenta solo lo que falló. Mientras tanto no se guarda nada. Un hook nuevo que lea de la nube tiene
+  que seguir el mismo patrón: lanzar en el cargador y no autoguardar sin haber leído bien. El entreno es la
+  excepción: se puede usar sin conexión y lleva sus propias reglas (`entreno.md`).
+- Si un guardado de los datos principales falla, la cabecera dice «Sin guardar» y se reintenta al volver la
+  conexión; despensa y cuerpo lo dejan en la consola y lo reintentan con el siguiente cambio.
 - El documento padre `users/{uid}` guarda el estado premium (`premium { active, stripeCustomerId,
   subscriptionId, updatedAt }`) y los contadores de cuota (`usoFotos`, `usoCocinar`). Es de **solo lectura
   para el cliente**: solo lo escriben las Cloud Functions con el Admin SDK (ver `backend.md`).
@@ -57,13 +65,14 @@ marcando todas las comidas; el límite de un documento es 1 MiB).
 
 La primera vez que una cuenta entra en un navegador con datos antiguos en `localStorage`,
 `migrateLocalDataIfNeeded` (`auth-bootstrap.jsx`) ofrece copiar a la nube las claves `rueda-de-platos:*` que
-haya, y deja la marca `rueda-de-platos:migrated:<uid>` en el dispositivo.
+haya (sin contar las marcas `:migrated:`), y deja la marca `rueda-de-platos:migrated:<uid>` en el
+dispositivo. Nunca bloquea la carga de la app: si falla, se queda en un aviso de consola.
 
 ## Claves en el dispositivo (`localStorage`)
 
 | Clave | Qué es | ¿Por cuenta? |
 |---|---|---|
-| `fooddraft:entreno-borrador`, `fooddraft:entreno-pendientes` | Copia inmediata del borrador y cola de sesiones sin confirmar en la nube | no |
+| `fooddraft:entreno-borrador:<uid>`, `fooddraft:entreno-pendientes:<uid>` | Copia inmediata del borrador y cola de sesiones sin confirmar en la nube | sí |
 | `fooddraft:periodo-v1:<uid>` | Período (`migrarPeriodo`, `logica/periodo.js`); nunca va a la nube | sí |
 | `rueda-de-platos:migrated:<uid>` | Marca de la migración única desde `localStorage` | sí |
 | `fooddraft:idioma` | Idioma antes de haber perfil | no |
