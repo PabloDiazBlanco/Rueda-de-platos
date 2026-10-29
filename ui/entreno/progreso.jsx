@@ -16,7 +16,7 @@ import { seriesPorMusculo, semanaDe, sumarDias, semanasRecientes, fechaLocal, pe
 import { FUENTE_TITULOS } from "../estilos.js";
 import { TextoSuave, formatoNumero, HojaInferior } from "./comun.jsx";
 import { MapaCorporal } from "../comun/mapa-corporal.jsx";
-import { useTodasLasSesiones } from "./ficha.jsx";
+import { useTodasLasSesiones, AvisoMesesSinLeer } from "./ficha.jsx";
 import { Linea, Lectura, BotonGrafica, SelectorRango, Pie, etiquetaFecha, etiquetaLarga } from "../cuerpo/graficas.jsx";
 
 // Por defecto, 3 meses (lo más parecido a las 12 semanas de antes).
@@ -37,7 +37,7 @@ function Tarjeta({ pregunta, onGrafica, idioma, children }) {
 const media = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 export function ProgresoView({ entreno, idioma }) {
-  const { listo, sesiones } = useTodasLasSesiones(entreno);
+  const { listo, sesiones, incompleto } = useTodasLasSesiones(entreno);
   const [semanasRango, setSemanasRango] = useState(RANGO_INICIAL);
   const [lecturas, setLecturas] = useState({}); // por tarjeta
   const [hoja, setHoja] = useState(null); // "entrenos" | "volumen"
@@ -80,6 +80,7 @@ export function ProgresoView({ entreno, idioma }) {
 
   return (
     <div>
+      {incompleto && <AvisoMesesSinLeer idioma={idioma} />}
       <Tarjeta pregunta={t(idioma, "fitdraft.progreso.pMusculos")} idioma={idioma}>
         <TextoSuave style={{ fontSize: 12, marginBottom: 10 }}>{t(idioma, "entreno.progreso.seriesAyuda")}</TextoSuave>
         {!musculos.length && <TextoSuave>{t(idioma, "entreno.progreso.sinSeries")}</TextoSuave>}

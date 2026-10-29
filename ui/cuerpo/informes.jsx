@@ -18,6 +18,7 @@ import { INFORMES, GRUPOS_INFORMES, informesVisibles } from "informes";
 import { PremiumRequiredNotice } from "../premium/premium.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 import { TextoSuave, HojaInferior } from "../entreno/comun.jsx";
+import { AvisoMesesSinLeer } from "../entreno/ficha.jsx";
 import {
   useSerieCuerpo, GraficaMontada, Mini, BotonGrafica, Estrella, Chapa, Frase, Lectura, SelectorRango, Selector,
   textoPista, num, nombreVariable,
@@ -189,7 +190,7 @@ function PanelFavoritos({ cuerpo, idioma, entreno, onAbrir, onAbrirMontaje }) {
 
 export function InformesView({ data, premium, entreno, cuerpo, idioma, onGoPremium, navegar }) {
   const [abierto, setAbierto] = useState(null);
-  const { listo, serie, objetivos, esMujer } = useSerieCuerpo({ data, entreno, cuerpo });
+  const { listo, serie, objetivos, esMujer, incompleto } = useSerieCuerpo({ data, entreno, cuerpo });
 
   if (!premium.active) {
     return (
@@ -205,6 +206,7 @@ export function InformesView({ data, premium, entreno, cuerpo, idioma, onGoPremi
       {/* La mini gráfica de cada fila se esconde en pantallas muy estrechas, para que quepan la cifra y los botones. */}
       <style>{"@media (max-width: 400px) { .cuerpo-mini { display: none; } }"}</style>
       <TextoSuave style={{ marginBottom: 12 }}>{t(idioma, "cuerpo.inf.intro")}</TextoSuave>
+      {incompleto && <AvisoMesesSinLeer idioma={idioma} />}
       <PanelFavoritos cuerpo={cuerpo} idioma={idioma} entreno={entreno} onAbrir={setAbierto} onAbrirMontaje={(spec) => navegar("cuerpo-constructor", { spec })} />
 
       <button

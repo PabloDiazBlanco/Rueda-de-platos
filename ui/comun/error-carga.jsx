@@ -14,7 +14,10 @@ import { t } from "i18n";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 import { BotonCerrarSesionAlta } from "./cerrar-sesion.jsx";
 
-export function ErrorCarga({ idioma, onReintentar }) {
+// `motivo`: «conexion» (lo normal: no se pudo leer) o «ilegible» (se leyó, pero lo guardado no se puede usar:
+// un documento dañado o una migración que falla). Con «ilegible» el texto no culpa a la conexión y da el correo
+// de contacto, porque reintentar no lo va a arreglar solo.
+export function ErrorCarga({ idioma, onReintentar, motivo = "conexion" }) {
   const [reintentando, setReintentando] = useState(false);
 
   async function reintentar() {
@@ -35,7 +38,7 @@ export function ErrorCarga({ idioma, onReintentar }) {
           {t(idioma, "carga.error.titulo")}
         </h1>
         <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 14, lineHeight: 1.55, color: "var(--ink-soft)", margin: "14px 0 26px" }}>
-          {t(idioma, "carga.error.texto")}
+          {t(idioma, motivo === "ilegible" ? "carga.error.textoIlegible" : "carga.error.texto")}
         </p>
         <button
           onClick={reintentar}

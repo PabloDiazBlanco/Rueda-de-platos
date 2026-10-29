@@ -40,8 +40,14 @@ export function useDespensa(data, menu) {
   async function cargar() {
     let guardado = null;
     const res = await window.storage.get(CLAVE_DESPENSA, false);
-    if (res && res.value) guardado = JSON.parse(res.value);
-    const { despensa: migrada, changed } = migrarDespensa(guardado, hoy());
+    let migrada, changed;
+    try {
+      if (res && res.value) guardado = JSON.parse(res.value);
+      ({ despensa: migrada, changed } = migrarDespensa(guardado, hoy()));
+    } catch (e) {
+      e.ilegible = true; // leída pero inservible: no es la conexión (ver useCargaInicial)
+      throw e;
+    }
     ultimoGuardado.current = guardado && changed ? null : JSON.stringify(migrada);
     setDespensa(migrada);
   }

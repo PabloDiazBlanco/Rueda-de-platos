@@ -51,8 +51,9 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
   // lanza para que app.jsx enseñe la pantalla de reintento, porque generar con el historial vacío por error
   // escribiría un historial de un solo ciclo encima del de verdad (riesgo D2 del diagnóstico de octubre de
   // 2026). Mientras no se haya leído bien, el historial no se escribe (`leidoBien`). Un documento ilegible
-  // (JSON roto) no bloquea la app, que sería desproporcionado para un menú: se ignora como antes, pero un
-  // historial ilegible tampoco se sobrescribe.
+  // (JSON roto) no bloquea la app, que sería desproporcionado para un menú: se ignora como antes. Un historial
+  // ilegible cuenta como leído (y vacío): no hay nada que proteger en él, y si no se pudiera volver a escribir
+  // el motor dejaría de evitar repeticiones entre ciclos para siempre, sin que nadie se enterase.
   async function cargar() {
     const [menuRes, historyRes] = await Promise.all([window.storage.get(claveMenu, false), window.storage.get(claveHistorial, false)]);
     try {
@@ -62,10 +63,10 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
     }
     try {
       if (historyRes && historyRes.value) setHistorial(JSON.parse(historyRes.value));
-      leidoBien.current = true;
     } catch (e) {
-      console.warn("Historial guardado ilegible (" + claveHistorial + "):", e.message);
+      console.warn("Historial guardado ilegible (" + claveHistorial + "), se empieza de nuevo:", e.message);
     }
+    leidoBien.current = true;
   }
 
   // Pide un menú nuevo: con la espera de C11 o, con «reducir movimiento», al momento. Mientras se espera,

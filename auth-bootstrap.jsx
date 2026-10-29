@@ -292,9 +292,17 @@ window.deleteAccount = async function (password) {
   }
 
   const uid = user.uid;
+  // Mientras la función borra, la app no puede escribir nada: un guardado automático pendiente (los datos a
+  // los 0,5 s, el borrador del entreno a los 2,5 s...) que llegara después del borrado volvería a crear
+  // documentos de una cuenta que ya no existe (el ID token sigue valiendo hasta que caduca). Las lecturas
+  // siguen igual. Si la función falla no se ha borrado nada, así que se devuelve el almacén de siempre.
+  const almacen = window.storage;
+  const bloqueado = () => Promise.reject(new Error("Eliminando la cuenta: no se guarda nada"));
+  window.storage = { ...almacen, set: bloqueado, delete: bloqueado };
   try {
     await deleteAccountCallable();
   } catch (err) {
+    window.storage = almacen;
     throw errorDeFuncion(err, "No se ha podido eliminar la cuenta. Inténtalo de nuevo.");
   }
   limpiarDispositivoDeLaCuenta(uid);

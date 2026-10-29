@@ -39,8 +39,16 @@ export function useDatos(loading) {
   async function cargar() {
     const res = await window.storage.get(STORAGE_KEY, false);
     if (res && res.value) {
-      const parsed = JSON.parse(res.value);
-      const { data: migrated, changed } = migrateData(parsed);
+      // Que se haya leído pero no se pueda usar (JSON roto, un parche de migrateData que falla) tampoco es una
+      // cuenta nueva, pero no es la conexión: se marca para que la pantalla de reintento lo diga
+      // (`ilegible`, ver useCargaInicial). Se sigue sin escribir nada encima.
+      let migrated, changed;
+      try {
+        ({ data: migrated, changed } = migrateData(JSON.parse(res.value)));
+      } catch (e) {
+        e.ilegible = true;
+        throw e;
+      }
       cargaFiable.current = true;
       setData(migrated);
       if (changed) {
@@ -106,6 +114,9 @@ export function usePremium() {
 // que lanza es que **no se ha podido leer** lo que hay: los demás se cargan igual y `alTerminar(fallos)`
 // recibe la lista, para que app.jsx enseñe la pantalla de reintento en vez de seguir con datos vacíos.
 // Devuelve `reintentar`, que vuelve a ejecutar solo los cargadores que fallaron.
+// `alTerminar(fallos, { ilegible })`: `ilegible` si alguno de los fallos no es de conexión sino un documento
+// que se leyó pero no se puede usar (el cargador lo marca con `error.ilegible = true`): la pantalla de
+// reintento no debe decir entonces que «suele ser la conexión».
 export function useCargaInicial(cargadores, alTerminar) {
   const actuales = useRef(cargadores);
   actuales.current = cargadores;
@@ -117,13 +128,15 @@ export function useCargaInicial(cargadores, alTerminar) {
     const indices = pendientes.current || actuales.current.map((_, i) => i);
     const resultados = await Promise.allSettled(indices.map((i) => actuales.current[i]()));
     const fallos = [];
+    let ilegible = false;
     resultados.forEach((r, n) => {
       if (r.status === "fulfilled") return;
       console.warn("No se ha podido cargar una parte de los datos:", (r.reason && (r.reason.code || r.reason.message)) || r.reason);
       fallos.push(indices[n]);
+      if (r.reason && r.reason.ilegible) ilegible = true;
     });
     pendientes.current = fallos.length ? fallos : null;
-    fin.current(fallos);
+    fin.current(fallos, { ilegible });
   }
 
   useEffect(() => { ejecutar(); }, []);

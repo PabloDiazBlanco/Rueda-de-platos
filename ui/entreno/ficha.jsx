@@ -33,24 +33,35 @@ export function vecesDeEjercicio(sesiones, id) {
   return veces.sort((a, b) => new Date(b.sesion.inicio) - new Date(a.sesion.inicio));
 }
 
-// Todas las sesiones conocidas (todos los meses más la cola), una vez leídos los meses.
+// Todas las sesiones conocidas (todos los meses más la cola), una vez leídos los meses. `incompleto`: algún mes
+// no se ha podido leer (sin conexión), así que lo que se pinte puede faltarle algo: quien lo use enseña
+// AvisoMesesSinLeer en vez de darlo por completo en silencio.
 export function useTodasLasSesiones(entreno) {
   const [listo, setListo] = useState(false);
+  const [incompleto, setIncompleto] = useState(false);
   useEffect(() => {
     let vivo = true;
-    entreno.cargarTodosLosMeses().catch(() => {}).finally(() => { if (vivo) setListo(true); });
+    entreno.leerMesesDisponibles()
+      .then(({ faltan }) => { if (vivo) setIncompleto(faltan > 0); })
+      .catch(() => { if (vivo) setIncompleto(true); })
+      .finally(() => { if (vivo) setListo(true); });
     return () => { vivo = false; };
   }, []);
   const sesiones = [];
   Object.keys(entreno.meses).forEach((mes) => entreno.sesionesDeMes(mes).forEach((s) => sesiones.push(s)));
   entreno.cola.forEach((s) => { if (!sesiones.some((x) => x.id === s.id)) sesiones.push(s); });
-  return { listo, sesiones };
+  return { listo, sesiones, incompleto };
+}
+
+// Una línea discreta encima de lo que se pinta con useTodasLasSesiones cuando algún mes no se pudo leer.
+export function AvisoMesesSinLeer({ idioma }) {
+  return <TextoSuave style={{ color: "var(--rust)", marginBottom: 10 }}>{t(idioma, "entreno.mesesSinLeer")}</TextoSuave>;
 }
 
 export function FichaEjercicioView({ entreno, idioma, navegar, params }) {
   const id = params && params.id;
   const [pestana, setPestana] = useState("resumen");
-  const { listo, sesiones } = useTodasLasSesiones(entreno);
+  const { listo, sesiones, incompleto } = useTodasLasSesiones(entreno);
   const e = entreno.ejercicioDe(id);
   const volver = <BackLink label={t(idioma, "barra.ejercicios")} onClick={() => navegar("entreno-ejercicios")} />;
   if (!e) return <div>{volver}<TextoSuave>{t(idioma, "entreno.detalle.noEncontrada")}</TextoSuave></div>;
@@ -68,6 +79,7 @@ export function FichaEjercicioView({ entreno, idioma, navegar, params }) {
           <Chip key={p} role="tab" aria-selected={pestana === p} activo={pestana === p} onClick={() => setPestana(p)}>{t(idioma, "entreno.ficha." + p)}</Chip>
         ))}
       </div>
+      {incompleto && <AvisoMesesSinLeer idioma={idioma} />}
 
       {pestana === "resumen" && (
         <div>

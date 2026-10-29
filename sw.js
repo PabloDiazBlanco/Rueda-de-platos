@@ -87,7 +87,12 @@ self.addEventListener("activate", (event) => {
 //
 // Ahora se guardan en una caché propia, con la misma estrategia que lo nuestro (red primero, la copia solo sin
 // conexión), así que con red nada cambia. Va aparte de CACHE_NAME para que subir de versión no la vacíe: sus
-// direcciones llevan la versión de la librería, así que una copia vieja nunca se confunde con una nueva. Solo
+// direcciones llevan la versión de la librería, así que una copia vieja nunca se confunde con una nueva.
+// Lo que sí hace falta es podarla: nadie más sabe qué copias han dejado de usarse, y cada versión nueva de una
+// librería añadiría las suyas para siempre. **Al cambiar la versión de una librería en los importmaps (o la de
+// Babel o la de Firebase de este archivo), sube CACHE_CDN**: activate borra entonces la caché anterior entera
+// y la nueva se rellena sola en la siguiente apertura con red (una apertura sin red justo después de ese cambio
+// no tendría copias: el mismo caso que la primera vez que se abre la app). Solo
 // los hosts de la lista (nunca Firestore, Authentication ni App Check, que son datos y llamadas en vivo), solo
 // GET y solo respuestas correctas y legibles (CORS: las de módulos y la de Babel con `crossorigin` lo son; el
 // `integrity` de Babel se sigue comprobando igual sobre la copia).

@@ -21,6 +21,7 @@ import { PremiumRequiredNotice } from "../premium/premium.jsx";
 import { BackLink } from "../comun/tarjetas.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 import { TextoSuave, Chip } from "../entreno/comun.jsx";
+import { AvisoMesesSinLeer } from "../entreno/ficha.jsx";
 import {
   useSerieCuerpo, GraficaMontada, Estrella, Chapa, Frase, Lectura, SelectorRango, Selector, textoPista, num, conUnidad,
   nombreVariable, conArticulo, unidadTexto, etiquetaCategoria, referenciaDe,
@@ -163,7 +164,7 @@ function montajeDe(pregunta, serie) {
 }
 
 export function ConstructorView({ data, premium, entreno, cuerpo, idioma, onGoPremium, navegar, params }) {
-  const { listo, serie, objetivos, esMujer } = useSerieCuerpo({ data, entreno, cuerpo });
+  const { listo, serie, objetivos, esMujer, incompleto } = useSerieCuerpo({ data, entreno, cuerpo });
   const temas = TEMAS.filter((x) => x !== "ciclo" || esMujer);
   const inicial = params && params.spec ? params.spec : null;
   const [tema, setTema] = useState(inicial ? (PREGUNTA_POR_ID[inicial.pregunta] && PREGUNTA_POR_ID[inicial.pregunta].tema) || (inicial.forma === "libre" ? "libre" : temas[0]) : temas[0]);
@@ -219,6 +220,7 @@ export function ConstructorView({ data, premium, entreno, cuerpo, idioma, onGoPr
     <div style={{ maxWidth: 520 }}>
       {volver}
       <TextoSuave style={{ marginBottom: 10 }}>{t(idioma, "cuerpo.cons.intro")}</TextoSuave>
+      {incompleto && <AvisoMesesSinLeer idioma={idioma} />}
 
       {/* Temas y preguntas hechas */}
       <div role="tablist" style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 4, marginBottom: 8 }}>

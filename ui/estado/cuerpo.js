@@ -22,7 +22,12 @@ export const CLAVE_FAVORITOS = "rueda-de-platos:informes-favoritos-v1";
 // nada hasta que la carga vaya bien (app.jsx enseña la pantalla de reintento).
 async function leer(clave) {
   const res = await window.storage.get(clave, false);
-  return res && res.value ? JSON.parse(res.value) : null;
+  try {
+    return res && res.value ? JSON.parse(res.value) : null;
+  } catch (e) {
+    e.ilegible = true; // leído pero inservible: no es la conexión (ver useCargaInicial)
+    throw e;
+  }
 }
 
 // Guardado automático con retardo de un documento: no reescribe lo que se acaba de leer. Si falla, queda

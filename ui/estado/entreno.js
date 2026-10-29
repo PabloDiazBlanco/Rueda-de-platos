@@ -142,9 +142,17 @@ export function useEntreno(data) {
     setBorrador(sesion);
   }
 
-  // Las cuatro lecturas no dependen entre sí y cada una se ocupa de sus errores: a la vez.
+  // Las cuatro lecturas no dependen entre sí y cada una se ocupa de sus errores: a la vez. Si el catálogo o
+  // el índice no se han podido leer, se lanza al final: así useCargaInicial lo cuenta como fallo y
+  // «Reintentar» vuelve a llamar a esta función. Antes no lanzaba nunca y, tras abrir sin conexión y
+  // reintentar, FitDraft seguía enseñando un catálogo sin rutinas y un historial vacío hasta recargar la app
+  // (sin perder nada, porque `cargaFiable` impide escribir, pero parecía que se había perdido). El borrador
+  // no cuenta: tiene su copia en el dispositivo y, si falla la nube, `nube` ya queda «pendiente».
   async function cargar() {
     await Promise.all([cargarCatalogo(), cargarIndice(), cargarBorrador(), cargarMes(mesActual())]);
+    if (!cargaFiable.current.catalogo || !cargaFiable.current.indice) {
+      throw new Error("No se ha podido leer el catálogo o el índice del entreno");
+    }
   }
 
   // Lee un mes (una sola vez: queda en memoria). Devuelve su documento.
@@ -175,6 +183,24 @@ export function useEntreno(data) {
     const docs = [];
     for (const mes of lista) docs.push(await cargarMes(mes, { estricto: true }));
     return docs;
+  }
+
+  // Para enseñar (gráficas de la ficha, Progreso, informes de Cuerpo): todos los meses que se puedan leer,
+  // sin cortar en el primero que falle, y cuántos faltan. Quien pinta avisa de que lo que ve puede estar
+  // incompleto (`faltan > 0`) en vez de darlo por bueno en silencio. Quien escribe a partir de los meses
+  // (reconstruir, exportar...) usa cargarTodosLosMeses, que sí corta.
+  async function leerMesesDisponibles() {
+    const lista = mesesAReconstruir([ref.current.indice], [mesActual()]);
+    const docs = [];
+    let faltan = 0;
+    for (const mes of lista) {
+      try {
+        docs.push(await cargarMes(mes, { estricto: true }));
+      } catch (e) {
+        faltan++;
+      }
+    }
+    return { docs, faltan };
   }
 
   async function guardarIndice(nuevo) {
@@ -365,7 +391,7 @@ export function useEntreno(data) {
     // El perfil, para el mapa corporal (hombre o mujer según su sexo; ui/comun/mapa-corporal.jsx).
     perfil: (data && data.perfil) || null,
     recordsDe: (id) => ((indice.ejercicios || {})[id] || {}).records || {},
-    cargarMes, cargarTodosLosMeses, sesionesDeMes, mesActual, reconstruir,
+    cargarMes, cargarTodosLosMeses, leerMesesDisponibles, sesionesDeMes, mesActual, reconstruir,
 
     // Visibilidad de la capa a pantalla completa de la sesión (la pastilla la vuelve a abrir).
     sesionVisible: sesionVisible && !!borrador,

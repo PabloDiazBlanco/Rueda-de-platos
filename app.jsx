@@ -106,7 +106,8 @@ export default function RuedaDePlatos() {
   const [loading, setLoading] = useState(true);
   // Si algo de lo guardado no se ha podido leer (sin conexión al abrir), no se sigue con datos vacíos: se
   // enseña «No se han podido cargar tus datos · Reintentar» (ver useCargaInicial y ui/comun/error-carga.jsx).
-  const [errorCarga, setErrorCarga] = useState(false);
+  // `null` sin error; «conexion» o «ilegible» (se leyó, pero lo guardado no se puede usar) para el texto.
+  const [errorCarga, setErrorCarga] = useState(null);
 
   const premium = usePremium();
   const { data, setData, saveState, idioma, idiomaFallback, cargar: cargarDatos } = useDatos(loading);
@@ -124,8 +125,8 @@ export default function RuedaDePlatos() {
   const cuerpo = useCuerpo();
   const reintentarCarga = useCargaInicial(
     [cargarDatos, menuCompleto.cargar, menuSimple.cargar, despensa.cargar, entreno.cargar, cuerpo.cargar],
-    (fallos) => {
-      setErrorCarga(fallos.length > 0);
+    (fallos, { ilegible }) => {
+      setErrorCarga(fallos.length === 0 ? null : ilegible ? "ilegible" : "conexion");
       setLoading(false);
     }
   );
@@ -134,7 +135,7 @@ export default function RuedaDePlatos() {
     return (
       <Shell>
         {/* Con `loading` el guardado automático no salta: lo recién leído no se reescribe en la nube. */}
-        <ErrorCarga idioma={idioma} onReintentar={() => { setLoading(true); return reintentarCarga(); }} />
+        <ErrorCarga idioma={idioma} motivo={errorCarga} onReintentar={() => { setLoading(true); return reintentarCarga(); }} />
       </Shell>
     );
   }

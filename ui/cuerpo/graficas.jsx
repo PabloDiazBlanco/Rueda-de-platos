@@ -490,7 +490,7 @@ export function SelectorRango({ semanas, onCambiar, idioma }) {
 // meses al abrir, como la ficha de un ejercicio), los datos de la cuenta, el diario del cuerpo y, solo con
 // perfil de mujer, el período **de este dispositivo** (nunca sale de aquí).
 export function useSerieCuerpo({ data, entreno, cuerpo }) {
-  const { listo, sesiones } = useTodasLasSesiones(entreno);
+  const { listo, sesiones, incompleto } = useTodasLasSesiones(entreno);
   const perfil = (data && data.perfil) || {};
   const esMujer = perfil.sexo === "mujer";
   const periodo = useMemo(() => (esMujer ? leerPeriodoLocal() : null), [esMujer]);
@@ -500,7 +500,8 @@ export function useSerieCuerpo({ data, entreno, cuerpo }) {
     diario, periodo, hoy: new Date(), inicioSemana: (entreno.ajustes && entreno.ajustes.inicioSemana) ?? 1,
   }), [data, sesiones.length, entreno.indice, diario, periodo, listo]);
   const objetivos = useMemo(() => calcularObjetivosPerfil(perfil), [data && data.perfil]);
-  return { listo, serie, objetivos, esMujer, conCiclo: esMujer && !!(periodo && periodo.regla && periodo.regla.length) };
+  // `incompleto`: algún mes del entreno no se pudo leer; quien pinte enseña AvisoMesesSinLeer.
+  return { listo, serie, objetivos, esMujer, incompleto, conCiclo: esMujer && !!(periodo && periodo.regla && periodo.regla.length) };
 }
 
 // ---------- Nombres de las variables ----------
