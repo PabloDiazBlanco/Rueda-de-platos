@@ -532,7 +532,7 @@ const TEXTOS = {
     "avisoCena": "Cenas copiosas o muy tardías se asocian a peor control de azúcar, peor descanso y más riesgo de grasa en el hígado. Si puedes, que la cena no sea ni la más pesada ni la más tardía del día.",
 
     "deleteAccount.palabraConfirmacion": "ELIMINAR",
-    "deleteAccount.desc": "Esto borra permanentemente tu cuenta y todos tus datos: alimentos, platos, menús, historial de peso y objetivos. No se puede deshacer.",
+    "deleteAccount.desc": "Esto borra permanentemente tu cuenta y todos tus datos: alimentos, platos, menús, entrenos, historial de peso, sueño y objetivos, también lo que esta cuenta guarda en este dispositivo (como el período). Si tienes premium, la suscripción se cancela en el momento. No se puede deshacer.",
     "deleteAccount.tuContrasena": "Tu contraseña",
     "deleteAccount.escribePara": "Escribe {palabra} para confirmar",
     "deleteAccount.cancelar": "Cancelar",
@@ -541,6 +541,8 @@ const TEXTOS = {
     "deleteAccount.wrongPassword": "Contraseña incorrecta.",
     "deleteAccount.popupCerrado": "Has cerrado la ventana de Google antes de confirmar.",
     "deleteAccount.errorGenerico": "No se ha podido eliminar la cuenta. Inténtalo de nuevo.",
+    "deleteAccount.sesionCaducada": "Por seguridad, vuelve a confirmar tu identidad e inténtalo de nuevo.",
+    "deleteAccount.noSeHaBorrado": "No se ha podido completar y no se ha borrado nada. Comprueba la conexión e inténtalo de nuevo.",
 
     "perfilRoot.datosPersonales": "Datos personales",
     "perfilRoot.datosPersonales.desc": "perfil y objetivos",
@@ -2436,7 +2438,7 @@ const TEXTOS = {
     "avisoCena": "Heavy or very late dinners are linked to worse blood sugar control, worse sleep and more risk of fatty liver. If you can, don't make dinner the heaviest or the latest meal of the day.",
 
     "deleteAccount.palabraConfirmacion": "DELETE",
-    "deleteAccount.desc": "This permanently deletes your account and all your data: foods, dishes, menus, weight history and goals. This can't be undone.",
+    "deleteAccount.desc": "This permanently deletes your account and all your data: foods, dishes, menus, workouts, weight history, sleep and goals, including what this account keeps on this device (such as your period). If you have premium, the subscription is cancelled straight away. This can’t be undone.",
     "deleteAccount.tuContrasena": "Your password",
     "deleteAccount.escribePara": "Type {palabra} to confirm",
     "deleteAccount.cancelar": "Cancel",
@@ -2445,6 +2447,8 @@ const TEXTOS = {
     "deleteAccount.wrongPassword": "Incorrect password.",
     "deleteAccount.popupCerrado": "You closed the Google window before confirming.",
     "deleteAccount.errorGenerico": "Couldn't delete the account. Please try again.",
+    "deleteAccount.sesionCaducada": "For security, please confirm your identity again and try once more.",
+    "deleteAccount.noSeHaBorrado": "It couldn’t be completed and nothing has been deleted. Check your connection and try again.",
 
     "perfilRoot.datosPersonales": "Personal data",
     "perfilRoot.datosPersonales.desc": "profile and goals",
@@ -4337,7 +4341,7 @@ const TEXTOS = {
     "avisoCena": "Els sopars copiosos o molt tardans s'associen a pitjor control del sucre, pitjor descans i més risc de greix al fetge. Si pots, que el sopar no sigui ni el més pesat ni el més tardà del dia.",
 
     "deleteAccount.palabraConfirmacion": "ELIMINAR",
-    "deleteAccount.desc": "Això esborra permanentment el teu compte i totes les teves dades: aliments, plats, menús, historial de pes i objectius. No es pot desfer.",
+    "deleteAccount.desc": "Això esborra permanentment el teu compte i totes les teves dades: aliments, plats, menús, entrenaments, historial de pes, son i objectius, també el que aquest compte desa en aquest dispositiu (com el període). Si tens prèmium, la subscripció es cancel·la en aquell moment. No es pot desfer.",
     "deleteAccount.tuContrasena": "La teva contrasenya",
     "deleteAccount.escribePara": "Escriu {palabra} per confirmar",
     "deleteAccount.cancelar": "Cancel·la",
@@ -4346,6 +4350,8 @@ const TEXTOS = {
     "deleteAccount.wrongPassword": "Contrasenya incorrecta.",
     "deleteAccount.popupCerrado": "Has tancat la finestra de Google abans de confirmar.",
     "deleteAccount.errorGenerico": "No s'ha pogut eliminar el compte. Torna-ho a provar.",
+    "deleteAccount.sesionCaducada": "Per seguretat, torna a confirmar la teva identitat i torna-ho a provar.",
+    "deleteAccount.noSeHaBorrado": "No s’ha pogut completar i no s’ha esborrat res. Comprova la connexió i torna-ho a provar.",
 
     "perfilRoot.datosPersonales": "Dades personals",
     "perfilRoot.datosPersonales.desc": "perfil i objectius",
@@ -6238,7 +6244,7 @@ const TEXTOS = {
     "avisoCena": "As ceas copiosas ou moi tardías asócianse a peor control do azucre, peor descanso e máis risco de graxa no fígado. Se podes, que a cea non sexa nin a máis pesada nin a máis tardía do día.",
 
     "deleteAccount.palabraConfirmacion": "ELIMINAR",
-    "deleteAccount.desc": "Isto borra permanentemente a túa conta e todos os teus datos: alimentos, pratos, menús, historial de peso e obxectivos. Non se pode desfacer.",
+    "deleteAccount.desc": "Isto borra permanentemente a túa conta e todos os teus datos: alimentos, pratos, menús, adestramentos, historial de peso, sono e obxectivos, tamén o que esta conta garda neste dispositivo (como o período). Se tes premium, a subscrición cancélase no momento. Non se pode desfacer.",
     "deleteAccount.tuContrasena": "O teu contrasinal",
     "deleteAccount.escribePara": "Escribe {palabra} para confirmar",
     "deleteAccount.cancelar": "Cancelar",
@@ -6247,6 +6253,8 @@ const TEXTOS = {
     "deleteAccount.wrongPassword": "Contrasinal incorrecto.",
     "deleteAccount.popupCerrado": "Pechaches a xanela de Google antes de confirmar.",
     "deleteAccount.errorGenerico": "Non se puido eliminar a conta. Téntao de novo.",
+    "deleteAccount.sesionCaducada": "Por seguridade, volve confirmar a túa identidade e téntao de novo.",
+    "deleteAccount.noSeHaBorrado": "Non se puido completar e non se borrou nada. Comproba a conexión e téntao de novo.",
 
     "perfilRoot.datosPersonales": "Datos persoais",
     "perfilRoot.datosPersonales.desc": "perfil e obxectivos",
@@ -8139,7 +8147,7 @@ const TEXTOS = {
     "avisoCena": "Afari kopurutsuak edo oso berandukoak azukrearen kontrol okerragoarekin, atseden txarragoarekin eta gibeleko gantza gehiagoko arriskuarekin lotzen dira. Ahal baduzu, afaria ez izan egunaren otordurik astunena ez eta berandukoena.",
 
     "deleteAccount.palabraConfirmacion": "EZABATU",
-    "deleteAccount.desc": "Honek zure kontua eta zure datu guztiak behin betiko ezabatzen ditu: elikagaiak, platerak, menuak, pisu-historiala eta helburuak. Ezin da desegin.",
+    "deleteAccount.desc": "Honek betiko ezabatzen ditu zure kontua eta zure datu guztiak: elikagaiak, platerak, menuak, entrenamenduak, pisuaren historia, loa eta helburuak, baita kontu honek gailu honetan gordetzen duena ere (hilekoa, adibidez). Premium baduzu, harpidetza berehala bertan behera geratzen da. Ezin da desegin.",
     "deleteAccount.tuContrasena": "Zure pasahitza",
     "deleteAccount.escribePara": "Idatzi {palabra} berresteko",
     "deleteAccount.cancelar": "Ezeztatu",
@@ -8148,6 +8156,8 @@ const TEXTOS = {
     "deleteAccount.wrongPassword": "Pasahitz okerra.",
     "deleteAccount.popupCerrado": "Google-ren leihoa itxi duzu berretsi baino lehen.",
     "deleteAccount.errorGenerico": "Ezin izan da kontua ezabatu. Saiatu berriro.",
+    "deleteAccount.sesionCaducada": "Segurtasunagatik, berretsi berriro zure identitatea eta saiatu berriro.",
+    "deleteAccount.noSeHaBorrado": "Ezin izan da osatu eta ez da ezer ezabatu. Egiaztatu konexioa eta saiatu berriro.",
 
     "perfilRoot.datosPersonales": "Datu pertsonalak",
     "perfilRoot.datosPersonales.desc": "profila eta helburuak",

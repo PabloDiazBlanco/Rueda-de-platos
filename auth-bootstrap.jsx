@@ -9,7 +9,6 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
-  deleteUser,
   EmailAuthProvider,
   reauthenticateWithCredential,
   reauthenticateWithPopup,
@@ -256,10 +255,26 @@ function makeFirestoreStorage(uid) {
 // ---------- Eliminar cuenta: borra todos los datos y la cuenta de Auth, sin dejar restos ----------
 // Firebase exige una sesión "reciente" para operaciones sensibles como borrar una cuenta, así que
 // primero se reautentica siempre (con Google vía popup, o con la contraseña que pase quien llama)
-// y solo después se borra nada. El orden de borrado importa: los documentos de Firestore se borran
-// ANTES que la cuenta de Auth, porque las reglas de seguridad exigen seguir autenticado como ese
-// uid para poder borrarlos — si se hiciera al revés, el usuario se quedaría sin cuenta pero con
-// datos huérfanos e imposibles de limpiar desde el cliente.
+// y solo después se borra nada. El borrado de verdad lo hace la Cloud Function deleteAccount
+// (functions/deleteAccount.js): cancela la suscripción de Stripe, borra users/{uid} entero (también el
+// documento padre, que el cliente no puede tocar) y la cuenta de Auth. Hasta octubre de 2026 lo hacía este
+// cliente y se quedaban la suscripción cobrando y users/{uid} con el cliente de Stripe y las cuotas. Si la
+// función falla, no se borra nada aquí (sin plan B a medias). Después se limpia lo que esta cuenta guarda solo
+// en el dispositivo (el período, las copias del entreno) y se cierra la sesión.
+const deleteAccountCallable = httpsCallable(functions, "deleteAccount");
+
+// Claves de `localStorage` de una cuenta (llevan su uid). Las comodidades del dispositivo (idioma, vistas,
+// avisos) no son datos de nadie y se quedan.
+function limpiarDispositivoDeLaCuenta(uid) {
+  try {
+    Object.keys(localStorage)
+      .filter((k) => k.endsWith(":" + uid) && (k.startsWith("fooddraft:") || k.startsWith("rueda-de-platos:migrated:")))
+      .forEach((k) => localStorage.removeItem(k));
+  } catch (e) {
+    // sin localStorage no hay nada que limpiar
+  }
+}
+
 window.deleteAccount = async function (password) {
   const user = auth.currentUser;
   if (!user) throw new Error("No hay ninguna sesión activa.");
@@ -276,10 +291,16 @@ window.deleteAccount = async function (password) {
     await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
   }
 
-  const snaps = await getDocs(collection(db, "users", user.uid, "keys"));
-  await Promise.all(snaps.docs.map((d) => deleteDoc(d.ref)));
-
-  await deleteUser(user);
+  const uid = user.uid;
+  try {
+    await deleteAccountCallable();
+  } catch (err) {
+    throw errorDeFuncion(err, "No se ha podido eliminar la cuenta. Inténtalo de nuevo.");
+  }
+  limpiarDispositivoDeLaCuenta(uid);
+  // La cuenta ya no existe en el servidor, pero este navegador aún tiene su sesión: se cierra, y
+  // onAuthStateChanged vuelve solo a la bienvenida.
+  await signOut(auth).catch(() => {});
 };
 
 // ---------- Estado premium, en vivo ----------

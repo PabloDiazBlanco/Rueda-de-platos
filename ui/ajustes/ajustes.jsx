@@ -36,6 +36,10 @@ function DeleteAccountModal({ onClose, idioma }) {
       "auth/wrong-password": "deleteAccount.wrongPassword",
       "auth/invalid-credential": "deleteAccount.wrongPassword",
       "auth/popup-closed-by-user": "deleteAccount.popupCerrado",
+      // Errores de la Cloud Function deleteAccount (functions/deleteAccount.js), que hace el borrado de verdad.
+      "functions/failed-precondition": "deleteAccount.sesionCaducada",
+      "functions/unavailable": "deleteAccount.noSeHaBorrado",
+      "functions/deadline-exceeded": "deleteAccount.noSeHaBorrado",
     };
     return map[code] ? t(idioma, map[code]) : t(idioma, "deleteAccount.errorGenerico");
   }
