@@ -9,7 +9,9 @@ import React, { useState, useMemo } from "react";
 import { Medal } from "lucide-react";
 import { t } from "i18n";
 import { camposDeTipo, GIMNASIOS_HABITUALES } from "entreno-ejercicios";
-import { resumenSesion, mejoresDeEjercicioEnSesion, recordsBatidos, seriesPorMusculo } from "entreno-calculo";
+import {
+  resumenSesion, mejoresDeEjercicioEnSesion, recordsBatidos, seriesPorMusculo, anioEntrenoValido, ANIO_MIN_ENTRENO, ANIO_MAX_ENTRENO,
+} from "entreno-calculo";
 import { terminarSesion, cambiosEstructurales } from "entreno-sesion";
 import { Field, inputStyle, ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { BotonCompartir } from "../comun/compartir.jsx";
@@ -115,11 +117,13 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
   const rutina = s.rutinaId ? ((entreno.catalogo && entreno.catalogo.rutinas) || []).find((r) => r.id === s.rutinaId) : null;
 
   // Solo se cambia la hora si el usuario toca el campo: el campo no tiene segundos, y redondear sin que
-  // nadie lo pida movería la sesión hasta un minuto.
+  // nadie lo pida movería la sesión hasta un minuto. Una fecha que no se entiende, o con un año fuera del
+  // rango que admiten las reglas de Firestore (un «0202» tecleado a medias), se ignora y queda la que había:
+  // con ella, la sesión no se podría subir a su mes.
   const inicioISO = useMemo(() => {
     if (inicio === aLocal(s.inicio)) return s.inicio;
     const d = new Date(inicio);
-    return Number.isNaN(d.getTime()) ? s.inicio : d.toISOString();
+    return Number.isNaN(d.getTime()) || !anioEntrenoValido(d.getTime()) ? s.inicio : d.toISOString();
   }, [inicio]);
   // Cómo quedaría guardada: sin las series sin hacer ni los ejercicios vacíos.
   const final = terminarSesion(s, Date.now(), { nombre, esfuerzo, nota, inicio: inicioISO, gimnasio });
@@ -215,7 +219,14 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
       </Field>
 
       <Field label={t(idioma, "entreno.terminar.fecha")}>
-        <input type="datetime-local" value={inicio} onChange={(e) => setInicio(e.target.value)} style={{ ...inputStyle, minHeight: 44, fontSize: 16 }} />
+        <input
+          type="datetime-local"
+          value={inicio}
+          min={`${ANIO_MIN_ENTRENO}-01-01T00:00`}
+          max={`${ANIO_MAX_ENTRENO}-12-31T23:59`}
+          onChange={(e) => setInicio(e.target.value)}
+          style={{ ...inputStyle, minHeight: 44, fontSize: 16 }}
+        />
       </Field>
 
       {hayCambios && (

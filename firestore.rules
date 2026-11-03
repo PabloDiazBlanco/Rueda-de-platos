@@ -45,9 +45,13 @@ service cloud.firestore {
         'rueda-de-platos:informes-favoritos-v1',
         'rueda-de-platos:push-token-v1'
       ]
-      // Un documento por mes de entreno (`entreno-AAAA-MM-v1`, logica/entreno-almacen.js). El año admite
-      // cualquier número de cuatro cifras: el importador acepta historiales antiguos de otras apps.
-      || clave.matches('rueda-de-platos:entreno-[0-9]{4}-(0[1-9]|1[0-2])-v1');
+      // Un documento por mes de entreno (`entreno-AAAA-MM-v1`, logica/entreno-almacen.js), solo de 1970 a
+      // 2099. Con cualquier año de cuatro cifras cabían 120 000 meses por cuenta, y la lista ya no ponía
+      // techo a lo que se puede guardar (revisión de las reglas de noviembre de 2026); así quedan unos 1500.
+      // El rango es el de `ANIO_MIN_ENTRENO` y `ANIO_MAX_ENTRENO` (logica/entreno-calculo.js): la app
+      // descarta al importar, y no guarda al terminar, una fecha fuera de él. **Si cambia uno, cambia el
+      // otro.** El techo de verdad para las funciones que leen todas las cuentas es no leerlas todas (R8).
+      || clave.matches('rueda-de-platos:entreno-(19[7-9][0-9]|20[0-9][0-9])-(0[1-9]|1[0-2])-v1');
     }
 
     // Tamaño máximo de `value`, en caracteres. El token de notificaciones mide unos 160: con 4096 sobra.

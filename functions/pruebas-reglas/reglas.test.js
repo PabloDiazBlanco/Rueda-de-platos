@@ -226,12 +226,36 @@ describe("Solo las claves que usa la app", () => {
     }
   });
 
-  it("acepta un documento por mes de entreno", async () => {
+  it("acepta un documento por mes de entreno, de 1970 a 2099", async () => {
     const db = de("alicia");
-    for (const mes of ["2026-01", "2026-10", "2026-12", "1998-05", "2031-07"]) {
+    for (const mes of ["2026-01", "2026-10", "2026-12", "1998-05", "2031-07", "1970-01", "2099-12"]) {
       const clave = `rueda-de-platos:entreno-${mes}-v1`;
       await assertSucceeds(setDoc(doc(db, "users", "alicia", "keys", clave), { value: "{}" }));
     }
+  });
+
+  it("rechaza meses de años fuera del rango (sin techo, cabían 120 000 meses por cuenta)", async () => {
+    const db = de("alicia");
+    // «202-03» es lo que formaría la app con un año 202 (getFullYear no rellena con ceros).
+    for (const mes of ["1969-12", "2100-01", "0500-03", "0000-01", "9999-12", "202-03"]) {
+      const clave = `rueda-de-platos:entreno-${mes}-v1`;
+      await assertFails(setDoc(doc(db, "users", "alicia", "keys", clave), { value: "{}" }));
+    }
+  });
+
+  it("el rango de años de las reglas es el mismo que el de la app", async () => {
+    // La app descarta las fechas fuera de ANIO_MIN_ENTRENO-ANIO_MAX_ENTRENO (logica/entreno-calculo.js); si
+    // alguien cambia el rango allí y no aquí (o al revés), una sesión de un año en el borde no se podría subir.
+    const texto = fs.readFileSync(path.join(RAIZ, "logica", "entreno-calculo.js"), "utf8");
+    const min = Number((texto.match(/ANIO_MIN_ENTRENO\s*=\s*(\d+)/) || [])[1]);
+    const max = Number((texto.match(/ANIO_MAX_ENTRENO\s*=\s*(\d+)/) || [])[1]);
+    assert.ok(min > 0 && max > min, "no se han encontrado ANIO_MIN_ENTRENO y ANIO_MAX_ENTRENO en la app");
+    const db = de("alicia");
+    const clave = (anio, mes) => `rueda-de-platos:entreno-${anio}-${mes}-v1`;
+    await assertSucceeds(setDoc(doc(db, "users", "alicia", "keys", clave(min, "01")), { value: "{}" }));
+    await assertSucceeds(setDoc(doc(db, "users", "alicia", "keys", clave(max, "12")), { value: "{}" }));
+    await assertFails(setDoc(doc(db, "users", "alicia", "keys", clave(min - 1, "12")), { value: "{}" }));
+    await assertFails(setDoc(doc(db, "users", "alicia", "keys", clave(max + 1, "01")), { value: "{}" }));
   });
 
   it("rechaza meses imposibles o mal escritos", async () => {

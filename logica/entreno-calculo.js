@@ -31,6 +31,20 @@ export function fechaLocal(fecha) {
   return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
 }
 
+// Años que admite la fecha de un entreno (en hora local, como fechaLocal). Cada mes se guarda en su propia
+// clave, «entreno-AAAA-MM-v1» (entreno-almacen.js), y las reglas de Firestore (`firestore.rules`) solo
+// aceptan estos años: así nadie puede llenar su cuenta con miles de meses inventados (revisión de las reglas
+// de noviembre de 2026). Fuera de este rango solo llegan errores de dedo («0202» por «2026») o un CSV
+// editado a mano; si se guardaran, su mes no cabría en las reglas y la sesión no se podría subir. Por eso
+// el importador los descarta como fechas que no entiende y «Terminar» ignora una fecha así y deja la que
+// había. **Si cambias el rango, cambia también el patrón de `firestore.rules` y publica las reglas.**
+export const ANIO_MIN_ENTRENO = 1970;
+export const ANIO_MAX_ENTRENO = 2099;
+export function anioEntrenoValido(fecha) {
+  const anio = new Date(ms(fecha)).getFullYear();
+  return anio >= ANIO_MIN_ENTRENO && anio <= ANIO_MAX_ENTRENO;
+}
+
 // ---------- 1RM estimado ----------
 // Fórmula de Epley, kg × (1 + r/30), con r = repeticiones + RIR si se anotó (las que «quedaban en la
 // recámara»: lo que se habría podido hacer al fallo, que es lo que la fórmula supone). Con r = 1 es el

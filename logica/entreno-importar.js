@@ -30,6 +30,7 @@
 //   (el modelo de G11): los ejercicios seguidos con el mismo valor forman una superserie.
 import { uid } from "comun";
 import { normalizarTexto, posibleDuplicado } from "entreno-ejercicios";
+import { anioEntrenoValido } from "entreno-calculo";
 
 // ---------- CSV ----------
 // Lee un CSV con comillas (y comillas dobladas dentro), saltos de línea dentro de comillas, BOM al principio
@@ -76,6 +77,12 @@ export function detectarFormato(cabecera) {
 // ---------- Fechas y números ----------
 const MESES_EN = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
 
+// Una fecha con un año absurdo (fuera de ANIO_MIN_ENTRENO-ANIO_MAX_ENTRENO, ver entreno-calculo.js) se trata
+// como una que no se entiende: su fila se descarta al agrupar, igual que una fecha ilegible. Sin esto, una sola
+// sesión con el año «0202» (un CSV editado a mano) haría fallar la importación entera, porque su mes no cabe
+// en las reglas de Firestore y se escribe el primero.
+const isoSiValida = (d) => (Number.isNaN(d.getTime()) || !anioEntrenoValido(d.getTime()) ? null : d.toISOString());
+
 // «Jun 14, 2026, 9:03 AM» o «14 Jun 2026, 09:03» (hora local) → ISO. null si no se entiende.
 export function fechaHevy(texto) {
   const t = String(texto || "").trim();
@@ -91,16 +98,14 @@ export function fechaHevy(texto) {
   if (nMes === undefined) return null;
   let h = Number(hora) % (ampm ? 12 : 24);
   if (ampm && ampm.toLowerCase() === "pm") h += 12;
-  const d = new Date(Number(anio), nMes, Number(dia), h, Number(minuto), Number(segundo || 0));
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  return isoSiValida(new Date(Number(anio), nMes, Number(dia), h, Number(minuto), Number(segundo || 0)));
 }
 
 // «2026-10-23 06:02:05» (hora local) → ISO.
 export function fechaLyfta(texto) {
   const m = String(texto || "").trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (!m) return null;
-  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6] || 0));
-  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+  return isoSiValida(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), Number(m[4]), Number(m[5]), Number(m[6] || 0)));
 }
 
 // «01:23:33» → 5013 s; «15:00» → 900 s (minutos y segundos).

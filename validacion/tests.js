@@ -32,7 +32,7 @@ import {
   e1rm, e1rmFiable, volumenSerie, volumenSesion, duracionEfectiva, seriesPorMusculo, validarSerie,
   mejoresDeEjercicioEnSesion, recordsBatidos, anteriorDe, semanaDe, recordsEnVivo, seriesConRecord, semanasRecientes,
   pesoAPantalla, pesoDePantalla, distanciaAPantalla, distanciaDePantalla, resumenEntrenoMes, discosPorLado,
-  anteriorEquivalente, repsLadoDebil,
+  anteriorEquivalente, repsLadoDebil, anioEntrenoValido,
 } from "entreno-calculo";
 import {
   nuevaSesion, anadirSerie, marcarHecha, desmarcar, ajustarDescanso, saltarDescanso, sustituirHoy, pausar,
@@ -2850,6 +2850,35 @@ function grupoImportar() {
           },
           { tarde: "3/3 18:30", medianoche: "3/5 0:10", mediodia: "6/14 12:05", europeo: "6/14 9:03", lyfta: "9/10 7:15", largo: 5013, corto: 900, malo: null }
         ),
+      },
+      {
+        // Las reglas de Firestore solo aceptan meses de entreno de 1970 a 2099 (ANIO_MIN_ENTRENO y
+        // ANIO_MAX_ENTRENO): una fecha fuera se trata como ilegible y su fila se descarta. Esperados a mano: los
+        // bordes (1 de enero de 1970 y 31 de diciembre de 2099, en hora local) valen; un día antes y un día
+        // después, no; «0202», «0525» y «2100» tampoco. En el CSV mezclado quedan solo las 6 filas de «Torso»
+        // (1 entreno); «Basura» (año 0202) y «Futuro» (año 2100) desaparecen sin hacer fallar el resto.
+        nombre: "Fechas de años absurdos (fuera de 1970-2099): se descartan al importar sin hacer fallar el resto",
+        ejecutar: () => {
+          const mezclado = [
+            CSV_LYFTA,
+            "Basura,0202-03-03 10:00:00,00:30:00,,,Pulldown,,,40.000,10,,,,NORMAL_SET,,",
+            "Futuro,2100-01-01 10:00:00,00:30:00,,,Pulldown,,,40.000,10,,,,NORMAL_SET,,",
+          ].join("\r\n");
+          const p = prepararImportacion(mezclado, opcionesImportar());
+          return comparar(
+            {
+              hevy0202: fechaHevy("Mar 3, 0202, 6:30 PM"), lyfta0525: fechaLyfta("0525-03-03 10:00:00"),
+              lyfta2100: fechaLyfta("2100-01-01 00:00:00"), lyfta1969: fechaLyfta("1969-12-31 23:59:00"),
+              borde1970: horaLocal(fechaLyfta("1970-01-01 00:00:00")), borde2099: horaLocal(fechaLyfta("2099-12-31 23:59:00")),
+              valido2026: anioEntrenoValido(new Date(2026, 9, 23, 18, 0).getTime()), invalido202: anioEntrenoValido(new Date(2026, 0, 1).setFullYear(202)),
+              entrenos: p.entrenos.length, titulos: p.entrenos.map((e) => e.titulo).join(","),
+            },
+            {
+              hevy0202: null, lyfta0525: null, lyfta2100: null, lyfta1969: null, borde1970: "1/1 0:00", borde2099: "12/31 23:59",
+              valido2026: true, invalido202: false, entrenos: 1, titulos: "Torso",
+            }
+          );
+        },
       },
       {
         nombre: "Hevy: sesiones, series (calentamiento, al fallo), RIR = 10 − RPE, superserie y emparejamiento con la biblioteca",
