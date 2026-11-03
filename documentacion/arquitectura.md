@@ -35,6 +35,12 @@ manifest.json, icon.svg, privacidad.html, terminos.html
   Firestore en `eur3`, igual que producción. Sus reglas son las mismas que las de producción: las dos se
   publican desde `firestore.rules` (`datos.md`). `.firebaserc` tiene los alias `dev` y `prod`; el proyecto
   por defecto sigue siendo producción, así que el de pruebas se elige siempre con `--project dev`.
+- **La clave web de cada proyecto está restringida por sitio web** (Google Cloud → Credenciales → «Browser
+  key»): producción, a `pablodiazblanco.github.io`, `rueda-de-platos.firebaseapp.com` y
+  `rueda-de-platos.web.app`; pruebas, a `localhost:8420`, `127.0.0.1:8420`, `rueda-de-platos-dev.firebaseapp.com`
+  y `rueda-de-platos-dev.web.app`. **El dominio `*.firebaseapp.com` de cada proyecto no se quita nunca**: desde
+  él funcionan la página a la que llevan los enlaces de los correos (verificar el email, cambiar la contraseña)
+  y la ventana de «Continuar con Google»; sin él, las dos fallan con `API_KEY_HTTP_REFERRER_BLOCKED`.
 - **Qué no funciona aún en local**: las funciones (premium, Gemini, Stripe, borrar la cuenta), porque el
   proyecto de pruebas no tiene ninguna desplegada (se probarán con el emulador); y las notificaciones push,
   porque la clave VAPID de `auth-bootstrap.jsx` y la configuración de `sw.js` son las de producción.
