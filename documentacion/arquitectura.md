@@ -39,10 +39,25 @@ manifest.json, icon.svg, privacidad.html, terminos.html
   proyecto de pruebas no tiene ninguna desplegada (se probarán con el emulador); y las notificaciones push,
   porque la clave VAPID de `auth-bootstrap.jsx` y la configuración de `sw.js` son las de producción.
 
-## Cuentas: entrar y recuperar la contraseña
+## Cuentas: entrar, recuperar la contraseña y verificar el email
 
 Todo vive en `auth-bootstrap.jsx`, antes de cargar la interfaz: `WelcomeScreen` → `LoginScreen`, con tres
-modos (iniciar sesión, crear cuenta y recuperar la contraseña) y «Continuar con Google».
+modos (iniciar sesión, crear cuenta y recuperar la contraseña) y «Continuar con Google»; con sesión, o
+`VerificarCorreoScreen` o la app (`entrarEnLaApp`).
+
+- **Verificación estricta del email**: una cuenta de correo y contraseña sin verificar (`necesitaVerificar`) no
+  entra en la app ni lee nada: ve `VerificarCorreoScreen` hasta abrir el enlace del correo. Las de Google
+  llegan verificadas. Las reglas de Firestore exigen lo mismo (`datos.md`).
+  - Una cuenta **recién creada** (menos de 10 minutos) recibe el primer correo sola; una de antes de que
+    existiera la verificación no recibe nada hasta pulsar «Enviarme el correo». El texto dice «te hemos
+    enviado» solo si se envió desde ese dispositivo (`fooddraft:verificacion-enviada:<uid>`, que también
+    marca el minuto de espera antes de reenviar).
+  - «Ya lo he verificado» recarga el usuario y, si ya lo está, **renueva el token** antes de entrar: las reglas
+    miran `email_verified` en el token, y sin renovarlo la primera lectura fallaría. Al volver a la pestaña
+    (desde el correo) se comprueba solo. Al verificar no salta `onAuthStateChanged`, así que es la pantalla la
+    que abre la app.
+  - Los mensajes se guardan como clave o código de error y se traducen al pintar, para que sigan al cambio de
+    idioma.
 
 - **«¿Olvidaste tu contraseña?»** (modo `recuperar`) manda el correo de Firebase para cambiarla
   (`sendPasswordResetEmail`). Contesta siempre lo mismo, exista o no la cuenta (`login.enlaceEnviado`), para

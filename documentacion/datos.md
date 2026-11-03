@@ -101,6 +101,7 @@ en el dispositivo desde el que se elimina, las claves de esa cuenta (las que aca
 | `fooddraft:entreno-borrador:<uid>`, `fooddraft:entreno-pendientes:<uid>` | Copia inmediata del borrador y cola de sesiones sin confirmar en la nube | sí |
 | `fooddraft:periodo-v1:<uid>` | Período (`migrarPeriodo`, `logica/periodo.js`); nunca va a la nube | sí |
 | `rueda-de-platos:migrated:<uid>` | Marca de la migración única desde `localStorage` | sí |
+| `fooddraft:verificacion-enviada:<uid>` | Cuándo se mandó desde aquí el último correo de verificación (`VerificarCorreoScreen`) | sí |
 | `fooddraft:idioma` | Idioma antes de haber perfil | no |
 | `fooddraft:ultima-pantalla` | Última pantalla de cada área | no |
 | `fooddraft:resumen-lado`, `fooddraft:vista-despensa`, `fooddraft:vista-gimnasio`, `fooddraft:capas-gimnasio` | Vistas elegidas | no |
