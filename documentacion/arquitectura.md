@@ -20,6 +20,23 @@ sw.js                  → service worker; tiene que estar en la raíz para que 
 manifest.json, icon.svg, privacidad.html, terminos.html
 ```
 
+## Dos proyectos de Firebase: producción y pruebas
+
+`auth-bootstrap.jsx` elige la configuración de Firebase por `location.hostname`:
+
+| Dónde se abre la app | Proyecto | App Check |
+|---|---|---|
+| `localhost`, `127.0.0.1` o `[::1]` (desarrollo, `validacion/`) | `rueda-de-platos-dev`: cuentas y datos inventados | No (el proyecto no lo exige) |
+| Cualquier otro host (GitHub Pages) | `rueda-de-platos`: las cuentas reales | Sí (reCAPTCHA v3) |
+
+- Cualquier host desconocido cae en producción, nunca al revés: ningún usuario real puede acabar en pruebas.
+- **Nunca se copian datos reales al proyecto de pruebas**: son datos de salud y deben quedarse en su sitio.
+- El proyecto de pruebas está en el plan Spark (sin Cloud Functions desplegadas ni copias de seguridad) y su
+  Firestore en `eur3`, igual que producción. Sus reglas empiezan cerradas; las del repositorio llegan con R1.
+- **Qué no funciona aún en local**: las funciones (premium, Gemini, Stripe, borrar la cuenta), porque el
+  proyecto de pruebas no tiene ninguna desplegada (se probarán con el emulador); y las notificaciones push,
+  porque la clave VAPID de `auth-bootstrap.jsx` y la configuración de `sw.js` son las de producción.
+
 ## `ui/`: la interfaz (React)
 
 `.jsx` si lleva JSX, `.js` si no. Todos los archivos están listados en `ui/archivos.json` (lo usan el

@@ -33,7 +33,8 @@ reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modul
 - **Secretos** (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `GEMINI_API_KEY`): viven en Firebase, nunca en
   el repositorio.
 - Las funciones callable exigen App Check (`enforceAppCheck: true`); el webhook no, porque quien llama es
-  Stripe.
+  Stripe. En `localhost` la app usa el proyecto de pruebas, sin App Check y sin funciones desplegadas
+  (`arquitectura.md`, «Dos proyectos de Firebase»).
 - **Los mensajes de error de las funciones están en español y la app no los enseña tal cual**: los puentes de
   `auth-bootstrap.jsx` conservan `err.code` y `ui/comun/errores.js` (`mensajeErrorFuncion`) elige el texto por
   código y por función (`errorFuncion.*`, cinco idiomas). Si una función empieza a lanzar un código nuevo o
