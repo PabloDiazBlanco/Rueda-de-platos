@@ -82,6 +82,9 @@ cambiar esas entradas: dentro, todo se importa por nombre corto.
   propia clave y su propia migración: **no pasan por `migrateData`**.
 - Nunca `window.storage.list()` (en Firestore lee la colección entera).
 - Una lectura que falla no es una cuenta vacía: no escribas encima de un documento que no se ha podido leer.
+- Las reglas de Firestore viven en `firestore.rules` (nunca en la consola) y solo aceptan las claves que
+  conocen: **clave nueva en la nube = añadirla ahí, `npm run test:reglas` en `functions/` y publicar las
+  reglas antes de subir la app**.
 - Claves, versiones, migraciones y Firestore: `documentacion/datos.md`.
 
 ## Textos en 5 idiomas
@@ -121,6 +124,9 @@ No des un cambio de lógica por terminado sin pasar por `validacion/`.
   sintaxis o de import llega directo a todos los usuarios: nada se sube sin el paso anterior.
 - `functions/` se despliega a mano (`firebase deploy --only functions`). Si cambia lo que recibe una función,
   despliégala **antes** de subir la app.
+- Las reglas, también a mano y en dos pasos: `firebase deploy --only firestore:rules --project dev`, probar la
+  app en `localhost` y luego `--project prod`. En `localhost` la app usa el proyecto de pruebas
+  (`documentacion/arquitectura.md`).
 
 ## Git
 - Ningún commit sin que Pablo lo pida, y sin línea `Co-Authored-By`.

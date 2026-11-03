@@ -9,6 +9,10 @@ Léelo antes de tocar `functions/`, el flujo premium, Stripe, las notificaciones
 `package.json`; es la única pieza de servidor. Cada función vive en su archivo y `functions/index.js` solo las
 reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modules` no se versiona.
 
+`functions/pruebas-reglas/` no es una función: son las pruebas de `firestore.rules` (`npm run test:reglas`,
+ver `datos.md`). Viven aquí porque es el único proyecto Node; `firebase.json` las excluye del despliegue y
+sus dependencias (`@firebase/rules-unit-testing`, `firebase`) son solo de desarrollo.
+
 | Función | Tipo | Qué hace |
 |---|---|---|
 | `stripeWebhook` | HTTP (lo llama Stripe) | Única pieza que escribe `users/{uid}.premium`; verifica la firma de Stripe |
@@ -25,8 +29,8 @@ reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modul
 - **Despliegue manual**: `firebase deploy --only functions`. Si cambia lo que recibe una función (o se crea
   una que la app llama), despliégala **antes** de subir la app: si el cliente nuevo llega a producción sin su
   función, la pantalla da error al usarla.
-- **El cliente nunca escribe en `users/{uid}`** (reglas de Firestore): premium y cuotas solo los escriben las
-  funciones con el Admin SDK.
+- **El cliente nunca escribe en `users/{uid}`** (`firestore.rules`, con su prueba): premium y cuotas solo los
+  escriben las funciones con el Admin SDK, que no pasa por las reglas.
 - **Convenio obligatorio al crear un Checkout**: `client_reference_id: uid` y
   `subscription_data.metadata.firebaseUID: uid`. Sin eso el webhook no sabe de qué usuario es el evento y lo
   descarta.

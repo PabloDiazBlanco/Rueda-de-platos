@@ -32,7 +32,9 @@ manifest.json, icon.svg, privacidad.html, terminos.html
 - Cualquier host desconocido cae en producción, nunca al revés: ningún usuario real puede acabar en pruebas.
 - **Nunca se copian datos reales al proyecto de pruebas**: son datos de salud y deben quedarse en su sitio.
 - El proyecto de pruebas está en el plan Spark (sin Cloud Functions desplegadas ni copias de seguridad) y su
-  Firestore en `eur3`, igual que producción. Sus reglas empiezan cerradas; las del repositorio llegan con R1.
+  Firestore en `eur3`, igual que producción. Sus reglas son las mismas que las de producción: las dos se
+  publican desde `firestore.rules` (`datos.md`). `.firebaserc` tiene los alias `dev` y `prod`; el proyecto
+  por defecto sigue siendo producción, así que el de pruebas se elige siempre con `--project dev`.
 - **Qué no funciona aún en local**: las funciones (premium, Gemini, Stripe, borrar la cuenta), porque el
   proyecto de pruebas no tiene ninguna desplegada (se probarán con el emulador); y las notificaciones push,
   porque la clave VAPID de `auth-bootstrap.jsx` y la configuración de `sw.js` son las de producción.

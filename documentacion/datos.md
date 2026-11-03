@@ -16,6 +16,12 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   comodidades del dispositivo, por `fooddraft:` en `localStorage`, siempre con try/catch.
 - Un dato de una cuenta que se guarde en el dispositivo lleva el uid en la clave (como el período), para que
   otra cuenta del mismo móvil no lo vea.
+- **Clave nueva en la nube**: añádela a la lista de `esClaveConocida` en `firestore.rules`, pasa
+  `npm run test:reglas` y **publica las reglas antes de subir la app** (primero en pruebas, luego en
+  producción). Si no, su guardado falla en todas las cuentas. La prueba «acepta cada clave que el código de la
+  app guarda en la nube» lee el código y lo avisa, siempre que la clave aparezca escrita entera en `ui/`,
+  `logica/`, `app.jsx` o `auth-bootstrap.jsx`; una clave formada con una plantilla (como los meses del
+  entreno) necesita además su patrón en las reglas y su caso en las pruebas.
 
 ## `window.storage` y Firestore
 
@@ -23,9 +29,18 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   Firestore: `get` (`getDoc`; `null` si no existe; cualquier error se propaga), `set` (`setDoc` del documento
   entero, sin fusión ni reintentos) y `delete`.
 - Un único documento por clave en `users/{uid}/keys/{clave}`, con `value` = JSON serializado (como
-  `localStorage`, pero en la nube). Protegido por las reglas de Firestore con `request.auth.uid == userId`. App
-  Check aplicado para Firestore y Authentication. No hay `firestore.rules` en el repositorio: las reglas viven
-  solo en la consola de Firebase del proyecto `rueda-de-platos`.
+  `localStorage`, pero en la nube). App Check aplicado para Firestore y Authentication en producción.
+- **Reglas de Firestore**: `firestore.rules`, en la raíz, es la única fuente (nunca se editan en la consola:
+  el siguiente despliegue lo pisaría). Cada persona solo lee y escribe lo suyo; `users/{uid}` es de solo
+  lectura; en `keys/` solo se aceptan las claves de la tabla de abajo (y los meses del entreno), con un único
+  campo `value` de texto, de hasta 4096 caracteres el token y 1 048 000 el resto (justo por debajo del tope de
+  1 MiB de Firestore, para no bloquear nunca a una cuenta con muchos datos). Listar la colección está
+  denegado, lo que garantiza que nadie use `storage.list()`. Se puede leer y borrar una clave propia que no
+  esté en la lista, pero no reescribirla. Todo lo demás, denegado.
+- Pruebas de las reglas: `functions/pruebas-reglas/reglas.test.js`, con el emulador de Firestore
+  (`cd functions` y `npm run test:reglas`; necesita Java, sin conexión ni sesión de Firebase, proyecto
+  `demo-rueda-de-platos`). Publicarlas: `firebase deploy --only firestore:rules --project dev` y, tras probar
+  la app en local, `--project prod` (alias de `.firebaserc`).
 - Firestore se inicializa **sin caché persistente** (caché en memoria, decisión de Pablo): sin red, una
   lectura falla y una escritura queda en cola en memoria hasta que vuelve la conexión (si se cierra la app
   antes, se pierde).
