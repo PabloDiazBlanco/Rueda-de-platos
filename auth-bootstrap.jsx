@@ -7,6 +7,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
@@ -668,6 +669,24 @@ function watchForFirstProfileCompletion(uid) {
 // de su proyecto; si no lo fueran, Firebase rechazaría el envío.
 const urlVueltaCorreos = () => new URL("./", location.href).href;
 
+// Los errores de Firebase Authentication, en el idioma de la pantalla (los usan LoginScreen y
+// VerificarCorreoScreen). Uno sin traducir sale con su código.
+function traducirErrorAuth(idioma, code) {
+  const map = {
+    "auth/invalid-email": "error.emailInvalido",
+    "auth/user-not-found": "error.usuarioNoExiste",
+    "auth/wrong-password": "error.passwordIncorrecta",
+    "auth/invalid-credential": "error.credencialInvalida",
+    "auth/email-already-in-use": "error.emailEnUso",
+    "auth/weak-password": "error.passwordDebil",
+    "auth/popup-closed-by-user": "error.popupCerrado",
+    // Tras varios intentos fallidos (o envíos de correo seguidos) Firebase frena un rato: antes salía el código.
+    "auth/too-many-requests": "error.demasiadosIntentos",
+    "auth/network-request-failed": "error.sinConexion",
+  };
+  return map[code] ? t(idioma, map[code]) : t(idioma, "error.generico", { code });
+}
+
 function LoginScreen({ idioma, onChangeIdioma }) {
   // login | signup | recuperar («¿Olvidaste tu contraseña?», etapa 1 de la auditoría de noviembre, R15: hasta
   // entonces olvidarla era perder la cuenta y sus datos).
@@ -675,6 +694,7 @@ function LoginScreen({ idioma, onChangeIdioma }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  // Clave del aviso (no el texto): así sigue al cambio de idioma.
   const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -684,21 +704,7 @@ function LoginScreen({ idioma, onChangeIdioma }) {
     setAviso("");
   }
 
-  function traducirError(code) {
-    const map = {
-      "auth/invalid-email": "error.emailInvalido",
-      "auth/user-not-found": "error.usuarioNoExiste",
-      "auth/wrong-password": "error.passwordIncorrecta",
-      "auth/invalid-credential": "error.credencialInvalida",
-      "auth/email-already-in-use": "error.emailEnUso",
-      "auth/weak-password": "error.passwordDebil",
-      "auth/popup-closed-by-user": "error.popupCerrado",
-      // Tras varios intentos fallidos Firebase frena un rato: antes salía el código tal cual.
-      "auth/too-many-requests": "error.demasiadosIntentos",
-      "auth/network-request-failed": "error.sinConexion",
-    };
-    return map[code] ? t(idioma, map[code]) : t(idioma, "error.generico", { code });
-  }
+  const traducirError = (code) => traducirErrorAuth(idioma, code);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -715,7 +721,7 @@ function LoginScreen({ idioma, onChangeIdioma }) {
           // ya ni siquiera lo distingue). Los demás errores sí se dicen: email mal escrito, sin red...
           if (err.code !== "auth/user-not-found") throw err;
         }
-        setAviso(t(idioma, "login.enlaceEnviado"));
+        setAviso("login.enlaceEnviado");
       } else if (mode === "login") {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
@@ -770,7 +776,7 @@ function LoginScreen({ idioma, onChangeIdioma }) {
             </div>
           )}
           {error && <div style={{ color: "#9c4a2b", fontSize: 12, marginTop: 8 }}>{error}</div>}
-          {aviso && <div role="status" style={{ color: "#1f4d38", fontSize: 12.5, lineHeight: 1.45, marginTop: 10 }}>{aviso}</div>}
+          {aviso && <div role="status" style={{ color: "#1f4d38", fontSize: 12.5, lineHeight: 1.45, marginTop: 10 }}>{t(idioma, aviso)}</div>}
           <button type="submit" disabled={loading} style={{ width: "100%", marginTop: 14, padding: "10px 12px", borderRadius: 8, border: "none", background: "#2f6b4f", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
             {loading
               ? t(idioma, "login.entrando")
@@ -817,6 +823,182 @@ function LoginScreen({ idioma, onChangeIdioma }) {
   );
 }
 
+// ---------- Verificar el email (etapa 1 de la auditoría de noviembre, R15) ----------
+// Una cuenta de correo y contraseña no entra en la app hasta abrir el enlace del correo de verificación:
+// verificación estricta, decidida por Pablo el 3-nov-2026 (y las reglas de Firestore exigen lo mismo). Así el
+// correo de cada cuenta es real y de esa persona: es por donde se recupera la contraseña y por donde se la
+// puede contactar (derechos, una brecha). Las cuentas de Google llegan ya verificadas y no pasan por aquí.
+const necesitaVerificar = (user) => !user.emailVerified && user.providerData.some((p) => p.providerId === "password");
+
+// Cuándo se mandó desde este dispositivo el último correo de verificación de una cuenta (ms): para decir «te
+// hemos enviado» solo si es verdad y para no dejar reenviar antes de un minuto (los envíos seguidos los frena
+// Firebase con «too-many-requests»). Comodidad del dispositivo, con el uid en la clave: se borra con la cuenta
+// (limpiarDispositivoDeLaCuenta).
+const claveEnvioVerificacion = (uid) => `fooddraft:verificacion-enviada:${uid}`;
+const ESPERA_REENVIO_MS = 60 * 1000;
+function leerEnvioVerificacion(uid) {
+  try {
+    return Number(localStorage.getItem(claveEnvioVerificacion(uid))) || 0;
+  } catch (e) {
+    return 0;
+  }
+}
+async function enviarVerificacion(user) {
+  await sendEmailVerification(user, { url: urlVueltaCorreos() });
+  try {
+    localStorage.setItem(claveEnvioVerificacion(user.uid), String(Date.now()));
+  } catch (e) {
+    // sin localStorage, la pantalla no recordará el envío: solo cambia el texto
+  }
+}
+
+function VerificarCorreoScreen({ user, onVerificado }) {
+  const [idioma, setIdioma] = useState(() => leerIdiomaGuardado());
+  const [enviadoEn, setEnviadoEn] = useState(() => leerEnvioVerificacion(user.uid));
+  const [ahora, setAhora] = useState(() => Date.now());
+  const [estado, setEstado] = useState(""); // "" | enviando | comprobando
+  // { error: bool, clave } o { error: true, code }: se traduce al pintar, para que siga el cambio de idioma.
+  const [mensaje, setMensaje] = useState(null);
+  const entrado = React.useRef(false);
+
+  React.useEffect(() => {
+    document.documentElement.lang = idioma;
+    auth.languageCode = idioma;
+  }, [idioma]);
+
+  function cambiarIdioma(nuevo) {
+    setIdioma(nuevo);
+    guardarIdiomaLocal(nuevo);
+  }
+
+  async function enviar() {
+    setEstado("enviando");
+    setMensaje(null);
+    try {
+      await enviarVerificacion(user);
+      setEnviadoEn(Date.now());
+      setAhora(Date.now());
+      setMensaje({ error: false, clave: "verificar.enviado" });
+    } catch (err) {
+      setMensaje({ error: true, code: err.code });
+    } finally {
+      setEstado("");
+    }
+  }
+
+  // ¿Ya está verificado? `reload` trae el estado de Firebase; el token guardado sigue diciendo «sin verificar»
+  // hasta renovarlo, y las reglas de Firestore miran el token (email_verified): por eso se renueva antes de
+  // entrar, o la primera lectura de la app fallaría. En silencio (al volver a la pestaña) no enseña nada si aún
+  // no lo está.
+  async function comprobar(silencioso) {
+    if (entrado.current) return;
+    if (!silencioso) {
+      setEstado("comprobando");
+      setMensaje(null);
+    }
+    try {
+      await user.reload();
+      const actual = auth.currentUser;
+      if (actual && actual.emailVerified && !entrado.current) {
+        entrado.current = true;
+        await actual.getIdToken(true);
+        onVerificado(actual);
+        return;
+      }
+      if (!silencioso) setMensaje({ error: true, clave: "verificar.todaviaNo" });
+    } catch (err) {
+      if (!silencioso) setMensaje({ error: true, code: err.code });
+    } finally {
+      if (!silencioso) setEstado("");
+    }
+  }
+
+  // Una cuenta recién creada recibe el primer correo sola (lo pide esta pantalla y no el formulario de alta, que
+  // se desmonta en cuanto Firebase crea la cuenta). Una cuenta de antes de que existiera la verificación no
+  // recibe nada hasta que lo pida con el botón: nadie se encuentra un correo que no esperaba.
+  React.useEffect(() => {
+    const creada = Date.parse(user.metadata && user.metadata.creationTime) || 0;
+    if (!leerEnvioVerificacion(user.uid) && Date.now() - creada < 10 * 60 * 1000) enviar();
+  }, []);
+
+  // Quien abre el enlace en el mismo móvil vuelve a esta pestaña: se comprueba solo, sin tener que pulsar nada.
+  React.useEffect(() => {
+    const alVolver = () => {
+      if (document.visibilityState === "visible") comprobar(true);
+    };
+    document.addEventListener("visibilitychange", alVolver);
+    window.addEventListener("focus", alVolver);
+    return () => {
+      document.removeEventListener("visibilitychange", alVolver);
+      window.removeEventListener("focus", alVolver);
+    };
+  }, []);
+
+  // Cuenta atrás del reenvío, segundo a segundo mientras dura.
+  const restante = Math.max(0, Math.ceil((enviadoEn + ESPERA_REENVIO_MS - ahora) / 1000));
+  React.useEffect(() => {
+    if (restante <= 0) return undefined;
+    const id = setTimeout(() => setAhora(Date.now()), 1000);
+    return () => clearTimeout(id);
+  }, [ahora, enviadoEn]);
+
+  const ocupado = estado !== "";
+  const botonPrincipal = { width: "100%", marginTop: 16, padding: "10px 12px", borderRadius: 8, border: "none", background: "#2f6b4f", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" };
+  const botonSecundario = { width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd6bf", background: "#fff", color: "#2b2b26", fontWeight: 600, fontSize: 13.5, cursor: "pointer" };
+  const textoReenviar = restante > 0 ? t(idioma, "verificar.reenviarEn", { segundos: restante }) : t(idioma, "verificar.reenviar");
+  const textoComprobar = estado === "comprobando" ? t(idioma, "verificar.comprobando") : t(idioma, "verificar.yaVerificado");
+
+  // Con un correo ya enviado, lo principal es «Ya lo he verificado»; si aún no se ha enviado ninguno (cuenta de
+  // antes), lo principal es pedirlo, pero se puede comprobar igual por si se verificó desde otro dispositivo.
+  return (
+    <div style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#f1ede0", padding: 20, boxSizing: "border-box" }}>
+      <IdiomaSwitch idioma={idioma} onChange={cambiarIdioma} />
+      <div style={{ background: "#fffdf7", borderRadius: 14, padding: "28px 26px", width: "100%", maxWidth: 360, border: "1px solid #ddd6bf", fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+        <div style={{ textAlign: "center", marginBottom: 14 }}>
+          <div style={{ fontSize: 30, marginBottom: 6 }}>✉️</div>
+          <h1 style={{ margin: 0, fontWeight: 400, fontSize: 20, color: "#1f4d38", fontFamily: "Georgia, 'Times New Roman', serif" }}>{t(idioma, "verificar.titulo")}</h1>
+        </div>
+        <p style={{ fontSize: 13.5, lineHeight: 1.5, color: "#2b2b26", margin: "0 0 10px" }}>
+          {t(idioma, enviadoEn ? "verificar.textoEnviado" : "verificar.textoSinEnviar", { email: user.email })}
+        </p>
+        <p style={{ fontSize: 12.5, lineHeight: 1.5, color: "#6b6a5e", margin: "0 0 6px" }}>{t(idioma, "verificar.porque")}</p>
+        {enviadoEn > 0 && <p style={{ fontSize: 12.5, lineHeight: 1.5, color: "#6b6a5e", margin: 0 }}>{t(idioma, "verificar.spam")}</p>}
+
+        {mensaje && (
+          <div role="status" style={{ color: mensaje.error ? "#9c4a2b" : "#1f4d38", fontSize: 12.5, lineHeight: 1.45, marginTop: 12 }}>
+            {mensaje.code ? traducirErrorAuth(idioma, mensaje.code) : t(idioma, mensaje.clave)}
+          </div>
+        )}
+
+        {enviadoEn ? (
+          <>
+            <button onClick={() => comprobar(false)} disabled={ocupado} style={botonPrincipal}>{textoComprobar}</button>
+            <button onClick={enviar} disabled={ocupado || restante > 0} style={{ ...botonSecundario, opacity: restante > 0 ? 0.6 : 1 }}>
+              {estado === "enviando" ? t(idioma, "login.entrando") : textoReenviar}
+            </button>
+          </>
+        ) : (
+          <>
+            <button onClick={enviar} disabled={ocupado} style={botonPrincipal}>
+              {estado === "enviando" ? t(idioma, "login.entrando") : t(idioma, "verificar.enviar")}
+            </button>
+            <button onClick={() => comprobar(false)} disabled={ocupado} style={botonSecundario}>{textoComprobar}</button>
+          </>
+        )}
+
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <button
+            onClick={() => signOut(auth)}
+            style={{ background: "none", border: "none", color: "#6b6a5e", fontSize: 12.5, textDecoration: "underline", cursor: "pointer", fontFamily: "inherit" }}
+          >
+            {t(idioma, "verificar.cerrarSesion")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // privacidad.html/terminos.html ya tienen su propio selector ES/EN y leen/guardan el idioma con el
 // mismo logica/i18n.js (ver su <script type="module">) — no heredan el idioma de esta pantalla vía
 // props porque son páginas HTML sueltas, no parte de esta SPA, así que abren siempre con el idioma
@@ -846,18 +1028,36 @@ function loadMainApp() {
   return mainAppModulePromise;
 }
 
+async function entrarEnLaApp(user) {
+  window.storage = makeFirestoreStorage(user.uid);
+  window.authProvider = user.providerData[0]?.providerId === "google.com" ? "google" : "password";
+  // Identificador de la cuenta para lo que se guarda solo en el dispositivo y no debe ver otra cuenta que
+  // inicie sesión en el mismo móvil (hoy, el período: ui/cuerpo/periodo.jsx).
+  window.cuentaId = user.uid;
+  await migrateLocalDataIfNeeded(user.uid);
+  watchForFirstProfileCompletion(user.uid);
+  const mod = await loadMainApp();
+  root.render(React.createElement(mod.default));
+}
+
 onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    window.storage = makeFirestoreStorage(user.uid);
-    window.authProvider = user.providerData[0]?.providerId === "google.com" ? "google" : "password";
-    // Identificador de la cuenta para lo que se guarda solo en el dispositivo y no debe ver otra cuenta que
-    // inicie sesión en el mismo móvil (hoy, el período: ui/cuerpo/periodo.jsx).
-    window.cuentaId = user.uid;
-    await migrateLocalDataIfNeeded(user.uid);
-    watchForFirstProfileCompletion(user.uid);
-    const mod = await loadMainApp();
-    root.render(React.createElement(mod.default));
-  } else {
+  if (!user) {
     root.render(React.createElement(LoggedOutFlow));
+    return;
   }
+  // Sin verificar, ni window.storage ni ninguna lectura: solo la pantalla de verificación. Al verificar no salta
+  // onAuthStateChanged (la sesión es la misma), así que la propia pantalla abre la app.
+  if (necesitaVerificar(user)) {
+    root.render(
+      React.createElement(VerificarCorreoScreen, {
+        user,
+        onVerificado: (verificado) => {
+          root.render(React.createElement(LoadingScreen));
+          entrarEnLaApp(verificado);
+        },
+      })
+    );
+    return;
+  }
+  await entrarEnLaApp(user);
 });
