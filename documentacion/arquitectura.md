@@ -39,6 +39,24 @@ manifest.json, icon.svg, privacidad.html, terminos.html
   proyecto de pruebas no tiene ninguna desplegada (se probarán con el emulador); y las notificaciones push,
   porque la clave VAPID de `auth-bootstrap.jsx` y la configuración de `sw.js` son las de producción.
 
+## Cuentas: entrar y recuperar la contraseña
+
+Todo vive en `auth-bootstrap.jsx`, antes de cargar la interfaz: `WelcomeScreen` → `LoginScreen`, con tres
+modos (iniciar sesión, crear cuenta y recuperar la contraseña) y «Continuar con Google».
+
+- **«¿Olvidaste tu contraseña?»** (modo `recuperar`) manda el correo de Firebase para cambiarla
+  (`sendPasswordResetEmail`). Contesta siempre lo mismo, exista o no la cuenta (`login.enlaceEnviado`), para
+  que la pantalla no sirva para averiguar qué correos usan la app. El enlace del correo vuelve a la app
+  (`urlVueltaCorreos`: la dirección donde esté abierta, que tiene que ser un dominio autorizado de su proyecto).
+- **Los correos de Firebase salen en el idioma de la app**: `LoggedOutFlow` pone `auth.languageCode` con el
+  idioma elegido. Remitente, asunto y textos son las plantillas de Firebase (consola → Authentication →
+  Plantillas); el nombre que enseñan es el **nombre público del proyecto**, que se cambia en la consola
+  (Configuración del proyecto → General), no en el código.
+- Los errores de Firebase se traducen en `traducirError` (`error.*`); uno sin traducir sale con su código
+  (`error.generico`).
+- Los colores de estas pantallas van escritos a mano, no con las variables de tema: se pintan antes de que
+  exista `Shell`, que es quien las define. Está anotado para la revisión de producto.
+
 ## `ui/`: la interfaz (React)
 
 `.jsx` si lleva JSX, `.js` si no. Todos los archivos están listados en `ui/archivos.json` (lo usan el
