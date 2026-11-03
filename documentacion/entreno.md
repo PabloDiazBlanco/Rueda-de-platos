@@ -34,6 +34,11 @@ tiene su propio documento (`fitdraft-gimnasio.md`). Diseño y porqué:
   `migrateData`**.
 - Los CSV del usuario nunca se copian al repositorio: los casos de `validacion/` usan filas inventadas con el
   mismo formato.
+- **Las fechas de un entreno van de 1970 a 2099** (`ANIO_MIN_ENTRENO`, `ANIO_MAX_ENTRENO` y
+  `anioEntrenoValido`, en `entreno-calculo.js`): las reglas de Firestore solo aceptan los meses de ese rango,
+  así que el importador descarta una fecha fuera de él (como una ilegible) y «Terminar» la ignora y deja la que
+  había. Si cambias el rango, cambia también el patrón de `firestore.rules`; una prueba de las reglas lo
+  comprueba (`datos.md`).
 
 ## Modelo de datos
 
@@ -128,7 +133,8 @@ hasta, inst, avisado }`.
   superserie, ronda a ronda). Tocar la cabecera abre o cierra cualquiera a mano.
 - **Descanso** (`descanso.jsx`): se calcula con `descanso.hasta` y avisa una vez con un pitido de Web Audio
   (el contexto se crea con el primer toque) y vibración donde exista.
-- **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca), gimnasio,
+- **Terminar** (`terminar.jsx`): resumen, esfuerzo 1-5, nota, fecha (solo cambia si se toca, y solo dentro
+  de 1970-2099), gimnasio,
   récords batidos, «actualizar la rutina» si cambió su estructura (o el descanso de algún ejercicio),
   guardar, compartir (`documentoSesion` con `BotonCompartir`) y descartar con confirmación. Enseña el mapa
   corporal con los músculos trabajados (`MapaSesion`, que sale igual en el detalle del historial).

@@ -32,7 +32,8 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   `localStorage`, pero en la nube). App Check aplicado para Firestore y Authentication en producción.
 - **Reglas de Firestore**: `firestore.rules`, en la raíz, es la única fuente (nunca se editan en la consola:
   el siguiente despliegue lo pisaría). Cada persona solo lee y escribe lo suyo; `users/{uid}` es de solo
-  lectura; en `keys/` solo se aceptan las claves de la tabla de abajo (y los meses del entreno), con un único
+  lectura; en `keys/` solo se aceptan las claves de la tabla de abajo (y los meses del entreno de 1970 a 2099,
+  el mismo rango que `ANIO_MIN_ENTRENO`/`ANIO_MAX_ENTRENO` de `entreno-calculo.js`), con un único
   campo `value` de texto, de hasta 4096 caracteres el token y 1 048 000 el resto (justo por debajo del tope de
   1 MiB de Firestore, para no bloquear nunca a una cuenta con muchos datos). Listar la colección está
   denegado, lo que garantiza que nadie use `storage.list()`. Se puede leer y borrar una clave propia que no
