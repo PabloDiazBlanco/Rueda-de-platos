@@ -73,6 +73,11 @@ const TEXTOS = {
     "login.iniciaSesionLink": "Inicia sesión",
     "login.privacidad": "Política de privacidad",
     "login.terminos": "Términos de uso",
+    "login.olvidaste": "¿Olvidaste tu contraseña?",
+    "login.subtituloRecuperar": "Te enviaremos un enlace para cambiarla",
+    "login.enviarEnlace": "Enviar enlace",
+    "login.enlaceEnviado": "Si hay una cuenta con ese email, te hemos enviado un enlace para cambiar la contraseña. Mira también en la carpeta de spam.",
+    "login.volverLogin": "Volver a iniciar sesión",
 
     "loading.cargando": "Cargando…",
 
@@ -84,6 +89,8 @@ const TEXTOS = {
     "error.passwordDebil": "La contraseña debe tener al menos 6 caracteres.",
     "error.popupCerrado": "Has cerrado la ventana de Google antes de terminar.",
     "error.generico": "Ha ocurrido un error ({code}). Inténtalo de nuevo.",
+    "error.demasiadosIntentos": "Demasiados intentos seguidos. Espera unos minutos y vuelve a probar.",
+    "error.sinConexion": "No hay conexión. Comprueba tu internet y vuelve a probar.",
 
     "tab.configuracion": "Mis comidas",
     "tab.perfil": "Perfil",
@@ -1985,6 +1992,11 @@ const TEXTOS = {
     "login.iniciaSesionLink": "Sign in",
     "login.privacidad": "Privacy policy",
     "login.terminos": "Terms of use",
+    "login.olvidaste": "Forgot your password?",
+    "login.subtituloRecuperar": "We'll send you a link to change it",
+    "login.enviarEnlace": "Send link",
+    "login.enlaceEnviado": "If there's an account with that email, we've sent you a link to change your password. Check your spam folder too.",
+    "login.volverLogin": "Back to sign in",
 
     "loading.cargando": "Loading…",
 
@@ -1996,6 +2008,8 @@ const TEXTOS = {
     "error.passwordDebil": "Password must be at least 6 characters.",
     "error.popupCerrado": "You closed the Google window before finishing.",
     "error.generico": "Something went wrong ({code}). Please try again.",
+    "error.demasiadosIntentos": "Too many attempts in a row. Wait a few minutes and try again.",
+    "error.sinConexion": "No connection. Check your internet and try again.",
 
     "tab.configuracion": "My meals",
     "tab.perfil": "Profile",
@@ -3890,6 +3904,11 @@ const TEXTOS = {
     "login.iniciaSesionLink": "Inicia la sessió",
     "login.privacidad": "Política de privacitat",
     "login.terminos": "Termes d'ús",
+    "login.olvidaste": "Has oblidat la contrasenya?",
+    "login.subtituloRecuperar": "T'enviarem un enllaç per canviar-la",
+    "login.enviarEnlace": "Envia l'enllaç",
+    "login.enlaceEnviado": "Si hi ha un compte amb aquest correu, t'hem enviat un enllaç per canviar la contrasenya. Mira també a la carpeta de correu brossa.",
+    "login.volverLogin": "Torna a iniciar la sessió",
 
     "loading.cargando": "Carregant…",
 
@@ -3901,6 +3920,8 @@ const TEXTOS = {
     "error.passwordDebil": "La contrasenya ha de tenir com a mínim 6 caràcters.",
     "error.popupCerrado": "Has tancat la finestra de Google abans d'acabar.",
     "error.generico": "S'ha produït un error ({code}). Torna-ho a provar.",
+    "error.demasiadosIntentos": "Massa intents seguits. Espera uns minuts i torna-ho a provar.",
+    "error.sinConexion": "No hi ha connexió. Comprova la connexió a internet i torna-ho a provar.",
 
     "tab.configuracion": "Els meus àpats",
     "tab.perfil": "Perfil",
@@ -5795,6 +5816,11 @@ const TEXTOS = {
     "login.iniciaSesionLink": "Inicia sesión",
     "login.privacidad": "Política de privacidade",
     "login.terminos": "Termos de uso",
+    "login.olvidaste": "Esqueciches o contrasinal?",
+    "login.subtituloRecuperar": "Enviarémosche unha ligazón para cambialo",
+    "login.enviarEnlace": "Enviar ligazón",
+    "login.enlaceEnviado": "Se hai unha conta con ese correo, enviámosche unha ligazón para cambiar o contrasinal. Mira tamén no cartafol de spam.",
+    "login.volverLogin": "Volver a iniciar sesión",
 
     "loading.cargando": "Cargando…",
 
@@ -5806,6 +5832,8 @@ const TEXTOS = {
     "error.passwordDebil": "O contrasinal debe ter polo menos 6 caracteres.",
     "error.popupCerrado": "Pechaches a xanela de Google antes de rematar.",
     "error.generico": "Produciuse un erro ({code}). Téntao de novo.",
+    "error.demasiadosIntentos": "Demasiados intentos seguidos. Agarda uns minutos e téntao de novo.",
+    "error.sinConexion": "Non hai conexión. Comproba a túa conexión a internet e téntao de novo.",
 
     "tab.configuracion": "As miñas comidas",
     "tab.perfil": "Perfil",
@@ -7700,6 +7728,11 @@ const TEXTOS = {
     "login.iniciaSesionLink": "Hasi saioa",
     "login.privacidad": "Pribatutasun-politika",
     "login.terminos": "Erabilera-baldintzak",
+    "login.olvidaste": "Pasahitza ahaztu duzu?",
+    "login.subtituloRecuperar": "Hura aldatzeko esteka bat bidaliko dizugu",
+    "login.enviarEnlace": "Bidali esteka",
+    "login.enlaceEnviado": "Helbide horrekin konturen bat badago, pasahitza aldatzeko esteka bat bidali dizugu. Begiratu spam karpetan ere.",
+    "login.volverLogin": "Itzuli saioa hastera",
 
     "loading.cargando": "Kargatzen…",
 
@@ -7711,6 +7744,8 @@ const TEXTOS = {
     "error.passwordDebil": "Pasahitzak gutxienez 6 karaktere izan behar ditu.",
     "error.popupCerrado": "Google-ren leihoa itxi duzu amaitu baino lehen.",
     "error.generico": "Errore bat gertatu da ({code}). Saiatu berriro.",
+    "error.demasiadosIntentos": "Saiakera gehiegi jarraian. Itxaron minutu batzuk eta saiatu berriro.",
+    "error.sinConexion": "Ez dago konexiorik. Egiaztatu interneteko konexioa eta saiatu berriro.",
 
     "tab.configuracion": "Nire otorduak",
     "tab.perfil": "Profila",

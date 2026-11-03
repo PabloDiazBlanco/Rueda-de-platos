@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithPopup,
   GoogleAuthProvider,
   signOut,
@@ -532,7 +533,13 @@ function LoggedOutFlow() {
   const [idioma, setIdioma] = useState(() => leerIdiomaGuardado());
   // <html lang> al día con el idioma elegido (lectores de pantalla, guiones, traductor del navegador): el de
   // index.html es fijo («es»). Dentro de la app lo pone app.jsx.
-  React.useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
+  // Los correos que manda Firebase (cambiar la contraseña, verificar el email) salen en `auth.languageCode`:
+  // con el idioma de esta pantalla le llegan a cada persona en el suyo y no en el de la consola. Si Firebase
+  // no tuviera plantilla para alguno, usa la de por defecto del proyecto.
+  React.useEffect(() => {
+    document.documentElement.lang = idioma;
+    auth.languageCode = idioma;
+  }, [idioma]);
 
   function cambiarIdioma(nuevo) {
     setIdioma(nuevo);
@@ -656,12 +663,26 @@ function watchForFirstProfileCompletion(uid) {
     });
 }
 
+// Adónde vuelve quien abre el enlace de un correo de Firebase y pulsa «Continuar»: la propia app, en la
+// dirección donde esté (GitHub Pages en producción, localhost en desarrollo). Las dos son dominios autorizados
+// de su proyecto; si no lo fueran, Firebase rechazaría el envío.
+const urlVueltaCorreos = () => new URL("./", location.href).href;
+
 function LoginScreen({ idioma, onChangeIdioma }) {
-  const [mode, setMode] = useState("login"); // login | signup
+  // login | signup | recuperar («¿Olvidaste tu contraseña?», etapa 1 de la auditoría de noviembre, R15: hasta
+  // entonces olvidarla era perder la cuenta y sus datos).
+  const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [aviso, setAviso] = useState("");
   const [loading, setLoading] = useState(false);
+
+  function cambiarModo(nuevo) {
+    setMode(nuevo);
+    setError("");
+    setAviso("");
+  }
 
   function traducirError(code) {
     const map = {
@@ -672,6 +693,9 @@ function LoginScreen({ idioma, onChangeIdioma }) {
       "auth/email-already-in-use": "error.emailEnUso",
       "auth/weak-password": "error.passwordDebil",
       "auth/popup-closed-by-user": "error.popupCerrado",
+      // Tras varios intentos fallidos Firebase frena un rato: antes salía el código tal cual.
+      "auth/too-many-requests": "error.demasiadosIntentos",
+      "auth/network-request-failed": "error.sinConexion",
     };
     return map[code] ? t(idioma, map[code]) : t(idioma, "error.generico", { code });
   }
@@ -679,9 +703,20 @@ function LoginScreen({ idioma, onChangeIdioma }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+    setAviso("");
     setLoading(true);
     try {
-      if (mode === "login") {
+      if (mode === "recuperar") {
+        try {
+          await sendPasswordResetEmail(auth, email.trim(), { url: urlVueltaCorreos() });
+        } catch (err) {
+          // Que no exista la cuenta se contesta igual que si existe: si no, esta pantalla serviría para
+          // averiguar qué correos usan la app (Firebase, con su protección contra la enumeración de correos,
+          // ya ni siquiera lo distingue). Los demás errores sí se dicen: email mal escrito, sin red...
+          if (err.code !== "auth/user-not-found") throw err;
+        }
+        setAviso(t(idioma, "login.enlaceEnviado"));
+      } else if (mode === "login") {
         await signInWithEmailAndPassword(auth, email, password);
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -718,38 +753,57 @@ function LoginScreen({ idioma, onChangeIdioma }) {
           <div style={{ fontSize: 30, marginBottom: 6 }}>🍽️</div>
           <div style={{ fontSize: 20, color: "#1f4d38", fontFamily: "Georgia, 'Times New Roman', serif" }}>FoodDraft</div>
           <div style={{ fontSize: 12, color: "#6b6a5e", marginTop: 4 }}>
-            {mode === "login" ? t(idioma, "login.subtituloLogin") : t(idioma, "login.subtituloSignup")}
+            {mode === "login" ? t(idioma, "login.subtituloLogin") : mode === "signup" ? t(idioma, "login.subtituloSignup") : t(idioma, "login.subtituloRecuperar")}
           </div>
         </div>
 
         <form onSubmit={handleSubmit}>
           <input type="email" required placeholder={t(idioma, "login.email")} value={email} onChange={(e) => setEmail(e.target.value)} style={inputStyle} />
-          <input type="password" required placeholder={t(idioma, "login.password")} value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
+          {mode !== "recuperar" && (
+            <input type="password" required placeholder={t(idioma, "login.password")} value={password} onChange={(e) => setPassword(e.target.value)} style={{ ...inputStyle, marginTop: 10 }} />
+          )}
+          {mode === "login" && (
+            <div style={{ textAlign: "right", marginTop: 6 }}>
+              <a href="#" onClick={(e) => { e.preventDefault(); cambiarModo("recuperar"); }} style={{ color: "#2f6b4f", fontSize: 12 }}>
+                {t(idioma, "login.olvidaste")}
+              </a>
+            </div>
+          )}
           {error && <div style={{ color: "#9c4a2b", fontSize: 12, marginTop: 8 }}>{error}</div>}
+          {aviso && <div role="status" style={{ color: "#1f4d38", fontSize: 12.5, lineHeight: 1.45, marginTop: 10 }}>{aviso}</div>}
           <button type="submit" disabled={loading} style={{ width: "100%", marginTop: 14, padding: "10px 12px", borderRadius: 8, border: "none", background: "#2f6b4f", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-            {loading ? t(idioma, "login.entrando") : mode === "login" ? t(idioma, "login.iniciarSesion") : t(idioma, "login.crearCuenta")}
+            {loading
+              ? t(idioma, "login.entrando")
+              : mode === "login" ? t(idioma, "login.iniciarSesion") : mode === "signup" ? t(idioma, "login.crearCuenta") : t(idioma, "login.enviarEnlace")}
           </button>
         </form>
 
-        <button onClick={handleGoogle} disabled={loading} style={{ width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd6bf", background: "#fff", color: "#2b2b26", fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>
-          {t(idioma, "login.continuarGoogle")}
-        </button>
+        {/* Las cuentas de Google no tienen contraseña de la app: al recuperar, el botón sobra. */}
+        {mode !== "recuperar" && (
+          <button onClick={handleGoogle} disabled={loading} style={{ width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 8, border: "1px solid #ddd6bf", background: "#fff", color: "#2b2b26", fontWeight: 600, fontSize: 13.5, cursor: "pointer" }}>
+            {t(idioma, "login.continuarGoogle")}
+          </button>
+        )}
 
         <div style={{ textAlign: "center", marginTop: 14, fontSize: 12.5, color: "#6b6a5e" }}>
           {mode === "login" ? (
             <span>
               {t(idioma, "login.noTienesCuenta")}{" "}
-              <a href="#" onClick={(e) => { e.preventDefault(); setMode("signup"); setError(""); }} style={{ color: "#2f6b4f", fontWeight: 700 }}>
+              <a href="#" onClick={(e) => { e.preventDefault(); cambiarModo("signup"); }} style={{ color: "#2f6b4f", fontWeight: 700 }}>
                 {t(idioma, "login.creaAqui")}
               </a>
             </span>
-          ) : (
+          ) : mode === "signup" ? (
             <span>
               {t(idioma, "login.yaTienesCuenta")}{" "}
-              <a href="#" onClick={(e) => { e.preventDefault(); setMode("login"); setError(""); }} style={{ color: "#2f6b4f", fontWeight: 700 }}>
+              <a href="#" onClick={(e) => { e.preventDefault(); cambiarModo("login"); }} style={{ color: "#2f6b4f", fontWeight: 700 }}>
                 {t(idioma, "login.iniciaSesionLink")}
               </a>
             </span>
+          ) : (
+            <a href="#" onClick={(e) => { e.preventDefault(); cambiarModo("login"); }} style={{ color: "#2f6b4f", fontWeight: 700 }}>
+              {t(idioma, "login.volverLogin")}
+            </a>
           )}
         </div>
 
