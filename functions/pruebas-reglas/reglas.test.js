@@ -70,8 +70,11 @@ const VALOR_REALISTA = JSON.stringify({
 
 let entorno;
 
-// Firestore de una persona con sesión iniciada (uid), o sin sesión.
-const de = (uid) => entorno.authenticatedContext(uid).firestore();
+// Firestore de una persona con sesión iniciada (uid) y el email verificado, que es como llega cualquier cuenta
+// a la app (las reglas exigen `email_verified`); de una con correo y contraseña sin verificar; o sin sesión.
+const de = (uid) => entorno.authenticatedContext(uid, { email_verified: true }).firestore();
+const sinVerificar = (uid) =>
+  entorno.authenticatedContext(uid, { email_verified: false, firebase: { sign_in_provider: "password" } }).firestore();
 const sinSesion = () => entorno.unauthenticatedContext().firestore();
 
 // Deja preparado un documento saltándose las reglas (como lo dejaría el Admin SDK de las funciones).
@@ -166,6 +169,40 @@ describe("Cada persona, lo suyo", () => {
     await preparar(["users", "alicia", "keys", DATOS], { value: VALOR_REALISTA });
     await assertFails(getDocs(collection(de("alicia"), "users", "alicia", "keys")));
     await assertFails(getDocs(collection(de("bruno"), "users", "alicia", "keys")));
+  });
+});
+
+describe("Email verificado (verificación estricta)", () => {
+  it("una cuenta sin verificar no lee, no escribe ni borra sus propios datos", async () => {
+    await preparar(["users", "alicia", "keys", DATOS], { value: VALOR_REALISTA });
+    const ref = doc(sinVerificar("alicia"), "users", "alicia", "keys", DATOS);
+    await assertFails(getDoc(ref));
+    await assertFails(setDoc(ref, { value: "{}" }));
+    await assertFails(deleteDoc(ref));
+    await assertFails(setDoc(doc(sinVerificar("alicia"), "users", "alicia", "keys", "rueda-de-platos:menu-v1"), { value: "{}" }));
+  });
+
+  it("una cuenta sin verificar tampoco lee su ficha (premium)", async () => {
+    await preparar(["users", "alicia"], { premium: { active: true } });
+    await assertFails(getDoc(doc(sinVerificar("alicia"), "users", "alicia")));
+  });
+
+  it("un token sin el dato email_verified cuenta como sin verificar", async () => {
+    await preparar(["users", "alicia", "keys", DATOS], { value: VALOR_REALISTA });
+    const db = entorno.authenticatedContext("alicia").firestore();
+    await assertFails(getDoc(doc(db, "users", "alicia", "keys", DATOS)));
+  });
+
+  it("una cuenta de Google (llega verificada) lee y escribe lo suyo", async () => {
+    const db = entorno.authenticatedContext("bruno", { email_verified: true, firebase: { sign_in_provider: "google.com" } }).firestore();
+    const ref = doc(db, "users", "bruno", "keys", DATOS);
+    await assertSucceeds(setDoc(ref, { value: VALOR_REALISTA }));
+    await assertSucceeds(getDoc(ref));
+  });
+
+  it("verificar no da acceso a lo de otra persona", async () => {
+    await preparar(["users", "alicia", "keys", DATOS], { value: VALOR_REALISTA });
+    await assertFails(getDoc(doc(de("bruno"), "users", "alicia", "keys", DATOS)));
   });
 });
 

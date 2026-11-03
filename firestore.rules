@@ -19,9 +19,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // La sesión es de la dueña o el dueño de la cuenta. Sin sesión no se lee ni se escribe nada.
+    // La sesión es de la dueña o el dueño de la cuenta, y su email está verificado. Sin sesión no se lee ni se
+    // escribe nada. El email verificado es la verificación estricta (auditoría de noviembre, R15): la app ya
+    // no deja pasar a una cuenta sin verificar (VerificarCorreoScreen, auth-bootstrap.jsx), y esto lo garantiza
+    // también para quien hablara con Firestore sin la app. Las cuentas de Google llegan con
+    // `email_verified: true`. El token se renueva al verificar; uno de antes dice `false` hasta que caduca
+    // (como mucho, una hora) o se renueva. **Publicar estas reglas DESPUÉS de subir la app con la pantalla de
+    // verificación**: al revés, una cuenta sin verificar vería un error de carga en vez de esa pantalla.
     function esSuCuenta(userId) {
-      return request.auth != null && request.auth.uid == userId;
+      return request.auth != null
+        && request.auth.uid == userId
+        && request.auth.token.email_verified == true;
     }
 
     // Claves que la app guarda en la nube (`documentacion/datos.md`, «Claves en la nube»). Es una lista
