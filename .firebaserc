@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "rueda-de-platos"
+    "default": "rueda-de-platos",
+    "prod": "rueda-de-platos",
+    "dev": "rueda-de-platos-dev"
   }
 }

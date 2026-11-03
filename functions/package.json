@@ -6,7 +6,8 @@
     "shell": "firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "test:reglas": "firebase emulators:exec --only firestore --project demo-rueda-de-platos \"node --test pruebas-reglas/reglas.test.js\""
   },
   "engines": {
     "node": "22"
@@ -19,6 +20,8 @@
     "stripe": "^22.6.2"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
+    "firebase": "^12.19.0",
     "firebase-functions-test": "^3.4.1"
   },
   "private": true

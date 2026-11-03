@@ -1,0 +1,91 @@
+rules_version = '2';
+
+// Reglas de seguridad de Firestore de FoodDraft (proyectos `rueda-de-platos` y `rueda-de-platos-dev`).
+//
+// Son lo que de verdad protege los datos de salud de cada persona: la configuración web de Firebase
+// (`apiKey` incluida) es pública por diseño y App Check solo frena el uso casual. Hasta noviembre de 2026
+// vivían solo en la consola, sin historial ni pruebas (auditoría de noviembre, R1 y R2). Ahora esta es la
+// única fuente: se publican con `firebase deploy --only firestore:rules` (primero en pruebas, después en
+// producción) y se prueban con el emulador (`functions/pruebas-reglas/`). Nunca se editan a mano en la
+// consola: un cambio ahí se pierde en el siguiente despliegue.
+//
+// Cómo guarda la app (`window.storage`, auth-bootstrap.jsx): un documento por clave en
+// `users/{uid}/keys/{clave}` con un único campo, `value`, que es texto (JSON serializado, o el token de
+// notificaciones en texto plano). El documento padre `users/{uid}` (premium y cuotas) solo lo escriben las
+// Cloud Functions con el Admin SDK, que no pasa por estas reglas.
+//
+// Todo lo que no se permite aquí está denegado.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // La sesión es de la dueña o el dueño de la cuenta. Sin sesión no se lee ni se escribe nada.
+    function esSuCuenta(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Claves que la app guarda en la nube (`documentacion/datos.md`, «Claves en la nube»). Es una lista
+    // cerrada y no un prefijo a propósito: así nadie puede llenar su cuenta de documentos inventados
+    // (coste y datos basura, R2). Contrapartida: **una clave nueva en la app hay que añadirla aquí y
+    // publicar las reglas ANTES de subir la app**, o su guardado fallará en todas las cuentas (igual que
+    // una Cloud Function nueva). En el historial de git nunca hubo otras claves, así que la migración de
+    // datos antiguos de `localStorage` (`migrateLocalDataIfNeeded`) no puede tropezar con esta lista.
+    function esClaveConocida(clave) {
+      return clave in [
+        'rueda-de-platos:data-v1',
+        'rueda-de-platos:menu-v1',
+        'rueda-de-platos:history-v1',
+        'rueda-de-platos:menu-simple-v1',
+        'rueda-de-platos:history-simple-v1',
+        'rueda-de-platos:despensa-v1',
+        'rueda-de-platos:entreno-catalogo-v1',
+        'rueda-de-platos:entreno-indice-v1',
+        'rueda-de-platos:entreno-borrador-v1',
+        'rueda-de-platos:cuerpo-diario-v1',
+        'rueda-de-platos:informes-favoritos-v1',
+        'rueda-de-platos:push-token-v1'
+      ]
+      // Un documento por mes de entreno (`entreno-AAAA-MM-v1`, logica/entreno-almacen.js). El año admite
+      // cualquier número de cuatro cifras: el importador acepta historiales antiguos de otras apps.
+      || clave.matches('rueda-de-platos:entreno-[0-9]{4}-(0[1-9]|1[0-2])-v1');
+    }
+
+    // Tamaño máximo de `value`, en caracteres. El token de notificaciones mide unos 160: con 4096 sobra.
+    // El resto queda justo por debajo del tope de Firestore (1 MiB por documento, contando el nombre y el
+    // campo): esta regla nunca es más estricta que Firestore con datos reales, que llevan tildes (2 bytes)
+    // y llegan antes al tope de bytes. Un límite más bajo podría dejar sin guardar a una cuenta con muchos
+    // datos (`data-v1` crece unos 150 KB al año, R3); su alarma de tamaño es otra tarea (R3-a).
+    function tamanoMaximo(clave) {
+      return clave == 'rueda-de-platos:push-token-v1' ? 4096 : 1048000;
+    }
+
+    // Exactamente un campo, `value`, de texto y dentro del tamaño. La forma interna del JSON no se puede
+    // validar aquí: para las reglas es un texto opaco (R3).
+    function esDocumentoValido(clave) {
+      let datos = request.resource.data;
+      return datos.keys().hasOnly(['value'])
+        && datos.keys().hasAll(['value'])
+        && datos.value is string
+        && datos.value.size() <= tamanoMaximo(clave);
+    }
+
+    // Ficha de la cuenta: estado premium y contadores de cuota. Solo lectura para el cliente (la app la
+    // escucha con onSnapshot para enterarse del pago); la escriben el webhook de Stripe y las funciones de
+    // IA con el Admin SDK. Si el cliente pudiera escribirla, cualquiera se haría premium a mano.
+    match /users/{userId} {
+      allow get: if esSuCuenta(userId);
+    }
+
+    match /users/{userId}/keys/{clave} {
+      // Leer un documento suelto, sí. Listar la colección, no: la app nunca lo hace (`storage.list()` está
+      // prohibido porque descarga todos los datos de la cuenta, R11) y así queda garantizado.
+      allow get: if esSuCuenta(userId);
+      allow create, update: if esSuCuenta(userId)
+        && esClaveConocida(clave)
+        && esDocumentoValido(clave);
+      // Borrar cualquier clave propia, también una desconocida: así se puede limpiar lo que hubiera quedado
+      // de antes de existir la lista.
+      allow delete: if esSuCuenta(userId);
+    }
+  }
+}
