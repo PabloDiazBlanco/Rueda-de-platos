@@ -29,6 +29,13 @@ sus dependencias (`@firebase/rules-unit-testing`, `firebase`) son solo de desarr
 - **Despliegue manual**: `firebase deploy --only functions`. Si cambia lo que recibe una función (o se crea
   una que la app llama), despliégala **antes** de subir la app: si el cliente nuevo llega a producción sin su
   función, la pantalla da error al usarla.
+- **Dependencias al día**: `npm audit --omit=dev` mira solo lo que se despliega. Los arreglos compatibles se
+  aplican con `npm audit fix` (nunca `--force`, que sube versiones mayores sin revisarlas) y después se
+  comprueba que `node -e "require('./index.js')"` carga y que `npm run test:reglas` sigue en verde; el
+  `package-lock.json` nuevo no llega a producción hasta el siguiente `firebase deploy --only functions`. Queda
+  abierto a propósito un aviso moderado de `uuid@9` dentro de `firebase-admin` 13 (vía `google-gax` y
+  `@google-cloud/storage`): afecta a `v3`/`v5`/`v6` con un búfer propio y esas librerías solo usan `v4`. Se
+  arregla pasando a `firebase-admin` 14, versión mayor que pide su propia revisión.
 - **El cliente nunca escribe en `users/{uid}`** (`firestore.rules`, con su prueba): premium y cuotas solo los
   escriben las funciones con el Admin SDK, que no pasa por las reglas.
 - **Convenio obligatorio al crear un Checkout**: `client_reference_id: uid` y
