@@ -29,9 +29,16 @@ import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
 import { cargarApp } from "cargador-ui";
 
-// Identificador público de tu proyecto de Firebase (no es una clave secreta, es normal que
-// se vea en el código fuente de cualquier web que use Firebase).
-const firebaseConfig = {
+// Identificadores públicos de los proyectos de Firebase (no son claves secretas, es normal que
+// se vean en el código fuente de cualquier web que use Firebase).
+// Dos proyectos (auditoría de noviembre de 2026, R24 y D9): la app real usa `rueda-de-platos`, y
+// cuando se abre en el ordenador de desarrollo (localhost) usa `rueda-de-platos-dev`, una base
+// aparte con cuentas y datos inventados. Así un error mientras se prueba (una migración mal
+// escrita, un bucle de escritura, unas reglas nuevas) nunca toca los datos de salud de las
+// cuentas reales. Se elige por el nombre del host porque no hay build ni variables de entorno.
+// Cualquier host que no sea local cae en producción: así ningún usuario real puede acabar en la
+// base de pruebas por un descuido.
+const FIREBASE_PRODUCCION = {
   apiKey: "AIzaSyDFTu5zVLHA7KjXiW7tKM1Ufa-vY2L8A_o",
   authDomain: "rueda-de-platos.firebaseapp.com",
   projectId: "rueda-de-platos",
@@ -39,16 +46,31 @@ const firebaseConfig = {
   messagingSenderId: "477523566905",
   appId: "1:477523566905:web:130cdede8cb500cbdac8e8",
 };
+const FIREBASE_PRUEBAS = {
+  apiKey: "AIzaSyDEx-oQAUHgBSHRY-O--OquKYteA4zMcAk",
+  authDomain: "rueda-de-platos-dev.firebaseapp.com",
+  projectId: "rueda-de-platos-dev",
+  storageBucket: "rueda-de-platos-dev.firebasestorage.app",
+  messagingSenderId: "233926898265",
+  appId: "1:233926898265:web:9e2ba470d45eaca0f7b748",
+};
+const ES_ENTORNO_LOCAL = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+const firebaseConfig = ES_ENTORNO_LOCAL ? FIREBASE_PRUEBAS : FIREBASE_PRODUCCION;
 
 const firebaseApp = initializeApp(firebaseConfig);
 
 // App Check: añade un "sello" a cada petición para demostrar que viene de verdad de esta web,
 // y no de alguien que ha copiado la configuración pública. Debe activarse antes de usar
 // cualquier otro servicio de Firebase (Auth, Firestore, AI Logic...).
-initializeAppCheck(firebaseApp, {
-  provider: new ReCaptchaV3Provider("6LdZOYItAAAAADUcPXKC-RGNnc_b35H2qxgfGu0f"),
-  isTokenAutoRefreshEnabled: true,
-});
+// Solo en producción: la clave de reCAPTCHA está atada a los dominios reales y en localhost haría
+// falta un token de depuración, que es justo lo que se quiere quitar de producción. El proyecto de
+// pruebas no exige App Check, así que en local se trabaja sin él.
+if (!ES_ENTORNO_LOCAL) {
+  initializeAppCheck(firebaseApp, {
+    provider: new ReCaptchaV3Provider("6LdZOYItAAAAADUcPXKC-RGNnc_b35H2qxgfGu0f"),
+    isTokenAutoRefreshEnabled: true,
+  });
+}
 
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
