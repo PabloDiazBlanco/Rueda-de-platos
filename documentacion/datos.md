@@ -39,7 +39,8 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   campo `value` de texto, de hasta 4096 caracteres el token y 1 048 000 el resto (justo por debajo del tope de
   1 MiB de Firestore, para no bloquear nunca a una cuenta con muchos datos). Listar la colección está
   denegado, lo que garantiza que nadie use `storage.list()`. Se puede leer y borrar una clave propia que no
-  esté en la lista, pero no reescribirla. Todo lo demás, denegado.
+  esté en la lista, pero no reescribirla. Aparte, el buzón de avisos `users/{uid}/avisos/push` (abajo), con
+  su propia forma. Todo lo demás, denegado.
 - Pruebas de las reglas: `functions/pruebas-reglas/reglas.test.js`, con el emulador de Firestore
   (`cd functions` y `npm run test:reglas`; necesita Java, sin conexión ni sesión de Firebase, proyecto
   `demo-rueda-de-platos`). Publicarlas: `firebase deploy --only firestore:rules --project dev` y, tras probar
@@ -67,12 +68,15 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   subscriptionId, updatedAt }`) y los contadores de cuota (`usoFotos`, `usoCocinar`). Es de **solo lectura
   para el cliente**: solo lo escriben las Cloud Functions con el Admin SDK (ver `backend.md`).
 - `rueda-de-platos:push-token-v1` guarda el token de notificaciones en `value` como **texto plano**, no JSON.
+  **En transición** (R8): lo leían las funciones de notificaciones de antes; las nuevas leen el buzón de
+  avisos. La app lo sigue escribiendo hasta que las nuevas estén desplegadas; después se quita de la app, de
+  `firestore.rules` y de las cuentas (`backend.md`, «Notificaciones push»).
 
 ## Claves en la nube (`users/{uid}/keys/`)
 
 | Clave | Lo lleva | `version` | Migración | Casos en `validacion/` |
 |---|---|---|---|---|
-| `rueda-de-platos:data-v1` | `useDatos` (`ui/estado/datos.js`, `STORAGE_KEY`); también lo leen `auth-bootstrap.jsx` y las dos funciones programadas | no | `migrateData` | sí, grupo «migrateData» |
+| `rueda-de-platos:data-v1` | `useDatos` (`ui/estado/datos.js`, `STORAGE_KEY`); también lo leen `auth-bootstrap.jsx` y `sendWeighInReminders` (solo de quien tiene el recordatorio de pesaje activado) | no | `migrateData` | sí, grupo «migrateData» |
 | `rueda-de-platos:menu-v1`, `history-v1` | `useMenu` (`MENU_COMPLETO`) | no | ninguna | no |
 | `rueda-de-platos:menu-simple-v1`, `history-simple-v1` | `useMenu` (`MENU_SIMPLE`) | no | ninguna | no |
 | `rueda-de-platos:despensa-v1` | `useDespensa` | 1 | `migrarDespensa` (`logica/despensa.js`) | sí |
@@ -82,11 +86,38 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
 | `rueda-de-platos:entreno-AAAA-MM-v1` | `useEntreno` (un documento por mes) | 1 | `migrarMes` | no |
 | `rueda-de-platos:cuerpo-diario-v1` | `useCuerpo` | 1 | `migrarDiario` (`logica/cuerpo-diario.js`) | sí |
 | `rueda-de-platos:informes-favoritos-v1` | `useCuerpo` | 1 | `migrarFavoritos` | sí |
-| `rueda-de-platos:push-token-v1` | `auth-bootstrap.jsx` (texto plano) | — | — | no |
+| `rueda-de-platos:push-token-v1` | `auth-bootstrap.jsx` (texto plano; en transición, R8) | — | — | no |
 
 `data-v1` lleva `{ foods, ingredients, blocks, rules, perfil, perfilOnboardingDone, objetivos, pesoTracking,
 listaCompra, listaCompraSimple, comidasCompletadas }` y crece con `comidasCompletadas` (≈ 150 KB al año
 marcando todas las comidas; el límite de un documento es 1 MiB).
+
+## Buzón de avisos (`users/{uid}/avisos/push`)
+
+Lo único que leen las funciones de notificaciones para saber a quién avisar (auditoría de noviembre de 2026, R8
+y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe directamente `auth-bootstrap.jsx`
+(`window.sincronizarBuzonAvisos`, llamado desde `app.jsx`; las decisiones sin Firebase, en
+`logica/buzon-avisos.js`).
+
+- **Forma**: `{ idioma, pesaje, descongelar, tokens, actualizado }`, los cinco obligatorios y ninguno más.
+  `idioma` es uno de los cinco de la app; `pesaje` y `descongelar` son copia de `perfil.notificacionesPush` y
+  `perfil.avisoDescongelar`; `tokens`, hasta 10 aparatos (`MAX_DISPOSITIVOS`, el mismo tope en las reglas y en
+  la app: una prueba de las reglas lo vigila); `actualizado`, la hora del servidor de la última escritura de la
+  app (`serverTimestamp()`; las reglas no aceptan otra).
+- **Uno por cuenta, no por aparato**, porque los interruptores de Ajustes son de la cuenta. Existe solo si hay
+  algún aviso activado.
+- **Cuándo se escribe**: al abrirse la app (como mucho una vez al día por aparato si nada cambia: la «firma»
+  de lo último escrito va en `localStorage`, `fooddraft:buzon-avisos:<uid>`), al activar o quitar un aviso y al
+  cambiar el idioma. Solo apunta un aparato con el permiso de notificaciones concedido. Si el navegador renueva
+  el token, el nuevo entra y el viejo sale. Con la lista llena, se reescribe entera quitando los más antiguos.
+- **Cuándo se borra**: al quitar los dos avisos (entero, en todos los aparatos) y con «Eliminar cuenta»
+  (`recursiveDelete` de `users/{uid}`). Al cerrar sesión, ese aparato sale de la lista.
+- **Las funciones** solo quitan tokens que FCM da por caducados (`arrayRemove`), sin tocar `actualizado`.
+- No pasa por ninguna migración: lo rehace la app cada día desde el perfil, así que un buzón viejo se corrige
+  solo al abrirla.
+- Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`), decisiones de la app en
+  `validacion/` (grupo «Avisos: el buzón de las notificaciones») y funciones en `functions/pruebas-funciones/`
+  (`npm run test:avisos`).
 
 La primera vez que una cuenta entra en un navegador con datos antiguos en `localStorage`,
 `migrateLocalDataIfNeeded` (`auth-bootstrap.jsx`) ofrece copiar a la nube las claves `rueda-de-platos:*` que

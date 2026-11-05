@@ -10,8 +10,8 @@ archivo nuevo, cómo se escribe en `ui/`) están en el `CLAUDE.md` de la raíz y
 index.html             → importmap + carga auth-bootstrap.jsx (Babel Standalone 7.29.11 desde unpkg, versión
                           exacta con integrity y `defer`; validacion/index.html usa la misma URL y el mismo
                           hash). #root trae un marcador sin texto que React sustituye; preconnect a los CDN
-auth-bootstrap.jsx     → login, Firestore, App Check, puente con las Cloud Functions (window.*);
-                          luego carga la interfaz con cargador-ui.js
+auth-bootstrap.jsx     → login, Firestore, App Check, puente con las Cloud Functions (window.*),
+                          notificaciones y buzón de avisos; luego carga la interfaz con cargador-ui.js
 cargador-ui.js         → carga app.jsx y ui/ (Babel + registro de módulos propio, sin build)
 app.jsx                → componente principal: reúne los hooks de ui/estado/, decide si toca carga,
                           alta o app, lleva la navegación (destino, datos y última pantalla de cada
@@ -42,8 +42,13 @@ manifest.json, icon.svg, privacidad.html, terminos.html
   él funcionan la página a la que llevan los enlaces de los correos (verificar el email, cambiar la contraseña)
   y la ventana de «Continuar con Google»; sin él, las dos fallan con `API_KEY_HTTP_REFERRER_BLOCKED`.
 - **Qué no funciona aún en local**: las funciones (premium, Gemini, Stripe, borrar la cuenta), porque el
-  proyecto de pruebas no tiene ninguna desplegada (se probarán con el emulador); y las notificaciones push,
-  porque la clave VAPID de `auth-bootstrap.jsx` y la configuración de `sw.js` son las de producción.
+  proyecto de pruebas no tiene ninguna desplegada. Las dos de notificaciones se prueban con el emulador
+  (`npm run test:avisos` en `functions/`, `backend.md`).
+- **Las notificaciones sí funcionan en local**: cada proyecto tiene su clave VAPID (`VAPID_PRODUCCION` y
+  `VAPID_PRUEBAS` en `auth-bootstrap.jsx`, de Firebase → Configuración → Cloud Messaging → Certificados push
+  web) y `sw.js` elige la configuración de Firebase con la misma regla de `location.hostname`. Así se prueba
+  el buzón de avisos con una cuenta de pruebas. Si Chrome bloquea el permiso en `localhost` («Notificaciones
+  bloqueadas» en la barra de direcciones), se permite desde ese mismo aviso.
 
 ## Cuentas: entrar, recuperar la contraseña y verificar el email
 
@@ -163,6 +168,9 @@ mapa-corporal.js       SLUG_A_GRUPO (trazo → 14 grupos), escala de verdes, ser
 gimnasio.js            el gimnasio dibujado de FitDraft: plano, zonas y 25 máquinas (ZONAS, ESTACIONES),
                          ejerciciosDeZona, rutas A* (aEstrella, puntoDe), paradas de una rutina, paso entre
                          ejercicios, estadoZonas, fraseMonitor, rutinaDeHoy y días de la semana
+buzon-avisos.js        el buzón de avisos sin Firebase (R8): quiereAvisos, firmaBuzon y buzonAlDia (si hace
+                         falta reescribirlo), tokensConSitio (hacer sitio con la lista llena) y
+                         MAX_DISPOSITIVOS (el mismo tope que firestore.rules). Lo importa auth-bootstrap.jsx
 ```
 
 ### Imports entre módulos de `logica/`
@@ -188,6 +196,7 @@ nada:
 | `informes` | entreno-calculo, objetivos (solo lee), resumen-mensual |
 | `cuerpo-series` | entreno-calculo, periodo |
 | `gimnasio` | entreno-calculo (fechas) |
+| `buzon-avisos` | peso (`fechaISO`) |
 
 No importan nada: `comun`, `macros`, `seleccion`, `objetivos`, `resumen-mensual`, `i18n`, `nevera`,
 `periodo`, `cuerpo-diario`, `mapa-corporal`, `entreno-ejercicios`, `entreno-nombres` y `entreno-calculo`.
@@ -255,4 +264,5 @@ propio importmap, con las rutas un nivel arriba (`"../logica/x.js"`), y carga la
 - Si no se sube `CACHE_NAME` al añadir archivos, el service worker instalado no se reinstala y el archivo
   nuevo solo queda disponible sin conexión después de haberse pedido con conexión una vez (falla si alguien
   instala la PWA estando ya sin conexión). Basta una subida de versión por push que añada archivos.
-- Muestra las notificaciones push con la app cerrada (`onBackgroundMessage`, ver `backend.md`).
+- Muestra las notificaciones push con la app cerrada (`onBackgroundMessage`, ver `backend.md`), con el proyecto
+  de Firebase que toca según el host (el de pruebas en `localhost`).
