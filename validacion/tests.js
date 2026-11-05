@@ -67,7 +67,11 @@ import {
   puntoDe, paradasDeRutina, pasoEntreEjercicios, ultimaVezPorZona, estadoZonas, situacionMonitor, fraseMonitor, rutinaDeHoy,
   diasEntrenadosSemana,
 } from "gimnasio";
-import { MAX_DISPOSITIVOS, quiereAvisos, firmaBuzon, buzonAlDia, tokensConSitio } from "buzon-avisos";
+import {
+  MAX_DISPOSITIVOS, quiereAvisos, firmaBuzon, buzonAlDia, tokensConSitio, claveFirmaBuzon, claveTokenDeAntesBorrado,
+  CLAVE_ESTRENAR_TOKEN, estadoDelPermiso, avisoEsteAparato, planSincronizacion, decidirBuzon, firmaAlQuitarAvisos,
+  decidirAlSalir,
+} from "buzon-avisos";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -3452,6 +3456,176 @@ function grupoBuzonAvisos() {
             {
               tope: 10, cabe: "a,b,c", repetido: "a,b,c", basura: "a,b,c", sinLista: "c", listaRara: "c",
               llenoLargo: 10, llenoPrimero: "t1", llenoUltimo: "n", muyLlenoLargo: 10, muyLlenoPrimero: "t3", soloUno: "c",
+            }
+          );
+        },
+      },
+      // ---------- Tanda A: los fallos F1-F4 de la revisión independiente y la limpieza del token de antes ----------
+      {
+        nombre: "Claves del aparato: la firma y la limpieza llevan el uid al final (Eliminar cuenta las borra); la de estrenar token es del navegador",
+        ejecutar: () => {
+          // El mismo filtro que limpiarDispositivoDeLaCuenta (auth-bootstrap.jsx) para la cuenta «abc».
+          const seBorraConLaCuenta = (k) => k.startsWith("fooddraft:") && k.endsWith(":abc");
+          return comparar(
+            {
+              firma: claveFirmaBuzon("abc"), limpieza: claveTokenDeAntesBorrado("abc"),
+              firmaSeBorra: seBorraConLaCuenta(claveFirmaBuzon("abc")),
+              limpiezaSeBorra: seBorraConLaCuenta(claveTokenDeAntesBorrado("abc")),
+              estrenarEsDelAparato: CLAVE_ESTRENAR_TOKEN.startsWith("fooddraft:"),
+              estrenarSeBorra: seBorraConLaCuenta(CLAVE_ESTRENAR_TOKEN),
+            },
+            {
+              firma: "fooddraft:buzon-avisos:abc", limpieza: "fooddraft:push-token-v1-borrado:abc",
+              firmaSeBorra: true, limpiezaSeBorra: true, estrenarEsDelAparato: true, estrenarSeBorra: false,
+            }
+          );
+        },
+      },
+      {
+        nombre: "F3: «En este aparato no te llegan» solo con algún aviso activado y sin el permiso; bloqueado, se explica; sin soporte, nada",
+        ejecutar: () => {
+          const estado = (soporta, permiso) => estadoDelPermiso({ soporta, permiso });
+          return comparar(
+            {
+              sinSoporte: estado(false, "granted"), concedido: estado(true, "granted"), bloqueado: estado(true, "denied"),
+              sinPedir: estado(true, "default"), desconocido: estado(true, undefined),
+              ofreceBoton: avisoEsteAparato({ quiere: true, estado: "sin-pedir" }),
+              explicaBloqueo: avisoEsteAparato({ quiere: true, estado: "bloqueado" }),
+              yaLlegan: avisoEsteAparato({ quiere: true, estado: "concedido" }),
+              sinSoporteNada: avisoEsteAparato({ quiere: true, estado: "sin-soporte" }),
+              sinAvisosNada: avisoEsteAparato({ quiere: false, estado: "sin-pedir" }),
+            },
+            {
+              sinSoporte: "sin-soporte", concedido: "concedido", bloqueado: "bloqueado", sinPedir: "sin-pedir", desconocido: "sin-pedir",
+              ofreceBoton: "recibir", explicaBloqueo: "bloqueado", yaLlegan: null, sinSoporteNada: null, sinAvisosNada: null,
+            }
+          );
+        },
+      },
+      {
+        nombre: "F2 y limpieza: tras cerrar sesión, con permiso se estrena token (también si la cuenta nueva no quiere avisos); el token de antes se borra una vez",
+        ejecutar: () => {
+          const pasos = (entrada) => {
+            const p = planSincronizacion(entrada);
+            return [p.revocar && "revocar", p.pedirToken && "pedir", p.limpiarTokenDeAntes && "limpiar"].filter(Boolean).join("+") || "nada";
+          };
+          return comparar(
+            {
+              deSiempre: pasos({ quiere: true, puedeRecibir: true, estrenar: null, tokenDeAntesBorrado: "1" }),
+              trasSalirConAvisos: pasos({ quiere: true, puedeRecibir: true, estrenar: "1", tokenDeAntesBorrado: "1" }),
+              trasSalirSinAvisos: pasos({ quiere: false, puedeRecibir: true, estrenar: "1", tokenDeAntesBorrado: "1" }),
+              // Sin permiso el navegador no enseña nada: la marca espera a que lo haya.
+              trasSalirSinPermiso: pasos({ quiere: true, puedeRecibir: false, estrenar: "1", tokenDeAntesBorrado: "1" }),
+              primeraVez: pasos({ quiere: true, puedeRecibir: true, estrenar: null, tokenDeAntesBorrado: null }),
+              // La limpieza no depende de los avisos ni del permiso.
+              primeraVezSinNada: pasos({ quiere: false, puedeRecibir: false, estrenar: null, tokenDeAntesBorrado: null }),
+            },
+            {
+              deSiempre: "pedir", trasSalirConAvisos: "revocar+pedir", trasSalirSinAvisos: "revocar", trasSalirSinPermiso: "nada",
+              primeraVez: "pedir+limpiar", primeraVezSinNada: "limpiar",
+            }
+          );
+        },
+      },
+      {
+        nombre: "F1: sin avisos, se borra el buzón si este aparato tiene firma (también la que deja quitar los dos avisos sin haber escrito nunca)",
+        ejecutar: () => {
+          const hoy = new Date(2026, 10, 6, 10, 0);
+          const firma = firmaBuzon({ token: "t1", idioma: "es", pesaje: true, descongelar: true }, hoy);
+          const sinToken = firmaBuzon({ token: null, idioma: "es", pesaje: true, descongelar: false }, hoy);
+          const marca = firmaAlQuitarAvisos(null);
+          const sinAvisos = (anterior) => decidirBuzon({ quiere: false, token: null, anterior, idioma: "es", pesaje: false, descongelar: false }, hoy).accion;
+          const vuelve = decidirBuzon({ quiere: true, token: "t1", anterior: marca, idioma: "es", pesaje: true, descongelar: false }, hoy);
+          return comparar(
+            {
+              sinFirma: sinAvisos(null), conFirma: sinAvisos(firma), conFirmaSinToken: sinAvisos(sinToken), conMarca: sinAvisos(marca),
+              marcaBorrar: marca.borrar, marcaToken: marca.token,
+              // Si ya había firma, vale esa (con su token, para poder sacarlo al cerrar sesión).
+              guardaLaQueHabia: firmaAlQuitarAvisos(firma) === firma, firmaRara: firmaAlQuitarAvisos("texto").borrar,
+              // Con la marca puesta y un aviso de nuevo encendido, se escribe (la marca no es una firma al día).
+              vuelveAccion: vuelve.accion, vuelveQuitar: vuelve.quitar,
+            },
+            {
+              sinFirma: "nada", conFirma: "borrar", conFirmaSinToken: "borrar", conMarca: "borrar",
+              marcaBorrar: true, marcaToken: null, guardaLaQueHabia: true, firmaRara: true,
+              vuelveAccion: "escribir", vuelveQuitar: null,
+            }
+          );
+        },
+      },
+      {
+        nombre: "Con token: se escribe la primera vez, al cambiar de día y si el navegador lo renueva (el viejo sale); igual y el mismo día, nada",
+        ejecutar: () => {
+          const hoy = new Date(2026, 10, 6, 10, 0);
+          const base = { idioma: "es", pesaje: true, descongelar: false };
+          const anterior = firmaBuzon({ token: "t1", ...base }, hoy);
+          const decidir = (token, previa, fecha = hoy) => decidirBuzon({ quiere: true, token, anterior: previa, ...base }, fecha);
+          const primera = decidir("t1", null);
+          const renovado = decidir("t2", anterior);
+          const otroDia = decidir("t1", anterior, new Date(2026, 10, 7, 9, 0));
+          const trasSinToken = decidir("t1", firmaBuzon({ token: null, ...base }, hoy));
+          return comparar(
+            {
+              igual: decidir("t1", anterior).accion,
+              primera: primera.accion, primeraQuitar: primera.quitar, primeraDia: primera.firma.dia,
+              renovado: renovado.accion, renovadoQuitar: renovado.quitar, renovadoToken: renovado.firma.token,
+              otroDia: otroDia.accion, otroDiaQuitar: otroDia.quitar,
+              // De «sin permiso» a «con permiso» (botón «Recibirlos aquí»): se escribe y no hay token viejo que quitar.
+              trasSinToken: trasSinToken.accion, trasSinTokenQuitar: trasSinToken.quitar,
+            },
+            {
+              igual: "nada", primera: "escribir", primeraQuitar: null, primeraDia: "2026-11-06",
+              renovado: "escribir", renovadoQuitar: "t1", renovadoToken: "t2", otroDia: "escribir", otroDiaQuitar: null,
+              trasSinToken: "escribir", trasSinTokenQuitar: null,
+            }
+          );
+        },
+      },
+      {
+        nombre: "F4: sin permiso (o sin token) se actualizan idioma e interruptores sin tocar la lista, como mucho una vez al día si nada cambia",
+        ejecutar: () => {
+          const hoy = new Date(2026, 10, 6, 10, 0);
+          const base = { idioma: "es", pesaje: true, descongelar: true };
+          const decidir = (cambios, previa, fecha = hoy) => decidirBuzon({ quiere: true, token: null, anterior: previa, ...base, ...cambios }, fecha);
+          const previa = firmaBuzon({ token: null, ...base }, hoy);
+          const primera = decidir({}, null);
+          // El aparato tenía token y ha perdido el permiso: se actualiza igual y su token no se toca (si ya no sirve,
+          // las funciones lo quitan cuando FCM lo dé por muerto).
+          const perdioPermiso = decidir({}, firmaBuzon({ token: "t1", ...base }, hoy));
+          return comparar(
+            {
+              primera: primera.accion, primeraToken: primera.firma.token, primeraIdioma: primera.firma.idioma,
+              igual: decidir({}, previa).accion,
+              otroIdioma: decidir({ idioma: "gl" }, previa).accion,
+              apagaUno: decidir({ descongelar: false }, previa).accion,
+              otroDia: decidir({}, previa, new Date(2026, 10, 7, 9, 0)).accion,
+              perdioPermiso: perdioPermiso.accion, perdioPermisoQuitar: perdioPermiso.quitar ?? null,
+              tokenVacio: decidirBuzon({ quiere: true, token: "", anterior: null, ...base }, hoy).accion,
+            },
+            {
+              primera: "actualizarSinToken", primeraToken: null, primeraIdioma: "es", igual: "nada",
+              otroIdioma: "actualizarSinToken", apagaUno: "actualizarSinToken", otroDia: "actualizarSinToken",
+              perdioPermiso: "actualizarSinToken", perdioPermisoQuitar: null, tokenVacio: "actualizarSinToken",
+            }
+          );
+        },
+      },
+      {
+        nombre: "F2: al cerrar sesión sale el token de la firma y la firma se queda sin token; sin token que sacar, no se toca nada",
+        ejecutar: () => {
+          const firma = firmaBuzon({ token: "t1", idioma: "ca", pesaje: false, descongelar: true }, new Date(2026, 10, 6, 10, 0));
+          const salir = decidirAlSalir(firma);
+          const sinToken = decidirAlSalir({ ...firma, token: null });
+          return comparar(
+            {
+              quitar: salir.quitar, despuesToken: salir.firma.token, despuesIdioma: salir.firma.idioma, despuesDia: salir.firma.dia,
+              noCambiaLaOriginal: firma.token,
+              sinTokenQuitar: sinToken.quitar, sinTokenFirma: sinToken.firma,
+              sinFirma: decidirAlSalir(null).quitar, marca: decidirAlSalir(firmaAlQuitarAvisos(null)).quitar, rara: decidirAlSalir("texto").quitar,
+            },
+            {
+              quitar: "t1", despuesToken: null, despuesIdioma: "ca", despuesDia: "2026-11-06", noCambiaLaOriginal: "t1",
+              sinTokenQuitar: null, sinTokenFirma: null, sinFirma: null, marca: null, rara: null,
             }
           );
         },
