@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v36";
+const CACHE_NAME = "fooddraft-v37";
 // Las páginas legales van también: se enlazan desde la app (Ajustes, alta) y tienen que abrirse sin conexión
 // (solo usan logica/i18n.js, que ya está en la lista).
 const FILES_TO_CACHE = [
@@ -12,6 +12,7 @@ const FILES_TO_CACHE = [
   "./logica/entreno-calculo.js", "./logica/entreno-sesion.js", "./logica/entreno-almacen.js",
   "./logica/informes.js", "./logica/comida-real.js", "./logica/entreno-importar.js", "./logica/periodo.js",
   "./logica/cuerpo-diario.js", "./logica/cuerpo-series.js", "./logica/mapa-corporal.js", "./logica/gimnasio.js",
+  "./logica/buzon-avisos.js",
 ];
 
 // ---------- Notificaciones push en segundo plano (Fase 6) ----------
@@ -25,7 +26,18 @@ try {
   importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-app-compat.js");
   importScripts("https://www.gstatic.com/firebasejs/12.17.1/firebase-messaging-compat.js");
 
-  firebase.initializeApp({
+  // El mismo proyecto que la página (auth-bootstrap.jsx): en el ordenador de desarrollo, el de pruebas, para que
+  // las notificaciones se puedan probar en `localhost` con cuentas inventadas (R8); en cualquier otro host,
+  // producción. Si cambia la regla allí, cambia aquí.
+  const ES_ENTORNO_LOCAL = ["localhost", "127.0.0.1", "[::1]"].includes(self.location.hostname);
+  firebase.initializeApp(ES_ENTORNO_LOCAL ? {
+    apiKey: "AIzaSyDEx-oQAUHgBSHRY-O--OquKYteA4zMcAk",
+    authDomain: "rueda-de-platos-dev.firebaseapp.com",
+    projectId: "rueda-de-platos-dev",
+    storageBucket: "rueda-de-platos-dev.firebasestorage.app",
+    messagingSenderId: "233926898265",
+    appId: "1:233926898265:web:9e2ba470d45eaca0f7b748",
+  } : {
     apiKey: "AIzaSyDFTu5zVLHA7KjXiW7tKM1Ufa-vY2L8A_o",
     authDomain: "rueda-de-platos.firebaseapp.com",
     projectId: "rueda-de-platos",

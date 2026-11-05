@@ -11,8 +11,9 @@ rules_version = '2';
 //
 // Cómo guarda la app (`window.storage`, auth-bootstrap.jsx): un documento por clave en
 // `users/{uid}/keys/{clave}` con un único campo, `value`, que es texto (JSON serializado, o el token de
-// notificaciones en texto plano). El documento padre `users/{uid}` (premium y cuotas) solo lo escriben las
-// Cloud Functions con el Admin SDK, que no pasa por estas reglas.
+// notificaciones en texto plano). Aparte, el buzón de avisos `users/{uid}/avisos/push` (R8, más abajo), con sus
+// propios campos. El documento padre `users/{uid}` (premium y cuotas) solo lo escriben las Cloud Functions con
+// el Admin SDK, que no pasa por estas reglas.
 //
 // Todo lo que no se permite aquí está denegado.
 
@@ -51,6 +52,8 @@ service cloud.firestore {
         'rueda-de-platos:entreno-borrador-v1',
         'rueda-de-platos:cuerpo-diario-v1',
         'rueda-de-platos:informes-favoritos-v1',
+        // Token de notificaciones de antes del buzón de avisos (R8). Se queda mientras dure el paso de un
+        // sistema al otro: las funciones de antes lo siguen leyendo hasta que se desplieguen las nuevas.
         'rueda-de-platos:push-token-v1'
       ]
       // Un documento por mes de entreno (`entreno-AAAA-MM-v1`, logica/entreno-almacen.js), solo de 1970 a
@@ -97,6 +100,66 @@ service cloud.firestore {
         && esDocumentoValido(clave);
       // Borrar cualquier clave propia, también una desconocida: así se puede limpiar lo que hubiera quedado
       // de antes de existir la lista.
+      allow delete: if esSuCuenta(userId);
+    }
+
+    // ---------- Buzón de avisos (auditoría de noviembre, R8 y R17) ----------
+    // Lo que necesitan las funciones programadas de notificaciones (`sendWeighInReminders`,
+    // `sendDefrostReminders`) para saber a quién avisar, separado del resto de datos de la cuenta. Antes lo
+    // averiguaban leyendo **todos** los documentos de `keys` de **todas** las cuentas dos veces al día (coste que
+    // crece con los datos de todo el mundo y lectura de datos de salud de quien ni siquiera tiene avisos, contra
+    // la minimización del RGPD). Ahora consultan solo los documentos `avisos` (`collectionGroup("avisos")`).
+    //
+    // Un documento por cuenta y no uno por dispositivo, porque los interruptores de Ajustes son de la cuenta
+    // (`perfil.notificacionesPush`, `perfil.avisoDescongelar`): quitarlos en el móvil los quita también en el
+    // ordenador. Los dispositivos van en `tokens`, una lista, para que el móvil y el ordenador reciban los avisos
+    // a la vez (R17: con un solo token, activarlos en un aparato los quitaba sin avisar del otro).
+    //
+    // Lo escribe la app (auth-bootstrap.jsx) al activar o quitar un aviso, al cambiar de idioma y al abrirse; las
+    // funciones quitan con el Admin SDK los tokens que FCM da por caducados. **Estas reglas se publican ANTES de
+    // subir la app que escribe el buzón**, o su escritura fallará en todas las cuentas.
+    //
+    // Forma: { idioma, pesaje, descongelar, tokens, actualizado }, todos obligatorios y nada más.
+    // - `idioma`: uno de los cinco de la app (logica/i18n.js); con él se elige el texto del aviso.
+    // - `pesaje`, `descongelar`: copia de los dos interruptores del perfil.
+    // - `tokens`: hasta 10 dispositivos (un móvil, un ordenador, una tableta y los que se renueven entre
+    //   medias sobran); cada uno, texto de 1 a 4096 caracteres (un token de FCM mide unos 160). Puede quedar
+    //   vacía si se cierra la sesión en todos los aparatos.
+    // - `actualizado`: la hora del servidor de cada escritura (`serverTimestamp()`), nunca una inventada por el
+    //   cliente. Sirve para reconocer un buzón abandonado.
+    function esIdiomaDeLaApp(valor) {
+      return valor is string && valor in ['es', 'en', 'ca', 'gl', 'eu'];
+    }
+
+    // Las reglas no tienen bucles: cada posición de la lista se comprueba por separado. Una posición que no
+    // existe (lista más corta) vale.
+    function esTokenValido(tokens, i) {
+      return tokens.size() <= i
+        || (tokens[i] is string && tokens[i].size() > 0 && tokens[i].size() <= 4096);
+    }
+
+    function esBuzonValido() {
+      let datos = request.resource.data;
+      let campos = ['idioma', 'pesaje', 'descongelar', 'tokens', 'actualizado'];
+      return datos.keys().hasOnly(campos)
+        && datos.keys().hasAll(campos)
+        && esIdiomaDeLaApp(datos.idioma)
+        && datos.pesaje is bool
+        && datos.descongelar is bool
+        && datos.tokens is list
+        && datos.tokens.size() <= 10
+        && esTokenValido(datos.tokens, 0) && esTokenValido(datos.tokens, 1)
+        && esTokenValido(datos.tokens, 2) && esTokenValido(datos.tokens, 3)
+        && esTokenValido(datos.tokens, 4) && esTokenValido(datos.tokens, 5)
+        && esTokenValido(datos.tokens, 6) && esTokenValido(datos.tokens, 7)
+        && esTokenValido(datos.tokens, 8) && esTokenValido(datos.tokens, 9)
+        && datos.actualizado == request.time;
+    }
+
+    match /users/{userId}/avisos/{aviso} {
+      // Un único documento, `push`. Sin listar, como `keys`.
+      allow get: if esSuCuenta(userId) && aviso == 'push';
+      allow create, update: if esSuCuenta(userId) && aviso == 'push' && esBuzonValido();
       allow delete: if esSuCuenta(userId);
     }
   }

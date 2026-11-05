@@ -7,7 +7,8 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "test:reglas": "firebase emulators:exec --only firestore --project demo-rueda-de-platos \"node --test pruebas-reglas/reglas.test.js\""
+    "test:reglas": "firebase emulators:exec --only firestore --project demo-rueda-de-platos \"node --test pruebas-reglas/reglas.test.js\"",
+    "test:avisos": "firebase emulators:exec --only firestore --project demo-rueda-de-platos \"node --test pruebas-funciones/avisos.test.js\""
   },
   "engines": {
     "node": "22"

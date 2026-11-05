@@ -5,6 +5,11 @@
 // hoy pesarse (misma regla que ya usa la app, ver logica/peso.js → esDiaSugeridoPeso) y todavía no
 // lo ha hecho — y les manda el recordatorio por FCM.
 //
+// Desde noviembre de 2026 (R8) parte de los buzones de avisos (buzonAvisos.js) en vez de leer todos los
+// documentos de todas las cuentas, y avisa a todos los aparatos de la lista, no solo al último (R17). Los datos
+// de la cuenta (`data-v1`, donde está el seguimiento de peso) solo se abren de quien tiene el recordatorio
+// activado: hace falta saber si hoy le toca, si el ciclo está en pausa y si ya se ha pesado.
+//
 // Por qué esDiaSugeridoPeso se repite aquí en vez de importarse: logica/peso.js es un módulo ESM
 // pensado para el navegador (usa bare-specifiers como "i18n" que solo resuelve el importmap de
 // index.html) y esta carpeta es un proyecto Node CommonJS aparte, sin bundler ni paso de
@@ -13,9 +18,9 @@
 const { onSchedule } = require("firebase-functions/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
+const { buzonesDeAvisos, enviarAlBuzon } = require("./buzonAvisos");
 
 const STORAGE_KEY = "rueda-de-platos:data-v1";
-const PUSH_TOKEN_KEY = "rueda-de-platos:push-token-v1";
 
 // Copia exacta de logica/peso.js — ver el porqué arriba.
 const DIAS_SUGERIDOS_PESO = { 2: [1, 4], 3: [1, 3, 5] };
@@ -30,8 +35,8 @@ function fechaISO(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// Mensaje del push en el idioma del perfil de cada cuenta. Son solo dos textos fijos y muy
-// puntuales — no compensa tirar de todo logica/i18n.js (pensado para el navegador, con 500+
+// Mensaje del push en el idioma de cada cuenta (el del buzón, copia de `perfil.idioma`). Son solo dos textos
+// fijos y muy puntuales — no compensa tirar de todo logica/i18n.js (pensado para el navegador, con 500+
 // claves) por esto.
 const TEXTOS_PUSH = {
   es: { titulo: "Toca pesarse", cuerpo: "Hoy es uno de tus días de seguimiento de peso en FoodDraft." },
@@ -41,56 +46,37 @@ const TEXTOS_PUSH = {
   eu: { titulo: "Pisatzeko eguna", cuerpo: "Gaur FoodDraft aplikazioko zure pisu-jarraipeneko egunetako bat da." },
 };
 
-// Descubre qué cuentas tienen guardado un token de notificaciones. Firestore no deja filtrar una
-// collectionGroup por el último tramo del path sin conocer antes el uid de cada una (el id de
-// documento en una collectionGroup query se compara como ruta completa, no como el nombre suelto
-// "rueda-de-platos:push-token-v1") — así que se recorre toda la colección "keys" de todas las
-// cuentas y se filtra aquí, en memoria. Con el volumen de uso de hoy esto es barato (ver la hoja
-// de ruta de publicación, Fase 6, apartado de coste); si el proyecto llega a tener muchísimos
-// usuarios, convendría mantener un índice propio (por ejemplo, una colección "pushTokens" en la
-// raíz que el cliente actualice a la vez que este documento) en vez de este escaneo completo.
-async function usuariosConNotificacionesActivas() {
-  const snap = await admin.firestore().collectionGroup("keys").get();
-  const candidatos = [];
-  snap.forEach((doc) => {
-    if (doc.id === PUSH_TOKEN_KEY) {
-      candidatos.push({ uid: doc.ref.parent.parent.id, token: doc.data().value });
-    }
-  });
-  return candidatos;
-}
-
 exports.sendWeighInReminders = onSchedule(
   // Una vez al día. Hora local de España (fija todo el año pese al cambio de horario, a
   // diferencia de fijar una hora en UTC): media mañana, un momento razonable para un recordatorio
   // sin resultar molesto a primera hora.
   { schedule: "0 9 * * *", timeZone: "Europe/Madrid" },
-  async () => {
-    const hoy = new Date();
+  async (evento) => {
+    // El día de la ejecución programada (`scheduleTime`, las 9:00 de Madrid en UTC), no el del reloj: si la
+    // ejecución se retrasa o Google la reintenta, sigue contando el día que tocaba. Y permite probar la función
+    // con cualquier día (functions/pruebas-funciones/). Las funciones corren en UTC, y las 9:00 de Madrid caen
+    // siempre en el mismo día en UTC (8:00 en invierno, 7:00 en verano).
+    const hoy = evento && evento.scheduleTime ? new Date(evento.scheduleTime) : new Date();
     const hoyISO = fechaISO(hoy);
 
-    // Registro temporal de diagnóstico (añadido 2026-09-20, investigando por qué el 16/09 no llegó
-    // ningún recordatorio pese a ser día sugerido): antes, un fallo aquí tiraba toda la función sin
-    // dejar ni rastro, porque esta llamada era la única sin try/catch de toda la función. Los
-    // logger.info() de abajo son también parte de ese diagnóstico — dejan constancia de por qué se
-    // omite cada candidato, para distinguir "se saltó a propósito" de "algo falló en silencio". Quitar
-    // cuando se confirme la causa real (avisará el usuario tras comprobar el próximo día sugerido).
-    let candidatos;
+    // Registro de diagnóstico (añadido el 20-sep-2026, investigando un recordatorio que no llegó): una línea al
+    // día con cuántas cuentas tocan y, por cada una, por qué se le manda o se omite. Se queda a propósito: es
+    // lo que permite comprobar en el registro de Google Cloud, sin esperar a que alguien se queje, que la
+    // función se ejecuta y decide bien (así se comprobó el 5-nov-2026, antes de R8). No incluye ningún dato de
+    // salud: solo el uid y el motivo.
+    let buzones;
     try {
-      candidatos = await usuariosConNotificacionesActivas();
+      buzones = await buzonesDeAvisos();
     } catch (err) {
-      logger.error("No se ha podido listar los usuarios con notificaciones activas", err);
+      logger.error("Recordatorio de pesaje: no se han podido leer los buzones de avisos", err);
       return;
     }
-    logger.info(`Recordatorio de pesaje: ${candidatos.length} candidato(s) con token guardado`);
+    const candidatos = buzones.filter((b) => b.pesaje && b.tokens.length > 0);
+    logger.info(`Recordatorio de pesaje: ${candidatos.length} candidato(s) con el recordatorio activado`);
 
     await Promise.all(
-      candidatos.map(async ({ uid, token }) => {
-        if (!token) {
-          logger.info(`${uid}: token vacío, se omite`);
-          return;
-        }
-
+      candidatos.map(async (buzon) => {
+        const { uid } = buzon;
         let datos;
         try {
           const snap = await admin.firestore().doc(`users/${uid}/keys/${STORAGE_KEY}`).get();
@@ -104,12 +90,10 @@ exports.sendWeighInReminders = onSchedule(
           return;
         }
 
-        // C8 (25-oct-2026): desde que existe el aviso para descongelar, el token de notificaciones puede estar
-        // guardado solo por ese aviso. Si la cuenta tiene el recordatorio de pesaje desactivado, no se le manda.
-        // (Hasta entonces, desactivarlo borraba el token, así que el resultado para las cuentas de antes es el
-        // mismo.)
+        // El buzón es una copia del perfil que pone al día la app. Si alguna vez no coincidieran (un aparato que
+        // escribió tarde), manda el perfil: más vale no avisar que avisar a quien lo ha quitado.
         if (datos.perfil && datos.perfil.notificacionesPush === false) {
-          logger.info(`${uid}: recordatorio de pesaje desactivado, se omite`);
+          logger.info(`${uid}: recordatorio de pesaje desactivado en el perfil, se omite`);
           return;
         }
 
@@ -120,7 +104,7 @@ exports.sendWeighInReminders = onSchedule(
         }
 
         // Mientras el ciclo esté pausado (viaje, enfermedad...) no se dispara el recordatorio —
-        // mismo criterio que ya aplica la propia app (ver PesoView en app.jsx).
+        // mismo criterio que ya aplica la propia app (ver ui/peso/seguimiento.jsx).
         const pausaActiva = (pesoTracking.pausas || []).some((p) => p.fin === null);
         if (pausaActiva) {
           logger.info(`${uid}: ciclo de peso en pausa, se omite`);
@@ -138,22 +122,13 @@ exports.sendWeighInReminders = onSchedule(
           return;
         }
 
-        const idioma = (datos.perfil && datos.perfil.idioma) || "es";
-        const { titulo, cuerpo } = TEXTOS_PUSH[idioma] || TEXTOS_PUSH.es;
-
+        const { titulo, cuerpo } = TEXTOS_PUSH[buzon.idioma] || TEXTOS_PUSH.es;
         try {
-          await admin.messaging().send({ token, notification: { title: titulo, body: cuerpo } });
-          logger.info(`${uid}: recordatorio enviado`);
+          // Sin etiqueta: sw.js usa «recordatorio-pesaje» por defecto.
+          const { enviados } = await enviarAlBuzon(buzon, { titulo, cuerpo });
+          logger.info(`${uid}: recordatorio enviado a ${enviados} de ${buzon.tokens.length} aparato(s)`);
         } catch (err) {
-          // El permiso se revocó, se desinstaló la PWA, o el token caducó: se borra para no
-          // volver a intentarlo cada día con un token que ya no sirve. Cualquier otro fallo (red,
-          // cuota puntual de FCM...) se deja tal cual, para reintentarlo mañana solo.
-          if (err.code === "messaging/registration-token-not-registered") {
-            await admin.firestore().doc(`users/${uid}/keys/${PUSH_TOKEN_KEY}`).delete().catch(() => {});
-            logger.info(`${uid}: token caducado o no registrado, se borra`);
-          } else {
-            logger.error(`No se ha podido enviar el recordatorio de pesaje a ${uid}`, err);
-          }
+          logger.error(`No se ha podido enviar el recordatorio de pesaje a ${uid}`, err);
         }
       })
     );

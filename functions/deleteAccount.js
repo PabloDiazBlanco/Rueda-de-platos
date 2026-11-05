@@ -11,7 +11,8 @@
 //   2. Cancela en Stripe todas las suscripciones vivas de su cliente. Si Stripe falla, NO se borra nada y
 //      se devuelve el error: mejor que lo intente otra vez que dejar a alguien pagando sin cuenta. El cliente
 //      de Stripe no se borra: las facturas tienen que conservarse por ley (ver la política de privacidad).
-//   3. Borra users/{uid} entero (el documento padre y su subcolección keys) con recursiveDelete.
+//   3. Borra users/{uid} entero (el documento padre y sus subcolecciones: keys y el buzón de avisos, avisos/push)
+//      con recursiveDelete, que borra cualquier subcolección sin tener que nombrarla.
 //   4. Borra la cuenta de Auth.
 //   5. Vuelve a borrar users/{uid}, por si mientras tanto llegó alguna escritura tardía (un guardado
 //      automático del cliente, el evento de Stripe de la cancelación). stripeWebhook ya no escribe nada

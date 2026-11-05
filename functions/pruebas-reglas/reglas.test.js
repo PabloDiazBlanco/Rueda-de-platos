@@ -12,7 +12,8 @@
 // que solo se aceptan las claves que usa la app, con un único campo `value` de texto y de tamaño acotado, y
 // que todo lo demás se deniega. Además, una prueba lee el código de la app y comprueba que **cada clave que la
 // app guarda en la nube está permitida**: si alguien añade una clave nueva y se olvida de las reglas, falla
-// aquí en vez de dejar sin guardar a todas las cuentas en producción.
+// aquí en vez de dejar sin guardar a todas las cuentas en producción. El buzón de avisos (`avisos/push`, R8)
+// tiene sus propias pruebas al final: forma exacta, hasta 10 dispositivos y la hora puesta por el servidor.
 
 const { describe, it, before, after, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
@@ -30,7 +31,12 @@ const {
   updateDoc,
   deleteDoc,
   collection,
+  collectionGroup,
   getDocs,
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove,
+  Timestamp,
   setLogLevel,
 } = require("firebase/firestore");
 
@@ -404,5 +410,167 @@ describe("Todo lo demás, denegado", () => {
   it("listar las cuentas", async () => {
     await preparar(["users", "alicia"], { premium: { active: false } });
     await assertFails(getDocs(collection(de("alicia"), "users")));
+  });
+});
+
+describe("Buzón de avisos (R8): lo que leen las funciones de notificaciones", () => {
+  // Dos tokens con la forma de los de FCM (unos 160 caracteres, letras, números, `_`, `-` y `:`).
+  const MOVIL = "fcm-movil:APA91b" + "M".repeat(150);
+  const ORDENADOR = "fcm-ordenador:APA91b" + "O".repeat(146);
+
+  // Lo que escribe la app: los cinco campos, el token del dispositivo añadido sin pisar los de los demás
+  // (`arrayUnion`) y la hora del servidor.
+  const buzon = (cambios = {}) => ({
+    idioma: "es",
+    pesaje: true,
+    descongelar: false,
+    tokens: arrayUnion(MOVIL),
+    actualizado: serverTimestamp(),
+    ...cambios,
+  });
+  const refBuzon = (db, uid = "alicia", id = "push") => doc(db, "users", uid, "avisos", id);
+  // Un buzón ya guardado, como lo dejaría la app (o una función con el Admin SDK).
+  const prepararBuzon = (uid, datos = {}) =>
+    preparar(["users", uid, "avisos", "push"], {
+      idioma: "es", pesaje: true, descongelar: false, tokens: [MOVIL], actualizado: Timestamp.now(), ...datos,
+    });
+
+  it("lo crea, lo lee, añade otro dispositivo, quita uno y lo borra", async () => {
+    const db = de("alicia");
+    await assertSucceeds(setDoc(refBuzon(db), buzon(), { merge: true }));
+    // Activar los avisos en el ordenador: se suma a la lista, el móvil sigue.
+    await assertSucceeds(
+      setDoc(refBuzon(db), buzon({ descongelar: true, tokens: arrayUnion(ORDENADOR) }), { merge: true })
+    );
+    const leido = await assertSucceeds(getDoc(refBuzon(db)));
+    assert.deepEqual(leido.data().tokens, [MOVIL, ORDENADOR]);
+    assert.equal(leido.data().descongelar, true);
+    // Cerrar sesión en el móvil: sale de la lista.
+    await assertSucceeds(updateDoc(refBuzon(db), { tokens: arrayRemove(MOVIL), actualizado: serverTimestamp() }));
+    // Cambiar el idioma.
+    await assertSucceeds(updateDoc(refBuzon(db), { idioma: "eu", actualizado: serverTimestamp() }));
+    // Quitar los dos avisos.
+    await assertSucceeds(deleteDoc(refBuzon(db)));
+  });
+
+  it("la lista puede quedarse vacía (sesión cerrada en todos los aparatos)", async () => {
+    await prepararBuzon("alicia");
+    await assertSucceeds(
+      updateDoc(refBuzon(de("alicia")), { tokens: arrayRemove(MOVIL), actualizado: serverTimestamp() })
+    );
+  });
+
+  it("no lee, no escribe y no borra el buzón de otra persona", async () => {
+    await prepararBuzon("alicia");
+    const db = de("bruno");
+    await assertFails(getDoc(refBuzon(db)));
+    await assertFails(setDoc(refBuzon(db), buzon(), { merge: true }));
+    await assertFails(updateDoc(refBuzon(db), { tokens: arrayUnion(ORDENADOR), actualizado: serverTimestamp() }));
+    await assertFails(deleteDoc(refBuzon(db)));
+  });
+
+  it("sin sesión o sin el email verificado, nada", async () => {
+    await prepararBuzon("alicia");
+    for (const db of [sinSesion(), sinVerificar("alicia")]) {
+      await assertFails(getDoc(refBuzon(db)));
+      await assertFails(setDoc(refBuzon(db), buzon(), { merge: true }));
+      await assertFails(deleteDoc(refBuzon(db)));
+    }
+  });
+
+  it("solo existe el documento `push`", async () => {
+    const db = de("alicia");
+    await assertFails(setDoc(refBuzon(db, "alicia", "otro"), buzon()));
+    await assertFails(setDoc(refBuzon(db, "alicia", "Push"), buzon()));
+    await assertFails(getDoc(refBuzon(db, "alicia", "otro")));
+  });
+
+  it("no se lista: ni la propia subcolección ni los buzones de todas las cuentas", async () => {
+    await prepararBuzon("alicia");
+    await prepararBuzon("bruno");
+    await assertFails(getDocs(collection(de("alicia"), "users", "alicia", "avisos")));
+    // Esta consulta es justo la que hacen las funciones con el Admin SDK: desde la app, nunca.
+    await assertFails(getDocs(collectionGroup(de("alicia"), "avisos")));
+  });
+
+  it("exige los cinco campos y ninguno más", async () => {
+    const db = de("alicia");
+    for (const campo of ["idioma", "pesaje", "descongelar", "tokens", "actualizado"]) {
+      const datos = buzon();
+      delete datos[campo];
+      await assertFails(setDoc(refBuzon(db), datos));
+    }
+    await assertFails(setDoc(refBuzon(db), buzon({ otro: 1 })));
+    await assertFails(setDoc(refBuzon(db), buzon({ premium: { active: true } })));
+    // Con el buzón ya guardado, tampoco se le puede añadir un campo.
+    await prepararBuzon("alicia");
+    await assertFails(updateDoc(refBuzon(db), { otro: 1, actualizado: serverTimestamp() }));
+  });
+
+  it("idioma: solo los cinco de la app", async () => {
+    const db = de("alicia");
+    for (const idioma of ["es", "en", "ca", "gl", "eu"]) {
+      await assertSucceeds(setDoc(refBuzon(db), buzon({ idioma })));
+    }
+    for (const idioma of ["fr", "ES", "", "español", 1, null]) {
+      await assertFails(setDoc(refBuzon(db), buzon({ idioma })));
+    }
+  });
+
+  it("pesaje y descongelar: sí o no, nada más", async () => {
+    const db = de("alicia");
+    for (const valor of ["true", 1, null, "sí"]) {
+      await assertFails(setDoc(refBuzon(db), buzon({ pesaje: valor })));
+      await assertFails(setDoc(refBuzon(db), buzon({ descongelar: valor })));
+    }
+  });
+
+  it("tokens: una lista de hasta 10", async () => {
+    const db = de("alicia");
+    const lista = (n) => Array.from({ length: n }, (_, i) => `fcm-${i}:APA91b${"x".repeat(150)}`);
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: [] })));
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: lista(10) })));
+    await assertFails(setDoc(refBuzon(db), buzon({ tokens: lista(11) })));
+    await assertFails(setDoc(refBuzon(db), buzon({ tokens: MOVIL })));
+    await assertFails(setDoc(refBuzon(db), buzon({ tokens: { a: MOVIL } })));
+    // Con 10 ya guardados, un undécimo aparato no cabe: la app tiene que hacer sitio antes.
+    await prepararBuzon("alicia", { tokens: lista(10) });
+    await assertFails(updateDoc(refBuzon(db), { tokens: arrayUnion(ORDENADOR), actualizado: serverTimestamp() }));
+  });
+
+  it("el tope de aparatos de las reglas es el mismo que el de la app", async () => {
+    // La app hace sitio cuando la lista está llena (logica/buzon-avisos.js, MAX_DISPOSITIVOS): si el tope de
+    // allí fuera mayor que el de aquí, sus escrituras fallarían; si fuera menor, echaría aparatos sin necesidad.
+    const texto = fs.readFileSync(path.join(RAIZ, "logica", "buzon-avisos.js"), "utf8");
+    const tope = Number((texto.match(/MAX_DISPOSITIVOS\s*=\s*(\d+)/) || [])[1]);
+    assert.ok(tope > 0, "no se ha encontrado MAX_DISPOSITIVOS en logica/buzon-avisos.js");
+    const db = de("alicia");
+    const lista = (n) => Array.from({ length: n }, (_, i) => `fcm-${i}:APA91b`);
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: lista(tope) })));
+    await assertFails(setDoc(refBuzon(db), buzon({ tokens: lista(tope + 1) })));
+  });
+
+  it("cada token: texto de 1 a 4096 caracteres, en cualquier posición de la lista", async () => {
+    const db = de("alicia");
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: ["t".repeat(4096)] })));
+    // (Una lista dentro de la lista no hace falta probarla: Firestore no admite listas anidadas.)
+    for (const malo of ["", "t".repeat(4097), 5, null, true, { a: 1 }]) {
+      await assertFails(setDoc(refBuzon(db), buzon({ tokens: [malo] })));
+    }
+    // Un token malo en la última posición posible también se detecta (las reglas miran cada posición).
+    const nueveBuenos = Array.from({ length: 9 }, (_, i) => `fcm-${i}:APA91b`);
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: [...nueveBuenos, "fcm-9:APA91b"] })));
+    await assertFails(setDoc(refBuzon(db), buzon({ tokens: [...nueveBuenos, ""] })));
+    await assertFails(setDoc(refBuzon(db), buzon({ tokens: [...nueveBuenos, 42] })));
+  });
+
+  it("actualizado: la hora del servidor, nunca una puesta por la app", async () => {
+    const db = de("alicia");
+    await assertFails(setDoc(refBuzon(db), buzon({ actualizado: Timestamp.now() })));
+    await assertFails(setDoc(refBuzon(db), buzon({ actualizado: Timestamp.fromDate(new Date("2099-01-01")) })));
+    await assertFails(setDoc(refBuzon(db), buzon({ actualizado: "2026-11-05" })));
+    // Al actualizar, tampoco vale dejar la hora de la escritura anterior.
+    await prepararBuzon("alicia");
+    await assertFails(updateDoc(refBuzon(db), { idioma: "en" }));
   });
 });

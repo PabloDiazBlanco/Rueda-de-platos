@@ -67,6 +67,7 @@ import {
   puntoDe, paradasDeRutina, pasoEntreEjercicios, ultimaVezPorZona, estadoZonas, situacionMonitor, fraseMonitor, rutinaDeHoy,
   diasEntrenadosSemana,
 } from "gimnasio";
+import { MAX_DISPOSITIVOS, quiereAvisos, firmaBuzon, buzonAlDia, tokensConSitio } from "buzon-avisos";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1442,6 +1443,7 @@ export function crearGrupos(mod, carga) {
     grupoCuerpoInformes(),
     grupoMapaCorporal(),
     grupoGimnasio(),
+    grupoBuzonAvisos(),
   ];
 }
 
@@ -3365,6 +3367,93 @@ function grupoGimnasio() {
           const lunes = diasEntrenadosSemana(s, "2026-10-29", 1).map((x) => (x ? 1 : 0)).join("");
           const domingo = diasEntrenadosSemana(s, "2026-10-29", 0).map((x) => (x ? 1 : 0)).join("");
           return comparar({ lunes, domingo }, { lunes: "1010000", domingo: "1101000" });
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Buzón de avisos (auditoría de noviembre de 2026, R8 y R17) ----------
+// Qué decide la app, sin Firebase, sobre el documento que leen las funciones de notificaciones
+// (logica/buzon-avisos.js). Que el tope de aparatos sea el mismo que el de firestore.rules lo comprueban las
+// pruebas de las reglas (functions/pruebas-reglas/).
+function grupoBuzonAvisos() {
+  return {
+    grupo: "Avisos: el buzón de las notificaciones",
+    casos: [
+      {
+        nombre: "Hace falta buzón si hay al menos un aviso activado",
+        ejecutar: () => comparar(
+          {
+            pesaje: quiereAvisos({ pesaje: true, descongelar: false }),
+            descongelar: quiereAvisos({ pesaje: undefined, descongelar: true }),
+            ambos: quiereAvisos({ pesaje: true, descongelar: true }),
+            ninguno: quiereAvisos({ pesaje: false, descongelar: false }),
+            vacio: quiereAvisos({}),
+          },
+          { pesaje: true, descongelar: true, ambos: true, ninguno: false, vacio: false }
+        ),
+      },
+      {
+        nombre: "La firma: interruptores como sí/no y el día local (también justo antes y después de medianoche)",
+        ejecutar: () => {
+          // 5 de noviembre a las 23:59 y 1 de enero a las 00:05, en la hora del dispositivo (meses desde 0).
+          const noche = firmaBuzon({ token: "t1", idioma: "es", pesaje: 1, descongelar: undefined }, new Date(2026, 10, 5, 23, 59));
+          const madrugada = firmaBuzon({ token: "t1", idioma: "eu", pesaje: false, descongelar: true }, new Date(2026, 0, 1, 0, 5));
+          return comparar(
+            { token: noche.token, idioma: noche.idioma, pesaje: noche.pesaje, descongelar: noche.descongelar, dia: noche.dia, diaMadrugada: madrugada.dia, idiomaMadrugada: madrugada.idioma },
+            { token: "t1", idioma: "es", pesaje: true, descongelar: false, dia: "2026-11-05", diaMadrugada: "2026-01-01", idiomaMadrugada: "eu" }
+          );
+        },
+      },
+      {
+        nombre: "Se reescribe el buzón si cambia el día, el token, el idioma o un interruptor; no si es todo igual",
+        ejecutar: () => {
+          const hoy = new Date(2026, 10, 5, 10, 0);
+          const base = { token: "t1", idioma: "es", pesaje: true, descongelar: false };
+          const guardada = firmaBuzon(base, hoy);
+          const nueva = (cambios, fecha = hoy) => firmaBuzon({ ...base, ...cambios }, fecha);
+          return comparar(
+            {
+              igual: buzonAlDia(guardada, nueva({})),
+              otroDia: buzonAlDia(guardada, nueva({}, new Date(2026, 10, 6, 8, 0))),
+              otroToken: buzonAlDia(guardada, nueva({ token: "t2" })),
+              otroIdioma: buzonAlDia(guardada, nueva({ idioma: "ca" })),
+              otroInterruptor: buzonAlDia(guardada, nueva({ descongelar: true })),
+              sinFirma: buzonAlDia(null, nueva({})),
+              firmaRara: buzonAlDia("texto", nueva({})),
+              firmaSinDia: buzonAlDia({ token: "t1", idioma: "es", pesaje: true, descongelar: false }, nueva({})),
+            },
+            { igual: true, otroDia: false, otroToken: false, otroIdioma: false, otroInterruptor: false, sinFirma: false, firmaRara: false, firmaSinDia: false }
+          );
+        },
+      },
+      {
+        nombre: "Hacer sitio a un aparato: va al final, sin repetidos ni basura, y salen los más antiguos",
+        ejecutar: () => {
+          const diez = Array.from({ length: 10 }, (_, i) => "t" + i);
+          const doce = Array.from({ length: 12 }, (_, i) => "t" + i);
+          const lleno = tokensConSitio(diez, "n");
+          const muyLleno = tokensConSitio(doce, "n");
+          return comparar(
+            {
+              tope: MAX_DISPOSITIVOS,
+              cabe: tokensConSitio(["a", "b"], "c").join(","),
+              repetido: tokensConSitio(["a", "c", "b"], "c").join(","),
+              basura: tokensConSitio(["a", 5, null, "", "b"], "c").join(","),
+              sinLista: tokensConSitio(undefined, "c").join(","),
+              listaRara: tokensConSitio("texto", "c").join(","),
+              // 10 guardados + 1 nuevo: se queda t1…t9 y el nuevo (sale t0, el más antiguo).
+              llenoLargo: lleno.length, llenoPrimero: lleno[0], llenoUltimo: lleno[9],
+              // 12 (más de los que dejan las reglas, si alguna vez se baja el tope): t3…t11 y el nuevo.
+              muyLlenoLargo: muyLleno.length, muyLlenoPrimero: muyLleno[0],
+              soloUno: tokensConSitio(["a", "b"], "c", 1).join(","),
+            },
+            {
+              tope: 10, cabe: "a,b,c", repetido: "a,b,c", basura: "a,b,c", sinLista: "c", listaRara: "c",
+              llenoLargo: 10, llenoPrimero: "t1", llenoUltimo: "n", muyLlenoLargo: 10, muyLlenoPrimero: "t3", soloUno: "c",
+            }
+          );
         },
       },
     ],

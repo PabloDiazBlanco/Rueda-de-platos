@@ -2,21 +2,16 @@
 // Gratis. Cada noche a las 21:30 (hora de España), a quien lo tenga activado en Ajustes («Aviso para
 // descongelar», `perfil.avisoDescongelar`), un recordatorio genérico: «revisa las comidas de mañana por si
 // tienes que descongelar algo o comprar». Decisión del usuario: **no hace falta leer el menú** (no se sabe qué
-// día del ciclo se come cada cosa, y un aviso genérico basta), así que esta función solo lee el perfil.
+// día del ciclo se come cada cosa, y un aviso genérico basta).
 //
-// Desplegada (comprobado con `firebase functions:list` el 29-oct-2026).
-//
-// Sigue el patrón de sendWeighInReminders.js (mismo token de FCM, mismas reglas de seguridad). La búsqueda
-// de cuentas con token se repite aquí en vez de compartirse para no tocar esa función, que ya está desplegada
-// y funcionando; si se cambia en una, cámbiala en la otra.
+// Desde noviembre de 2026 (R8) solo lee los buzones de avisos (buzonAvisos.js): el buzón ya trae el interruptor,
+// el idioma y los aparatos, así que esta función **no abre ningún dato de la cuenta**. Antes leía todos los
+// documentos de todas las cuentas y, de cada una con token, sus datos completos para mirar el perfil.
 const { onSchedule } = require("firebase-functions/scheduler");
 const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { buzonesDeAvisos, enviarAlBuzon } = require("./buzonAvisos");
 
-const STORAGE_KEY = "rueda-de-platos:data-v1";
-const PUSH_TOKEN_KEY = "rueda-de-platos:push-token-v1";
-
-// Textos en el idioma del perfil (como en sendWeighInReminders.js: dos frases fijas no justifican cargar
+// Textos en el idioma del buzón (como en sendWeighInReminders.js: dos frases fijas no justifican cargar
 // logica/i18n.js, que es un módulo del navegador).
 const TEXTOS_PUSH = {
   es: { titulo: "¿Algo que descongelar?", cuerpo: "Revisa las comidas de mañana por si tienes que descongelar algo o comprar." },
@@ -26,56 +21,31 @@ const TEXTOS_PUSH = {
   eu: { titulo: "Zerbait desizozteko?", cuerpo: "Begiratu biharko otorduak, zerbait desizoztu edo erosi behar baduzu ere." },
 };
 
-// Mismo recorrido que sendWeighInReminders.js (ver allí el porqué de leer toda la colectionGroup «keys»).
-async function usuariosConToken() {
-  const snap = await admin.firestore().collectionGroup("keys").get();
-  const candidatos = [];
-  snap.forEach((doc) => {
-    if (doc.id === PUSH_TOKEN_KEY) candidatos.push({ uid: doc.ref.parent.parent.id, token: doc.data().value });
-  });
-  return candidatos;
-}
-
 exports.sendDefrostReminders = onSchedule(
   // 21:30 en España todo el año (dentro de la franja de 21 a 22 h acordada): la noche antes, con margen
   // para sacar algo del congelador antes de dormir.
   { schedule: "30 21 * * *", timeZone: "Europe/Madrid" },
   async () => {
-    let candidatos;
+    let buzones;
     try {
-      candidatos = await usuariosConToken();
+      buzones = await buzonesDeAvisos();
     } catch (err) {
-      logger.error("Aviso para descongelar: no se ha podido listar las cuentas con notificaciones", err);
+      logger.error("Aviso para descongelar: no se han podido leer los buzones de avisos", err);
       return;
     }
+    const conAviso = buzones.filter((b) => b.descongelar && b.tokens.length > 0);
+    // Una línea al día con cuántas cuentas tocan, como en el recordatorio de pesaje: así se ve en el registro de
+    // Google Cloud que la función se ha ejecutado aunque no haya nadie a quien avisar.
+    logger.info(`Aviso para descongelar: ${conAviso.length} buzón(es) con el aviso activado`);
 
     await Promise.all(
-      candidatos.map(async ({ uid, token }) => {
-        if (!token) return;
-        let perfil;
+      conAviso.map(async (buzon) => {
+        const { titulo, cuerpo } = TEXTOS_PUSH[buzon.idioma] || TEXTOS_PUSH.es;
         try {
-          const snap = await admin.firestore().doc(`users/${uid}/keys/${STORAGE_KEY}`).get();
-          if (!snap.exists) return;
-          perfil = (JSON.parse(snap.data().value) || {}).perfil;
+          const { enviados } = await enviarAlBuzon(buzon, { titulo, cuerpo, etiqueta: "aviso-descongelar" });
+          logger.info(`${buzon.uid}: aviso para descongelar enviado a ${enviados} de ${buzon.tokens.length} aparato(s)`);
         } catch (err) {
-          logger.error(`Aviso para descongelar: no se han podido leer los datos de ${uid}`, err);
-          return;
-        }
-        // Solo a quien lo ha activado: el token de notificaciones puede estar por el recordatorio de pesaje.
-        if (!perfil || perfil.avisoDescongelar !== true) return;
-
-        const { titulo, cuerpo } = TEXTOS_PUSH[perfil.idioma] || TEXTOS_PUSH.es;
-        try {
-          // `data.tag` le dice a sw.js con qué etiqueta mostrarla, para que no sustituya a la del pesaje.
-          await admin.messaging().send({ token, notification: { title: titulo, body: cuerpo }, data: { tag: "aviso-descongelar" } });
-          logger.info(`${uid}: aviso para descongelar enviado`);
-        } catch (err) {
-          if (err.code === "messaging/registration-token-not-registered") {
-            await admin.firestore().doc(`users/${uid}/keys/${PUSH_TOKEN_KEY}`).delete().catch(() => {});
-            logger.info(`${uid}: token caducado o no registrado, se borra`);
-          } else {
-            logger.error(`Aviso para descongelar: no se ha podido enviar a ${uid}`, err);
-          }
+          logger.error(`Aviso para descongelar: no se ha podido enviar a ${buzon.uid}`, err);
         }
       })
     );

@@ -131,6 +131,19 @@ export default function RuedaDePlatos() {
     }
   );
 
+  // Buzón de avisos (auditoría de noviembre de 2026, R8): lo que leen las funciones de notificaciones para saber
+  // a quién avisar. Se pone al día al abrirse la app y cada vez que cambian el idioma o uno de los dos
+  // interruptores de Ajustes (window.sincronizarBuzonAvisos, auth-bootstrap.jsx, que decide si hace falta
+  // escribir). Solo con el perfil leído bien de la nube: con un error de carga no se sabe qué quiere la cuenta.
+  // En validacion/ no existe el puente con Firebase y no hace nada.
+  const perfilListo = !loading && !errorCarga && !!(data && data.perfil);
+  const avisoPesaje = !!(data && data.perfil && data.perfil.notificacionesPush);
+  const avisoDescongelar = !!(data && data.perfil && data.perfil.avisoDescongelar);
+  useEffect(() => {
+    if (!perfilListo || typeof window.sincronizarBuzonAvisos !== "function") return;
+    window.sincronizarBuzonAvisos({ idioma, pesaje: avisoPesaje, descongelar: avisoDescongelar });
+  }, [perfilListo, idioma, avisoPesaje, avisoDescongelar]);
+
   if (errorCarga) {
     return (
       <Shell>
