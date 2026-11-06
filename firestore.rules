@@ -115,11 +115,12 @@ service cloud.firestore {
     // ordenador. Los dispositivos van en `tokens`, una lista, para que el móvil y el ordenador reciban los avisos
     // a la vez (R17: con un solo token, activarlos en un aparato los quitaba sin avisar del otro).
     //
-    // Lo escribe la app (auth-bootstrap.jsx) al activar o quitar un aviso, al cambiar de idioma y al abrirse; las
-    // funciones quitan con el Admin SDK los tokens que FCM da por caducados. **Estas reglas se publican ANTES de
+    // Lo escribe la app (auth-bootstrap.jsx) al activar o quitar un aviso, al cambiar de idioma o el seguimiento de
+    // peso y al abrirse; las funciones quitan con el Admin SDK los tokens que FCM da por caducados. **Estas reglas se publican ANTES de
     // subir la app que escribe el buzón**, o su escritura fallará en todas las cuentas.
     //
-    // Forma: { idioma, pesaje, descongelar, tokens, actualizado }, todos obligatorios y nada más.
+    // Forma: { idioma, pesaje, descongelar, tokens, actualizado } obligatorios, más tres opcionales del seguimiento
+    // de peso (tanda B, M2), y nada más.
     // - `idioma`: uno de los cinco de la app (logica/i18n.js); con él se elige el texto del aviso.
     // - `pesaje`, `descongelar`: copia de los dos interruptores del perfil.
     // - `tokens`: hasta 10 dispositivos (un móvil, un ordenador, una tableta y los que se renueven entre
@@ -127,8 +128,27 @@ service cloud.firestore {
     //   vacía si se cierra la sesión en todos los aparatos.
     // - `actualizado`: la hora del servidor de cada escritura (`serverTimestamp()`), nunca una inventada por el
     //   cliente. Sirve para reconocer un buzón abandonado.
+    // - Opcionales, para que el recordatorio de pesaje decida sin abrir `data-v1` (hasta 1 MiB con el perfil, el
+    //   catálogo y el historial de peso) de cada cuenta cada mañana: `pesoVecesSemana` (2 o 3 pesadas a la semana, o
+    //   `null` sin seguimiento), `pesoPausado` (sí/no) y `ultimaPesada` (`AAAA-MM-DD` de la última pesada del ciclo,
+    //   o `null`). **Nunca el peso**: solo cuándo, no cuánto. Opcionales porque los buzones escritos por la app de
+    //   antes no los tienen y tienen que seguir valiendo (con ellos, la función abre `data-v1` como antes); y porque
+    //   una copia de la app sin actualizar reescribe el buzón sin ellos.
     function esIdiomaDeLaApp(valor) {
       return valor is string && valor in ['es', 'en', 'ca', 'gl', 'eu'];
+    }
+
+    // Las frecuencias de `PESO_FRECUENCIAS` (logica/peso.js), o `null`. Entero, no decimal: la app manda 2 o 3 y
+    // la función compara con esos números. Una prueba de las reglas comprueba que acepta todas las de la app.
+    function esFrecuenciaDePeso(valor) {
+      return valor == null || (valor is int && valor in [2, 3]);
+    }
+
+    // Una fecha `AAAA-MM-DD` (fechaISO de logica/peso.js), o `null`. Solo la forma: la función solo la compara con
+    // el día de hoy, así que una fecha imposible (mes 13) no cambia nada, y la app manda `null` en vez de una que
+    // no tenga esta forma (si las reglas fueran más estrictas que la app, se rechazaría el buzón entero).
+    function esFechaDePesada(valor) {
+      return valor == null || (valor is string && valor.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}'));
     }
 
     // Las reglas no tienen bucles: cada posición de la lista se comprueba por separado. Una posición que no
@@ -140,9 +160,11 @@ service cloud.firestore {
 
     function esBuzonValido() {
       let datos = request.resource.data;
-      let campos = ['idioma', 'pesaje', 'descongelar', 'tokens', 'actualizado'];
-      return datos.keys().hasOnly(campos)
-        && datos.keys().hasAll(campos)
+      let obligatorios = ['idioma', 'pesaje', 'descongelar', 'tokens', 'actualizado'];
+      let todos = ['idioma', 'pesaje', 'descongelar', 'tokens', 'actualizado',
+                   'pesoVecesSemana', 'pesoPausado', 'ultimaPesada'];
+      return datos.keys().hasOnly(todos)
+        && datos.keys().hasAll(obligatorios)
         && esIdiomaDeLaApp(datos.idioma)
         && datos.pesaje is bool
         && datos.descongelar is bool
@@ -153,7 +175,11 @@ service cloud.firestore {
         && esTokenValido(datos.tokens, 4) && esTokenValido(datos.tokens, 5)
         && esTokenValido(datos.tokens, 6) && esTokenValido(datos.tokens, 7)
         && esTokenValido(datos.tokens, 8) && esTokenValido(datos.tokens, 9)
-        && datos.actualizado == request.time;
+        && datos.actualizado == request.time
+        // Los opcionales, solo si están (`get` con el valor por defecto que vale): un buzón sin ellos es válido.
+        && esFrecuenciaDePeso(datos.get('pesoVecesSemana', null))
+        && datos.get('pesoPausado', false) is bool
+        && esFechaDePesada(datos.get('ultimaPesada', null));
     }
 
     match /users/{userId}/avisos/{aviso} {

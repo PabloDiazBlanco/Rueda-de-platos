@@ -13,7 +13,8 @@
 // que todo lo demás se deniega. Además, una prueba lee el código de la app y comprueba que **cada clave que la
 // app guarda en la nube está permitida**: si alguien añade una clave nueva y se olvida de las reglas, falla
 // aquí en vez de dejar sin guardar a todas las cuentas en producción. El buzón de avisos (`avisos/push`, R8)
-// tiene sus propias pruebas al final: forma exacta, hasta 10 dispositivos y la hora puesta por el servidor.
+// tiene sus propias pruebas al final: forma exacta, hasta 10 dispositivos, la hora puesta por el servidor y los
+// datos opcionales del seguimiento de peso (tanda B, M2).
 
 const { describe, it, before, after, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
@@ -607,5 +608,98 @@ describe("Buzón de avisos (R8): lo que leen las funciones de notificaciones", (
     // Al actualizar, tampoco vale dejar la hora de la escritura anterior.
     await prepararBuzon("alicia");
     await assertFails(updateDoc(refBuzon(db), { idioma: "en" }));
+  });
+
+  // ---------- Tanda B (M2): lo justo del seguimiento de peso, para no abrir `data-v1` cada mañana ----------
+  const conPeso = (cambios = {}) => buzon({ pesoVecesSemana: 3, pesoPausado: false, ultimaPesada: "2026-11-06", ...cambios });
+
+  it("datos de pesaje: se aceptan con su tipo y su rango, juntos o sueltos", async () => {
+    const db = de("alicia");
+    await assertSucceeds(setDoc(refBuzon(db), conPeso()));
+    await assertSucceeds(setDoc(refBuzon(db), conPeso({ pesoVecesSemana: 2, pesoPausado: true, ultimaPesada: null })));
+    // Sin seguimiento de peso: frecuencia y fecha vacías.
+    await assertSucceeds(setDoc(refBuzon(db), conPeso({ pesoVecesSemana: null, ultimaPesada: null })));
+    // Cada uno es opcional por separado (la función solo los usa si están los tres; si no, abre `data-v1`).
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ pesoPausado: true })));
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ ultimaPesada: "2026-01-31" })));
+  });
+
+  it("un buzón sin los datos de pesaje sigue valiendo (el de antes, o el que escribe una app sin actualizar)", async () => {
+    const db = de("alicia");
+    // El de antes, tal cual: se crea, se actualiza y se le añade un aparato.
+    await assertSucceeds(setDoc(refBuzon(db), buzon()));
+    await assertSucceeds(updateDoc(refBuzon(db), { idioma: "ca", actualizado: serverTimestamp() }));
+    // La app nueva le pone los datos de pesaje.
+    await assertSucceeds(
+      updateDoc(refBuzon(db), { pesoVecesSemana: 2, pesoPausado: false, ultimaPesada: null, actualizado: serverTimestamp() })
+    );
+    // Y una copia sin actualizar lo reescribe con `merge` sin ellos: vale, y los que había se quedan.
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: arrayUnion(ORDENADOR) }), { merge: true }));
+    const leido = (await assertSucceeds(getDoc(refBuzon(db)))).data();
+    assert.equal(leido.pesoVecesSemana, 2);
+    assert.deepEqual(leido.tokens, [MOVIL, ORDENADOR]);
+    // O lo reescribe entero sin ellos (lista llena): también vale, y la función vuelve a abrir `data-v1`.
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: [MOVIL] })));
+    assert.equal("pesoVecesSemana" in (await assertSucceeds(getDoc(refBuzon(db)))).data(), false);
+  });
+
+  it("pesoVecesSemana: 2, 3 o null, como número entero", async () => {
+    const db = de("alicia");
+    for (const valor of [1, 4, 0, -3, 2.5, "3", true, [3], { veces: 3 }]) {
+      await assertFails(setDoc(refBuzon(db), conPeso({ pesoVecesSemana: valor })));
+    }
+  });
+
+  it("las frecuencias de las reglas son las de la app (PESO_FRECUENCIAS)", async () => {
+    // Si la app ofreciera una frecuencia que las reglas no aceptan, el buzón de quien la eligiera no se podría
+    // escribir: ni el recordatorio de pesaje ni el de descongelar, ni sus aparatos. Esta prueba lo nota.
+    const texto = fs.readFileSync(path.join(RAIZ, "logica", "peso.js"), "utf8");
+    const lista = (texto.match(/PESO_FRECUENCIAS\s*=\s*\[([^\]]*)\]/) || [])[1];
+    const frecuencias = (lista || "").split(",").map((n) => Number(n.trim())).filter((n) => n > 0);
+    assert.ok(frecuencias.length > 0, "no se ha encontrado PESO_FRECUENCIAS en logica/peso.js");
+    const db = de("alicia");
+    for (const veces of frecuencias) {
+      await assertSucceeds(setDoc(refBuzon(db), conPeso({ pesoVecesSemana: veces })));
+    }
+  });
+
+  it("pesoPausado: sí o no; si está, nunca null ni otra cosa", async () => {
+    const db = de("alicia");
+    for (const valor of [null, "sí", "false", 1, 0]) {
+      await assertFails(setDoc(refBuzon(db), conPeso({ pesoPausado: valor })));
+    }
+  });
+
+  it("ultimaPesada: una fecha AAAA-MM-DD o null, nada más", async () => {
+    const db = de("alicia");
+    for (const valor of ["", "6/11/2026", "2026-11-6", "2026-11-06T09:00", "06-11-2026", "hoy", " 2026-11-06", 20261106, true,
+      Timestamp.fromDate(new Date("2026-11-06T09:00:00Z"))]) {
+      await assertFails(setDoc(refBuzon(db), conPeso({ ultimaPesada: valor })));
+    }
+  });
+
+  it("nunca el peso ni nada más del seguimiento: siguen siendo como mucho los ocho campos", async () => {
+    const db = de("alicia");
+    await assertFails(setDoc(refBuzon(db), conPeso({ peso: 72.5 })));
+    await assertFails(setDoc(refBuzon(db), conPeso({ ultimoPeso: 72.5 })));
+    await assertFails(setDoc(refBuzon(db), conPeso({ pesoTracking: { vecesSemana: 3 } })));
+    await prepararBuzon("alicia", { pesoVecesSemana: 3, pesoPausado: false, ultimaPesada: null });
+    await assertFails(updateDoc(refBuzon(db), { peso: 72.5, actualizado: serverTimestamp() }));
+  });
+
+  it("F4 con los datos de pesaje: pone al día un buzón que existe y sigue fallando con permission-denied si no existe", async () => {
+    // La app, desde un aparato sin permiso, manda ahora también los datos de pesaje (sin tocar la lista). Sin buzón,
+    // el documento resultante sigue sin `tokens` y las reglas lo rechazan igual: faltaElBuzon (auth-bootstrap.jsx)
+    // depende de que sea `permission-denied`.
+    const db = de("alicia");
+    const sinToken = { idioma: "es", pesaje: true, descongelar: false, pesoVecesSemana: 3, pesoPausado: true, ultimaPesada: "2026-11-05" };
+    await prepararBuzon("alicia", { tokens: [MOVIL, ORDENADOR] });
+    await assertSucceeds(updateDoc(refBuzon(db), { ...sinToken, actualizado: serverTimestamp() }));
+    const leido = (await assertSucceeds(getDoc(refBuzon(db)))).data();
+    assert.deepEqual(leido.tokens, [MOVIL, ORDENADOR]);
+    assert.equal(leido.pesoPausado, true);
+    await assertSucceeds(deleteDoc(refBuzon(db)));
+    const sinBuzon = await updateDoc(refBuzon(db), { ...sinToken, actualizado: serverTimestamp() }).then(() => null, (e) => e);
+    assert.equal(sinBuzon && sinBuzon.code, "permission-denied");
   });
 });
