@@ -339,7 +339,7 @@ const borrarFirmaBuzon = (uid) => borrarLocal(claveFirmaBuzon(uid));
 // Firestore guarda las escrituras pendientes de una cuenta hasta que esa misma cuenta vuelve a entrar: si se
 // cierra sesión sin conexión, la escritura de la cuenta que sale puede no resolverse nunca, y sin límite todo lo
 // que viniera detrás (los avisos de la cuenta siguiente) esperaría hasta recargar la página. Lo que se quede
-// atascado no puede tocar después la cuenta siguiente: cada tarea comprueba antes la cuenta (esLaCuentaDeAhora).
+// atascado no puede tocar después nada de otra sesión: cada tarea lo comprueba antes de escribir (sigueVigente).
 let colaBuzon = Promise.resolve();
 function enColaBuzon(tarea, { limiteMs } = {}) {
   const resultado = colaBuzon.then(tarea);
@@ -348,10 +348,30 @@ function enColaBuzon(tarea, { limiteMs } = {}) {
   return turno;
 }
 
-// Cada tarea de la fila apunta para qué cuenta se pidió y no hace nada si, cuando le llega el turno, la sesión es
-// de otra: una tarea que esperaba detrás de una escritura atascada de la cuenta que salió no puede acabar
-// escribiendo los avisos de esa cuenta en el buzón de la siguiente.
 const esLaCuentaDeAhora = (uid) => !!uid && !!auth.currentUser && auth.currentUser.uid === uid;
+
+// La sesión del buzón: sube cada vez que se entra o se sale (onAuthStateChanged, al final de este archivo) y al
+// terminar el turno de cerrar sesión (signOutUser). Cada tarea de la fila apunta la de cuando se pidió y no toca
+// nada (ni el buzón ni la firma) si, cuando le llega el turno o antes de cada escritura, ya es otra.
+// Comparar solo la cuenta no bastaba: Firestore guarda las escrituras pendientes de una cuenta hasta que esa misma
+// cuenta vuelve a entrar. Si se cierra sesión sin conexión con una escritura atascada y, en la misma visita, se
+// vuelve a entrar con la misma cuenta, al llegar esa escritura se ejecutaba lo que esperaba detrás (por ejemplo,
+// sacar este aparato del buzón al cerrar sesión) dentro de la sesión nueva: podía quitar el token que esta acababa
+// de apuntar y dejar el aparato sin avisos hasta la siguiente apertura.
+let sesionBuzon = 0;
+
+// «Eliminar cuenta» (window.deleteAccount): el uid de la cuenta que se está borrando. Mientras tanto, y después,
+// la fila no escribe nada en su buzón. Sin esto, una tarea que llegara a escribir después de que la función
+// deleteAccount borre `users/{uid}` volvería a crear `avisos/push` (el token de sesión sigue valiendo hasta una
+// hora), y las funciones seguirían avisando a ese aparato cada día de una cuenta que ya no existe. No se espera a
+// la fila antes de borrar: puede estar atascada sin conexión, y entonces no se podría eliminar la cuenta.
+let cuentaBorrandose = null;
+
+// ¿Puede una tarea pedida para `uid` en la sesión `sesion` tocar todavía su buzón? Es de la cuenta de ahora, la
+// sesión no ha cambiado y la cuenta no se está borrando.
+function sigueVigente(uid, sesion) {
+  return esLaCuentaDeAhora(uid) && sesion === sesionBuzon && cuentaBorrandose !== uid;
+}
 
 // ¿Ha fallado una escritura en el buzón porque no existe? `updateDoc` sobre un documento que no existe suele dar
 // `not-found`, pero aquí las reglas lo rechazan antes: miran el documento resultante, y sin buzón solo tiene los
@@ -370,15 +390,20 @@ async function faltaElBuzon(uid, err) {
 
 // Borra el buzón entero y, solo cuando el servidor lo confirma, la firma de este aparato (F1: si la firma sigue
 // ahí, el borrado no llegó y la próxima apertura lo repite). Borrar un buzón que ya no existe no es un error.
-async function borrarBuzon(uid) {
+// `vigente` (sigueVigente con la cuenta y la sesión de la tarea): si ya no lo es, ni se borra ni se toca la firma.
+async function borrarBuzon(uid, vigente) {
+  if (!vigente()) return;
   await deleteDoc(refBuzon(uid));
-  borrarFirmaBuzon(uid);
+  if (vigente()) borrarFirmaBuzon(uid);
 }
 
 // Hace lo que ha decidido decidirBuzon (logica/buzon-avisos.js). La firma se guarda solo cuando el servidor
-// confirma la escritura; si algo falla, lanza y se reintenta la próxima vez.
-async function aplicarAlBuzon(uid, { accion, firma, quitar }) {
-  if (accion === "borrar") return borrarBuzon(uid);
+// confirma la escritura; si algo falla, lanza y se reintenta la próxima vez. Antes de cada escritura (y de guardar
+// la firma) se mira `vigente`: una tarea de una sesión que ya terminó, o de una cuenta que se está borrando, se
+// para ahí. Sobre todo antes de los `setDoc`, que son los que pueden volver a crear el buzón.
+async function aplicarAlBuzon(uid, { accion, firma, quitar }, vigente) {
+  if (!vigente()) return;
+  if (accion === "borrar") return borrarBuzon(uid, vigente);
   if (accion !== "escribir" && accion !== "actualizarSinToken") return;
   // Idioma, interruptores y datos de pesaje, siempre los seis (logica/buzon-avisos.js, camposBuzon).
   const campos = camposBuzon(firma);
@@ -394,7 +419,7 @@ async function aplicarAlBuzon(uid, { accion, firma, quitar }) {
       // mismos valores del perfil. No es un fallo, y la firma se guarda igual para no reintentarlo hasta mañana.
       if (!(await faltaElBuzon(uid, err))) throw err;
     }
-    guardarFirmaBuzon(uid, firma);
+    if (vigente()) guardarFirmaBuzon(uid, firma);
     return;
   }
 
@@ -407,15 +432,16 @@ async function aplicarAlBuzon(uid, { accion, firma, quitar }) {
     // entera haciendo sitio (se van los más antiguos, ver tokensConSitio). Si no era eso, esta escritura
     // también falla y queda el aviso en la consola.
     const snap = await getDoc(refBuzon(uid));
+    if (!vigente()) return;
     const tokens = tokensConSitio(snap.exists() ? snap.data().tokens : [], firma.token);
     await setDoc(refBuzon(uid), { ...campos, tokens, actualizado: serverTimestamp() });
   }
   // El navegador ha renovado el token: el viejo ya no sirve y sale de la lista ahora, sin esperar a que la
   // función falle al usarlo. Si no sale, no pasa nada: la función lo quitará en cuanto FCM lo dé por muerto.
-  if (quitar) {
+  if (quitar && vigente()) {
     await updateDoc(refBuzon(uid), { tokens: arrayRemove(quitar), actualizado: serverTimestamp() }).catch(() => {});
   }
-  guardarFirmaBuzon(uid, firma);
+  if (vigente()) guardarFirmaBuzon(uid, firma);
 }
 
 // Limpieza del token de antes, fase 1 (ver PUSH_TOKEN_KEY): se borra una sola vez por cuenta y aparato, y la marca
@@ -445,12 +471,15 @@ async function limpiarTokenDeAntes(uid) {
 // - Sin ningún aviso, borra el buzón si este aparato tiene firma: un borrado anterior que no llegó (F1).
 // - Una sola vez por cuenta y aparato, borra el token de antes (limpiarTokenDeAntes).
 // Nunca lanza: si algo falla (sin conexión, reglas sin publicar...), un aviso en la consola y se reintenta la
-// próxima vez (la firma solo se guarda si se ha escrito).
+// próxima vez (la firma solo se guarda si se ha escrito). Si mientras espera su turno, o a medias, se cierra la
+// sesión o se empieza a borrar la cuenta, se para sin tocar nada más (sigueVigente).
 window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada }) {
   const uid = auth.currentUser && auth.currentUser.uid;
   if (!uid) return Promise.resolve();
+  const sesion = sesionBuzon;
+  const vigente = () => sigueVigente(uid, sesion);
   return enColaBuzon(async () => {
-    if (!esLaCuentaDeAhora(uid)) return;
+    if (!vigente()) return;
     const quiere = quiereAvisos({ pesaje, descongelar });
     const plan = planSincronizacion({
       quiere,
@@ -462,6 +491,9 @@ window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar, pesoVec
     // F2: si tocaba revocar y no se ha podido (sin conexión), la marca se queda y no se pide token: saldría el de
     // siempre, que podría seguir en el buzón de la cuenta anterior. Esta vez el buzón se pone al día sin token.
     const revocado = plan.revocar ? await revocarTokenDeEsteNavegador() : true;
+    // Si la sesión ha cambiado mientras se revocaba (cerrar sesión no espera más de 3 s), no se sigue y la marca se
+    // queda: como mucho, la próxima cuenta revoca otra vez, que es lo seguro.
+    if (!vigente()) return;
     if (plan.revocar && revocado) borrarLocal(CLAVE_ESTRENAR_TOKEN);
     let token = null;
     if (plan.pedirToken && revocado) {
@@ -474,12 +506,12 @@ window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar, pesoVec
 
     try {
       const datos = { idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada };
-      await aplicarAlBuzon(uid, decidirBuzon({ quiere, token, anterior: leerFirmaBuzon(uid), ...datos }));
+      await aplicarAlBuzon(uid, decidirBuzon({ quiere, token, anterior: leerFirmaBuzon(uid), ...datos }), vigente);
     } catch (err) {
       console.warn("No se ha podido poner al día el buzón de avisos:", (err && (err.code || err.message)) || err);
     }
 
-    if (plan.limpiarTokenDeAntes) await limpiarTokenDeAntes(uid);
+    if (plan.limpiarTokenDeAntes && vigente()) await limpiarTokenDeAntes(uid);
   }).catch((err) => {
     console.warn("No se ha podido poner al día el buzón de avisos:", (err && (err.code || err.message)) || err);
   });
@@ -489,9 +521,11 @@ window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar, pesoVec
 // entra otra persona con su cuenta en el mismo navegador, no le llegan los avisos de la anterior. Se usa el token
 // apuntado en la firma, sin pedírselo a FCM, para no hacer esperar al cierre de sesión. La firma cambia solo
 // cuando el servidor lo confirma; si no llega a tiempo (sin conexión), lo arregla la marca de estrenar token que
-// pone signOutUser.
-async function quitarEsteAparatoDelBuzon(uid) {
-  if (!esLaCuentaDeAhora(uid)) return;
+// pone signOutUser. `sesion` es la de quien cierra la sesión: si la escritura llega tarde (la cuenta vuelve a
+// entrar en esta misma visita y Firestore manda entonces lo pendiente), la sesión ya es otra y no se guarda una
+// firma vieja encima de la que haya escrito la nueva.
+async function quitarEsteAparatoDelBuzon(uid, sesion) {
+  if (!sigueVigente(uid, sesion)) return;
   const { quitar, firma } = decidirAlSalir(leerFirmaBuzon(uid));
   if (!quitar) return;
   try {
@@ -499,32 +533,36 @@ async function quitarEsteAparatoDelBuzon(uid) {
   } catch (err) {
     if (!(await faltaElBuzon(uid, err))) throw err; // sin buzón, el aparato ya no está en ninguna lista
   }
-  guardarFirmaBuzon(uid, firma);
+  if (sigueVigente(uid, sesion)) guardarFirmaBuzon(uid, firma);
 }
 
 // Quitar los dos avisos: borra el buzón entero, para que las funciones dejen de mandar nada a esta cuenta en
 // ningún aparato (los interruptores son de la cuenta: quitarlos en uno los quita en todos), y revoca el token de
 // este navegador. El orden importa (F1):
-// - La firma, lo primero y sin esperar a la fila (la que hubiera o una que diga «borrar», firmaAlQuitarAvisos):
+// - La firma, lo primero y sin esperar a la fila (una que diga «borrar» y nunca esté al día, firmaAlQuitarAvisos):
 //   si la app se cierra enseguida, queda apuntado que falta borrar, y la próxima apertura lo hace
 //   (sincronizarBuzonAvisos). Solo se quita cuando el servidor confirma el borrado.
 // - Después el buzón, que es lo que de verdad consultan las funciones.
 // - La revocación, al final: es una llamada a FCM que puede tardar, y si algo se queda a medias, mejor que sea
 //   eso. Antes iba la primera y, con la app cerrada a los pocos segundos, el buzón no llegaba a borrarse.
+// Si cuando le llega el turno la sesión ya es otra, no hace nada: la firma «borrar» se queda para cuando la cuenta
+// vuelva, y el token lo revoca la marca de estrenar token que deja cerrar sesión (revocarlo ahora podría matar el
+// que acaba de apuntar la cuenta nueva).
 // Nunca lanza: se llama al desmarcar la casilla sin que la interfaz tenga que gestionar un posible error.
 window.disablePushNotifications = function () {
   const uid = auth.currentUser && auth.currentUser.uid;
+  const sesion = sesionBuzon;
+  const vigente = () => sigueVigente(uid, sesion);
   if (uid) guardarFirmaBuzon(uid, firmaAlQuitarAvisos(leerFirmaBuzon(uid)));
   return enColaBuzon(async () => {
-    if (esLaCuentaDeAhora(uid)) {
-      try {
-        await borrarBuzon(uid);
-      } catch (err) {
-        console.warn("No se ha podido borrar el buzón de avisos (se repetirá al abrir la app):", (err && (err.code || err.message)) || err);
-      }
+    if (!vigente()) return;
+    try {
+      await borrarBuzon(uid, vigente);
+    } catch (err) {
+      console.warn("No se ha podido borrar el buzón de avisos (se repetirá al abrir la app):", (err && (err.code || err.message)) || err);
     }
     // Si no había token, o el navegador no coopera al revocarlo, no pasa nada: lo importante era el buzón.
-    if (soportaPushNotifications()) await revocarTokenDeEsteNavegador();
+    if (vigente() && soportaPushNotifications()) await revocarTokenDeEsteNavegador();
   }).catch(() => {});
 };
 
@@ -604,13 +642,20 @@ window.deleteAccount = async function (password) {
   // los 0,5 s, el borrador del entreno a los 2,5 s...) que llegara después del borrado volvería a crear
   // documentos de una cuenta que ya no existe (el ID token sigue valiendo hasta que caduca). Las lecturas
   // siguen igual. Si la función falla no se ha borrado nada, así que se devuelve el almacén de siempre.
+  // Lo mismo para el buzón de avisos, que no pasa por window.storage: la marca `cuentaBorrandose` hace que la fila
+  // del buzón no escriba nada más en esta cuenta (sigueVigente), ni lo que ya estaba esperando ni lo que se pida
+  // después. Una escritura que ya hubiera salido llega antes que el borrado, y además la función borra dos veces
+  // (la segunda, después de borrar la cuenta de Auth, para las escrituras tardías). No se espera a la fila: puede
+  // estar atascada sin conexión. Tras borrar, la marca se queda: esa cuenta ya no existe.
   const almacen = window.storage;
   const bloqueado = () => Promise.reject(new Error("Eliminando la cuenta: no se guarda nada"));
   window.storage = { ...almacen, set: bloqueado, delete: bloqueado };
+  cuentaBorrandose = uid;
   try {
     await deleteAccountCallable();
   } catch (err) {
     window.storage = almacen;
+    cuentaBorrandose = null;
     throw errorDeFuncion(err, "No se ha podido eliminar la cuenta. Inténtalo de nuevo.");
   }
   limpiarDispositivoDeLaCuenta(uid);
@@ -695,10 +740,16 @@ async function migrateLocalDataIfNeeded(uid) {
 // - Después, este aparato sale del buzón (quitarEsteAparatoDelBuzon), con un máximo de 3 s: sin conexión la
 //   escritura no termina, y ni cerrar la sesión ni la fila del buzón pueden quedarse colgados por eso
 //   (enColaBuzon, `limiteMs`).
+// - Al acabar ese turno (a tiempo o no), la sesión del buzón sube (sesionBuzon): lo que siga pendiente de esta
+//   sesión en la fila, también la propia salida si no llegó a empezar, ya no toca nada aunque se resuelva más
+//   tarde. Sube aquí y no solo en onAuthStateChanged para que no quede ningún hueco entre el final del turno y el
+//   aviso de Firebase de que la sesión se ha cerrado.
 window.signOutUser = async function () {
   guardarLocal(CLAVE_ESTRENAR_TOKEN, "1");
   const uid = auth.currentUser && auth.currentUser.uid;
-  if (uid) await enColaBuzon(() => quitarEsteAparatoDelBuzon(uid), { limiteMs: 3000 }).catch(() => {});
+  const sesion = sesionBuzon;
+  if (uid) await enColaBuzon(() => quitarEsteAparatoDelBuzon(uid, sesion), { limiteMs: 3000 }).catch(() => {});
+  sesionBuzon++;
   return signOut(auth);
 };
 
@@ -1338,6 +1389,9 @@ async function entrarEnLaApp(user) {
 }
 
 onAuthStateChanged(auth, async (user) => {
+  // Se ha entrado o salido: empieza otra sesión del buzón de avisos, y lo que quede en su fila de la anterior ya no
+  // toca nada (sesionBuzon, sigueVigente).
+  sesionBuzon++;
   if (!user) {
     root.render(React.createElement(LoggedOutFlow));
     return;
