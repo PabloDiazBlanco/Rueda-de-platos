@@ -25,6 +25,8 @@
 // - **Unas pocas cuentas a la vez** (ESCALA.aLaVez, unas 20): cada página se reparte entre 20 «trabajadores» que
 //   van cogiendo la siguiente cuenta en cuanto acaban la suya. Así una cuenta lenta no frena a las otras 19, y
 //   nunca hay más de 20 `data-v1` abiertos ni más de 20 envíos a FCM en marcha.
+// - **Un reintento por página** si su lectura falla por algo pasajero (leerPagina): un corte breve de Firestore ya no
+//   deja sin aviso a todas las cuentas que quedaban.
 //
 // **Índices**: en una consulta sobre todas las cuentas (`collectionGroup`), Firestore exige un índice de campo con
 // ámbito «grupo de colecciones» por cada campo filtrado: no los crea solo, como hace en una colección normal. Están
@@ -55,7 +57,9 @@ const IDIOMAS = ["es", "en", "ca", "gl", "eu"];
 // - 20 a la vez: con `data-v1` de hasta 1 MiB (que al convertirlo en objeto ocupa varias veces eso), 20 abiertos
 //   caben con holgura en los 512 MiB de las funciones programadas; y 20 envíos simultáneos a FCM son pocos para
 //   sus cuotas.
-const ESCALA = { tamanoPagina: 300, aLaVez: 20 };
+// - 2 s antes de volver a pedir una página que ha fallado por algo pasajero (leerPagina, abajo): lo justo para que
+//   un corte breve de Firestore haya pasado, y nada comparado con los 540 s que tiene la función.
+const ESCALA = { tamanoPagina: 300, aLaVez: 20, esperaReintentoMs: 2000 };
 
 // Errores de FCM que significan que el token ya no sirve (permiso revocado, app desinstalada, token renovado por
 // el navegador): ese aparato sale de la lista para no volver a intentarlo cada día. Cualquier otro fallo (red,
@@ -116,6 +120,30 @@ function faltaElIndice(err) {
   return err.code === 9 || err.code === "failed-precondition" || /FAILED_PRECONDITION/.test(String(err.message || ""));
 }
 
+// ¿Ha fallado la lectura por algo pasajero? Los códigos de gRPC 4 (DEADLINE_EXCEEDED: Firestore no ha contestado a
+// tiempo) y 14 (UNAVAILABLE: el servicio no estaba disponible en ese momento). Son los que Google recomienda
+// reintentar; cualquier otro (permisos, consulta mal hecha, falta de índice...) daría lo mismo la segunda vez.
+function esPasajero(err) {
+  if (!err) return false;
+  return err.code === 4 || err.code === 14 || err.code === "deadline-exceeded" || err.code === "unavailable";
+}
+
+// Lee una página, con **un** reintento tras una pequeña espera si falla por algo pasajero. Sin él, un corte de unos
+// segundos a mitad de la ejecución dejaba sin aviso a todas las cuentas de las páginas siguientes hasta el día
+// siguiente (no hay reintentos de la ejecución entera, a propósito: mandaría el aviso dos veces a quien ya lo
+// recibió). Volver a pedir la misma página no repite a nadie: de esa página aún no se ha tratado ninguna cuenta. Si
+// el reintento también falla, el error sigue su camino como antes (falta del índice → plan B; otro → se registra).
+async function leerPagina(consulta, nombre) {
+  try {
+    return await consulta.get();
+  } catch (err) {
+    if (!esPasajero(err)) throw err;
+    logger.warn(`${nombre}: fallo pasajero al leer una página de buzones; se vuelve a intentar una vez`, err);
+    await new Promise((resolver) => setTimeout(resolver, ESCALA.esperaReintentoMs));
+    return consulta.get();
+  }
+}
+
 // Hace `tarea(elemento)` con cada elemento de la lista, como mucho `limite` a la vez: cada «trabajador» coge el
 // siguiente en cuanto termina el suyo. Un fallo de una tarea se queda en el registro y no para a las demás (cada
 // cuenta es independiente: que una tenga los datos rotos no puede dejar sin aviso a las siguientes).
@@ -138,8 +166,8 @@ async function aLaVez(lista, limite, tarea) {
 // Recorre, página a página, los buzones con el aviso `campo` («pesaje» o «descongelar») activado y al menos un
 // aparato, y llama a `tratar(buzon)` con cada uno, como mucho ESCALA.aLaVez a la vez. Devuelve cuántos ha tratado.
 // `nombre` es el del aviso en el registro. Lanza si no se puede leer una página (sin contar la falta del índice, que
-// tiene su plan B): las cuentas de las páginas anteriores ya han recibido su aviso; las demás no, y queda el error
-// en el registro.
+// tiene su plan B, ni un fallo pasajero que se arregle al reintentarlo: leerPagina): las cuentas de las páginas
+// anteriores ya han recibido su aviso; las demás no, y queda el error en el registro.
 async function recorrerBuzones(campo, nombre, tratar) {
   const { FieldPath } = admin.firestore;
   // Una sola búsqueda en todas las cuentas: la filtrada y la de todos (plan B) salen de aquí.
@@ -154,7 +182,7 @@ async function recorrerBuzones(campo, nombre, tratar) {
     if (ultimo) consulta = consulta.startAfter(ultimo);
     let pagina;
     try {
-      pagina = await consulta.get();
+      pagina = await leerPagina(consulta, nombre);
     } catch (err) {
       if (filtrar && faltaElIndice(err)) {
         logger.warn(

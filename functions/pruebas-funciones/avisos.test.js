@@ -423,22 +423,78 @@ describe("Escala (tanda B, M3): solo los buzones con el aviso, por páginas y un
     ]);
   });
 
-  it("otro error al leer los buzones no se confunde con el índice: no hay plan B y queda el error", async () => {
-    await ponerBuzon("ana", { descongelar: true, tokens: ["ana-1"] });
+  // Cambia la lectura de páginas para que las llamadas de `fallos` (la 1.ª, la 2.ª...) fallen con el código de gRPC
+  // dado; las demás van al emulador como siempre (pasando por el espía de las páginas). Devuelve cuántas veces se ha
+  // pedido una página.
+  async function conFallosAlLeer(fallos, accion) {
     const getAntes = Consulta.get;
+    let llamadas = 0;
     Consulta.get = async function () {
-      const err = new Error("14 UNAVAILABLE: sin conexión");
-      err.code = 14;
-      throw err;
+      llamadas++;
+      if (fallos[llamadas]) {
+        const err = new Error(`${fallos[llamadas]} error simulado al leer una página`);
+        err.code = fallos[llamadas];
+        throw err;
+      }
+      return getAntes.call(this);
     };
     try {
-      await sendDefrostReminders.run(MIERCOLES);
+      await accion();
     } finally {
       Consulta.get = getAntes;
     }
+    return llamadas;
+  }
+
+  it("otro error al leer los buzones no se confunde con el índice ni se reintenta: no hay plan B y queda el error", async () => {
+    await ponerBuzon("ana", { descongelar: true, tokens: ["ana-1"] });
+    // 7 = PERMISSION_DENIED: la segunda vez daría lo mismo.
+    const llamadas = await conFallosAlLeer({ 1: 7 }, () => sendDefrostReminders.run(MIERCOLES));
+    assert.equal(llamadas, 1);
     assert.equal(enviados.length, 0);
     assert.equal(registro.filter((r) => r.nivel === "warn").length, 0);
     assert.ok(registro.some((r) => r.nivel === "error" && /no se han podido leer los buzones/.test(r.texto)));
+  });
+
+  it("un fallo pasajero al leer una página (4 o 14) se reintenta una vez, tras una pequeña espera, sin repetir a nadie", async () => {
+    ESCALA.tamanoPagina = 2;
+    ESCALA.esperaReintentoMs = 5;
+    for (const uid of ["ana", "bea", "carla"]) await ponerBuzon(uid, { descongelar: true, tokens: [uid + "-1"] });
+    // Lecturas: la 1.ª falla (4, DEADLINE_EXCEEDED); la 2.ª es la misma página otra vez (ana, bea); la 3.ª falla (14,
+    // UNAVAILABLE); la 4.ª es la segunda página otra vez (carla), más corta: no hace falta pedir otra.
+    const llamadas = await conFallosAlLeer({ 1: 4, 3: 14 }, () => sendDefrostReminders.run(MIERCOLES));
+    assert.equal(llamadas, 4);
+    assert.deepEqual(tokensDe(), ["ana-1", "bea-1", "carla-1"]);
+    assert.equal(enviados.length, 3);
+    const avisos = registro.filter((r) => r.nivel === "warn");
+    assert.equal(avisos.length, 2);
+    for (const aviso of avisos) assert.match(aviso.texto, /fallo pasajero al leer una página de buzones; se vuelve a intentar una vez/);
+    assert.ok(registro.some((r) => r.texto === "Aviso para descongelar: 3 buzón(es) con el aviso activado"));
+    assert.equal(registro.filter((r) => r.nivel === "error").length, 0);
+  });
+
+  it("un reintento solo: si la misma página vuelve a fallar, queda el error y no hay plan B", async () => {
+    ESCALA.esperaReintentoMs = 5;
+    await ponerBuzon("ana", { descongelar: true, tokens: ["ana-1"] });
+    const llamadas = await conFallosAlLeer({ 1: 14, 2: 14 }, () => sendDefrostReminders.run(MIERCOLES));
+    assert.equal(llamadas, 2);
+    assert.equal(enviados.length, 0);
+    assert.equal(registro.filter((r) => r.nivel === "warn").length, 1);
+    assert.ok(registro.some((r) => r.nivel === "error" && /no se han podido leer los buzones/.test(r.texto)));
+  });
+
+  it("si al reintentar lo que falla es el índice, sigue el plan B como siempre", async () => {
+    ESCALA.esperaReintentoMs = 5;
+    faltaIndice = () => true;
+    await ponerBuzon("ana", { descongelar: true, tokens: ["ana-1"] });
+    await ponerBuzon("zoe", { pesaje: true, tokens: ["zoe-1"] });
+    // La 1.ª lectura falla por algo pasajero; al reintentarla, el espía de las páginas dice que falta el índice; la
+    // 3.ª es la primera página sin filtro (ana y zoe, más corta que una página: no hace falta pedir otra).
+    const llamadas = await conFallosAlLeer({ 1: 14 }, () => sendDefrostReminders.run(MIERCOLES));
+    assert.equal(llamadas, 3);
+    assert.deepEqual(tokensDe(), ["ana-1"]);
+    assert.ok(registro.some((r) => r.nivel === "warn" && /falta el índice de «descongelar»/.test(r.texto)));
+    assert.equal(registro.filter((r) => r.nivel === "error").length, 0);
   });
 });
 
