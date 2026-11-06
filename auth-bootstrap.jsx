@@ -187,11 +187,12 @@ const VAPID_PUBLIC_KEY = ES_ENTORNO_LOCAL ? VAPID_PRUEBAS : VAPID_PRODUCCION;
 
 // Token de antes del buzón de avisos (R8, abajo): un único token por cuenta, en la misma colección `keys` que
 // el resto de datos. Lo buscaban las funciones de antes leyendo todos los documentos de todas las cuentas; las
-// de ahora leen solo el buzón y ya no lo miran. **En retirada, fase 1**: la app ya no lo escribe y lo borra una
-// sola vez por cuenta y aparato (limpiarTokenDeAntes, abajo). Sigue en firestore.rules a propósito, con margen:
-// una copia vieja de la app guardada en un aparato lo escribe al activar los avisos (un `await setDoc` sin
-// proteger) y, si las reglas ya no aceptaran la clave, ahí no se podrían activar. Fase 2, más adelante: quitarlo
-// de las reglas y de sus pruebas (documentacion/backend.md, «Notificaciones push»).
+// de ahora leen solo el buzón y ya no lo miran. **Retirado**: la app ya no lo escribe y firestore.rules ya no lo
+// acepta; solo queda borrarlo, una sola vez por cuenta y aparato (limpiarTokenDeAntes, abajo), en las cuentas que
+// aún lo tengan. Borrar sigue permitido (las reglas dejan borrar cualquier clave propia), así que esa limpieza no
+// depende de la lista. Una copia vieja de la app que lo escribiera al activar los avisos (un `await setDoc` sin
+// proteger) fallaría esa vez y funcionaría al volver a abrirla, ya con esta versión (documentacion/backend.md,
+// «Paso del token de antes al buzón»).
 const PUSH_TOKEN_KEY = "rueda-de-platos:push-token-v1";
 
 function soportaPushNotifications() {
@@ -444,7 +445,7 @@ async function aplicarAlBuzon(uid, { accion, firma, quitar }, vigente) {
   if (vigente()) guardarFirmaBuzon(uid, firma);
 }
 
-// Limpieza del token de antes, fase 1 (ver PUSH_TOKEN_KEY): se borra una sola vez por cuenta y aparato, y la marca
+// Limpieza del token de antes (ver PUSH_TOKEN_KEY): se borra una sola vez por cuenta y aparato, y la marca
 // se pone solo cuando el servidor confirma el borrado (borrar un documento que no existe también vale). Un fallo
 // se queda en la consola y se reintenta la próxima vez: ya nadie lee ese documento, así que no corre prisa.
 async function limpiarTokenDeAntes(uid) {

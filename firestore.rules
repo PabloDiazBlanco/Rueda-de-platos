@@ -51,12 +51,12 @@ service cloud.firestore {
         'rueda-de-platos:entreno-indice-v1',
         'rueda-de-platos:entreno-borrador-v1',
         'rueda-de-platos:cuerpo-diario-v1',
-        'rueda-de-platos:informes-favoritos-v1',
-        // Token de notificaciones de antes del buzón de avisos (R8), en retirada. Ya no lo lee ninguna función y
-        // la app de ahora no lo escribe (solo lo borra, una vez por cuenta y aparato). Se queda un tiempo a
-        // propósito: una copia vieja de la app lo escribe al activar los avisos y, sin la clave aquí, no podría
-        // activarlos. Quitarlo es la fase 2 de la limpieza (documentacion/backend.md, «Paso del token de antes»).
-        'rueda-de-platos:push-token-v1'
+        'rueda-de-platos:informes-favoritos-v1'
+        // Sin `rueda-de-platos:push-token-v1`, el token de notificaciones de antes del buzón de avisos (R8): ya no
+        // lo lee ninguna función ni lo escribe la app, que solo lo borra (una vez por cuenta y aparato; borrar
+        // cualquier clave propia sigue permitido, abajo). Una copia vieja de la app que aún lo escribiera al
+        // activar los avisos fallaría esa vez y funcionaría al volver a abrirla: el service worker pide los
+        // archivos de la app a la red primero (documentacion/backend.md, «Paso del token de antes»).
       ]
       // Un documento por mes de entreno (`entreno-AAAA-MM-v1`, logica/entreno-almacen.js), solo de 1970 a
       // 2099. Con cualquier año de cuatro cifras cabían 120 000 meses por cuenta, y la lista ya no ponía
@@ -67,23 +67,23 @@ service cloud.firestore {
       || clave.matches('rueda-de-platos:entreno-(19[7-9][0-9]|20[0-9][0-9])-(0[1-9]|1[0-2])-v1');
     }
 
-    // Tamaño máximo de `value`, en caracteres. El token de notificaciones mide unos 160: con 4096 sobra.
-    // El resto queda justo por debajo del tope de Firestore (1 MiB por documento, contando el nombre y el
-    // campo): esta regla nunca es más estricta que Firestore con datos reales, que llevan tildes (2 bytes)
-    // y llegan antes al tope de bytes. Un límite más bajo podría dejar sin guardar a una cuenta con muchos
-    // datos (`data-v1` crece unos 150 KB al año, R3); su alarma de tamaño es otra tarea (R3-a).
-    function tamanoMaximo(clave) {
-      return clave == 'rueda-de-platos:push-token-v1' ? 4096 : 1048000;
+    // Tamaño máximo de `value`, en caracteres: justo por debajo del tope de Firestore (1 MiB por documento,
+    // contando el nombre y el campo). Esta regla nunca es más estricta que Firestore con datos reales, que
+    // llevan tildes (2 bytes) y llegan antes al tope de bytes. Un límite más bajo podría dejar sin guardar a
+    // una cuenta con muchos datos (`data-v1` crece unos 150 KB al año, R3); su alarma de tamaño es otra tarea
+    // (R3-a). El único caso aparte que hubo, 4096 para el token de antes, se fue con su clave.
+    function tamanoMaximo() {
+      return 1048000;
     }
 
     // Exactamente un campo, `value`, de texto y dentro del tamaño. La forma interna del JSON no se puede
     // validar aquí: para las reglas es un texto opaco (R3).
-    function esDocumentoValido(clave) {
+    function esDocumentoValido() {
       let datos = request.resource.data;
       return datos.keys().hasOnly(['value'])
         && datos.keys().hasAll(['value'])
         && datos.value is string
-        && datos.value.size() <= tamanoMaximo(clave);
+        && datos.value.size() <= tamanoMaximo();
     }
 
     // Ficha de la cuenta: estado premium y contadores de cuota. Solo lectura para el cliente (la app la
@@ -99,9 +99,9 @@ service cloud.firestore {
       allow get: if esSuCuenta(userId);
       allow create, update: if esSuCuenta(userId)
         && esClaveConocida(clave)
-        && esDocumentoValido(clave);
+        && esDocumentoValido();
       // Borrar cualquier clave propia, también una desconocida: así se puede limpiar lo que hubiera quedado
-      // de antes de existir la lista.
+      // de antes de existir la lista, o de una clave que ya salió de ella (el token de antes, R8).
       allow delete: if esSuCuenta(userId);
     }
 

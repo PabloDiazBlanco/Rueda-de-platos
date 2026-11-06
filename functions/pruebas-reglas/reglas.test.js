@@ -62,11 +62,15 @@ const CLAVES_FIJAS = [
   "rueda-de-platos:entreno-borrador-v1",
   "rueda-de-platos:cuerpo-diario-v1",
   "rueda-de-platos:informes-favoritos-v1",
-  "rueda-de-platos:push-token-v1",
 ];
 
 const DATOS = "rueda-de-platos:data-v1";
-const TOKEN = "rueda-de-platos:push-token-v1";
+// El token de notificaciones de antes del buzón de avisos (R8). Salió de la lista de las reglas: la app ya no lo
+// escribe, solo lo borra (una vez por cuenta y aparato), así que su nombre sigue en el código de la app.
+const TOKEN_DE_ANTES = "rueda-de-platos:push-token-v1";
+// Claves que el código de la app nombra solo para borrarlas: la prueba que lee el código no tiene que exigir que
+// las reglas las acepten (al revés: hay una prueba aparte de que ya no se pueden escribir).
+const CLAVES_QUE_SOLO_BORRA = [TOKEN_DE_ANTES];
 
 // Un texto como los que guarda la app: JSON serializado, con tildes y eñes (ocupan 2 bytes cada una).
 const VALOR_REALISTA = JSON.stringify({
@@ -94,6 +98,7 @@ async function preparar(ruta, datos) {
 // Claves que el código de la app escribe en la nube, sacadas de los propios archivos: `ui/`, `logica/`,
 // `app.jsx` y `auth-bootstrap.jsx`. Se quedan fuera:
 // - `rueda-de-platos:migrated:<uid>`, que es una marca del dispositivo (solo `localStorage`, nunca la nube).
+// - Las que la app solo borra (`CLAVES_QUE_SOLO_BORRA`, arriba): el regex no distingue escribir de borrar.
 // - Las que se construyen con una plantilla (`entreno-${mesISO}-v1`), que el regex corta en el `${` y quedan
 //   acabadas en guion: los meses se prueban aparte.
 function clavesDelCodigo() {
@@ -113,7 +118,7 @@ function clavesDelCodigo() {
   for (const archivo of archivos) {
     const texto = fs.readFileSync(archivo, "utf8");
     for (const [clave] of texto.matchAll(/rueda-de-platos:[a-z0-9-]+/g)) {
-      if (clave === "rueda-de-platos:migrated" || clave.endsWith("-")) continue;
+      if (clave === "rueda-de-platos:migrated" || clave.endsWith("-") || CLAVES_QUE_SOLO_BORRA.includes(clave)) continue;
       claves.add(clave);
     }
   }
@@ -146,9 +151,18 @@ describe("Cada persona, lo suyo", () => {
     await assertSucceeds(deleteDoc(ref));
   });
 
-  it("guarda el token de notificaciones en texto plano", async () => {
-    const ref = doc(de("alicia"), "users", "alicia", "keys", TOKEN);
-    await assertSucceeds(setDoc(ref, { value: "fcm-token:APA91bHxyz_-0123456789" }));
+  it("el token de antes (R8) ya no se puede escribir, pero sí leer y borrar el que quede", async () => {
+    const ref = doc(de("alicia"), "users", "alicia", "keys", TOKEN_DE_ANTES);
+    // Ni crearlo de nuevo (lo que haría una copia vieja de la app al activar los avisos)...
+    await assertFails(setDoc(ref, { value: "fcm-token:APA91bHxyz_-0123456789" }));
+    // ...ni reescribir uno que ya estaba.
+    await preparar(["users", "alicia", "keys", TOKEN_DE_ANTES], { value: "fcm-token:APA91bHxyz_-0123456789" });
+    await assertFails(setDoc(ref, { value: "otro-token" }));
+    // La limpieza de la app (limpiarTokenDeAntes, auth-bootstrap.jsx) lo borra; sin poder borrarlo se quedaría.
+    await assertSucceeds(getDoc(ref));
+    await assertSucceeds(deleteDoc(ref));
+    // Y borrarlo cuando ya no existe también vale: la app pone su marca de «hecho» solo si el borrado sale bien.
+    await assertSucceeds(deleteDoc(ref));
   });
 
   it("no lee, no escribe y no borra los datos de otra persona", async () => {
@@ -371,13 +385,7 @@ describe("Forma del documento: un único campo `value` de texto", () => {
 });
 
 describe("Tamaño máximo", () => {
-  it("el token de notificaciones llega hasta 4096 caracteres", async () => {
-    const ref = doc(de("alicia"), "users", "alicia", "keys", TOKEN);
-    await assertSucceeds(setDoc(ref, { value: "t".repeat(4096) }));
-    await assertFails(setDoc(ref, { value: "t".repeat(4097) }));
-  });
-
-  it("el resto llega hasta 1 048 000 caracteres, justo por debajo del tope de Firestore", async () => {
+  it("cada clave llega hasta 1 048 000 caracteres, justo por debajo del tope de Firestore", async () => {
     const ref = doc(de("alicia"), "users", "alicia", "keys", DATOS);
     await assertSucceeds(setDoc(ref, { value: "x".repeat(1048000) }));
     await assertFails(setDoc(ref, { value: "x".repeat(1048001) }));
