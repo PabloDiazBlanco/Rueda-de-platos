@@ -33,7 +33,7 @@ manifest.json, icon.svg, privacidad.html, terminos.html
 - **Nunca se copian datos reales al proyecto de pruebas**: son datos de salud y deben quedarse en su sitio.
 - El proyecto de pruebas está en el plan Spark (sin Cloud Functions desplegadas ni copias de seguridad) y su
   Firestore en `eur3`, igual que producción. Sus reglas son las mismas que las de producción: las dos se
-  publican desde `firestore.rules` (`datos.md`). `.firebaserc` tiene los alias `dev` y `prod`; el proyecto
+  publican desde `firestore.rules` (`datos.md`), y sus índices desde `firestore.indexes.json` (`backend.md`). `.firebaserc` tiene los alias `dev` y `prod`; el proyecto
   por defecto sigue siendo producción, así que el de pruebas se elige siempre con `--project dev`.
 - **La clave web de cada proyecto está restringida por sitio web** (Google Cloud → Credenciales → «Browser
   key»): producción, a `pablodiazblanco.github.io`, `rueda-de-platos.firebaseapp.com` y
@@ -171,12 +171,14 @@ gimnasio.js            el gimnasio dibujado de FitDraft: plano, zonas y 25 máqu
 buzon-avisos.js        el buzón de avisos sin Firebase (R8): todo lo que decide la app y que auth-bootstrap.jsx
                          solo ejecuta. planSincronizacion (revocar el token tras cerrar sesión, pedirlo, borrar
                          el token de antes) y decidirBuzon (escribir, actualizar sin token, borrar o nada, y qué
-                         token viejo quitar), con firmaBuzon y buzonAlDia (si hace falta reescribirlo);
+                         token viejo quitar), con firmaBuzon y buzonAlDia (si hace falta reescribirlo) y
+                         camposBuzon (lo que se escribe); datosPesajeBuzon (lo justo del seguimiento de peso
+                         para que el recordatorio no abra data-v1);
                          firmaAlQuitarAvisos y decidirAlSalir (quitar los dos avisos, cerrar sesión);
                          estadoDelPermiso y avisoEsteAparato (la línea «En este aparato no te llegan» de
                          Ajustes); tokensConSitio (hacer sitio con la lista llena); las claves de localStorage
                          (firma, limpieza, estrenar token) y MAX_DISPOSITIVOS (el mismo tope que
-                         firestore.rules). Lo importan auth-bootstrap.jsx y ui/ajustes/ajustes.jsx
+                         firestore.rules). Lo importan auth-bootstrap.jsx, app.jsx y ui/ajustes/ajustes.jsx
 ```
 
 ### Imports entre módulos de `logica/`
@@ -202,7 +204,7 @@ nada:
 | `informes` | entreno-calculo, objetivos (solo lee), resumen-mensual |
 | `cuerpo-series` | entreno-calculo, periodo |
 | `gimnasio` | entreno-calculo (fechas) |
-| `buzon-avisos` | peso (`fechaISO`) |
+| `buzon-avisos` | peso (`fechaISO`, `PESO_FRECUENCIAS`) |
 
 No importan nada: `comun`, `macros`, `seleccion`, `objetivos`, `resumen-mensual`, `i18n`, `nevera`,
 `periodo`, `cuerpo-diario`, `mapa-corporal`, `entreno-ejercicios`, `entreno-nombres` y `entreno-calculo`.

@@ -41,6 +41,10 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   denegado, lo que garantiza que nadie use `storage.list()`. Se puede leer y borrar una clave propia que no
   esté en la lista, pero no reescribirla. Aparte, el buzón de avisos `users/{uid}/avisos/push` (abajo), con
   su propia forma. Todo lo demás, denegado.
+- **Índices**: `firestore.indexes.json`, en la raíz, también es la única fuente. Solo tiene los de las dos
+  consultas de las funciones de notificaciones sobre todos los buzones (`backend.md`, «Escala e índices»). Se
+  publican aparte (`firebase deploy --only firestore:indexes --project dev` y luego `--project prod`); el emulador
+  no los exige, así que las pruebas no notan si falta uno.
 - Pruebas de las reglas: `functions/pruebas-reglas/reglas.test.js`, con el emulador de Firestore
   (`cd functions` y `npm run test:reglas`; necesita Java, sin conexión ni sesión de Firebase, proyecto
   `demo-rueda-de-platos`). Publicarlas: `firebase deploy --only firestore:rules --project dev` y, tras probar
@@ -100,23 +104,41 @@ y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe d
 (`window.sincronizarBuzonAvisos`, llamado desde `app.jsx`; las decisiones sin Firebase, en
 `logica/buzon-avisos.js`).
 
-- **Forma**: `{ idioma, pesaje, descongelar, tokens, actualizado }`, los cinco obligatorios y ninguno más.
+- **Forma**: `{ idioma, pesaje, descongelar, tokens, actualizado }`, los cinco obligatorios, más tres
+  opcionales del seguimiento de peso, y ninguno más (`hasOnly` con los ocho, `hasAll` con los cinco).
   `idioma` es uno de los cinco de la app; `pesaje` y `descongelar` son copia de `perfil.notificacionesPush` y
   `perfil.avisoDescongelar`; `tokens`, hasta 10 aparatos (`MAX_DISPOSITIVOS`, el mismo tope en las reglas y en
   la app: una prueba de las reglas lo vigila); `actualizado`, la hora del servidor de la última escritura de la
   app (`serverTimestamp()`; las reglas no aceptan otra).
+- **Datos de pesaje** (opcionales, tanda B): lo justo para que el recordatorio de pesaje decida sin abrir
+  `data-v1` (`backend.md`). Los calcula `datosPesajeBuzon` (`logica/buzon-avisos.js`) a partir de `pesoTracking`:
+  - `pesoVecesSemana`: 2 o 3 (entero; las de `PESO_FRECUENCIAS`, y una prueba de las reglas comprueba que las
+    acepta todas), o `null` sin seguimiento. Una frecuencia rara cuenta como 3, como en `esDiaSugeridoPeso`.
+  - `pesoPausado`: sí/no, si hay una pausa sin `fin`.
+  - `ultimaPesada`: `AAAA-MM-DD` de la pesada más reciente del ciclo actual (`pesoTracking.entradas`), o `null`.
+  - **Nunca el peso** (las reglas no aceptan ningún otro campo). Con el recordatorio de pesaje apagado van vacíos
+    (`null`, `false`, `null`): a la función no le sirven y así no hay en el buzón datos de quien no lo ha pedido.
+  - Opcionales porque los buzones de antes no los tienen y tienen que seguir valiendo, y porque una copia de la
+    app sin actualizar reescribe el buzón sin ellos: con `merge` se quedan los que había (pueden quedar viejos
+    hasta que un aparato con la app nueva lo reescriba, como mucho al día siguiente); al reescribirlo entero
+    (lista llena) desaparecen y la función vuelve a abrir `data-v1`. No hay migración aparte: la firma de antes
+    no tiene estos datos, así que la primera apertura con la app nueva reescribe el buzón con ellos.
 - **Uno por cuenta, no por aparato**, porque los interruptores de Ajustes son de la cuenta. Existe solo si hay
   algún aviso activado.
 - **La firma** (`localStorage`, `fooddraft:buzon-avisos:<uid>`): lo que este aparato escribió la última vez,
-  `{ token, idioma, pesaje, descongelar, dia }` (`token: null` si escribió sin token). Evita reescribir en cada
+  `{ token, idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada, dia }` (`token: null` si
+  escribió sin token). Evita reescribir en cada
   apertura, dice qué token quitar al renovarse o al cerrar sesión y hace de tarea pendiente: solo se borra cuando
   el servidor confirma que el buzón se ha borrado.
 - **Cuándo se escribe**: al abrirse la app (como mucho una vez al día por aparato si nada cambia), al activar o
-  quitar un aviso y al cambiar el idioma. Un aparato con el permiso de notificaciones concedido se apunta en la
+  quitar un aviso y al cambiar el idioma. Con el recordatorio de pesaje activado, también con la primera pesada
+  de cada día, al pausar o reanudar el ciclo, al cambiar la frecuencia y al cerrar el ciclo (no al corregir el
+  peso de hoy: la fecha no cambia). Siempre se escriben los seis campos (`camposBuzon`), también los de pesaje
+  vacíos, para que un `merge` no conserve unos viejos. Un aparato con el permiso de notificaciones concedido se apunta en la
   lista; si el navegador renueva el token, el nuevo entra y el viejo sale; con la lista llena, se reescribe
   entera quitando los más antiguos. Un aparato **sin permiso** (o sin token) pone al día igualmente `idioma`,
-  `pesaje` y `descongelar` con `updateDoc`, sin tocar `tokens`; si no hay buzón, no hace nada (lo creará el
-  primer aparato con permiso). En Ajustes, ese aparato ve «En este aparato no te llegan» con el botón
+  `pesaje`, `descongelar` y los datos de pesaje con `updateDoc`, sin tocar `tokens`; si no hay buzón, no hace
+  nada (lo creará el primer aparato con permiso). En Ajustes, ese aparato ve «En este aparato no te llegan» con el botón
   «Recibirlos aquí», que pide el permiso y lo apunta sin tocar los interruptores.
 - **Cuándo se borra**: al quitar los dos avisos (entero, en todos los aparatos: primero el buzón y al final la
   revocación del token) y con «Eliminar cuenta» (`recursiveDelete` de `users/{uid}`). Al cerrar sesión, ese
@@ -136,9 +158,9 @@ y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe d
 - **`updateDoc` sin buzón da `permission-denied`, no `not-found`**: las reglas miran el documento resultante, y
   sin buzón solo tiene los campos de la escritura. La app lo distingue de un rechazo de verdad leyendo el buzón
   (solo cuando falla). Hay una prueba de las reglas que lo vigila.
-- Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`), decisiones de la app en
-  `validacion/` (grupo «Avisos: el buzón de las notificaciones») y funciones en `functions/pruebas-funciones/`
-  (`npm run test:avisos`).
+- Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`: también los datos de pesaje, buenos,
+  malos y ausentes), decisiones de la app en `validacion/` (grupo «Avisos: el buzón de las notificaciones») y
+  funciones en `functions/pruebas-funciones/` (`npm run test:avisos`).
 
 La primera vez que una cuenta entra en un navegador con datos antiguos en `localStorage`,
 `migrateLocalDataIfNeeded` (`auth-bootstrap.jsx`) ofrece copiar a la nube las claves `rueda-de-platos:*` que

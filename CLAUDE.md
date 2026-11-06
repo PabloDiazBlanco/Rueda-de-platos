@@ -127,6 +127,8 @@ No des un cambio de lógica por terminado sin pasar por `validacion/`.
 - Las reglas, también a mano y en dos pasos: `firebase deploy --only firestore:rules --project dev`, probar la
   app en `localhost` y luego `--project prod`. En `localhost` la app usa el proyecto de pruebas
   (`documentacion/arquitectura.md`).
+- Los índices (`firestore.indexes.json`), igual: `firebase deploy --only firestore:indexes`, `dev` y luego
+  `prod`. El emulador no los exige: las pruebas no notan si falta uno (`documentacion/backend.md`).
 
 ## Git
 - Ningún commit sin que Pablo lo pida, y sin línea `Co-Authored-By`.
