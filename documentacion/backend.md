@@ -90,48 +90,71 @@ sus dependencias (`@firebase/rules-unit-testing`, `firebase`) son solo de desarr
 
 ## Notificaciones push
 
-- **Cliente** (`auth-bootstrap.jsx`): `window.requestPushPermission` pide el permiso y el token de FCM;
-  `window.sincronizarBuzonAvisos` (llamado desde `app.jsx` al abrirse la app y al cambiar los avisos o el
-  idioma) mantiene el **buzón de avisos** `users/{uid}/avisos/push` (forma y reglas en `datos.md`);
-  `window.disablePushNotifications` lo borra al quitar los dos avisos; al cerrar sesión, ese aparato sale de la
-  lista. `sw.js` muestra la notificación con la app cerrada (`onBackgroundMessage`, con la etiqueta que mande
-  la función en `data.tag`).
+- **Cliente** (`auth-bootstrap.jsx`; las decisiones, sin Firebase, en `logica/buzon-avisos.js`, con casos en
+  `validacion/`):
+  - `window.requestPushPermission` pide el permiso y comprueba que FCM da un token. No escribe nada.
+  - `window.sincronizarBuzonAvisos` (llamado desde `app.jsx` al abrirse la app y al cambiar los avisos o el
+    idioma, también con los dos apagados) mantiene el **buzón de avisos** `users/{uid}/avisos/push` (forma,
+    firma y cuándo se escribe o se borra, en `datos.md`).
+  - `window.disablePushNotifications`, al quitar los dos avisos: primero el buzón y al final la revocación del
+    token, que es lo que puede tardar.
+  - `window.signOutUser`: el aparato sale de la lista (3 s como mucho) y el navegador queda marcado para estrenar
+    token la próxima vez.
+  - `window.estadoAvisosEsteAparato` dice si este aparato puede recibirlos («concedido», «bloqueado»,
+    «sin-pedir», «sin-soporte»).
+  - Las operaciones del buzón van en fila; la de cerrar sesión tiene un límite de 3 s, porque una escritura de la
+    cuenta que sale puede no resolverse nunca y dejaría atascadas las de la siguiente. Cada tarea comprueba al
+    empezar que la sesión sigue siendo de la cuenta para la que se pidió.
+  - `deleteToken` no acepta el service worker: si en esa visita no se ha llamado antes a `getToken`, intenta
+    registrar `/firebase-messaging-sw.js` (que no existe) y falla. Por eso la revocación llama antes a
+    `getToken` con el nuestro (solo con el permiso concedido: si no, `getToken` lanzaría la pregunta del
+    navegador) y, si FCM no contesta, se da de baja de la suscripción push del navegador.
+- `sw.js` muestra la notificación con la app cerrada (`onBackgroundMessage`, con la etiqueta que mande la
+  función en `data.tag`).
 - Dos avisos comparten permiso, cada uno con su interruptor en Ajustes: el recordatorio de pesaje
   (`perfil.notificacionesPush`) y el aviso para descongelar (`perfil.avisoDescongelar`). Son de la cuenta: el
-  buzón lleva los dos y la lista de aparatos, y llegan a todos los aparatos con el permiso concedido.
+  buzón lleva los dos y la lista de aparatos, y llegan a todos los aparatos con el permiso concedido. Un aparato
+  sin permiso ve en Ajustes «En este aparato no te llegan» con el botón «Recibirlos aquí» (o, si el navegador
+  las tiene bloqueadas, cómo desbloquearlas).
 - En iPhone/Safari solo llegan si la PWA está instalada de verdad; no se puede evitar con código.
 - **Funciones** (`buzonAvisos.js`, compartido): leen todos los buzones con `collectionGroup("avisos")` y filtran
   en memoria. Sin `where` a propósito: en una `collectionGroup` cada campo filtrado necesita un índice creado a
   mano, y los buzones son pocos (solo cuentas con avisos) y pequeños. `sendDefrostReminders` no lee nada más;
   `sendWeighInReminders` abre `data-v1` solo de quien tiene el recordatorio activado (día sugerido, pausa,
   pesada de hoy) y, si el perfil dice que está desactivado, manda el perfil. Envían a todos los aparatos a la
-  vez (`sendEachForMulticast`) y quitan del buzón los tokens que FCM da por caducados. El día del pesaje es el
-  de la ejecución programada (`scheduleTime`), no el del reloj.
+  vez (`sendEachForMulticast`) y quitan del buzón los tokens que FCM da por caducados o inválidos
+  (`registration-token-not-registered`, `invalid-registration-token`); cualquier otro fallo se deja para el
+  siguiente aviso. El día del pesaje es el de la ejecución programada (`scheduleTime`), no el del reloj.
 - **Registro de diagnóstico, a propósito**: cada ejecución deja una línea con cuántas cuentas tocan
   («Recordatorio de pesaje: N candidato(s)…», «Aviso para descongelar: N buzón(es)…») y, por cuenta, el uid y
   por qué se envía («enviado a N de M aparato(s)») o se omite («…, se omite»). Sin datos de salud. Se consulta
   en Google Cloud → Logging → Explorador de registros, buscando `candidato`, `omite` o `enviado`.
 - **Pruebas**: `npm run test:avisos` en `functions/` (`pruebas-funciones/avisos.test.js`), con el emulador de
-  Firestore y un FCM falso: a quién se avisa, en qué idioma, que no se lee nada de más y que los tokens
-  caducados salen. Las funciones no se pueden desplegar en el proyecto de pruebas, así que esta es su prueba
-  antes de producción.
+  Firestore y un FCM falso: a quién se avisa, en qué idioma, que no se lee nada de más, que los tokens
+  caducados o inválidos salen y que un fallo pasajero no quita a nadie. Las funciones no se pueden desplegar en
+  el proyecto de pruebas, así que esta es su prueba antes de producción.
 
-### Paso del token de antes al buzón (R8, en curso)
+### Paso del token de antes al buzón (R8)
 
 Antes, cada cuenta guardaba un único token en `rueda-de-platos:push-token-v1` y las funciones lo buscaban
-leyendo todos los documentos de todas las cuentas. Para que nadie se quede sin avisos ni un día, el cambio va
-en este orden:
+leyendo todos los documentos de todas las cuentas. Para que nadie se quedara sin avisos ni un día, el cambio fue
+en este orden, ya hecho: reglas con el buzón (`dev`, prueba en `localhost`, `prod`) → la app escribe el buzón y
+sigue escribiendo el token de antes → comprobar que las cuentas con token tienen ya su buzón → desplegar solo las
+dos funciones (`firebase deploy --only functions:sendWeighInReminders,functions:sendDefrostReminders`).
 
-1. Reglas con el buzón: `--project dev`, probar en `localhost`, `--project prod`.
-2. Subir la app. Escribe el buzón **y** sigue escribiendo el token de antes, así que las funciones viejas siguen
-   avisando. Cada cuenta con avisos crea su buzón sola la primera vez que abre la app.
-3. Comprobar en Firestore (producción) que las cuentas que tenían token tienen ya `avisos/push` (cuántas son
-   lo dice la línea «candidato(s)» del registro de las funciones viejas).
-4. Desplegar solo las dos funciones:
-   `firebase deploy --only functions:sendWeighInReminders,functions:sendDefrostReminders`, y mirar el registro
-   de la siguiente ejecución.
-5. Limpieza, en otra tanda: la app deja de escribir `push-token-v1` y lo borra de cada cuenta al abrirse;
-   después se quita de `firestore.rules` (lista de claves y tamaño de 4096) y de sus pruebas.
+Queda la limpieza, en dos fases:
+
+1. **La app** (hecha): deja de escribir `push-token-v1` y lo borra una sola vez por cuenta y aparato, al abrirse
+   (marca `fooddraft:push-token-v1-borrado:<uid>`; borrarlo en cada apertura costaría una escritura aunque el
+   documento ya no exista). Las funciones no lo leen, así que no hay prisa ni orden que respetar con ellas.
+2. **Las reglas**, con margen (una o dos semanas después de subir la fase 1): quitar la clave de
+   `firestore.rules` (lista de claves y el caso especial de 4096 en `tamanoMaximo`), de sus pruebas y de
+   `datos.md`, y el código de la limpieza de `auth-bootstrap.jsx` (`limpiarTokenDeAntes`, su marca y su paso en
+   `planSincronizacion`). El margen es porque la versión anterior de la app hace `await setDoc(push-token-v1)`
+   sin proteger al activar los avisos: un aparato que aún la tenga guardada, con las reglas ya sin la clave, no
+   podría activarlos. Borrar seguirá permitido después (las reglas dejan borrar cualquier clave propia, también
+   una desconocida), así que la limpieza no se rompe. Si una copia vieja vuelve a escribir el token después de
+   limpiarlo, no lo lee nadie; se va con «Eliminar cuenta» o con otra pasada si algún día hiciera falta.
 
 ## Coste
 

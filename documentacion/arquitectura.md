@@ -168,9 +168,15 @@ mapa-corporal.js       SLUG_A_GRUPO (trazo → 14 grupos), escala de verdes, ser
 gimnasio.js            el gimnasio dibujado de FitDraft: plano, zonas y 25 máquinas (ZONAS, ESTACIONES),
                          ejerciciosDeZona, rutas A* (aEstrella, puntoDe), paradas de una rutina, paso entre
                          ejercicios, estadoZonas, fraseMonitor, rutinaDeHoy y días de la semana
-buzon-avisos.js        el buzón de avisos sin Firebase (R8): quiereAvisos, firmaBuzon y buzonAlDia (si hace
-                         falta reescribirlo), tokensConSitio (hacer sitio con la lista llena) y
-                         MAX_DISPOSITIVOS (el mismo tope que firestore.rules). Lo importa auth-bootstrap.jsx
+buzon-avisos.js        el buzón de avisos sin Firebase (R8): todo lo que decide la app y que auth-bootstrap.jsx
+                         solo ejecuta. planSincronizacion (revocar el token tras cerrar sesión, pedirlo, borrar
+                         el token de antes) y decidirBuzon (escribir, actualizar sin token, borrar o nada, y qué
+                         token viejo quitar), con firmaBuzon y buzonAlDia (si hace falta reescribirlo);
+                         firmaAlQuitarAvisos y decidirAlSalir (quitar los dos avisos, cerrar sesión);
+                         estadoDelPermiso y avisoEsteAparato (la línea «En este aparato no te llegan» de
+                         Ajustes); tokensConSitio (hacer sitio con la lista llena); las claves de localStorage
+                         (firma, limpieza, estrenar token) y MAX_DISPOSITIVOS (el mismo tope que
+                         firestore.rules). Lo importan auth-bootstrap.jsx y ui/ajustes/ajustes.jsx
 ```
 
 ### Imports entre módulos de `logica/`

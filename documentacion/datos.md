@@ -67,10 +67,11 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
 - El documento padre `users/{uid}` guarda el estado premium (`premium { active, stripeCustomerId,
   subscriptionId, updatedAt }`) y los contadores de cuota (`usoFotos`, `usoCocinar`). Es de **solo lectura
   para el cliente**: solo lo escriben las Cloud Functions con el Admin SDK (ver `backend.md`).
-- `rueda-de-platos:push-token-v1` guarda el token de notificaciones en `value` como **texto plano**, no JSON.
-  **En transición** (R8): lo leían las funciones de notificaciones de antes; las nuevas leen el buzón de
-  avisos. La app lo sigue escribiendo hasta que las nuevas estén desplegadas; después se quita de la app, de
-  `firestore.rules` y de las cuentas (`backend.md`, «Notificaciones push»).
+- `rueda-de-platos:push-token-v1` guardaba el token de notificaciones en `value` como **texto plano**, no JSON.
+  **En retirada** (R8): lo leían las funciones de notificaciones de antes; las de ahora leen el buzón de avisos
+  y no lo miran. La app ya no lo escribe y lo borra una sola vez por cuenta y aparato (marca
+  `fooddraft:push-token-v1-borrado:<uid>`). Las reglas lo siguen aceptando a propósito hasta la fase 2 de la
+  limpieza (`backend.md`, «Notificaciones push»).
 
 ## Claves en la nube (`users/{uid}/keys/`)
 
@@ -86,7 +87,7 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
 | `rueda-de-platos:entreno-AAAA-MM-v1` | `useEntreno` (un documento por mes) | 1 | `migrarMes` | no |
 | `rueda-de-platos:cuerpo-diario-v1` | `useCuerpo` | 1 | `migrarDiario` (`logica/cuerpo-diario.js`) | sí |
 | `rueda-de-platos:informes-favoritos-v1` | `useCuerpo` | 1 | `migrarFavoritos` | sí |
-| `rueda-de-platos:push-token-v1` | `auth-bootstrap.jsx` (texto plano; en transición, R8) | — | — | no |
+| `rueda-de-platos:push-token-v1` | nadie: `auth-bootstrap.jsx` solo lo borra (texto plano; en retirada, R8) | — | — | no |
 
 `data-v1` lleva `{ foods, ingredients, blocks, rules, perfil, perfilOnboardingDone, objetivos, pesoTracking,
 listaCompra, listaCompraSimple, comidasCompletadas }` y crece con `comidasCompletadas` (≈ 150 KB al año
@@ -106,15 +107,35 @@ y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe d
   app (`serverTimestamp()`; las reglas no aceptan otra).
 - **Uno por cuenta, no por aparato**, porque los interruptores de Ajustes son de la cuenta. Existe solo si hay
   algún aviso activado.
-- **Cuándo se escribe**: al abrirse la app (como mucho una vez al día por aparato si nada cambia: la «firma»
-  de lo último escrito va en `localStorage`, `fooddraft:buzon-avisos:<uid>`), al activar o quitar un aviso y al
-  cambiar el idioma. Solo apunta un aparato con el permiso de notificaciones concedido. Si el navegador renueva
-  el token, el nuevo entra y el viejo sale. Con la lista llena, se reescribe entera quitando los más antiguos.
-- **Cuándo se borra**: al quitar los dos avisos (entero, en todos los aparatos) y con «Eliminar cuenta»
-  (`recursiveDelete` de `users/{uid}`). Al cerrar sesión, ese aparato sale de la lista.
-- **Las funciones** solo quitan tokens que FCM da por caducados (`arrayRemove`), sin tocar `actualizado`.
-- No pasa por ninguna migración: lo rehace la app cada día desde el perfil, así que un buzón viejo se corrige
-  solo al abrirla.
+- **La firma** (`localStorage`, `fooddraft:buzon-avisos:<uid>`): lo que este aparato escribió la última vez,
+  `{ token, idioma, pesaje, descongelar, dia }` (`token: null` si escribió sin token). Evita reescribir en cada
+  apertura, dice qué token quitar al renovarse o al cerrar sesión y hace de tarea pendiente: solo se borra cuando
+  el servidor confirma que el buzón se ha borrado.
+- **Cuándo se escribe**: al abrirse la app (como mucho una vez al día por aparato si nada cambia), al activar o
+  quitar un aviso y al cambiar el idioma. Un aparato con el permiso de notificaciones concedido se apunta en la
+  lista; si el navegador renueva el token, el nuevo entra y el viejo sale; con la lista llena, se reescribe
+  entera quitando los más antiguos. Un aparato **sin permiso** (o sin token) pone al día igualmente `idioma`,
+  `pesaje` y `descongelar` con `updateDoc`, sin tocar `tokens`; si no hay buzón, no hace nada (lo creará el
+  primer aparato con permiso). En Ajustes, ese aparato ve «En este aparato no te llegan» con el botón
+  «Recibirlos aquí», que pide el permiso y lo apunta sin tocar los interruptores.
+- **Cuándo se borra**: al quitar los dos avisos (entero, en todos los aparatos: primero el buzón y al final la
+  revocación del token) y con «Eliminar cuenta» (`recursiveDelete` de `users/{uid}`). Al cerrar sesión, ese
+  aparato sale de la lista.
+- **Las funciones** solo quitan tokens que FCM da por caducados o inválidos (`arrayRemove`), sin tocar
+  `actualizado`. Un fallo pasajero de FCM no quita nada.
+- **Cómo se corrige solo un buzón que no dice lo que el perfil** (no pasa por ninguna migración): al abrir la app
+  en un aparato de la cuenta. Con algún aviso, se reescribe como mucho una vez al día (con o sin permiso). Sin
+  ninguno, se borra si ese aparato tiene firma: un borrado que no llegó (quitar los dos avisos y cerrar la app
+  enseguida) se repite. Un aparato sin firma que no tenga avisos no lo toca, para no gastar una escritura en
+  cada apertura de cada cuenta.
+- **Cerrar sesión sin conexión**: el aparato puede quedarse en la lista de esa cuenta. Para que la cuenta que
+  entre después en ese navegador no reciba sus avisos, al cerrar sesión se pone siempre la marca
+  `fooddraft:avisos-estrenar-token` (del navegador, sin uid): la próxima vez que cualquier cuenta abra la app ahí
+  con el permiso concedido, el navegador revoca su token y pide uno nuevo. El viejo muere y las funciones lo
+  quitan en su siguiente envío.
+- **`updateDoc` sin buzón da `permission-denied`, no `not-found`**: las reglas miran el documento resultante, y
+  sin buzón solo tiene los campos de la escritura. La app lo distingue de un rechazo de verdad leyendo el buzón
+  (solo cuando falla). Hay una prueba de las reglas que lo vigila.
 - Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`), decisiones de la app en
   `validacion/` (grupo «Avisos: el buzón de las notificaciones») y funciones en `functions/pruebas-funciones/`
   (`npm run test:avisos`).
@@ -135,6 +156,9 @@ en el dispositivo desde el que se elimina, las claves de esa cuenta (las que aca
 | `fooddraft:periodo-v1:<uid>` | Período (`migrarPeriodo`, `logica/periodo.js`); nunca va a la nube | sí |
 | `rueda-de-platos:migrated:<uid>` | Marca de la migración única desde `localStorage` | sí |
 | `fooddraft:verificacion-enviada:<uid>` | Cuándo se mandó desde aquí el último correo de verificación (`VerificarCorreoScreen`) | sí |
+| `fooddraft:buzon-avisos:<uid>` | Firma de lo último que este aparato escribió en el buzón de avisos (arriba) | sí |
+| `fooddraft:push-token-v1-borrado:<uid>` | El token de antes ya se borró de esta cuenta desde aquí | sí |
+| `fooddraft:avisos-estrenar-token` | Se cerró sesión en este navegador: revocar su token antes de volver a usar los avisos | no (es del navegador) |
 | `fooddraft:idioma` | Idioma antes de haber perfil | no |
 | `fooddraft:ultima-pantalla` | Última pantalla de cada área | no |
 | `fooddraft:resumen-lado`, `fooddraft:vista-despensa`, `fooddraft:vista-gimnasio`, `fooddraft:capas-gimnasio` | Vistas elegidas | no |
