@@ -15,7 +15,9 @@
 // los aparatos con el token caducado o inválido salen de la lista y que un fallo pasajero de FCM no saca a nadie.
 // Y la escala (tanda B, M3): que piden solo los buzones con su aviso activado, por páginas y sin saltarse ni
 // repetir a nadie, que no tratan más de unas pocas cuentas a la vez y que, si falta el índice de la consulta,
-// siguen leyendo todos los buzones como antes (el emulador no exige índices: ese error se simula).
+// siguen leyendo todos los buzones como antes (el emulador no exige índices: ese error se simula). Y los datos de
+// pesaje en el buzón (tanda B, M2): con ellos, el recordatorio decide sin abrir `data-v1`; sin ellos (buzón de una
+// app sin actualizar, o con un dato raro), lo abre como antes; y los dos caminos deciden igual.
 
 const { describe, it, before, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
@@ -231,6 +233,7 @@ describe("Aviso para descongelar", () => {
 });
 
 describe("Recordatorio de pesaje", () => {
+  // Estos buzones son como los de antes de la tanda B (sin los datos de pesaje): se decide abriendo `data-v1`.
   it("avisa solo a quien le toca hoy, y solo abre los datos de quien lo tiene activado", async () => {
     // Le toca: miércoles, 3 por semana, sin pesarse aún y sin pausa. En gallego, a sus dos aparatos.
     await ponerBuzon("ana", { idioma: "gl", pesaje: true, tokens: ["ana-1", "ana-2"] });
@@ -349,7 +352,8 @@ describe("Escala (tanda B, M3): solo los buzones con el aviso, por páginas y un
     // Los datos solo de quien tiene el recordatorio: los de «eva» ni se abren.
     const datosLeidos = lecturas.filter((l) => l.startsWith("users/")).map((l) => l.split("/")[1]).sort();
     assert.deepEqual(datosLeidos, ["ana", "bea", "carla", "dani"]);
-    assert.ok(registro.some((r) => r.texto === "Recordatorio de pesaje: 4 candidato(s) con el recordatorio activado"));
+    assert.ok(registro.some((r) => r.texto ===
+      "Recordatorio de pesaje: 4 candidato(s) con el recordatorio activado (0 decidido(s) con el buzón y 4 abriendo sus datos)"));
   });
 
   it("como mucho ESCALA.aLaVez cuentas a la vez (antes, todas con un solo Promise.all)", async () => {
@@ -435,5 +439,128 @@ describe("Escala (tanda B, M3): solo los buzones con el aviso, por páginas y un
     assert.equal(enviados.length, 0);
     assert.equal(registro.filter((r) => r.nivel === "warn").length, 0);
     assert.ok(registro.some((r) => r.nivel === "error" && /no se han podido leer los buzones/.test(r.texto)));
+  });
+});
+
+describe("Recordatorio de pesaje con los datos en el buzón (tanda B, M2)", () => {
+  // Lo que deja la app de ahora en el buzón (logica/buzon-avisos.js, datosPesajeBuzon), escrito aquí a mano.
+  const conPeso = (pesoVecesSemana, pesoPausado, ultimaPesada, cambios = {}) =>
+    ({ pesaje: true, pesoVecesSemana, pesoPausado, ultimaPesada, ...cambios });
+
+  it("con los tres datos en el buzón decide sin abrir los datos de nadie", async () => {
+    // Le toca (miércoles, 3 por semana, última pesada el lunes): se le avisa aunque su `data-v1` diga otra cosa,
+    // porque no se abre.
+    await ponerBuzon("ana", conPeso(3, false, "2026-11-02", { idioma: "gl", tokens: ["ana-1", "ana-2"] }));
+    await ponerDatos("ana", { perfil: { notificacionesPush: true }, pesoTracking: peso({ pausas: [{ inicio: "2026-11-01", fin: null }] }) });
+    // Ya se ha pesado hoy.
+    await ponerBuzon("bea", conPeso(3, false, "2026-11-04", { tokens: ["bea-1"] }));
+    // Ciclo en pausa.
+    await ponerBuzon("carla", conPeso(3, true, "2026-11-02", { tokens: ["carla-1"] }));
+    // 2 por semana: el miércoles no le toca.
+    await ponerBuzon("dani", conPeso(2, false, null, { tokens: ["dani-1"] }));
+    // Sin seguimiento de peso.
+    await ponerBuzon("fede", conPeso(null, false, null, { tokens: ["fede-1"] }));
+    // Recién empezado: sin pesadas en el ciclo.
+    await ponerBuzon("gema", conPeso(3, false, null, { tokens: ["gema-1"] }));
+
+    await sendWeighInReminders.run(MIERCOLES);
+
+    assert.deepEqual(enviados.map((m) => m.tokens.join("+")).sort(), ["ana-1+ana-2", "gema-1"]);
+    const deAna = enviados.find((m) => m.tokens[0] === "ana-1");
+    assert.match(deAna.notification.body, /^Hoxe/);
+    // Ni un `data-v1`: solo la búsqueda de los buzones.
+    assert.deepEqual(lecturas, ["todas las cuentas: avisos"]);
+    const motivos = registro.map((r) => r.texto);
+    for (const linea of [
+      "bea: ya registrado hoy, se omite (según el buzón)",
+      "carla: ciclo de peso en pausa, se omite (según el buzón)",
+      "dani: hoy no es día sugerido (vecesSemana=2), se omite (según el buzón)",
+      "fede: sin seguimiento de peso configurado, se omite (según el buzón)",
+      "ana: recordatorio enviado a 2 de 2 aparato(s) (según el buzón)",
+      "Recordatorio de pesaje: 6 candidato(s) con el recordatorio activado (6 decidido(s) con el buzón y 0 abriendo sus datos)",
+    ]) {
+      assert.ok(motivos.includes(linea), `falta en el registro: ${linea}`);
+    }
+  });
+
+  it("sin los tres datos, o con uno que no tiene la forma esperada, abre data-v1 como antes", async () => {
+    // Buzón de antes, sin ninguno: le toca según sus datos.
+    await ponerBuzon("hugo", { pesaje: true, tokens: ["hugo-1"] });
+    await ponerDatos("hugo", { perfil: { notificacionesPush: true }, pesoTracking: peso() });
+    // Una frecuencia que no existe: no se fía del buzón; sus datos dicen que está en pausa.
+    await ponerBuzon("ines", conPeso(5, false, null, { tokens: ["ines-1"] }));
+    await ponerDatos("ines", { perfil: { notificacionesPush: true }, pesoTracking: peso({ pausas: [{ inicio: "2026-11-01", fin: null }] }) });
+    // Solo uno de los tres (las reglas lo permiten): no basta para decidir; sus datos dicen que le toca.
+    await ponerBuzon("juan", { pesaje: true, pesoPausado: true, tokens: ["juan-1"] });
+    await ponerDatos("juan", { perfil: { notificacionesPush: true }, pesoTracking: peso() });
+    // Una fecha mal escrita: tampoco.
+    await ponerBuzon("lola", conPeso(3, false, "4/11/2026", { tokens: ["lola-1"] }));
+    await ponerDatos("lola", { perfil: { notificacionesPush: true }, pesoTracking: peso({ entradas: [{ fecha: "2026-11-04", peso: 61 }] }) });
+    // Y uno con los tres bien: este no se abre.
+    await ponerBuzon("kike", conPeso(3, false, null, { tokens: ["kike-1"] }));
+    await ponerDatos("kike", { perfil: { notificacionesPush: true }, pesoTracking: peso() });
+
+    await sendWeighInReminders.run(MIERCOLES);
+
+    assert.deepEqual(enviados.map((m) => m.tokens[0]).sort(), ["hugo-1", "juan-1", "kike-1"]);
+    const datosLeidos = lecturas.filter((l) => l.startsWith("users/")).map((l) => l.split("/")[1]).sort();
+    assert.deepEqual(datosLeidos, ["hugo", "ines", "juan", "lola"]);
+    const motivos = registro.map((r) => r.texto);
+    assert.ok(motivos.includes("ines: ciclo de peso en pausa, se omite (según sus datos)"));
+    assert.ok(motivos.includes("lola: ya registrado hoy, se omite (según sus datos)"));
+    assert.ok(motivos.includes(
+      "Recordatorio de pesaje: 5 candidato(s) con el recordatorio activado (1 decidido(s) con el buzón y 4 abriendo sus datos)"
+    ));
+  });
+
+  it("el perfil solo se mira por el camino de antes: con los datos en el buzón, manda el buzón", async () => {
+    // Por el camino de antes, un perfil con el recordatorio desactivado gana al buzón. Con los datos en el buzón no se
+    // abre `data-v1`, así que el buzón es la única fuente (como en el aviso de descongelar): la app lo pone al día al
+    // cambiar el interruptor, también sin permiso (F4), y lo borra al quitar los dos avisos.
+    await ponerBuzon("eva", { pesaje: true, tokens: ["eva-1"] });
+    await ponerDatos("eva", { perfil: { notificacionesPush: false }, pesoTracking: peso() });
+    await ponerBuzon("olga", conPeso(3, false, null, { tokens: ["olga-1"] }));
+    await ponerDatos("olga", { perfil: { notificacionesPush: false }, pesoTracking: peso() });
+
+    await sendWeighInReminders.run(MIERCOLES);
+
+    assert.deepEqual(enviados.map((m) => m.tokens[0]), ["olga-1"]);
+    assert.ok(registro.some((r) => r.texto === "eva: recordatorio de pesaje desactivado en el perfil, se omite"));
+  });
+
+  it("los dos caminos deciden igual con el mismo seguimiento, el miércoles y el jueves", async () => {
+    // Cada caso es un seguimiento de peso y lo que la app dejaría en el buzón para él (calculado a mano con las
+    // reglas de datosPesajeBuzon). «-d» va por `data-v1` (buzón de antes) y «-b» por el buzón. A quién se avisa
+    // tiene que ser lo mismo por los dos caminos.
+    const casos = {
+      normal: [peso(), [3, false, null]],
+      pesadoHoy: [peso({ entradas: [{ fecha: "2026-11-02", peso: 70 }, { fecha: "2026-11-04", peso: 69.8 }] }), [3, false, "2026-11-04"]],
+      // Pesadas desordenadas: la de hoy no es la última de la lista, pero es la mayor.
+      desordenado: [peso({ entradas: [{ fecha: "2026-11-04", peso: 69.8 }, { fecha: "2026-11-02", peso: 70 }] }), [3, false, "2026-11-04"]],
+      pesadoAntes: [peso({ entradas: [{ fecha: "2026-11-02", peso: 70 }] }), [3, false, "2026-11-02"]],
+      pausado: [peso({ pausas: [{ inicio: "2026-11-01", fin: null }] }), [3, true, null]],
+      pausaCerrada: [peso({ pausas: [{ inicio: "2026-10-20", fin: "2026-10-27" }] }), [3, false, null]],
+      dosPorSemana: [peso({ vecesSemana: 2 }), [2, false, null]],
+      // Sin frecuencia guardada: las dos funciones la toman como 3.
+      sinFrecuencia: [{ pausas: [], entradas: [] }, [3, false, null]],
+    };
+    for (const [nombre, [seguimiento, [veces, pausado, ultima]]] of Object.entries(casos)) {
+      await ponerBuzon(`${nombre}-d`, { pesaje: true, tokens: [`${nombre}-d`] });
+      await ponerDatos(`${nombre}-d`, { perfil: { notificacionesPush: true }, pesoTracking: seguimiento });
+      await ponerBuzon(`${nombre}-b`, conPeso(veces, pausado, ultima, { tokens: [`${nombre}-b`] }));
+    }
+    const avisados = (sufijo) =>
+      enviados.map((m) => m.tokens[0]).filter((t) => t.endsWith(sufijo)).map((t) => t.slice(0, -2)).sort();
+
+    // Miércoles 4: 3 por semana sí (si no se ha pesado hoy ni está en pausa); 2 por semana no.
+    await sendWeighInReminders.run(MIERCOLES);
+    assert.deepEqual(avisados("-d"), ["normal", "pausaCerrada", "pesadoAntes", "sinFrecuencia"]);
+    assert.deepEqual(avisados("-b"), avisados("-d"));
+
+    // Jueves 5: solo 2 por semana (lunes y jueves).
+    enviados = [];
+    await sendWeighInReminders.run({ scheduleTime: "2026-11-05T08:00:00.000Z" });
+    assert.deepEqual(avisados("-d"), ["dosPorSemana"]);
+    assert.deepEqual(avisados("-b"), avisados("-d"));
   });
 });

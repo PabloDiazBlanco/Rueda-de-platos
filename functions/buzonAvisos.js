@@ -1,8 +1,9 @@
 // ---------- Buzón de avisos: lo comparten las dos funciones de notificaciones (auditoría de noviembre, R8 y R17) ----------
 // `users/{uid}/avisos/push` guarda, por cuenta, el idioma, los dos interruptores de avisos (`pesaje`,
-// `descongelar`) y la lista de aparatos (`tokens`). Lo escribe la app (auth-bootstrap.jsx,
-// window.sincronizarBuzonAvisos) al abrirse y al cambiar los avisos o el idioma; su forma y sus límites están en
-// firestore.rules.
+// `descongelar`), la lista de aparatos (`tokens`) y, desde la tanda B (M2), lo justo del seguimiento de peso para
+// decidir el recordatorio sin abrir los datos de la cuenta (`pesoVecesSemana`, `pesoPausado`, `ultimaPesada`). Lo
+// escribe la app (auth-bootstrap.jsx, window.sincronizarBuzonAvisos) al abrirse y al cambiar los avisos, el idioma
+// o el seguimiento de peso; su forma y sus límites están en firestore.rules.
 //
 // Por qué existe: hasta noviembre de 2026, sendWeighInReminders y sendDefrostReminders descubrían a quién avisar
 // leyendo con `collectionGroup("keys")` **todos los documentos de todas las cuentas** (menús, despensa, cada mes
@@ -64,6 +65,24 @@ const TOKEN_INSERVIBLE = new Set([
   "messaging/invalid-registration-token",
 ]);
 
+// Una fecha `AAAA-MM-DD`, como las que guarda la app (fechaISO de logica/peso.js) y las que aceptan las reglas.
+const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+// Los datos del seguimiento de peso que trae el buzón (M2), o `null` si no los trae todos y bien formados: un buzón
+// escrito por una copia de la app anterior a la tanda B no los tiene, y entonces el recordatorio de pesaje abre
+// `data-v1` como antes (sendWeighInReminders.js). Las reglas ya garantizan los tipos; esto es por si acaso, para que
+// un dato raro lleve al camino de antes y no a una decisión equivocada. Hacen falta los tres: uno suelto (que las
+// reglas permiten) no basta para decidir. `pesoVecesSemana: null` sí es un dato válido: la cuenta no tiene
+// seguimiento de peso.
+function pesajeDelBuzon(datos) {
+  if (!["pesoVecesSemana", "pesoPausado", "ultimaPesada"].every((campo) => campo in datos)) return null;
+  const { pesoVecesSemana, pesoPausado, ultimaPesada } = datos;
+  if (pesoVecesSemana !== null && pesoVecesSemana !== 2 && pesoVecesSemana !== 3) return null;
+  if (typeof pesoPausado !== "boolean") return null;
+  if (ultimaPesada !== null && !(typeof ultimaPesada === "string" && FECHA_ISO.test(ultimaPesada))) return null;
+  return { vecesSemana: pesoVecesSemana, pausado: pesoPausado, ultimaPesada };
+}
+
 // Un buzón leído, ya limpio, o `null` si el documento no es un buzón: solo vale `users/{uid}/avisos/push` (cualquier
 // otro documento que se llamara igual se ignora). Interruptores como sí/no y tokens sin repetidos ni nada que no sea
 // texto. Las reglas ya garantizan la forma; esto es por si acaso, para que un dato raro no tire la función entera.
@@ -79,6 +98,7 @@ function limpiarBuzon(doc) {
     pesaje: datos.pesaje === true,
     descongelar: datos.descongelar === true,
     tokens: [...new Set(tokens)],
+    pesoEnBuzon: pesajeDelBuzon(datos),
   };
 }
 
