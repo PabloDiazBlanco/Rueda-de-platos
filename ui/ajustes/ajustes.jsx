@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Download } from "lucide-react";
 import { descargarDatosJSON } from "peso";
 import { t, guardarIdiomaLocal } from "i18n";
+import { quiereAvisos, avisoEsteAparato } from "buzon-avisos";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { LanguageDropdown } from "../comun/idioma.jsx";
@@ -123,6 +124,37 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
   const avisoDescongelar = perfil?.avisoDescongelar ?? false;
   const [descongelarEstado, setDescongelarEstado] = useState(""); // "" | "pidiendo" | "error"
   const [descongelarError, setDescongelarError] = useState("");
+
+  // F3 (revisión de noviembre de 2026): los dos interruptores son de la cuenta, pero cada aparato tiene que dar su
+  // propio permiso para recibir los avisos. En uno que no lo ha dado, Ajustes decía «Activadas» sin que llegara
+  // nada, y la única salida (apagar y encender) borraba el buzón entero si solo había un aviso, dejando sin avisos a
+  // los demás aparatos. Ahora se dice, y «Recibirlos aquí» pide el permiso y apunta este aparato sin tocar los
+  // interruptores (logica/buzon-avisos.js, avisoEsteAparato). Se lee del navegador en cada pintado: es una consulta
+  // instantánea, y así refleja el permiso recién concedido o denegado en cuanto el botón termina.
+  const [aparatoEstado, setAparatoEstado] = useState(""); // "" | "pidiendo" | "error"
+  const [aparatoError, setAparatoError] = useState("");
+  const avisoAparato = avisoEsteAparato({
+    quiere: quiereAvisos({ pesaje: notifPush, descongelar: avisoDescongelar }),
+    estado: typeof window.estadoAvisosEsteAparato === "function" ? window.estadoAvisosEsteAparato() : "sin-soporte",
+  });
+
+  async function recibirAqui() {
+    setAparatoError("");
+    setAparatoEstado("pidiendo");
+    try {
+      await window.requestPushPermission();
+      // Apunta este aparato ya, con los interruptores como están: el efecto de app.jsx no se vuelve a lanzar porque
+      // el perfil no cambia. Sin esperar: sin conexión la escritura queda en cola y el botón no debe quedarse
+      // «pidiendo…» por eso (si no llega, se repite la próxima vez que se abra la app).
+      if (typeof window.sincronizarBuzonAvisos === "function") {
+        window.sincronizarBuzonAvisos({ idioma, pesaje: notifPush, descongelar: avisoDescongelar });
+      }
+      setAparatoEstado("");
+    } catch (err) {
+      setAparatoEstado("error");
+      setAparatoError(t(idioma, "perfil.notificaciones.error." + (err.code || "generico")));
+    }
+  }
 
   async function handleToggleDescongelar(activar) {
     setDescongelarError("");
@@ -251,6 +283,32 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
             <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--rust)", marginTop: 4 }}>{descongelarError}</div>
           )}
         </Field>
+
+        {/* F3: este aparato no recibe los avisos de la cuenta. Con el permiso bloqueado no hay botón: el navegador
+            ya no deja preguntar, así que se explica cómo desbloquearlo. Sin soporte no se dice nada. */}
+        {avisoAparato && (
+          <div role="status" style={{ background: "var(--mustard-soft)", borderRadius: 8, padding: "10px 12px", margin: "0 0 14px" }}>
+            <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, lineHeight: 1.45, color: "var(--ink)" }}>
+              {t(idioma, avisoAparato === "bloqueado" ? "ajustes.esteAparato.bloqueados" : "ajustes.esteAparato.noLlegan")}
+            </div>
+            {avisoAparato === "recibir" && (
+              <button
+                onClick={recibirAqui}
+                disabled={aparatoEstado === "pidiendo"}
+                style={{
+                  marginTop: 8, fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700,
+                  color: "var(--green-dark)", background: "var(--green-soft)", border: "none", borderRadius: 7,
+                  padding: "8px 12px", cursor: aparatoEstado === "pidiendo" ? "default" : "pointer",
+                }}
+              >
+                {aparatoEstado === "pidiendo" ? t(idioma, "perfil.notificaciones.pidiendoPermiso") : t(idioma, "ajustes.esteAparato.recibirAqui")}
+              </button>
+            )}
+            {avisoAparato === "recibir" && aparatoEstado === "error" && (
+              <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--rust)", marginTop: 6 }}>{aparatoError}</div>
+            )}
+          </div>
+        )}
 
         <button
           onClick={() => descargarDatosJSON(data)}

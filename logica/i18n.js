@@ -1497,6 +1497,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Aviso para descongelar",
     "ajustes.descongelar.ayuda": "Cada noche a las 21:30, una notificación para revisar las comidas de mañana por si tienes que descongelar algo o comprar. Usa el mismo permiso de notificaciones que el recordatorio de pesaje; en iPhone solo llega con la app instalada.",
+    "ajustes.esteAparato.noLlegan": "En este aparato no te llegan los avisos: cada aparato necesita su propio permiso de notificaciones.",
+    "ajustes.esteAparato.recibirAqui": "Recibirlos aquí",
+    "ajustes.esteAparato.bloqueados": "En este aparato no te llegan los avisos: el navegador tiene bloqueadas las notificaciones de FoodDraft. Para recibirlos aquí, permítelas en los ajustes del navegador (o del teléfono, si tienes la app instalada) y vuelve a abrir la app.",
 
     "queCocino.intro": "Dinos qué tienes —tu despensa, una foto o una lista— y te proponemos recetas con ingredientes y pasos.",
     "queCocino.modo.conLoQueTengo": "Con lo que tengo",
@@ -3423,6 +3426,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Defrost reminder",
     "ajustes.descongelar.ayuda": "Every night at 21:30, a notification to check tomorrow’s meals in case you need to defrost something or buy anything. It uses the same notification permission as the weigh-in reminder; on iPhone it only arrives with the app installed.",
+    "ajustes.esteAparato.noLlegan": "You won’t get the reminders on this device: each device needs its own notification permission.",
+    "ajustes.esteAparato.recibirAqui": "Get them here",
+    "ajustes.esteAparato.bloqueados": "You won’t get the reminders on this device: your browser is blocking notifications from FoodDraft. To get them here, allow them in your browser settings (or your phone’s, if you installed the app) and open the app again.",
 
     "queCocino.intro": "Tell us what you have — your pantry, a photo or a list — and we’ll suggest recipes with ingredients and steps.",
     "queCocino.modo.conLoQueTengo": "With what I have",
@@ -5349,6 +5355,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Avís per descongelar",
     "ajustes.descongelar.ayuda": "Cada nit a les 21:30, una notificació per revisar els àpats de demà per si has de descongelar alguna cosa o comprar. Fa servir el mateix permís de notificacions que el recordatori de pes; a l’iPhone només arriba amb l’app instal·lada.",
+    "ajustes.esteAparato.noLlegan": "En aquest aparell no et arriben els avisos: cada aparell necessita el seu propi permís de notificacions.",
+    "ajustes.esteAparato.recibirAqui": "Rebre’ls aquí",
+    "ajustes.esteAparato.bloqueados": "En aquest aparell no et arriben els avisos: el navegador té bloquejades les notificacions de FoodDraft. Per rebre’ls aquí, permet-les als ajustos del navegador (o del telèfon, si tens l’app instal·lada) i torna a obrir l’app.",
 
     "queCocino.intro": "Digues-nos què tens —el teu rebost, una foto o una llista— i et proposem receptes amb ingredients i passos.",
     "queCocino.modo.conLoQueTengo": "Amb el que tinc",
@@ -7275,6 +7284,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Aviso para desconxelar",
     "ajustes.descongelar.ayuda": "Cada noite ás 21:30, unha notificación para revisar as comidas de mañá por se tes que desconxelar algo ou mercar. Usa o mesmo permiso de notificacións que o recordatorio de pesaxe; no iPhone só chega coa app instalada.",
+    "ajustes.esteAparato.noLlegan": "Neste aparello non che chegan os avisos: cada aparello precisa o seu propio permiso de notificacións.",
+    "ajustes.esteAparato.recibirAqui": "Recibilos aquí",
+    "ajustes.esteAparato.bloqueados": "Neste aparello non che chegan os avisos: o navegador ten bloqueadas as notificacións de FoodDraft. Para recibilos aquí, permíteas nos axustes do navegador (ou do teléfono, se tes a app instalada) e volve abrir a app.",
 
     "queCocino.intro": "Dinos que tes —a túa despensa, unha foto ou unha lista— e propoñémosche receitas con ingredientes e pasos.",
     "queCocino.modo.conLoQueTengo": "Co que teño",
@@ -9201,6 +9213,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Desizozteko abisua",
     "ajustes.descongelar.ayuda": "Gauero 21:30ean, jakinarazpen bat biharko otorduak begiratzeko, zerbait desizoztu edo erosi behar baduzu ere. Pisatzeko gogorarazlearen jakinarazpen-baimen bera erabiltzen du; iPhonen aplikazioa instalatuta badago bakarrik iristen da.",
+    "ajustes.esteAparato.noLlegan": "Gailu honetan ez zaizkizu abisuak iristen: gailu bakoitzak bere jakinarazpen-baimena behar du.",
+    "ajustes.esteAparato.recibirAqui": "Hemen jaso",
+    "ajustes.esteAparato.bloqueados": "Gailu honetan ez zaizkizu abisuak iristen: nabigatzaileak FoodDraft-en jakinarazpenak blokeatuta ditu. Hemen jasotzeko, baimendu itzazu nabigatzailearen ezarpenetan (edo telefonoarenetan, aplikazioa instalatuta baduzu) eta ireki berriro aplikazioa.",
 
     "queCocino.intro": "Esaiguzu zer duzun —zure jakitokia, argazki bat edo zerrenda bat— eta errezetak proposatuko dizkizugu, osagai eta urratsekin.",
     "queCocino.modo.conLoQueTengo": "Daukadanarekin",
