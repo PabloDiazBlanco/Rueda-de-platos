@@ -22,7 +22,7 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
 | `createCheckoutSession` / `createPortalSession` | callable | Devuelven la URL de pago o de gestión de la suscripción |
 | `analyzeFoodPhoto` / `suggestRecipes` | callable | Gemini con premium + cuota (ver `ia.md`) |
 | `suggestMeals` | callable | Versión anterior de «¿Qué cocino?»; se conserva para las copias de la app sin actualizar |
-| `sendWeighInReminders` | programada, 09:00 Europe/Madrid | Push diario de recordatorio de pesaje a quien le toca ese día, a todos sus aparatos. Lee solo los buzones con el recordatorio activado y decide con lo que traen; solo abre `data-v1` si el buzón es de una app sin actualizar |
+| `sendWeighInReminders` | programada, 09:00 Europe/Madrid | Push diario de recordatorio de pesaje a quien le toca ese día, a todos sus aparatos. Lee solo los buzones con el recordatorio activado y decide con lo que traen; solo abre `data-v1` si el buzón es de una app sin actualizar o está a medias |
 | `deleteAccount` | callable | Elimina la cuenta de verdad: cancela la suscripción de Stripe, borra `users/{uid}` entero (`recursiveDelete`) y la cuenta de Auth. La llama `window.deleteAccount` tras reautenticar |
 | `sendDefrostReminders` | programada, 21:30 Europe/Madrid | Push «revisa las comidas de mañana por si tienes que descongelar algo o comprar» a quien tenga el aviso activado (C8, gratis). Solo lee los buzones con ese aviso activado: ningún dato de la cuenta |
 
@@ -88,8 +88,10 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
   Auth. Activar (checkout) sí lo crea.
 - El cliente (`window.deleteAccount`) bloquea las escrituras de `window.storage` mientras la función trabaja,
   para que un guardado automático pendiente no recree documentos de la cuenta borrada; si la función falla,
-  las devuelve. Después limpia las claves de `localStorage` de esa cuenta (las que acaban en `:<uid>`) y
-  cierra la sesión. Si la función falla, no se borra nada: no hay borrado a medias desde el cliente.
+  las devuelve. Lo mismo con el buzón de avisos, que no pasa por `window.storage`: la marca `cuentaBorrandose`
+  para la fila del buzón de esa cuenta («Notificaciones push», abajo). Después limpia las claves de
+  `localStorage` de esa cuenta (las que acaban en `:<uid>`) y cierra la sesión. Si la función falla, no se borra
+  nada: no hay borrado a medias desde el cliente.
 - Las simulaciones con Stripe, Firestore y Auth falsos que se usaron para comprobar estos casos no están en el
   repositorio; `validacion/` no cubre `functions/`.
 
@@ -108,8 +110,16 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
   - `window.estadoAvisosEsteAparato` dice si este aparato puede recibirlos («concedido», «bloqueado»,
     «sin-pedir», «sin-soporte»).
   - Las operaciones del buzón van en fila; la de cerrar sesión tiene un límite de 3 s, porque una escritura de la
-    cuenta que sale puede no resolverse nunca y dejaría atascadas las de la siguiente. Cada tarea comprueba al
-    empezar que la sesión sigue siendo de la cuenta para la que se pidió.
+    cuenta que sale puede no resolverse nunca y dejaría atascadas las de la siguiente.
+  - **Sesión del buzón** (`sesionBuzon`): sube en `onAuthStateChanged` y al acabar el turno de cerrar sesión. Cada
+    tarea apunta la de cuando se pidió y, al empezar y antes de cada escritura y de guardar la firma, comprueba
+    que es la misma, que la cuenta es la de ahora y que no se está borrando (`sigueVigente`). Comparar solo la
+    cuenta no bastaba: Firestore guarda las escrituras pendientes de una cuenta hasta que vuelve a entrar, así que
+    si se cierra sesión sin conexión y la misma cuenta vuelve a entrar en esa visita, lo que esperaba detrás se
+    ejecutaba en la sesión nueva (por ejemplo, sacar del buzón el token recién apuntado).
+  - **«Eliminar cuenta»** (`cuentaBorrandose`): mientras la función borra, y después, la fila no escribe nada en
+    el buzón de esa cuenta; si no, una tarea que escribiera después del borrado volvería a crear `avisos/push` y
+    las funciones seguirían avisando a ese aparato. No se espera a la fila (puede estar atascada sin conexión).
   - `deleteToken` no acepta el service worker: si en esa visita no se ha llamado antes a `getToken`, intenta
     registrar `/firebase-messaging-sw.js` (que no existe) y falla. Por eso la revocación llama antes a
     `getToken` con el nuestro (solo con el permiso concedido: si no, `getToken` lanzaría la pregunta del
@@ -119,15 +129,18 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
 - Dos avisos comparten permiso, cada uno con su interruptor en Ajustes: el recordatorio de pesaje
   (`perfil.notificacionesPush`) y el aviso para descongelar (`perfil.avisoDescongelar`). Son de la cuenta: el
   buzón lleva los dos y la lista de aparatos, y llegan a todos los aparatos con el permiso concedido. Un aparato
-  sin permiso ve en Ajustes «En este aparato no te llegan» con el botón «Recibirlos aquí» (o, si el navegador
-  las tiene bloqueadas, cómo desbloquearlas).
+  sin permiso ve en Ajustes «En este dispositivo no te llegan» con el botón «Recibirlos aquí» (o, si el navegador
+  las tiene bloqueadas, cómo desbloquearlas). Pulsar «Activadas» en un aviso también apunta el aparato, aunque el
+  aviso ya estuviera activado (el perfil no cambia y el efecto de `app.jsx` no se lanzaría).
 - En iPhone/Safari solo llegan si la PWA está instalada de verdad; no se puede evitar con código.
 - **Funciones** (`buzonAvisos.js`, compartido, `recorrerBuzones`): piden solo los buzones con su aviso activado
   (`collectionGroup("avisos").where("pesaje" | "descongelar", "==", true)`), por páginas y unas pocas cuentas a
   la vez («Escala e índices», abajo). `sendDefrostReminders` no lee nada más. `sendWeighInReminders` decide con
   los datos de pesaje del buzón (`pesoVecesSemana`, `pesoPausado`, `ultimaPesada`, `datos.md`) **sin abrir nada
   de la cuenta**; si el buzón no los trae (lo escribió una app sin actualizar, o un dato no tiene la forma
-  esperada), abre `data-v1` como antes (día sugerido, pausa, pesada de hoy) y, si el perfil dice que está
+  esperada) o dice «sin seguimiento» (`pesoVecesSemana: null`: con el recordatorio activado la app de ahora nunca
+  lo escribe, así que es un buzón a medias, `pesajeDelBuzon`), abre `data-v1` como antes (día sugerido, pausa,
+  pesada de hoy) y, si el perfil dice que está
   desactivado, manda el perfil. Los dos caminos deciden igual (`motivoParaNoAvisar`, con una prueba que lo
   compara). Por el camino del buzón, el buzón es la única fuente, como en el de descongelar: la app lo pone al
   día al cambiar el interruptor (también sin permiso, F4) y lo borra al quitar los dos avisos. Envían a todos los
@@ -140,13 +153,15 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
   buzón(es)…») y, por cuenta, el uid y por qué se envía («enviado a N de M aparato(s)») o se omite («…, se
   omite»); en el pesaje, con «(según el buzón)» o «(según sus datos)». Cuando «abriendo sus datos» se quede en 0
   de forma estable, ya no quedan buzones de antes. Si falta un índice, una línea de aviso (`WARNING`) «falta el
-  índice de «pesaje»…» (plan B, abajo). Sin datos de salud. Se consulta en Google Cloud → Logging → Explorador
-  de registros, buscando `candidato`, `omite`, `enviado` o `índice`.
+  índice de «pesaje»…» (plan B, abajo); si hay que volver a pedir una página, otra «fallo pasajero al leer una
+  página de buzones…». Sin datos de salud. Se consulta en Google Cloud → Logging → Explorador de registros,
+  buscando `candidato`, `omite`, `enviado`, `índice` o `pasajero`.
 - **Pruebas**: `npm run test:avisos` en `functions/` (`pruebas-funciones/avisos.test.js`), con el emulador de
   Firestore y un FCM falso: a quién se avisa, en qué idioma, que no se lee nada de más (un espía apunta cada
   documento y cada página que se pide), que los tokens caducados o inválidos salen y que un fallo pasajero no
-  quita a nadie; la escala (páginas de 2, tandas de 2, el plan B al principio y a mitad) y los dos caminos del
-  pesaje (con los datos en el buzón no se abre `data-v1`; sin ellos, sí; y deciden igual). Las funciones no se
+  quita a nadie; la escala (páginas de 2, tandas de 2, el plan B al principio y a mitad, el reintento de una
+  página tras un fallo pasajero) y los dos caminos del pesaje (con los datos en el buzón no se abre `data-v1`; sin
+  ellos, o con «sin seguimiento», sí; y deciden igual). Las funciones no se
   pueden desplegar en el proyecto de pruebas, así que esta es su prueba antes de producción.
 
 ### Escala e índices (tanda B)
@@ -164,6 +179,11 @@ Con unas pocas cuentas daba igual; con miles, se quedaría sin memoria o lanzar�
   siguiente cuenta en cuanto acaban la suya. Nunca hay más de 20 `data-v1` abiertos ni más de 20 envíos a FCM en
   marcha. Un fallo de una cuenta queda en el registro y no para a las demás. `ESCALA` es un objeto que las
   pruebas ponen pequeño (páginas de 2) para probarlo con pocos buzones; en producción no se toca.
+- **Un reintento por página** (`leerPagina`): si leer una página falla por algo pasajero (códigos de gRPC 4,
+  `DEADLINE_EXCEEDED`, y 14, `UNAVAILABLE`), se deja un aviso (`WARNING`) en el registro y se vuelve a pedir una vez
+  tras 2 s (`ESCALA.esperaReintentoMs`). Sin él, un corte breve dejaba sin aviso a todas las cuentas que quedaban.
+  Volver a pedir la misma página no repite a nadie (de ella aún no se ha tratado ninguna cuenta). Otros códigos no
+  se reintentan, y si el reintento también falla, sigue como abajo.
 - **540 s y 512 MiB** para las dos (lo de serie es 60 s y 256 MiB): con unas décimas de segundo por cuenta y 20
   a la vez, decenas de miles de cuentas por ejecución. No cuesta más con pocas cuentas: se paga el tiempo que
   corre. Firebase pone ese mismo plazo al trabajo de Cloud Scheduler que las lanza (si no, la daría por fallida
@@ -182,13 +202,16 @@ Con unas pocas cuentas daba igual; con miles, se quedaría sin memoria o lanzar�
   existe o aún se está creando), la función lo deja en el registro con `logger.warn` (con el enlace que da
   Firestore) y sigue leyendo **todos** los buzones, también por páginas, y filtrando en memoria, como antes.
   Sigue desde el mismo cursor, así que nadie se queda sin aviso ni lo recibe dos veces. Cubre un despliegue en
-  mal orden y los minutos que tarda en crearse un índice. Cualquier otro error al leer no activa el plan B: se
-  registra como error y esa ejecución termina ahí. **El emulador no exige índices**: las pruebas no notarían
-  uno que falta; por eso el plan B se prueba simulando el error.
-- **Publicar los índices**: `firebase deploy --only firestore:indexes --project dev` y después `--project prod`.
-  Si el CLI dice que el proyecto tiene índices o *field overrides* que no están en el archivo y pregunta si
-  borrarlos, la respuesta es **no** (los de este archivo son los únicos que usa el código). Crearlos tarda unos
-  minutos; se ve en la consola de Firebase → Firestore → Índices, en los de un solo campo. Ojo:
+  mal orden y los minutos que tarda en crearse un índice. Cualquier otro error al leer (pasado el reintento, si
+  era pasajero) no activa el plan B: se registra como error y esa ejecución termina ahí. **El emulador no exige
+  índices**: las pruebas no notarían uno que falta; por eso el plan B se prueba simulando el error.
+- **Publicar los índices**: antes, `firebase firestore:indexes --project prod` (y `--project dev`) para ver qué
+  índices y *field overrides* tiene ya el proyecto. Después, `firebase deploy --only firestore:indexes --project
+  dev` y luego `--project prod`. Si el CLI dice que el proyecto tiene índices o *field overrides* que no están en
+  el archivo y pregunta si borrarlos, la respuesta es **no** (los de este archivo son los únicos que usa el código,
+  pero los otros pueden ser de algo que no está aquí). **Nunca `--force`**: borra sin preguntar todo lo que no esté
+  en el archivo (sin él, el CLI solo borra si se contesta que sí, y en modo no interactivo solo avisa). Crearlos
+  tarda unos minutos; se ve en la consola de Firebase → Firestore → Índices, en los de un solo campo. Ojo:
   `firebase deploy --only firestore` (sin `:rules`) publica ya las reglas **y** los índices.
 
 ### Orden de publicación de la tanda B
@@ -197,8 +220,9 @@ Con unas pocas cuentas daba igual; con miles, se quedaría sin memoria o lanzar�
    `--project prod`. Van primero porque la app nueva escribe los datos de pesaje en el buzón: con las reglas de
    antes, esa escritura se rechaza entera (no se apuntarían aparatos nuevos ni llegarían los cambios de idioma
    o de interruptores; los avisos seguirían saliendo con el buzón que hubiera).
-2. **Índices**: `firebase deploy --only firestore:indexes --project dev` y `--project prod`, y esperar a que
-   estén habilitados. Si las funciones llegan antes, no pasa nada grave: plan B (leen todos los buzones, como
+2. **Índices**: mirar antes lo que hay (`firebase firestore:indexes --project prod`), `firebase deploy --only
+   firestore:indexes --project dev` y `--project prod` (sin `--force`; «Publicar los índices», arriba), y esperar a
+   que estén habilitados. Si las funciones llegan antes, no pasa nada grave: plan B (leen todos los buzones, como
    hoy) y un aviso en el registro.
 3. **Funciones**: `firebase deploy --only functions:sendWeighInReminders,functions:sendDefrostReminders`. Con
    los buzones de antes abren `data-v1`, como hoy, así que pueden ir antes que la app; y la app nueva con las

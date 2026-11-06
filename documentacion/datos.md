@@ -81,7 +81,7 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
 
 | Clave | Lo lleva | `version` | Migración | Casos en `validacion/` |
 |---|---|---|---|---|
-| `rueda-de-platos:data-v1` | `useDatos` (`ui/estado/datos.js`, `STORAGE_KEY`); también lo leen `auth-bootstrap.jsx` y `sendWeighInReminders` (solo de quien tiene el recordatorio de pesaje activado) | no | `migrateData` | sí, grupo «migrateData» |
+| `rueda-de-platos:data-v1` | `useDatos` (`ui/estado/datos.js`, `STORAGE_KEY`); también lo leen `auth-bootstrap.jsx` y `sendWeighInReminders` (solo de quien tiene el recordatorio de pesaje activado y un buzón sin los datos de pesaje, `backend.md`) | no | `migrateData` | sí, grupo «migrateData» |
 | `rueda-de-platos:menu-v1`, `history-v1` | `useMenu` (`MENU_COMPLETO`) | no | ninguna | no |
 | `rueda-de-platos:menu-simple-v1`, `history-simple-v1` | `useMenu` (`MENU_SIMPLE`) | no | ninguna | no |
 | `rueda-de-platos:despensa-v1` | `useDespensa` | 1 | `migrarDespensa` (`logica/despensa.js`) | sí |
@@ -113,23 +113,31 @@ y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe d
 - **Datos de pesaje** (opcionales, tanda B): lo justo para que el recordatorio de pesaje decida sin abrir
   `data-v1` (`backend.md`). Los calcula `datosPesajeBuzon` (`logica/buzon-avisos.js`) a partir de `pesoTracking`:
   - `pesoVecesSemana`: 2 o 3 (entero; las de `PESO_FRECUENCIAS`, y una prueba de las reglas comprueba que las
-    acepta todas), o `null` sin seguimiento. Una frecuencia rara cuenta como 3, como en `esDiaSugeridoPeso`.
+    acepta todas), o `null` sin seguimiento. Una frecuencia rara cuenta como 3, como en `esDiaSugeridoPeso`. Con
+    el recordatorio activado, la app siempre manda 2 o 3 (`migrateData` crea el seguimiento si falta): la función
+    no se fía de un `null` con el pesaje activado (solo sale de un buzón a medias, abajo) y abre `data-v1`.
   - `pesoPausado`: sí/no, si hay una pausa sin `fin`.
   - `ultimaPesada`: `AAAA-MM-DD` de la pesada más reciente del ciclo actual (`pesoTracking.entradas`), o `null`.
+    Sin contar las posteriores a hoy en este aparato: una guardada por un aparato con el reloj adelantado taparía
+    la de hoy, y la función avisaría a quien ya se ha pesado.
   - **Nunca el peso** (las reglas no aceptan ningún otro campo). Con el recordatorio de pesaje apagado van vacíos
     (`null`, `false`, `null`): a la función no le sirven y así no hay en el buzón datos de quien no lo ha pedido.
   - Opcionales porque los buzones de antes no los tienen y tienen que seguir valiendo, y porque una copia de la
     app sin actualizar reescribe el buzón sin ellos: con `merge` se quedan los que había (pueden quedar viejos
     hasta que un aparato con la app nueva lo reescriba, como mucho al día siguiente); al reescribirlo entero
-    (lista llena) desaparecen y la función vuelve a abrir `data-v1`. No hay migración aparte: la firma de antes
-    no tiene estos datos, así que la primera apertura con la app nueva reescribe el buzón con ellos.
+    (lista llena) desaparecen y la función vuelve a abrir `data-v1`. Si una copia así activa el pesaje encima de
+    los vacíos que dejó la app nueva con el pesaje apagado, el buzón queda con el pesaje activado y
+    `pesoVecesSemana: null`, y la función también abre `data-v1`. No hay migración aparte: la firma de antes no
+    tiene estos datos, así que la primera apertura con la app nueva reescribe el buzón con ellos.
 - **Uno por cuenta, no por aparato**, porque los interruptores de Ajustes son de la cuenta. Existe solo si hay
   algún aviso activado.
 - **La firma** (`localStorage`, `fooddraft:buzon-avisos:<uid>`): lo que este aparato escribió la última vez,
   `{ token, idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada, dia }` (`token: null` si
-  escribió sin token). Evita reescribir en cada
-  apertura, dice qué token quitar al renovarse o al cerrar sesión y hace de tarea pendiente: solo se borra cuando
-  el servidor confirma que el buzón se ha borrado.
+  escribió sin token). Evita reescribir en cada apertura, dice qué token quitar al renovarse o al cerrar sesión y
+  hace de tarea pendiente: solo se borra cuando el servidor confirma que el buzón se ha borrado. Al quitar los dos
+  avisos se cambia al momento por una que conserva el token pero con `dia: null` y `borrar: true`
+  (`firmaAlQuitarAvisos`): si el borrado no se confirma, la próxima apertura lo repite, y si ese mismo día los
+  avisos vuelven a estar activados, este aparato se vuelve a apuntar (una firma «al día» lo impedía hasta mañana).
 - **Cuándo se escribe**: al abrirse la app (como mucho una vez al día por aparato si nada cambia), al activar o
   quitar un aviso y al cambiar el idioma. Con el recordatorio de pesaje activado, también con la primera pesada
   de cada día, al pausar o reanudar el ciclo, al cambiar la frecuencia y al cerrar el ciclo (no al corregir el
@@ -138,11 +146,13 @@ y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe d
   lista; si el navegador renueva el token, el nuevo entra y el viejo sale; con la lista llena, se reescribe
   entera quitando los más antiguos. Un aparato **sin permiso** (o sin token) pone al día igualmente `idioma`,
   `pesaje`, `descongelar` y los datos de pesaje con `updateDoc`, sin tocar `tokens`; si no hay buzón, no hace
-  nada (lo creará el primer aparato con permiso). En Ajustes, ese aparato ve «En este aparato no te llegan» con el botón
-  «Recibirlos aquí», que pide el permiso y lo apunta sin tocar los interruptores.
+  nada (lo creará el primer aparato con permiso). En Ajustes, ese aparato ve «En este dispositivo no te llegan»
+  con el botón «Recibirlos aquí», que pide el permiso y lo apunta sin tocar los interruptores; pulsar «Activadas»
+  en uno de los dos avisos también lo apunta, aunque ya estuviera activado.
 - **Cuándo se borra**: al quitar los dos avisos (entero, en todos los aparatos: primero el buzón y al final la
-  revocación del token) y con «Eliminar cuenta» (`recursiveDelete` de `users/{uid}`). Al cerrar sesión, ese
-  aparato sale de la lista.
+  revocación del token) y con «Eliminar cuenta» (`recursiveDelete` de `users/{uid}`; mientras se borra, y después,
+  la app no escribe nada más en ese buzón, para no volver a crearlo). Al cerrar sesión, ese aparato sale de la
+  lista.
 - **Las funciones** solo quitan tokens que FCM da por caducados o inválidos (`arrayRemove`), sin tocar
   `actualizado`. Un fallo pasajero de FCM no quita nada.
 - **Cómo se corrige solo un buzón que no dice lo que el perfil** (no pasa por ninguna migración): al abrir la app
@@ -154,7 +164,9 @@ y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe d
   entre después en ese navegador no reciba sus avisos, al cerrar sesión se pone siempre la marca
   `fooddraft:avisos-estrenar-token` (del navegador, sin uid): la próxima vez que cualquier cuenta abra la app ahí
   con el permiso concedido, el navegador revoca su token y pide uno nuevo. El viejo muere y las funciones lo
-  quitan en su siguiente envío.
+  quitan en su siguiente envío. Y lo que quedara pendiente en la fila de esa sesión ya no toca nada aunque se
+  resuelva después (por ejemplo, si la misma cuenta vuelve a entrar en esa visita): cada tarea comprueba antes de
+  escribir que su sesión sigue siendo la de ahora (`backend.md`).
 - **`updateDoc` sin buzón da `permission-denied`, no `not-found`**: las reglas miran el documento resultante, y
   sin buzón solo tiene los campos de la escritura. La app lo distingue de un rechazo de verdad leyendo el buzón
   (solo cuando falla). Hay una prueba de las reglas que lo vigila.
