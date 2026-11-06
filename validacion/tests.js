@@ -3536,18 +3536,29 @@ function grupoBuzonAvisos() {
           const marca = firmaAlQuitarAvisos(null);
           const sinAvisos = (anterior) => decidirBuzon({ quiere: false, token: null, anterior, idioma: "es", pesaje: false, descongelar: false }, hoy).accion;
           const vuelve = decidirBuzon({ quiere: true, token: "t1", anterior: marca, idioma: "es", pesaje: true, descongelar: false }, hoy);
+          // Quitar los dos con firma ya escrita hoy. Si el borrado llegó al servidor pero no se confirmó aquí, y ese mismo
+          // día los avisos vuelven a estar activados con exactamente lo de antes, hay que escribir: con la firma de antes
+          // tal cual, decidirBuzon decía «nada» (hoy ya escrito) y este aparato se quedaba fuera hasta el día siguiente.
+          const trasQuitar = firmaAlQuitarAvisos(firma);
+          const mismosAvisos = (token) =>
+            decidirBuzon({ quiere: true, token, anterior: trasQuitar, idioma: "es", pesaje: true, descongelar: true }, hoy);
           return comparar(
             {
               sinFirma: sinAvisos(null), conFirma: sinAvisos(firma), conFirmaSinToken: sinAvisos(sinToken), conMarca: sinAvisos(marca),
-              marcaBorrar: marca.borrar, marcaToken: marca.token,
-              // Si ya había firma, vale esa (con su token, para poder sacarlo al cerrar sesión).
-              guardaLaQueHabia: firmaAlQuitarAvisos(firma) === firma, firmaRara: firmaAlQuitarAvisos("texto").borrar,
+              marcaBorrar: marca.borrar, marcaToken: marca.token, firmaRara: firmaAlQuitarAvisos("texto").borrar,
+              // Si ya había firma, se conserva su token (para sacarlo al cerrar sesión), pero nunca queda al día.
+              quitarToken: trasQuitar.token, quitarDia: trasQuitar.dia, quitarBorrar: trasQuitar.borrar,
+              noCambiaLaOriginal: firma.dia, quitarSinAvisos: sinAvisos(trasQuitar),
+              vuelveMismoToken: mismosAvisos("t1").accion, vuelveMismoTokenQuitar: mismosAvisos("t1").quitar,
+              vuelveSinPermiso: mismosAvisos(null).accion, saleTrasQuitar: decidirAlSalir(trasQuitar).quitar,
               // Con la marca puesta y un aviso de nuevo encendido, se escribe (la marca no es una firma al día).
               vuelveAccion: vuelve.accion, vuelveQuitar: vuelve.quitar,
             },
             {
               sinFirma: "nada", conFirma: "borrar", conFirmaSinToken: "borrar", conMarca: "borrar",
-              marcaBorrar: true, marcaToken: null, guardaLaQueHabia: true, firmaRara: true,
+              marcaBorrar: true, marcaToken: null, firmaRara: true,
+              quitarToken: "t1", quitarDia: null, quitarBorrar: true, noCambiaLaOriginal: "2026-11-06", quitarSinAvisos: "borrar",
+              vuelveMismoToken: "escribir", vuelveMismoTokenQuitar: null, vuelveSinPermiso: "actualizarSinToken", saleTrasQuitar: "t1",
               vuelveAccion: "escribir", vuelveQuitar: null,
             }
           );

@@ -211,11 +211,18 @@ export function decidirBuzon(
 }
 
 // Al quitar los dos avisos (disablePushNotifications, F1): la firma que se queda mientras el servidor no confirma
-// el borrado del buzón. Si este aparato ya tenía una, vale esa. Si no (nunca llegó a escribir el buzón, por ejemplo
-// porque abrió la app sin conexión), se deja una que solo dice «hay que borrarlo»: así, si el borrado no llega,
-// la próxima apertura lo repite (decidirBuzon, «borrar») en vez de esperar a que lo haga otro aparato.
+// el borrado del buzón. Hace de tarea pendiente («hay que borrarlo»): si el borrado no llega, la próxima apertura lo
+// repite (decidirBuzon, «borrar») en vez de esperar a que lo haga otro aparato.
+// - Si este aparato ya tenía firma, se conserva su token (para sacarlo de la lista al cerrar sesión, decidirAlSalir,
+//   o al renovarse), pero **nunca queda «al día»** (`dia: null`). Antes se dejaba tal cual, y había un hueco: si el
+//   borrado llegaba al servidor pero la app se cerraba antes de confirmarlo, y ese mismo día los avisos volvían a
+//   estar activados (desde otro aparato, o porque no llegó a guardarse el perfil apagado), la firma decía «hoy ya
+//   escribí esto» y este aparato no se volvía a apuntar hasta el día siguiente. Ahora, con algún aviso, se escribe
+//   («escribir» o «actualizarSinToken»); sin ninguno, se borra.
+// - Si no (nunca llegó a escribir el buzón, por ejemplo porque abrió la app sin conexión), una que solo dice «hay
+//   que borrarlo», sin token.
 export function firmaAlQuitarAvisos(anterior) {
-  return anterior != null && typeof anterior === "object" ? anterior : { token: null, borrar: true };
+  return anterior != null && typeof anterior === "object" ? { ...anterior, dia: null, borrar: true } : { token: null, borrar: true };
 }
 
 // Al cerrar sesión (signOutUser, F2): qué token sacar de la lista de esta cuenta y qué firma dejar cuando el
