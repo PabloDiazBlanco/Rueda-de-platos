@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Download } from "lucide-react";
 import { descargarDatosJSON } from "peso";
 import { t, guardarIdiomaLocal } from "i18n";
-import { quiereAvisos, avisoEsteAparato } from "buzon-avisos";
+import { quiereAvisos, avisoEsteAparato, datosPesajeBuzon } from "buzon-avisos";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { LanguageDropdown } from "../comun/idioma.jsx";
@@ -145,9 +145,13 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
       await window.requestPushPermission();
       // Apunta este aparato ya, con los interruptores como están: el efecto de app.jsx no se vuelve a lanzar porque
       // el perfil no cambia. Sin esperar: sin conexión la escritura queda en cola y el botón no debe quedarse
-      // «pidiendo…» por eso (si no llega, se repite la próxima vez que se abra la app).
+      // «pidiendo…» por eso (si no llega, se repite la próxima vez que se abra la app). Con los datos de pesaje,
+      // como el efecto de app.jsx (si faltaran, el buzón diría «sin seguimiento» y el recordatorio no llegaría).
       if (typeof window.sincronizarBuzonAvisos === "function") {
-        window.sincronizarBuzonAvisos({ idioma, pesaje: notifPush, descongelar: avisoDescongelar });
+        window.sincronizarBuzonAvisos({
+          idioma, pesaje: notifPush, descongelar: avisoDescongelar,
+          ...datosPesajeBuzon({ pesaje: notifPush, pesoTracking: data && data.pesoTracking }),
+        });
       }
       setAparatoEstado("");
     } catch (err) {

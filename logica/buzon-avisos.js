@@ -12,13 +12,13 @@
 // decir nada del anterior. La forma del documento y sus límites están en firestore.rules.
 //
 // La «firma» (`localStorage`, `fooddraft:buzon-avisos:<uid>`): lo que este aparato dejó escrito la última vez en
-// el buzón de una cuenta, `{ token, idioma, pesaje, descongelar, dia }`. `token` es `null` cuando escribió sin token
-// (aparato sin permiso de notificaciones, F4). Sirve para tres cosas:
+// el buzón de una cuenta, `{ token, idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada, dia }`.
+// `token` es `null` cuando escribió sin token (aparato sin permiso de notificaciones, F4). Sirve para tres cosas:
 // 1. No reescribir el buzón cada vez que se abre la app: basta con una vez al día o cuando algo cambia.
 // 2. Saber qué token quitar de la lista cuando el navegador lo renueva o se cierra la sesión.
 // 3. Como «tarea pendiente»: solo se borra cuando el servidor confirma que el buzón se ha borrado. Si sigue ahí sin
 //    ningún aviso activado, aquel borrado no llegó y se repite (F1).
-import { fechaISO } from "peso";
+import { fechaISO, PESO_FRECUENCIAS } from "peso";
 
 // El mismo tope que firestore.rules (`datos.tokens.size() <= 10`): un móvil, un ordenador, una tableta y los
 // tokens que el navegador renueva entre medias caben de sobra. Si cambia uno, cambia el otro (una prueba de las
@@ -71,20 +71,88 @@ export function avisoEsteAparato({ quiere, estado }) {
   return null;
 }
 
-// Lo que este aparato deja escrito en el buzón, con el día (ver «La firma», arriba). Sin token, `null`.
-export function firmaBuzon({ token, idioma, pesaje, descongelar }, fecha = new Date()) {
-  return { token: token || null, idioma, pesaje: !!pesaje, descongelar: !!descongelar, dia: fechaISO(fecha) };
+// ---------- Lo justo del seguimiento de peso (tanda B, M2) ----------
+// El recordatorio de pesaje (functions/sendWeighInReminders.js) solo avisa a quien hoy le toca pesarse y aún no lo
+// ha hecho. Para saberlo abría cada mañana `data-v1` entero (hasta 1 MiB: perfil, catálogo, historial de peso,
+// comidas hechas...) de cada cuenta con el recordatorio activado, también los días en que no le tocaba. Con estos
+// tres datos en el buzón decide sin abrirlo:
+// - `pesoVecesSemana`: 2 o 3 pesadas a la semana (qué días toca), o `null` si no hay seguimiento de peso.
+// - `pesoPausado`: si el ciclo está en pausa (viaje, enfermedad...): entonces no se avisa.
+// - `ultimaPesada`: la fecha (`AAAA-MM-DD`) de la última pesada del ciclo actual, o `null`. La función solo mira si
+//   es la de hoy («ya se ha pesado»).
+// **Nunca el peso**: solo cuándo, no cuánto (las reglas tampoco lo dejarían guardar). Es exactamente lo que miraba
+// la función en `data-v1`, ni un dato más: la misma regla de días (esDiaSugeridoPeso), la misma pausa (una sin
+// `fin`) y la misma pesada de hoy (alguna entrada con esa fecha; la más reciente es la de hoy si la hay, porque la
+// app nunca guarda una pesada con fecha posterior al día en que se hace).
+// Con el recordatorio de pesaje apagado van vacíos (`pesoVecesSemana: null`, `pesoPausado: false`,
+// `ultimaPesada: null`): a la función no le sirven, no hay por qué tener en el buzón cuándo se pesa alguien que no lo
+// ha pedido, y así pesarse o pausar no cuesta ninguna escritura en el buzón de esas cuentas.
+const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+const SIN_DATOS_DE_PESAJE = { pesoVecesSemana: null, pesoPausado: false, ultimaPesada: null };
+
+// Los tres datos, a partir del seguimiento de peso guardado (`data.pesoTracking`, logica/peso.js). La frecuencia
+// que no sea una de las de la app cuenta como 3, como hace esDiaSugeridoPeso (logica/peso.js) con los días: el
+// recordatorio cae en los mismos días que antes. Las fechas mal escritas se ignoran (las reglas solo aceptan
+// `AAAA-MM-DD`, y una fecha rara haría que se rechazara el buzón entero).
+export function datosPesajeBuzon({ pesaje, pesoTracking }) {
+  if (!pesaje || !pesoTracking || typeof pesoTracking !== "object") return { ...SIN_DATOS_DE_PESAJE };
+  const veces = Number(pesoTracking.vecesSemana);
+  const pausas = Array.isArray(pesoTracking.pausas) ? pesoTracking.pausas : [];
+  const fechas = (Array.isArray(pesoTracking.entradas) ? pesoTracking.entradas : [])
+    .map((e) => e && e.fecha)
+    .filter((f) => typeof f === "string" && FECHA_ISO.test(f));
+  return {
+    pesoVecesSemana: PESO_FRECUENCIAS.includes(veces) ? veces : 3,
+    pesoPausado: pausas.some((p) => !!p && p.fin === null),
+    // Las fechas `AAAA-MM-DD` se ordenan bien como texto. La mayor, no la última de la lista: no depende del orden.
+    ultimaPesada: fechas.length ? fechas.reduce((a, b) => (b > a ? b : a)) : null,
+  };
+}
+
+// Lo que este aparato deja escrito en el buzón, con el día (ver «La firma», arriba). Sin token, `null`. Los datos de
+// pesaje, con la misma forma que exigen las reglas (un valor que no la tenga se queda vacío) y vacíos si el
+// recordatorio de pesaje está apagado (arriba).
+export function firmaBuzon(
+  { token, idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada },
+  fecha = new Date()
+) {
+  const peso = pesaje
+    ? {
+        pesoVecesSemana: PESO_FRECUENCIAS.includes(pesoVecesSemana) ? pesoVecesSemana : null,
+        pesoPausado: pesoPausado === true,
+        ultimaPesada: typeof ultimaPesada === "string" && FECHA_ISO.test(ultimaPesada) ? ultimaPesada : null,
+      }
+    : SIN_DATOS_DE_PESAJE;
+  return { token: token || null, idioma, pesaje: !!pesaje, descongelar: !!descongelar, ...peso, dia: fechaISO(fecha) };
+}
+
+// Los campos del buzón que salen de una firma: todo menos el token (va en la lista, aparte) y el día (es solo de
+// este aparato). Siempre los seis, también los de pesaje vacíos: si se dejaran fuera, un `merge` conservaría los de
+// antes, y la función los tomaría por buenos.
+export function camposBuzon(firma) {
+  return {
+    idioma: firma.idioma,
+    pesaje: firma.pesaje === true,
+    descongelar: firma.descongelar === true,
+    pesoVecesSemana: firma.pesoVecesSemana ?? null,
+    pesoPausado: firma.pesoPausado === true,
+    ultimaPesada: firma.ultimaPesada ?? null,
+  };
 }
 
 // ¿Hay que escribir? No, si la última escritura de este dispositivo fue hoy y con exactamente lo mismo. Una
-// firma vieja con otra forma (o ninguna) obliga a escribir: es lo seguro, cuesta una escritura.
+// firma vieja con otra forma (o ninguna) obliga a escribir: es lo seguro, cuesta una escritura. (Las firmas de antes
+// de la tanda B no tienen los datos de pesaje: la primera apertura con la app nueva reescribe el buzón una vez.)
+// Con el recordatorio de pesaje activado, pesarse, pausar o cambiar la frecuencia cambia la firma y reescribe el
+// buzón enseguida: si se esperara al día siguiente, a las 9:00 llegaría el aviso a quien ya se ha pesado.
 // Por qué una vez al día aunque nada cambie: el buzón puede haber cambiado sin que este aparato lo sepa (otro
 // aparato lo borró y lo volvió a crear sin este token, se hizo sitio en una lista llena quitándolo, una función lo
 // quitó tras un fallo de FCM...). La reescritura diaria lo vuelve a apuntar. `actualizado` no dice nada de cada
 // aparato: es la hora de la última escritura de cualquiera de ellos, de la cuenta entera.
 export function buzonAlDia(guardada, nueva) {
   if (!guardada || typeof guardada !== "object") return false;
-  return ["token", "idioma", "pesaje", "descongelar", "dia"].every((k) => guardada[k] === nueva[k]);
+  return ["token", "idioma", "pesaje", "descongelar", "pesoVecesSemana", "pesoPausado", "ultimaPesada", "dia"]
+    .every((k) => guardada[k] === nueva[k]);
 }
 
 // La lista de aparatos cuando ya no cabe uno más (las reglas rechazan el undécimo): este token al final, sin
@@ -122,16 +190,20 @@ export function planSincronizacion({ quiere, puedeRecibir, estrenar, tokenDeAnte
 //   aviso para descongelar seguía llegando cada noche a los demás aparatos, porque su función se fía del buzón y no
 //   mira el perfil. Cuesta una escritura, solo en ese caso, y la firma se borra cuando el servidor lo confirma.
 // - `"nada"`: ni avisos ni firma, o la firma dice que hoy ya se escribió exactamente esto.
-// - `"escribir"`: con token. Se añade a la lista sin pisar los de los demás y se ponen al día idioma e
-//   interruptores. `quitar` es el token que este aparato tenía antes si el navegador lo ha renovado: sale ya, sin
-//   esperar a que una función falle al usarlo.
+// - `"escribir"`: con token. Se añade a la lista sin pisar los de los demás y se ponen al día idioma, interruptores
+//   y datos de pesaje (camposBuzon). `quitar` es el token que este aparato tenía antes si el navegador lo ha
+//   renovado: sale ya, sin esperar a que una función falle al usarlo.
 // - `"actualizarSinToken"` (F4): hay avisos, pero este aparato no tiene token (sin permiso, sin soporte o FCM no lo
 //   ha dado). Lo cambiado desde aquí (apagar uno de los dos, otro idioma) tiene que llegar igual al buzón; si no, los
 //   demás aparatos siguen recibiendo lo de antes hasta que se abra la app en uno de ellos. La lista no se toca. La
-//   firma, con `token: null`, evita escribir en cada apertura.
-export function decidirBuzon({ quiere, token, anterior, idioma, pesaje, descongelar }, fecha = new Date()) {
+//   firma, con `token: null`, evita escribir en cada apertura. También lleva los datos de pesaje: pesarse en el
+//   ordenador sin permiso tiene que llegar al buzón igual, o el móvil recibiría el aviso de un día ya hecho.
+export function decidirBuzon(
+  { quiere, token, anterior, idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada },
+  fecha = new Date()
+) {
   if (!quiere) return { accion: anterior != null ? "borrar" : "nada" };
-  const firma = firmaBuzon({ token, idioma, pesaje, descongelar }, fecha);
+  const firma = firmaBuzon({ token, idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada }, fecha);
   if (buzonAlDia(anterior, firma)) return { accion: "nada" };
   if (!firma.token) return { accion: "actualizarSinToken", firma };
   const viejo = anterior && typeof anterior === "object" ? anterior.token : null;

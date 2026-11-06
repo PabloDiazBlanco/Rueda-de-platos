@@ -11,6 +11,7 @@ import { fechaISO, esDiaSugeridoPeso, esCambioRadical, calcularTendenciaPeso, ev
 import { resumenNutrientesSemana } from "salud-publica";
 import { calcularResumenMensual, pesoEnMes } from "resumen-mensual";
 import { t } from "i18n";
+import { datosPesajeBuzon } from "buzon-avisos";
 import { useDatos, usePremium, useCargaInicial } from "./ui/estado/datos.js";
 import { useMenu, useComidasCompletadas, MENU_COMPLETO, MENU_SIMPLE } from "./ui/estado/menu.js";
 import { useCatalogo } from "./ui/estado/catalogo.js";
@@ -138,14 +139,20 @@ export default function RuedaDePlatos() {
   // del buzón que no llegó (F1), el navegador estrena token tras un cierre de sesión (F2) y se borra el token de
   // antes. Solo con el perfil leído bien de la nube: con un error de carga no se sabe qué quiere la cuenta, y
   // borrar el buzón por un perfil sin leer dejaría sin avisos a todos sus aparatos.
+  // Con el recordatorio de pesaje activado, lleva también lo justo del seguimiento de peso (tanda B, M2:
+  // datosPesajeBuzon, logica/buzon-avisos.js), para que la función decida sin abrir los datos de la cuenta. Se
+  // vigilan esos tres valores sueltos y no `pesoTracking` entero: solo cambian con la primera pesada de un día,
+  // al pausar o reanudar, al cambiar la frecuencia y al cerrar el ciclo (no al corregir el peso de hoy, por
+  // ejemplo), y con el recordatorio apagado no cambian nunca.
   // En validacion/ no existe el puente con Firebase y no hace nada.
   const perfilListo = !loading && !errorCarga && !!(data && data.perfil);
   const avisoPesaje = !!(data && data.perfil && data.perfil.notificacionesPush);
   const avisoDescongelar = !!(data && data.perfil && data.perfil.avisoDescongelar);
+  const { pesoVecesSemana, pesoPausado, ultimaPesada } = datosPesajeBuzon({ pesaje: avisoPesaje, pesoTracking: data && data.pesoTracking });
   useEffect(() => {
     if (!perfilListo || typeof window.sincronizarBuzonAvisos !== "function") return;
-    window.sincronizarBuzonAvisos({ idioma, pesaje: avisoPesaje, descongelar: avisoDescongelar });
-  }, [perfilListo, idioma, avisoPesaje, avisoDescongelar]);
+    window.sincronizarBuzonAvisos({ idioma, pesaje: avisoPesaje, descongelar: avisoDescongelar, pesoVecesSemana, pesoPausado, ultimaPesada });
+  }, [perfilListo, idioma, avisoPesaje, avisoDescongelar, pesoVecesSemana, pesoPausado, ultimaPesada]);
 
   if (errorCarga) {
     return (

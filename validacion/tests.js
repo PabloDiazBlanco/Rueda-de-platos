@@ -11,7 +11,7 @@ import { migrateData } from "migraciones";
 import { FOODS_SEED } from "datos-iniciales";
 import { mealComponents, ingredientePorNombre } from "comida-calculo";
 import { allocateCounts } from "seleccion";
-import { formatFechaCorta } from "peso";
+import { formatFechaCorta, esDiaSugeridoPeso as esDiaDePesaje } from "peso";
 import { CUESTIONARIO_PASOS_BASE, pasosCuestionario, construirIngredientesDesdeCuestionario, huecosProteinaSemana, arquetiposSinAlimentos } from "cuestionario";
 import {
   despensaVacia, migrarDespensa, anadirItem, editarItem, quitarAlimento, menuEstaConfirmado, confirmarMenu,
@@ -70,7 +70,7 @@ import {
 import {
   MAX_DISPOSITIVOS, quiereAvisos, firmaBuzon, buzonAlDia, tokensConSitio, claveFirmaBuzon, claveTokenDeAntesBorrado,
   CLAVE_ESTRENAR_TOKEN, estadoDelPermiso, avisoEsteAparato, planSincronizacion, decidirBuzon, firmaAlQuitarAvisos,
-  decidirAlSalir,
+  decidirAlSalir, datosPesajeBuzon, camposBuzon,
 } from "buzon-avisos";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
@@ -3626,6 +3626,140 @@ function grupoBuzonAvisos() {
             {
               quitar: "t1", despuesToken: null, despuesIdioma: "ca", despuesDia: "2026-11-06", noCambiaLaOriginal: "t1",
               sinTokenQuitar: null, sinTokenFirma: null, sinFirma: null, marca: null, rara: null,
+            }
+          );
+        },
+      },
+      // ---------- Tanda B (M2): lo justo del seguimiento de peso, para que la función no abra `data-v1` ----------
+      {
+        nombre: "Datos de pesaje para el buzón: frecuencia, pausa y fecha de la última pesada; nada con el recordatorio apagado",
+        ejecutar: () => {
+          const datos = (pesaje, pesoTracking) => {
+            const d = datosPesajeBuzon({ pesaje, pesoTracking });
+            return [d.pesoVecesSemana, d.pesoPausado, d.ultimaPesada].join("|");
+          };
+          // Dos por semana, una pausa cerrada y otra abierta, tres pesadas sin ordenar (la mayor es la del 4).
+          const lleno = {
+            vecesSemana: 2,
+            pausas: [{ inicio: "2026-10-01", fin: "2026-10-05" }, { inicio: "2026-11-01", fin: null }],
+            entradas: [{ fecha: "2026-11-02", peso: 70 }, { fecha: "2026-11-04", peso: 69.8 }, { fecha: "2026-11-03", peso: 70.1 }],
+          };
+          return comparar(
+            {
+              lleno: datos(true, lleno),
+              // Solo estas tres claves: nunca el peso ni nada más del seguimiento.
+              claves: Object.keys(datosPesajeBuzon({ pesaje: true, pesoTracking: lleno })).sort().join(","),
+              apagado: datos(false, lleno),
+              sinSeguimiento: datos(true, undefined),
+              recienEmpezado: datos(true, { vecesSemana: 3, pausas: [], entradas: [] }),
+              pausaCerrada: datos(true, { vecesSemana: 3, pausas: [{ inicio: "2026-10-01", fin: "2026-10-05" }], entradas: [{ fecha: "2026-11-06" }] }),
+              // Frecuencia desconocida → 3 (como esDiaSugeridoPeso); pausas que no son lista; fechas mal escritas, fuera.
+              raro: datos(true, { vecesSemana: 7, pausas: "no", entradas: [null, { fecha: "6/11/2026" }, { fecha: 20261106 }, {}, { fecha: "2026-11-01" }] }),
+              sinFechasBuenas: datos(true, { entradas: [{ fecha: "ayer" }] }),
+            },
+            {
+              lleno: "2|true|2026-11-04", claves: "pesoPausado,pesoVecesSemana,ultimaPesada", apagado: "|false|",
+              sinSeguimiento: "|false|", recienEmpezado: "3|false|", pausaCerrada: "3|false|2026-11-06",
+              raro: "3|false|2026-11-01", sinFechasBuenas: "3|false|",
+            }
+          );
+        },
+      },
+      {
+        nombre: "La frecuencia del buzón da los mismos días de pesaje que el seguimiento (esDiaSugeridoPeso), también con valores raros",
+        ejecutar: () => {
+          // Semana del lunes 2 al domingo 8 de noviembre de 2026. La función decide «hoy toca» con la frecuencia del
+          // buzón; antes, con la de `data-v1`. Tienen que coincidir siempre.
+          const semana = Array.from({ length: 7 }, (_, i) => new Date(2026, 10, 2 + i, 9, 0));
+          const frecuenciaBuzon = (v) => datosPesajeBuzon({ pesaje: true, pesoTracking: { vecesSemana: v } }).pesoVecesSemana;
+          let distintos = 0;
+          for (const v of [2, 3, undefined, null, 7, "2", "3", 2.5]) {
+            for (const dia of semana) if (esDiaDePesaje(v, dia) !== esDiaDePesaje(frecuenciaBuzon(v), dia)) distintos++;
+          }
+          const diasQueTocan = (v) => semana.filter((d) => esDiaDePesaje(frecuenciaBuzon(v), d)).map((d) => d.getDate()).join(",");
+          return comparar(
+            { distintos, dos: diasQueTocan(2), tres: diasQueTocan(3) },
+            // 2 por semana: lunes 2 y jueves 5; 3 por semana: lunes 2, miércoles 4 y viernes 6.
+            { distintos: 0, dos: "2,5", tres: "2,4,6" }
+          );
+        },
+      },
+      {
+        nombre: "La firma y los campos del buzón llevan los datos de pesaje con la forma de las reglas; vacíos con el recordatorio apagado",
+        ejecutar: () => {
+          const hoy = new Date(2026, 10, 6, 10, 0);
+          const firma = (cambios) => firmaBuzon({ token: "t1", idioma: "es", pesaje: true, descongelar: false, ...cambios }, hoy);
+          const peso = (f) => [f.pesoVecesSemana, f.pesoPausado, f.ultimaPesada].join("|");
+          const buena = firma({ pesoVecesSemana: 2, pesoPausado: true, ultimaPesada: "2026-11-05" });
+          const apagado = firma({ pesaje: false, pesoVecesSemana: 2, pesoPausado: true, ultimaPesada: "2026-11-05" });
+          const campos = camposBuzon(buena);
+          const camposApagado = camposBuzon(apagado);
+          return comparar(
+            {
+              buena: peso(buena), dia: buena.dia,
+              apagado: peso(apagado),
+              // Lo que no tenga la forma de las reglas se queda vacío (si no, se rechazaría el buzón entero).
+              raros: peso(firma({ pesoVecesSemana: 4, pesoPausado: "sí", ultimaPesada: "5/11/2026" })),
+              textoTres: peso(firma({ pesoVecesSemana: "3" })),
+              // Sin los datos (quien llama no los pasa): vacíos. Por eso app.jsx y Ajustes los pasan siempre.
+              sinDatos: peso(firma({})),
+              // Los campos: los seis, sin token ni día; también los de pesaje vacíos (un `merge` conservaría los de antes).
+              claves: Object.keys(campos).sort().join(","),
+              campos: [campos.idioma, campos.pesaje, campos.descongelar, campos.pesoVecesSemana, campos.pesoPausado, campos.ultimaPesada].join("|"),
+              clavesApagado: Object.keys(camposApagado).length,
+              camposApagado: [camposApagado.pesoVecesSemana, camposApagado.pesoPausado, camposApagado.ultimaPesada].join("|"),
+            },
+            {
+              buena: "2|true|2026-11-05", dia: "2026-11-06", apagado: "|false|", raros: "|false|", textoTres: "|false|",
+              sinDatos: "|false|", claves: "descongelar,idioma,pesaje,pesoPausado,pesoVecesSemana,ultimaPesada",
+              campos: "es|true|false|2|true|2026-11-05", clavesApagado: 6, camposApagado: "|false|",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Con el recordatorio activado, pesarse, pausar, cambiar la frecuencia o cerrar el ciclo reescriben el buzón; corregir el peso de hoy, no; apagado, nada",
+        ejecutar: () => {
+          const hoy = new Date(2026, 10, 6, 10, 0);
+          // Seguimiento de partida: 3 por semana, sin pausas, última pesada el miércoles 4.
+          const pt = { vecesSemana: 3, pausas: [], entradas: [{ fecha: "2026-11-04", peso: 70 }] };
+          const pesado = { ...pt, entradas: [...pt.entradas, { fecha: "2026-11-06", peso: 69.9 }] };
+          const decidir = ({ token = "t1", anterior, pesaje = true, descongelar = false, seguimiento }) =>
+            decidirBuzon(
+              { quiere: pesaje || descongelar, token, anterior, idioma: "es", pesaje, descongelar, ...datosPesajeBuzon({ pesaje, pesoTracking: seguimiento }) },
+              hoy
+            );
+          const anterior = decidir({ anterior: null, seguimiento: pt }).firma;
+          const sePesa = decidir({ anterior, seguimiento: pesado });
+          const pausa = decidir({ anterior, seguimiento: { ...pt, pausas: [{ inicio: "2026-11-06", fin: null, motivo: "" }] } });
+          const cierra = decidir({ anterior, seguimiento: { ...pt, entradas: [] } });
+          // Solo descongelar: el seguimiento no se mira.
+          const anteriorApagado = decidir({ anterior: null, pesaje: false, descongelar: true, seguimiento: pt }).firma;
+          const enciende = decidir({ anterior: anteriorApagado, descongelar: true, seguimiento: pt });
+          // Una firma de antes de la tanda B (sin los datos de pesaje): se reescribe una vez y después ya está al día.
+          const vieja = { token: "t1", idioma: "es", pesaje: true, descongelar: false, dia: "2026-11-06" };
+          const trasVieja = decidir({ anterior: vieja, seguimiento: pt });
+          // F4: desde un aparato sin permiso, pesarse también llega al buzón (sin tocar la lista).
+          const sinPermiso = decidir({ token: null, anterior: decidir({ token: null, anterior: null, seguimiento: pt }).firma, seguimiento: pesado });
+          return comparar(
+            {
+              igual: decidir({ anterior, seguimiento: pt }).accion,
+              sePesa: sePesa.accion, sePesaFecha: sePesa.firma.ultimaPesada, sePesaQuitar: sePesa.quitar,
+              corrigeHoy: decidir({ anterior: sePesa.firma, seguimiento: { ...pesado, entradas: [pt.entradas[0], { fecha: "2026-11-06", peso: 69.6 }] } }).accion,
+              pausa: pausa.accion, pausaPausado: pausa.firma.pesoPausado,
+              frecuencia: decidir({ anterior, seguimiento: { ...pt, vecesSemana: 2 } }).accion,
+              cierra: cierra.accion, cierraFecha: cierra.firma.ultimaPesada,
+              apagadoSePesa: decidir({ anterior: anteriorApagado, pesaje: false, descongelar: true, seguimiento: pesado }).accion,
+              apagadoDatos: [anteriorApagado.pesoVecesSemana, anteriorApagado.pesoPausado, anteriorApagado.ultimaPesada].join("|"),
+              enciende: enciende.accion, enciendeDatos: [enciende.firma.pesoVecesSemana, enciende.firma.pesoPausado, enciende.firma.ultimaPesada].join("|"),
+              vieja: trasVieja.accion, despuesDeVieja: decidir({ anterior: trasVieja.firma, seguimiento: pt }).accion,
+              sinPermiso: sinPermiso.accion, sinPermisoFecha: sinPermiso.firma.ultimaPesada,
+            },
+            {
+              igual: "nada", sePesa: "escribir", sePesaFecha: "2026-11-06", sePesaQuitar: null, corrigeHoy: "nada",
+              pausa: "escribir", pausaPausado: true, frecuencia: "escribir", cierra: "escribir", cierraFecha: null,
+              apagadoSePesa: "nada", apagadoDatos: "|false|", enciende: "escribir", enciendeDatos: "3|false|2026-11-04",
+              vieja: "escribir", despuesDeVieja: "nada", sinPermiso: "actualizarSinToken", sinPermisoFecha: "2026-11-06",
             }
           );
         },

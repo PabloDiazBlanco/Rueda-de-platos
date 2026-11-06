@@ -35,7 +35,7 @@ import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
 import {
   quiereAvisos, tokensConSitio, claveFirmaBuzon, claveTokenDeAntesBorrado, CLAVE_ESTRENAR_TOKEN, estadoDelPermiso,
-  planSincronizacion, decidirBuzon, firmaAlQuitarAvisos, decidirAlSalir,
+  planSincronizacion, decidirBuzon, firmaAlQuitarAvisos, decidirAlSalir, camposBuzon,
 } from "buzon-avisos";
 import { cargarApp } from "cargador-ui";
 
@@ -287,11 +287,11 @@ async function revocarTokenDeEsteNavegador() {
 }
 
 // ---------- Buzón de avisos (auditoría de noviembre de 2026, R8 y R17) ----------
-// `users/{uid}/avisos/push`: idioma, los dos interruptores de avisos y la lista de aparatos de la cuenta. Es lo
-// único que leen las funciones de notificaciones para saber a quién avisar (antes leían todos los documentos
-// de todas las cuentas). Forma y límites en firestore.rules; las decisiones sin Firebase, en
-// logica/buzon-avisos.js: aquí solo se hace lo que se decide allí. Nadie lo ve ni lo toca a mano: lo mantiene la
-// app sola.
+// `users/{uid}/avisos/push`: idioma, los dos interruptores de avisos, la lista de aparatos de la cuenta y lo justo
+// del seguimiento de peso (tanda B). Es lo único que leen las funciones de notificaciones para saber a quién avisar
+// (antes leían todos los documentos de todas las cuentas). Forma y límites en firestore.rules; las decisiones sin
+// Firebase, en logica/buzon-avisos.js: aquí solo se hace lo que se decide allí. Nadie lo ve ni lo toca a mano: lo
+// mantiene la app sola.
 const refBuzon = (uid) => doc(db, "users", uid, "avisos", "push");
 
 // `localStorage`, siempre con try/catch: sin él (un navegador que lo bloquea) todo sigue funcionando, solo que sin
@@ -380,11 +380,13 @@ async function borrarBuzon(uid) {
 async function aplicarAlBuzon(uid, { accion, firma, quitar }) {
   if (accion === "borrar") return borrarBuzon(uid);
   if (accion !== "escribir" && accion !== "actualizarSinToken") return;
-  const campos = { idioma: firma.idioma, pesaje: firma.pesaje, descongelar: firma.descongelar };
+  // Idioma, interruptores y datos de pesaje, siempre los seis (logica/buzon-avisos.js, camposBuzon).
+  const campos = camposBuzon(firma);
 
   if (accion === "actualizarSinToken") {
     // F4: `updateDoc` cambia solo estos campos (y la hora, que las reglas exigen en cada escritura): la lista de
-    // aparatos se queda como está.
+    // aparatos se queda como está. Sin buzón, las reglas lo rechazan con `permission-denied` también con los datos
+    // de pesaje (falta `tokens`): lo vigila una prueba de las reglas.
     try {
       await updateDoc(refBuzon(uid), { ...campos, actualizado: serverTimestamp() });
     } catch (err) {
@@ -428,9 +430,12 @@ async function limpiarTokenDeAntes(uid) {
   }
 }
 
-// Pone el buzón al día con el perfil: la llama app.jsx al abrirse la app y cada vez que cambian el idioma o
-// uno de los dos interruptores (en este aparato o, sincronizado, en otro), y Ajustes tras «Recibirlos aquí». Qué
-// hace lo deciden planSincronizacion y decidirBuzon (logica/buzon-avisos.js); en resumen:
+// Pone el buzón al día con el perfil: la llama app.jsx al abrirse la app y cada vez que cambian el idioma, uno de
+// los dos interruptores (en este aparato o, sincronizado, en otro) o, con el recordatorio de pesaje activado, el
+// seguimiento de peso (pesarse, pausar, cambiar la frecuencia); y Ajustes tras «Recibirlos aquí». Los datos de
+// pesaje llegan ya preparados con datosPesajeBuzon (logica/buzon-avisos.js): **quien la llame tiene que pasarlos**;
+// sin ellos, con el recordatorio activado, el buzón diría «sin seguimiento de peso» y no llegaría. Qué hace lo
+// deciden planSincronizacion y decidirBuzon (logica/buzon-avisos.js); en resumen:
 // - Si el navegador tiene la marca de estrenar token (se cerró sesión en él), primero lo revoca (F2).
 // - Con algún aviso, apunta este aparato si tiene el permiso concedido. Las cuentas que ya tenían avisos antes del
 //   buzón lo crean solas la primera vez que se abre la app. Si el navegador renueva el token, el nuevo entra en la
@@ -441,7 +446,7 @@ async function limpiarTokenDeAntes(uid) {
 // - Una sola vez por cuenta y aparato, borra el token de antes (limpiarTokenDeAntes).
 // Nunca lanza: si algo falla (sin conexión, reglas sin publicar...), un aviso en la consola y se reintenta la
 // próxima vez (la firma solo se guarda si se ha escrito).
-window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar }) {
+window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada }) {
   const uid = auth.currentUser && auth.currentUser.uid;
   if (!uid) return Promise.resolve();
   return enColaBuzon(async () => {
@@ -468,7 +473,8 @@ window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar }) {
     }
 
     try {
-      await aplicarAlBuzon(uid, decidirBuzon({ quiere, token, anterior: leerFirmaBuzon(uid), idioma, pesaje, descongelar }));
+      const datos = { idioma, pesaje, descongelar, pesoVecesSemana, pesoPausado, ultimaPesada };
+      await aplicarAlBuzon(uid, decidirBuzon({ quiere, token, anterior: leerFirmaBuzon(uid), ...datos }));
     } catch (err) {
       console.warn("No se ha podido poner al día el buzón de avisos:", (err && (err.code || err.message)) || err);
     }
