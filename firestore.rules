@@ -52,8 +52,10 @@ service cloud.firestore {
         'rueda-de-platos:entreno-borrador-v1',
         'rueda-de-platos:cuerpo-diario-v1',
         'rueda-de-platos:informes-favoritos-v1',
-        // Token de notificaciones de antes del buzón de avisos (R8). Se queda mientras dure el paso de un
-        // sistema al otro: las funciones de antes lo siguen leyendo hasta que se desplieguen las nuevas.
+        // Token de notificaciones de antes del buzón de avisos (R8), en retirada. Ya no lo lee ninguna función y
+        // la app de ahora no lo escribe (solo lo borra, una vez por cuenta y aparato). Se queda un tiempo a
+        // propósito: una copia vieja de la app lo escribe al activar los avisos y, sin la clave aquí, no podría
+        // activarlos. Quitarlo es la fase 2 de la limpieza (documentacion/backend.md, «Paso del token de antes»).
         'rueda-de-platos:push-token-v1'
       ]
       // Un documento por mes de entreno (`entreno-AAAA-MM-v1`, logica/entreno-almacen.js), solo de 1970 a
