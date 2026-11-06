@@ -133,8 +133,11 @@ export default function RuedaDePlatos() {
 
   // Buzón de avisos (auditoría de noviembre de 2026, R8): lo que leen las funciones de notificaciones para saber
   // a quién avisar. Se pone al día al abrirse la app y cada vez que cambian el idioma o uno de los dos
-  // interruptores de Ajustes (window.sincronizarBuzonAvisos, auth-bootstrap.jsx, que decide si hace falta
-  // escribir). Solo con el perfil leído bien de la nube: con un error de carga no se sabe qué quiere la cuenta.
+  // interruptores de Ajustes (window.sincronizarBuzonAvisos, auth-bootstrap.jsx, que decide qué hacer con
+  // logica/buzon-avisos.js). Se llama también con los dos avisos apagados, a propósito: así se repite un borrado
+  // del buzón que no llegó (F1), el navegador estrena token tras un cierre de sesión (F2) y se borra el token de
+  // antes. Solo con el perfil leído bien de la nube: con un error de carga no se sabe qué quiere la cuenta, y
+  // borrar el buzón por un perfil sin leer dejaría sin avisos a todos sus aparatos.
   // En validacion/ no existe el puente con Firebase y no hace nada.
   const perfilListo = !loading && !errorCarga && !!(data && data.perfil);
   const avisoPesaje = !!(data && data.perfil && data.perfil.notificacionesPush);

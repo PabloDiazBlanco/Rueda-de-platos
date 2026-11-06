@@ -33,7 +33,10 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 import { t, IDIOMAS_DISPONIBLES, leerIdiomaGuardado, guardarIdiomaLocal } from "i18n";
-import { quiereAvisos, firmaBuzon, buzonAlDia, tokensConSitio } from "buzon-avisos";
+import {
+  quiereAvisos, tokensConSitio, claveFirmaBuzon, claveTokenDeAntesBorrado, CLAVE_ESTRENAR_TOKEN, estadoDelPermiso,
+  planSincronizacion, decidirBuzon, firmaAlQuitarAvisos, decidirAlSalir,
+} from "buzon-avisos";
 import { cargarApp } from "cargador-ui";
 
 // Identificadores públicos de los proyectos de Firebase (no son claves secretas, es normal que
@@ -183,19 +186,34 @@ const VAPID_PRUEBAS = "BIaup8keLN2dx49yMI-hT5HrVG2LeHFsBKpC0HTwt_TRqiH5mg6L3fv0c
 const VAPID_PUBLIC_KEY = ES_ENTORNO_LOCAL ? VAPID_PRUEBAS : VAPID_PRODUCCION;
 
 // Token de antes del buzón de avisos (R8, abajo): un único token por cuenta, en la misma colección `keys` que
-// el resto de datos. Las funciones de antes lo buscan leyendo todos los documentos de todas las cuentas.
-// **En transición**: se sigue escribiendo al activar los avisos y borrando al quitarlos, para que esas funciones
-// sigan avisando hasta que se desplieguen las nuevas, que leen solo el buzón. Después se quita de aquí, de
-// firestore.rules y de las cuentas (ver documentacion/backend.md, «Notificaciones push»).
+// el resto de datos. Lo buscaban las funciones de antes leyendo todos los documentos de todas las cuentas; las
+// de ahora leen solo el buzón y ya no lo miran. **En retirada, fase 1**: la app ya no lo escribe y lo borra una
+// sola vez por cuenta y aparato (limpiarTokenDeAntes, abajo). Sigue en firestore.rules a propósito, con margen:
+// una copia vieja de la app guardada en un aparato lo escribe al activar los avisos (un `await setDoc` sin
+// proteger) y, si las reglas ya no aceptaran la clave, ahí no se podrían activar. Fase 2, más adelante: quitarlo
+// de las reglas y de sus pruebas (documentacion/backend.md, «Notificaciones push»).
 const PUSH_TOKEN_KEY = "rueda-de-platos:push-token-v1";
 
 function soportaPushNotifications() {
   return typeof Notification !== "undefined" && "serviceWorker" in navigator && !!VAPID_PUBLIC_KEY;
 }
 
-// Pide permiso de notificaciones al navegador, registra el token de FCM y lo guarda en Firestore.
-// Lanza errores con un `.code` reconocible (mismo patrón que window.deleteAccount) para que
-// PerfilView, en app.jsx, pueda traducirlos a un mensaje en el idioma de la interfaz en vez de
+// Situación de este aparato con las notificaciones (logica/buzon-avisos.js, estadoDelPermiso): «concedido»,
+// «bloqueado», «sin-pedir» o «sin-soporte». Ajustes la usa para decir si aquí llegan los avisos (F3).
+function estadoDeEsteAparato() {
+  return estadoDelPermiso({
+    soporta: soportaPushNotifications(),
+    permiso: typeof Notification !== "undefined" ? Notification.permission : undefined,
+  });
+}
+window.estadoAvisosEsteAparato = estadoDeEsteAparato;
+
+// Pide permiso de notificaciones al navegador y comprueba que FCM da un token para este aparato. No escribe
+// nada: el buzón lo escribe sincronizarBuzonAvisos en cuanto el perfil guarda el cambio (aquí aún no se sabe qué
+// interruptor se está activando), o el botón «Recibirlos aquí» de Ajustes justo después. Antes también guardaba el
+// token de antes; sin esa escritura, activar los avisos sin conexión ya no se queda «pidiendo…».
+// Lanza errores con un `.code` reconocible (mismo patrón que window.deleteAccount) para que Ajustes
+// (ui/ajustes/ajustes.jsx) pueda traducirlos a un mensaje en el idioma de la interfaz en vez de
 // mostrar el texto en español de aquí abajo, que es solo un mensaje de repuesto.
 window.requestPushPermission = async function () {
   if (!soportaPushNotifications()) {
@@ -224,146 +242,283 @@ window.requestPushPermission = async function () {
     err.code = "token-failed";
     throw err;
   }
-
-  // El token de antes (en transición, ver PUSH_TOKEN_KEY). El buzón no se escribe aquí: aún no se sabe qué
-  // interruptor se está activando. Lo escribe sincronizarBuzonAvisos en cuanto el perfil guarda el cambio.
-  const user = auth.currentUser;
-  if (user) {
-    await setDoc(doc(db, "users", user.uid, "keys", PUSH_TOKEN_KEY), { value: token });
-  }
   return token;
 };
 
 // getToken necesita el registro del service worker para saber a qué archivo (sw.js, con su manejador
 // onBackgroundMessage) asociar los mensajes que lleguen con la app cerrada. Con el permiso ya concedido no
-// pregunta nada: devuelve el token de este navegador, o uno nuevo si el navegador lo ha renovado.
+// pregunta nada: devuelve el token de este navegador, o uno nuevo si el navegador lo ha renovado. **Ojo**: con el
+// permiso aún sin pedir, getToken lo pide él solo (sale la pregunta del navegador); por eso fuera de
+// requestPushPermission solo se llama con el permiso ya concedido.
 async function tokenDeEsteDispositivo() {
   const registration = (await window.swRegistrationPromise) || undefined;
   return getToken(getMessaging(firebaseApp), { vapidKey: VAPID_PUBLIC_KEY, serviceWorkerRegistration: registration });
+}
+
+// Revoca el token de este navegador: FCM lo da por muerto, así que deja de valer en cualquier buzón que aún lo
+// tenga (las funciones lo quitan solas en su siguiente envío), y el próximo getToken da uno nuevo. Devuelve si lo
+// ha conseguido; sin token vivo que revocar, también.
+// - deleteToken no deja decir qué service worker usar: si en esta visita aún no se ha llamado a getToken, intenta
+//   registrar el suyo por defecto (`/firebase-messaging-sw.js`, que aquí no existe) y falla. Por eso, con el
+//   permiso concedido, primero getToken con el nuestro (con un token reciente no sale ni a la red).
+// - Plan B, si FCM no contesta (sin conexión) o no hay permiso: darse de baja de la suscripción push del propio
+//   navegador. El token viejo deja de servir igual (ya no hay adónde entregarle nada), y el siguiente getToken, al
+//   ver otra suscripción, borra el viejo y pide uno nuevo él solo (comprobado en el SDK 12.17.1).
+async function revocarTokenDeEsteNavegador() {
+  const registro = await window.swRegistrationPromise;
+  if (!registro || !registro.pushManager) return true; // sin service worker no hay notificaciones push
+  try {
+    const suscripcion = await registro.pushManager.getSubscription();
+    if (!suscripcion) return true;
+    if (estadoDeEsteAparato() === "concedido") {
+      try {
+        await tokenDeEsteDispositivo();
+        await deleteToken(getMessaging(firebaseApp));
+        return true;
+      } catch (e) {
+        // sigue con el plan B
+      }
+    }
+    const sigue = await registro.pushManager.getSubscription();
+    return sigue ? await sigue.unsubscribe() : true;
+  } catch (e) {
+    return false;
+  }
 }
 
 // ---------- Buzón de avisos (auditoría de noviembre de 2026, R8 y R17) ----------
 // `users/{uid}/avisos/push`: idioma, los dos interruptores de avisos y la lista de aparatos de la cuenta. Es lo
 // único que leen las funciones de notificaciones para saber a quién avisar (antes leían todos los documentos
 // de todas las cuentas). Forma y límites en firestore.rules; las decisiones sin Firebase, en
-// logica/buzon-avisos.js. Nadie lo ve ni lo toca a mano: lo mantiene la app sola.
+// logica/buzon-avisos.js: aquí solo se hace lo que se decide allí. Nadie lo ve ni lo toca a mano: lo mantiene la
+// app sola.
 const refBuzon = (uid) => doc(db, "users", uid, "avisos", "push");
 
-// Lo último que este dispositivo escribió en el buzón (logica/buzon-avisos.js, firmaBuzon). Es una comodidad
-// del dispositivo, como el idioma o las vistas: `localStorage` con prefijo `fooddraft:` y el uid al final, así
-// que «Eliminar cuenta» la limpia con el resto (limpiarDispositivoDeLaCuenta).
-const claveFirmaBuzon = (uid) => `fooddraft:buzon-avisos:${uid}`;
-function leerFirmaBuzon(uid) {
+// `localStorage`, siempre con try/catch: sin él (un navegador que lo bloquea) todo sigue funcionando, solo que sin
+// lo que se apunta ahí (el buzón se reescribe en cada apertura, el token de antes se intenta borrar cada vez...).
+function leerLocal(clave) {
   try {
-    return JSON.parse(localStorage.getItem(claveFirmaBuzon(uid)) || "null");
+    return localStorage.getItem(clave);
   } catch (e) {
     return null;
   }
 }
-function guardarFirmaBuzon(uid, firma) {
+function guardarLocal(clave, valor) {
   try {
-    localStorage.setItem(claveFirmaBuzon(uid), JSON.stringify(firma));
+    localStorage.setItem(clave, valor);
   } catch (e) {
-    // sin localStorage se reescribe el buzón cada vez que se abre la app: cuesta una escritura, nada más
+    // sin localStorage no queda apuntado: se repetirá la próxima vez, que cuesta una escritura y nada más
   }
 }
-function borrarFirmaBuzon(uid) {
+function borrarLocal(clave) {
   try {
-    localStorage.removeItem(claveFirmaBuzon(uid));
+    localStorage.removeItem(clave);
   } catch (e) {
     // nada que borrar
   }
 }
 
+// La firma: lo último que este aparato escribió en el buzón de una cuenta (logica/buzon-avisos.js, «La firma»).
+// Es una comodidad del dispositivo, como el idioma o las vistas: `localStorage` con prefijo `fooddraft:` y el uid
+// al final, así que «Eliminar cuenta» la limpia con el resto (limpiarDispositivoDeLaCuenta).
+function leerFirmaBuzon(uid) {
+  try {
+    return JSON.parse(leerLocal(claveFirmaBuzon(uid)) || "null");
+  } catch (e) {
+    return null;
+  }
+}
+const guardarFirmaBuzon = (uid, firma) => guardarLocal(claveFirmaBuzon(uid), JSON.stringify(firma));
+const borrarFirmaBuzon = (uid) => borrarLocal(claveFirmaBuzon(uid));
+
 // Las operaciones del buzón van en fila, una detrás de otra. Si no, quitar un aviso y enseguida el otro podía
 // acabar al revés: el borrado del buzón llegaba antes que la escritura del primer cambio (que aún esperaba el
 // token), y el buzón reaparecía con un aviso que ya no se quería.
+// `limiteMs` (al cerrar sesión, F2): el turno termina a ese tiempo pase lo que pase, contado desde que se pide y
+// no desde que empieza, así que también cubre una tarea anterior que se haya quedado atascada. Hace falta porque
+// Firestore guarda las escrituras pendientes de una cuenta hasta que esa misma cuenta vuelve a entrar: si se
+// cierra sesión sin conexión, la escritura de la cuenta que sale puede no resolverse nunca, y sin límite todo lo
+// que viniera detrás (los avisos de la cuenta siguiente) esperaría hasta recargar la página. Lo que se quede
+// atascado no puede tocar después la cuenta siguiente: cada tarea comprueba antes la cuenta (esLaCuentaDeAhora).
 let colaBuzon = Promise.resolve();
-function enColaBuzon(tarea) {
+function enColaBuzon(tarea, { limiteMs } = {}) {
   const resultado = colaBuzon.then(tarea);
-  colaBuzon = resultado.catch(() => {});
-  return resultado;
+  const turno = limiteMs ? Promise.race([resultado, new Promise((resolver) => setTimeout(resolver, limiteMs))]) : resultado;
+  colaBuzon = turno.catch(() => {});
+  return turno;
+}
+
+// Cada tarea de la fila apunta para qué cuenta se pidió y no hace nada si, cuando le llega el turno, la sesión es
+// de otra: una tarea que esperaba detrás de una escritura atascada de la cuenta que salió no puede acabar
+// escribiendo los avisos de esa cuenta en el buzón de la siguiente.
+const esLaCuentaDeAhora = (uid) => !!uid && !!auth.currentUser && auth.currentUser.uid === uid;
+
+// ¿Ha fallado una escritura en el buzón porque no existe? `updateDoc` sobre un documento que no existe suele dar
+// `not-found`, pero aquí las reglas lo rechazan antes: miran el documento resultante, y sin buzón solo tiene los
+// campos que manda la escritura, así que llega como `permission-denied` (comprobado en el emulador, ver
+// functions/pruebas-reglas/). Para no confundirlo con un rechazo de verdad (reglas sin publicar, por ejemplo), se
+// mira si el buzón existe: cuesta una lectura, y solo cuando la escritura ha fallado.
+async function faltaElBuzon(uid, err) {
+  if (err && err.code === "not-found") return true;
+  if (!err || err.code !== "permission-denied") return false;
+  try {
+    return !(await getDoc(refBuzon(uid))).exists();
+  } catch (e) {
+    return false;
+  }
+}
+
+// Borra el buzón entero y, solo cuando el servidor lo confirma, la firma de este aparato (F1: si la firma sigue
+// ahí, el borrado no llegó y la próxima apertura lo repite). Borrar un buzón que ya no existe no es un error.
+async function borrarBuzon(uid) {
+  await deleteDoc(refBuzon(uid));
+  borrarFirmaBuzon(uid);
+}
+
+// Hace lo que ha decidido decidirBuzon (logica/buzon-avisos.js). La firma se guarda solo cuando el servidor
+// confirma la escritura; si algo falla, lanza y se reintenta la próxima vez.
+async function aplicarAlBuzon(uid, { accion, firma, quitar }) {
+  if (accion === "borrar") return borrarBuzon(uid);
+  if (accion !== "escribir" && accion !== "actualizarSinToken") return;
+  const campos = { idioma: firma.idioma, pesaje: firma.pesaje, descongelar: firma.descongelar };
+
+  if (accion === "actualizarSinToken") {
+    // F4: `updateDoc` cambia solo estos campos (y la hora, que las reglas exigen en cada escritura): la lista de
+    // aparatos se queda como está.
+    try {
+      await updateDoc(refBuzon(uid), { ...campos, actualizado: serverTimestamp() });
+    } catch (err) {
+      // Sin buzón no hay nada que poner al día: lo creará el primer aparato con permiso que abra la app, con estos
+      // mismos valores del perfil. No es un fallo, y la firma se guarda igual para no reintentarlo hasta mañana.
+      if (!(await faltaElBuzon(uid, err))) throw err;
+    }
+    guardarFirmaBuzon(uid, firma);
+    return;
+  }
+
+  try {
+    // `merge` + `arrayUnion`: añade este aparato sin pisar los de los demás, y crea el buzón si no existe.
+    await setDoc(refBuzon(uid), { ...campos, tokens: arrayUnion(firma.token), actualizado: serverTimestamp() }, { merge: true });
+  } catch (err) {
+    if (!err || err.code !== "permission-denied") throw err;
+    // Lo más probable: la lista ya tiene 10 aparatos y las reglas no dejan añadir otro. Se lee y se reescribe
+    // entera haciendo sitio (se van los más antiguos, ver tokensConSitio). Si no era eso, esta escritura
+    // también falla y queda el aviso en la consola.
+    const snap = await getDoc(refBuzon(uid));
+    const tokens = tokensConSitio(snap.exists() ? snap.data().tokens : [], firma.token);
+    await setDoc(refBuzon(uid), { ...campos, tokens, actualizado: serverTimestamp() });
+  }
+  // El navegador ha renovado el token: el viejo ya no sirve y sale de la lista ahora, sin esperar a que la
+  // función falle al usarlo. Si no sale, no pasa nada: la función lo quitará en cuanto FCM lo dé por muerto.
+  if (quitar) {
+    await updateDoc(refBuzon(uid), { tokens: arrayRemove(quitar), actualizado: serverTimestamp() }).catch(() => {});
+  }
+  guardarFirmaBuzon(uid, firma);
+}
+
+// Limpieza del token de antes, fase 1 (ver PUSH_TOKEN_KEY): se borra una sola vez por cuenta y aparato, y la marca
+// se pone solo cuando el servidor confirma el borrado (borrar un documento que no existe también vale). Un fallo
+// se queda en la consola y se reintenta la próxima vez: ya nadie lee ese documento, así que no corre prisa.
+async function limpiarTokenDeAntes(uid) {
+  try {
+    await deleteDoc(doc(db, "users", uid, "keys", PUSH_TOKEN_KEY));
+    guardarLocal(claveTokenDeAntesBorrado(uid), "1");
+  } catch (err) {
+    console.warn("No se ha podido borrar el token de notificaciones de antes:", (err && (err.code || err.message)) || err);
+  }
 }
 
 // Pone el buzón al día con el perfil: la llama app.jsx al abrirse la app y cada vez que cambian el idioma o
-// uno de los dos interruptores (en este aparato o, sincronizado, en otro). Así:
-// - Las cuentas que ya tenían avisos antes del buzón lo crean solas la primera vez que se abre la app, sin
-//   que nadie haga nada.
-// - Si el navegador renueva el token (lo hace de vez en cuando), el nuevo entra en la lista y el viejo sale.
-//   Antes, el token guardado se quedaba viejo, la función lo borraba al fallar y Ajustes seguía diciendo
-//   «activado» sin que llegara nada.
-// - Solo se apunta un aparato que tiene el permiso de notificaciones concedido: abrir la app en otro sin
-//   permiso no lo añade.
-// Quitar los dos avisos no pasa por aquí: lo hace disablePushNotifications, que borra el buzón entero (los
-// interruptores son de la cuenta: quitarlos en un aparato los quita en todos). Nunca lanza: si algo falla
-// (sin conexión, reglas sin publicar...), un aviso en la consola y los avisos siguen como estaban.
+// uno de los dos interruptores (en este aparato o, sincronizado, en otro), y Ajustes tras «Recibirlos aquí». Qué
+// hace lo deciden planSincronizacion y decidirBuzon (logica/buzon-avisos.js); en resumen:
+// - Si el navegador tiene la marca de estrenar token (se cerró sesión en él), primero lo revoca (F2).
+// - Con algún aviso, apunta este aparato si tiene el permiso concedido. Las cuentas que ya tenían avisos antes del
+//   buzón lo crean solas la primera vez que se abre la app. Si el navegador renueva el token, el nuevo entra en la
+//   lista y el viejo sale.
+// - Con algún aviso pero sin permiso (o sin token), pone al día igualmente el idioma y los interruptores, sin
+//   tocar la lista (F4).
+// - Sin ningún aviso, borra el buzón si este aparato tiene firma: un borrado anterior que no llegó (F1).
+// - Una sola vez por cuenta y aparato, borra el token de antes (limpiarTokenDeAntes).
+// Nunca lanza: si algo falla (sin conexión, reglas sin publicar...), un aviso en la consola y se reintenta la
+// próxima vez (la firma solo se guarda si se ha escrito).
 window.sincronizarBuzonAvisos = function ({ idioma, pesaje, descongelar }) {
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if (!uid) return Promise.resolve();
   return enColaBuzon(async () => {
-    const user = auth.currentUser;
-    if (!user || !quiereAvisos({ pesaje, descongelar })) return;
-    if (!soportaPushNotifications() || Notification.permission !== "granted") return;
-    const token = await tokenDeEsteDispositivo();
-    if (!token) return;
+    if (!esLaCuentaDeAhora(uid)) return;
+    const quiere = quiereAvisos({ pesaje, descongelar });
+    const plan = planSincronizacion({
+      quiere,
+      puedeRecibir: estadoDeEsteAparato() === "concedido",
+      estrenar: leerLocal(CLAVE_ESTRENAR_TOKEN),
+      tokenDeAntesBorrado: leerLocal(claveTokenDeAntesBorrado(uid)),
+    });
 
-    const firma = firmaBuzon({ token, idioma, pesaje, descongelar });
-    const anterior = leerFirmaBuzon(user.uid);
-    if (buzonAlDia(anterior, firma)) return;
+    // F2: si tocaba revocar y no se ha podido (sin conexión), la marca se queda y no se pide token: saldría el de
+    // siempre, que podría seguir en el buzón de la cuenta anterior. Esta vez el buzón se pone al día sin token.
+    const revocado = plan.revocar ? await revocarTokenDeEsteNavegador() : true;
+    if (plan.revocar && revocado) borrarLocal(CLAVE_ESTRENAR_TOKEN);
+    let token = null;
+    if (plan.pedirToken && revocado) {
+      try {
+        token = await tokenDeEsteDispositivo();
+      } catch (err) {
+        console.warn("No se ha podido obtener el token de notificaciones:", (err && (err.code || err.message)) || err);
+      }
+    }
 
-    const campos = { idioma, pesaje: !!pesaje, descongelar: !!descongelar };
     try {
-      // `merge` + `arrayUnion`: añade este aparato sin pisar los de los demás, y crea el buzón si no existe.
-      await setDoc(refBuzon(user.uid), { ...campos, tokens: arrayUnion(token), actualizado: serverTimestamp() }, { merge: true });
+      await aplicarAlBuzon(uid, decidirBuzon({ quiere, token, anterior: leerFirmaBuzon(uid), idioma, pesaje, descongelar }));
     } catch (err) {
-      if (err && err.code !== "permission-denied") throw err;
-      // Lo más probable: la lista ya tiene 10 aparatos y las reglas no dejan añadir otro. Se lee y se reescribe
-      // entera haciendo sitio (se van los más antiguos, ver tokensConSitio). Si no era eso, esta escritura
-      // también falla y queda el aviso en la consola.
-      const snap = await getDoc(refBuzon(user.uid));
-      const tokens = tokensConSitio(snap.exists() ? snap.data().tokens : [], token);
-      await setDoc(refBuzon(user.uid), { ...campos, tokens, actualizado: serverTimestamp() });
+      console.warn("No se ha podido poner al día el buzón de avisos:", (err && (err.code || err.message)) || err);
     }
-    // El navegador ha renovado el token: el viejo ya no sirve y sale de la lista ahora, sin esperar a que la
-    // función falle al usarlo.
-    if (anterior && anterior.token && anterior.token !== token) {
-      await updateDoc(refBuzon(user.uid), { tokens: arrayRemove(anterior.token), actualizado: serverTimestamp() }).catch(() => {});
-    }
-    guardarFirmaBuzon(user.uid, firma);
+
+    if (plan.limpiarTokenDeAntes) await limpiarTokenDeAntes(uid);
   }).catch((err) => {
     console.warn("No se ha podido poner al día el buzón de avisos:", (err && (err.code || err.message)) || err);
   });
 };
 
-// Al cerrar sesión, este aparato sale del buzón: si después entra otra persona con su cuenta en el mismo
-// navegador, ya no le llegan los avisos de la anterior (antes, sí). Se usa el token apuntado en la firma, sin
-// pedírselo a FCM, para no hacer esperar al cierre de sesión.
-async function quitarEsteAparatoDelBuzon() {
-  const user = auth.currentUser;
-  if (!user) return;
-  const firma = leerFirmaBuzon(user.uid);
-  borrarFirmaBuzon(user.uid);
-  if (!firma || !firma.token) return;
-  await updateDoc(refBuzon(user.uid), { tokens: arrayRemove(firma.token), actualizado: serverTimestamp() });
+// Al cerrar sesión, este aparato sale del buzón de la cuenta (logica/buzon-avisos.js, decidirAlSalir): si después
+// entra otra persona con su cuenta en el mismo navegador, no le llegan los avisos de la anterior. Se usa el token
+// apuntado en la firma, sin pedírselo a FCM, para no hacer esperar al cierre de sesión. La firma cambia solo
+// cuando el servidor lo confirma; si no llega a tiempo (sin conexión), lo arregla la marca de estrenar token que
+// pone signOutUser.
+async function quitarEsteAparatoDelBuzon(uid) {
+  if (!esLaCuentaDeAhora(uid)) return;
+  const { quitar, firma } = decidirAlSalir(leerFirmaBuzon(uid));
+  if (!quitar) return;
+  try {
+    await updateDoc(refBuzon(uid), { tokens: arrayRemove(quitar), actualizado: serverTimestamp() });
+  } catch (err) {
+    if (!(await faltaElBuzon(uid, err))) throw err; // sin buzón, el aparato ya no está en ninguna lista
+  }
+  guardarFirmaBuzon(uid, firma);
 }
 
-// Desactivar los dos avisos: revoca el token en el propio navegador y borra el buzón entero y el token de
-// antes, para que las funciones dejen de mandar nada a esta cuenta en ningún aparato. Nunca lanza: se llama
-// también al desmarcar la casilla sin que la interfaz tenga que gestionar un posible error.
+// Quitar los dos avisos: borra el buzón entero, para que las funciones dejen de mandar nada a esta cuenta en
+// ningún aparato (los interruptores son de la cuenta: quitarlos en uno los quita en todos), y revoca el token de
+// este navegador. El orden importa (F1):
+// - La firma, lo primero y sin esperar a la fila (la que hubiera o una que diga «borrar», firmaAlQuitarAvisos):
+//   si la app se cierra enseguida, queda apuntado que falta borrar, y la próxima apertura lo hace
+//   (sincronizarBuzonAvisos). Solo se quita cuando el servidor confirma el borrado.
+// - Después el buzón, que es lo que de verdad consultan las funciones.
+// - La revocación, al final: es una llamada a FCM que puede tardar, y si algo se queda a medias, mejor que sea
+//   eso. Antes iba la primera y, con la app cerrada a los pocos segundos, el buzón no llegaba a borrarse.
+// Nunca lanza: se llama al desmarcar la casilla sin que la interfaz tenga que gestionar un posible error.
 window.disablePushNotifications = function () {
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if (uid) guardarFirmaBuzon(uid, firmaAlQuitarAvisos(leerFirmaBuzon(uid)));
   return enColaBuzon(async () => {
-    try {
-      if (soportaPushNotifications()) {
-        await deleteToken(getMessaging(firebaseApp));
+    if (esLaCuentaDeAhora(uid)) {
+      try {
+        await borrarBuzon(uid);
+      } catch (err) {
+        console.warn("No se ha podido borrar el buzón de avisos (se repetirá al abrir la app):", (err && (err.code || err.message)) || err);
       }
-    } catch (e) {
-      // Si ya no había token, o el navegador no coopera al revocarlo, no pasa nada: lo importante es borrar lo
-      // guardado en Firestore, que es lo que de verdad consultan las funciones.
     }
-    const user = auth.currentUser;
-    if (user) {
-      await deleteDoc(doc(db, "users", user.uid, "keys", PUSH_TOKEN_KEY)).catch(() => {});
-      await deleteDoc(refBuzon(user.uid)).catch(() => {});
-      borrarFirmaBuzon(user.uid);
-    }
+    // Si no había token, o el navegador no coopera al revocarlo, no pasa nada: lo importante era el buzón.
+    if (soportaPushNotifications()) await revocarTokenDeEsteNavegador();
   }).catch(() => {});
 };
 
@@ -524,12 +679,20 @@ async function migrateLocalDataIfNeeded(uid) {
 // derecha, z-index 9999, en todas las pantallas). Ahora el botón vive dentro de la app, en Ajustes y en
 // la pantalla de alta (ui/comun/cerrar-sesion.jsx), con una confirmación; aquí solo queda el puente con
 // Firebase. Al cerrarse la sesión, onAuthStateChanged (al final de este archivo) vuelve a la bienvenida.
-// Antes, este aparato sale del buzón de avisos (quitarEsteAparatoDelBuzon), con un máximo de 3 s de espera: sin
-// conexión la escritura no termina, y cerrar la sesión no puede quedarse colgado por eso (en ese caso el aparato
-// se queda en la lista y saldrá cuando una función falle al usar su token o se renueve).
+// Antes, lo de los avisos (F2 de la revisión de noviembre):
+// - Lo primero, y siempre, la marca de «estrenar token» (del navegador, sin uid). La próxima vez que cualquier
+//   cuenta abra la app aquí con el permiso concedido, este navegador revoca su token y pide uno nuevo
+//   (planSincronizacion). Así, si la salida del buzón no llega (sin conexión), el token viejo muere igual y la
+//   cuenta que entre después no recibe los avisos de esta. Antes el aparato se quedaba apuntado sin fin: el token
+//   seguía vivo porque lo usaba la cuenta nueva, así que las funciones nunca lo daban por muerto. Se pone siempre,
+//   no solo si la salida falla, porque el token puede estar en el buzón aunque este aparato no lo sepa (sin firma).
+// - Después, este aparato sale del buzón (quitarEsteAparatoDelBuzon), con un máximo de 3 s: sin conexión la
+//   escritura no termina, y ni cerrar la sesión ni la fila del buzón pueden quedarse colgados por eso
+//   (enColaBuzon, `limiteMs`).
 window.signOutUser = async function () {
-  const espera = new Promise((resolver) => setTimeout(resolver, 3000));
-  await Promise.race([enColaBuzon(quitarEsteAparatoDelBuzon).catch(() => {}), espera]);
+  guardarLocal(CLAVE_ESTRENAR_TOKEN, "1");
+  const uid = auth.currentUser && auth.currentUser.uid;
+  if (uid) await enColaBuzon(() => quitarEsteAparatoDelBuzon(uid), { limiteMs: 3000 }).catch(() => {});
   return signOut(auth);
 };
 
