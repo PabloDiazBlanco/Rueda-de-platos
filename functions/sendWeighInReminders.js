@@ -8,7 +8,10 @@
 // Desde noviembre de 2026 (R8) parte de los buzones de avisos (buzonAvisos.js) en vez de leer todos los
 // documentos de todas las cuentas, y avisa a todos los aparatos de la lista, no solo al último (R17). Los datos
 // de la cuenta (`data-v1`, donde está el seguimiento de peso) solo se abren de quien tiene el recordatorio
-// activado: hace falta saber si hoy le toca, si el ciclo está en pausa y si ya se ha pesado.
+// activado: hace falta saber si hoy le toca, si el ciclo está en pausa y si ya se ha pesado. Desde la tanda B
+// (M3) pide solo los buzones con el recordatorio activado, por páginas, y trata unas pocas cuentas a la vez
+// (recorrerBuzones, en buzonAvisos.js, con el porqué y el plan B si falta el índice): antes abría a la vez el
+// `data-v1` de todas, y cada uno puede pesar hasta 1 MiB.
 //
 // Por qué esDiaSugeridoPeso se repite aquí en vez de importarse: logica/peso.js es un módulo ESM
 // pensado para el navegador (usa bare-specifiers como "i18n" que solo resuelve el importmap de
@@ -18,7 +21,7 @@
 const { onSchedule } = require("firebase-functions/scheduler");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
-const { buzonesDeAvisos, enviarAlBuzon } = require("./buzonAvisos");
+const { recorrerBuzones, enviarAlBuzon } = require("./buzonAvisos");
 
 const STORAGE_KEY = "rueda-de-platos:data-v1";
 
@@ -47,10 +50,22 @@ const TEXTOS_PUSH = {
 };
 
 exports.sendWeighInReminders = onSchedule(
-  // Una vez al día. Hora local de España (fija todo el año pese al cambio de horario, a
-  // diferencia de fijar una hora en UTC): media mañana, un momento razonable para un recordatorio
-  // sin resultar molesto a primera hora.
-  { schedule: "0 9 * * *", timeZone: "Europe/Madrid" },
+  {
+    // Una vez al día. Hora local de España (fija todo el año pese al cambio de horario, a
+    // diferencia de fijar una hora en UTC): media mañana, un momento razonable para un recordatorio
+    // sin resultar molesto a primera hora.
+    schedule: "0 9 * * *",
+    timeZone: "Europe/Madrid",
+    // Más margen que el de serie (60 s y 256 MiB) para cuando haya muchas cuentas (tanda B, M3). Esta es la que
+    // más lo necesita: de cada cuenta con el recordatorio abre `data-v1` (hasta 1 MiB, y varias veces eso al
+    // convertirlo en objeto), con 20 cuentas a la vez; 512 MiB los aguantan con holgura. 540 s (9 minutos) dan
+    // para decenas de miles de cuentas; con pocas termina en segundos y no cuesta más: se paga el tiempo que
+    // corre, no el tope. Firebase pone también ese tope como plazo del trabajo de Cloud Scheduler que la lanza (si
+    // no, la daría por fallida a los 3 minutos aunque siguiera bien). Sin reintentos (los de serie): repetir una
+    // ejecución que se cortó a medias mandaría el aviso dos veces a quien ya lo recibió.
+    timeoutSeconds: 540,
+    memory: "512MiB",
+  },
   async (evento) => {
     // El día de la ejecución programada (`scheduleTime`, las 9:00 de Madrid en UTC), no el del reloj: si la
     // ejecución se retrasa o Google la reintenta, sigue contando el día que tocaba. Y permite probar la función
@@ -64,18 +79,9 @@ exports.sendWeighInReminders = onSchedule(
     // lo que permite comprobar en el registro de Google Cloud, sin esperar a que alguien se queje, que la
     // función se ejecuta y decide bien (así se comprobó el 5-nov-2026, antes de R8). No incluye ningún dato de
     // salud: solo el uid y el motivo.
-    let buzones;
+    let candidatos;
     try {
-      buzones = await buzonesDeAvisos();
-    } catch (err) {
-      logger.error("Recordatorio de pesaje: no se han podido leer los buzones de avisos", err);
-      return;
-    }
-    const candidatos = buzones.filter((b) => b.pesaje && b.tokens.length > 0);
-    logger.info(`Recordatorio de pesaje: ${candidatos.length} candidato(s) con el recordatorio activado`);
-
-    await Promise.all(
-      candidatos.map(async (buzon) => {
+      candidatos = await recorrerBuzones("pesaje", "Recordatorio de pesaje", async (buzon) => {
         const { uid } = buzon;
         let datos;
         try {
@@ -130,7 +136,12 @@ exports.sendWeighInReminders = onSchedule(
         } catch (err) {
           logger.error(`No se ha podido enviar el recordatorio de pesaje a ${uid}`, err);
         }
-      })
-    );
+      });
+    } catch (err) {
+      logger.error("Recordatorio de pesaje: no se han podido leer los buzones de avisos", err);
+      return;
+    }
+    // Al final, porque con las páginas el total no se sabe hasta leer la última.
+    logger.info(`Recordatorio de pesaje: ${candidatos} candidato(s) con el recordatorio activado`);
   }
 );
