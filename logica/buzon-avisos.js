@@ -82,8 +82,10 @@ export function avisoEsteAparato({ quiere, estado }) {
 //   es la de hoy («ya se ha pesado»).
 // **Nunca el peso**: solo cuándo, no cuánto (las reglas tampoco lo dejarían guardar). Es exactamente lo que miraba
 // la función en `data-v1`, ni un dato más: la misma regla de días (esDiaSugeridoPeso), la misma pausa (una sin
-// `fin`) y la misma pesada de hoy (alguna entrada con esa fecha; la más reciente es la de hoy si la hay, porque la
-// app nunca guarda una pesada con fecha posterior al día en que se hace).
+// `fin`) y la misma pesada de hoy (alguna entrada con esa fecha; la más reciente es la de hoy si la hay). La app
+// guarda cada pesada con la fecha del día en que se hace, así que no debería haber ninguna posterior a hoy; si la
+// hubiera (la guardó un aparato con el reloj adelantado), taparía la de hoy y la función avisaría a quien ya se ha
+// pesado, cosa que por `data-v1` no pasa. Por eso se ignoran las fechas posteriores a hoy (datosPesajeBuzon).
 // Con el recordatorio de pesaje apagado van vacíos (`pesoVecesSemana: null`, `pesoPausado: false`,
 // `ultimaPesada: null`): a la función no le sirven, no hay por qué tener en el buzón cuándo se pesa alguien que no lo
 // ha pedido, y así pesarse o pausar no cuesta ninguna escritura en el buzón de esas cuentas.
@@ -93,14 +95,16 @@ const SIN_DATOS_DE_PESAJE = { pesoVecesSemana: null, pesoPausado: false, ultimaP
 // Los tres datos, a partir del seguimiento de peso guardado (`data.pesoTracking`, logica/peso.js). La frecuencia
 // que no sea una de las de la app cuenta como 3, como hace esDiaSugeridoPeso (logica/peso.js) con los días: el
 // recordatorio cae en los mismos días que antes. Las fechas mal escritas se ignoran (las reglas solo aceptan
-// `AAAA-MM-DD`, y una fecha rara haría que se rechazara el buzón entero).
-export function datosPesajeBuzon({ pesaje, pesoTracking }) {
+// `AAAA-MM-DD`, y una fecha rara haría que se rechazara el buzón entero), y también las posteriores a hoy (`fecha`,
+// el día local de este aparato; arriba, el porqué).
+export function datosPesajeBuzon({ pesaje, pesoTracking }, fecha = new Date()) {
   if (!pesaje || !pesoTracking || typeof pesoTracking !== "object") return { ...SIN_DATOS_DE_PESAJE };
   const veces = Number(pesoTracking.vecesSemana);
   const pausas = Array.isArray(pesoTracking.pausas) ? pesoTracking.pausas : [];
+  const hoy = fechaISO(fecha);
   const fechas = (Array.isArray(pesoTracking.entradas) ? pesoTracking.entradas : [])
     .map((e) => e && e.fecha)
-    .filter((f) => typeof f === "string" && FECHA_ISO.test(f));
+    .filter((f) => typeof f === "string" && FECHA_ISO.test(f) && f <= hoy);
   return {
     pesoVecesSemana: PESO_FRECUENCIAS.includes(veces) ? veces : 3,
     pesoPausado: pausas.some((p) => !!p && p.fin === null),

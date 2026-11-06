@@ -3643,12 +3643,16 @@ function grupoBuzonAvisos() {
       },
       // ---------- Tanda B (M2): lo justo del seguimiento de peso, para que la función no abra `data-v1` ----------
       {
-        nombre: "Datos de pesaje para el buzón: frecuencia, pausa y fecha de la última pesada; nada con el recordatorio apagado",
+        nombre: "Datos de pesaje para el buzón: frecuencia, pausa y fecha de la última pesada (nunca una posterior a hoy); nada con el recordatorio apagado",
         ejecutar: () => {
-          const datos = (pesaje, pesoTracking) => {
-            const d = datosPesajeBuzon({ pesaje, pesoTracking });
+          // Viernes 6 de noviembre de 2026 por la mañana, hora local del aparato.
+          const hoy = new Date(2026, 10, 6, 10, 0);
+          const datos = (pesaje, pesoTracking, fecha = hoy) => {
+            const d = datosPesajeBuzon({ pesaje, pesoTracking }, fecha);
             return [d.pesoVecesSemana, d.pesoPausado, d.ultimaPesada].join("|");
           };
+          // Una pesada de hoy y otra de mañana (guardada por un aparato con el reloj adelantado).
+          const conFutura = { vecesSemana: 3, pausas: [], entradas: [{ fecha: "2026-11-06" }, { fecha: "2026-11-07" }] };
           // Dos por semana, una pausa cerrada y otra abierta, tres pesadas sin ordenar (la mayor es la del 4).
           const lleno = {
             vecesSemana: 2,
@@ -3659,7 +3663,7 @@ function grupoBuzonAvisos() {
             {
               lleno: datos(true, lleno),
               // Solo estas tres claves: nunca el peso ni nada más del seguimiento.
-              claves: Object.keys(datosPesajeBuzon({ pesaje: true, pesoTracking: lleno })).sort().join(","),
+              claves: Object.keys(datosPesajeBuzon({ pesaje: true, pesoTracking: lleno }, hoy)).sort().join(","),
               apagado: datos(false, lleno),
               sinSeguimiento: datos(true, undefined),
               recienEmpezado: datos(true, { vecesSemana: 3, pausas: [], entradas: [] }),
@@ -3667,11 +3671,17 @@ function grupoBuzonAvisos() {
               // Frecuencia desconocida → 3 (como esDiaSugeridoPeso); pausas que no son lista; fechas mal escritas, fuera.
               raro: datos(true, { vecesSemana: 7, pausas: "no", entradas: [null, { fecha: "6/11/2026" }, { fecha: 20261106 }, {}, { fecha: "2026-11-01" }] }),
               sinFechasBuenas: datos(true, { entradas: [{ fecha: "ayer" }] }),
+              // La de mañana no tapa la de hoy (si no, la función avisaría a quien ya se ha pesado); solo futuras, ninguna;
+              // y al día siguiente (pasada la medianoche) ya cuenta.
+              futura: datos(true, conFutura),
+              soloFutura: datos(true, { vecesSemana: 3, pausas: [], entradas: [{ fecha: "2026-11-09" }] }),
+              alDiaSiguiente: datos(true, conFutura, new Date(2026, 10, 7, 0, 5)),
             },
             {
               lleno: "2|true|2026-11-04", claves: "pesoPausado,pesoVecesSemana,ultimaPesada", apagado: "|false|",
               sinSeguimiento: "|false|", recienEmpezado: "3|false|", pausaCerrada: "3|false|2026-11-06",
               raro: "3|false|2026-11-01", sinFechasBuenas: "3|false|",
+              futura: "3|false|2026-11-06", soloFutura: "3|false|", alDiaSiguiente: "3|false|2026-11-07",
             }
           );
         },
@@ -3737,7 +3747,7 @@ function grupoBuzonAvisos() {
           const pesado = { ...pt, entradas: [...pt.entradas, { fecha: "2026-11-06", peso: 69.9 }] };
           const decidir = ({ token = "t1", anterior, pesaje = true, descongelar = false, seguimiento }) =>
             decidirBuzon(
-              { quiere: pesaje || descongelar, token, anterior, idioma: "es", pesaje, descongelar, ...datosPesajeBuzon({ pesaje, pesoTracking: seguimiento }) },
+              { quiere: pesaje || descongelar, token, anterior, idioma: "es", pesaje, descongelar, ...datosPesajeBuzon({ pesaje, pesoTracking: seguimiento }, hoy) },
               hoy
             );
           const anterior = decidir({ anterior: null, seguimiento: pt }).firma;
