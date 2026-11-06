@@ -458,8 +458,6 @@ describe("Recordatorio de pesaje con los datos en el buzón (tanda B, M2)", () =
     await ponerBuzon("carla", conPeso(3, true, "2026-11-02", { tokens: ["carla-1"] }));
     // 2 por semana: el miércoles no le toca.
     await ponerBuzon("dani", conPeso(2, false, null, { tokens: ["dani-1"] }));
-    // Sin seguimiento de peso.
-    await ponerBuzon("fede", conPeso(null, false, null, { tokens: ["fede-1"] }));
     // Recién empezado: sin pesadas en el ciclo.
     await ponerBuzon("gema", conPeso(3, false, null, { tokens: ["gema-1"] }));
 
@@ -475,9 +473,8 @@ describe("Recordatorio de pesaje con los datos en el buzón (tanda B, M2)", () =
       "bea: ya registrado hoy, se omite (según el buzón)",
       "carla: ciclo de peso en pausa, se omite (según el buzón)",
       "dani: hoy no es día sugerido (vecesSemana=2), se omite (según el buzón)",
-      "fede: sin seguimiento de peso configurado, se omite (según el buzón)",
       "ana: recordatorio enviado a 2 de 2 aparato(s) (según el buzón)",
-      "Recordatorio de pesaje: 6 candidato(s) con el recordatorio activado (6 decidido(s) con el buzón y 0 abriendo sus datos)",
+      "Recordatorio de pesaje: 5 candidato(s) con el recordatorio activado (5 decidido(s) con el buzón y 0 abriendo sus datos)",
     ]) {
       assert.ok(motivos.includes(linea), `falta en el registro: ${linea}`);
     }
@@ -493,6 +490,11 @@ describe("Recordatorio de pesaje con los datos en el buzón (tanda B, M2)", () =
     // Solo uno de los tres (las reglas lo permiten): no basta para decidir; sus datos dicen que le toca.
     await ponerBuzon("juan", { pesaje: true, pesoPausado: true, tokens: ["juan-1"] });
     await ponerDatos("juan", { perfil: { notificacionesPush: true }, pesoTracking: peso() });
+    // «Sin seguimiento» con el recordatorio activado: la app nueva nunca lo escribe así (siempre hay seguimiento), así
+    // que es un buzón a medias (una copia de antes activó el pesaje con `merge` encima de los `null` del pesaje
+    // apagado). No se fía de él: sus datos dicen que le toca, y se le avisa (antes se omitía «sin seguimiento»).
+    await ponerBuzon("fede", conPeso(null, false, null, { tokens: ["fede-1"] }));
+    await ponerDatos("fede", { perfil: { notificacionesPush: true }, pesoTracking: peso() });
     // Una fecha mal escrita: tampoco.
     await ponerBuzon("lola", conPeso(3, false, "4/11/2026", { tokens: ["lola-1"] }));
     await ponerDatos("lola", { perfil: { notificacionesPush: true }, pesoTracking: peso({ entradas: [{ fecha: "2026-11-04", peso: 61 }] }) });
@@ -502,14 +504,14 @@ describe("Recordatorio de pesaje con los datos en el buzón (tanda B, M2)", () =
 
     await sendWeighInReminders.run(MIERCOLES);
 
-    assert.deepEqual(enviados.map((m) => m.tokens[0]).sort(), ["hugo-1", "juan-1", "kike-1"]);
+    assert.deepEqual(enviados.map((m) => m.tokens[0]).sort(), ["fede-1", "hugo-1", "juan-1", "kike-1"]);
     const datosLeidos = lecturas.filter((l) => l.startsWith("users/")).map((l) => l.split("/")[1]).sort();
-    assert.deepEqual(datosLeidos, ["hugo", "ines", "juan", "lola"]);
+    assert.deepEqual(datosLeidos, ["fede", "hugo", "ines", "juan", "lola"]);
     const motivos = registro.map((r) => r.texto);
     assert.ok(motivos.includes("ines: ciclo de peso en pausa, se omite (según sus datos)"));
     assert.ok(motivos.includes("lola: ya registrado hoy, se omite (según sus datos)"));
     assert.ok(motivos.includes(
-      "Recordatorio de pesaje: 5 candidato(s) con el recordatorio activado (1 decidido(s) con el buzón y 4 abriendo sus datos)"
+      "Recordatorio de pesaje: 6 candidato(s) con el recordatorio activado (1 decidido(s) con el buzón y 5 abriendo sus datos)"
     ));
   });
 

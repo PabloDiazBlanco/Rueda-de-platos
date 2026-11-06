@@ -72,12 +72,17 @@ const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
 // escrito por una copia de la app anterior a la tanda B no los tiene, y entonces el recordatorio de pesaje abre
 // `data-v1` como antes (sendWeighInReminders.js). Las reglas ya garantizan los tipos; esto es por si acaso, para que
 // un dato raro lleve al camino de antes y no a una decisión equivocada. Hacen falta los tres: uno suelto (que las
-// reglas permiten) no basta para decidir. `pesoVecesSemana: null` sí es un dato válido: la cuenta no tiene
-// seguimiento de peso.
+// reglas permiten) no basta para decidir.
+// `pesoVecesSemana: null` (lo que la app escribe con el recordatorio de pesaje apagado) tampoco se toma por bueno: con
+// el recordatorio activado no debería llegar nunca, porque la app siempre tiene seguimiento de peso (migrateData lo
+// crea si falta) y entonces manda 2 o 3. Si llega es que el buzón quedó a medias durante la transición: una copia de
+// la app de antes activó el pesaje con `merge` encima de los `null` que había escrito la app nueva con el pesaje
+// apagado. Fiarse de él sería «sin seguimiento de peso» y no avisar; por `data-v1` se decide bien, y a las cuentas
+// normales no les cuesta nada porque nunca tienen esa combinación.
 function pesajeDelBuzon(datos) {
   if (!["pesoVecesSemana", "pesoPausado", "ultimaPesada"].every((campo) => campo in datos)) return null;
   const { pesoVecesSemana, pesoPausado, ultimaPesada } = datos;
-  if (pesoVecesSemana !== null && pesoVecesSemana !== 2 && pesoVecesSemana !== 3) return null;
+  if (pesoVecesSemana !== 2 && pesoVecesSemana !== 3) return null;
   if (typeof pesoPausado !== "boolean") return null;
   if (ultimaPesada !== null && !(typeof ultimaPesada === "string" && FECHA_ISO.test(ultimaPesada))) return null;
   return { vecesSemana: pesoVecesSemana, pausado: pesoPausado, ultimaPesada };

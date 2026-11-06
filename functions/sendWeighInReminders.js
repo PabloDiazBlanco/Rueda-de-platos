@@ -18,9 +18,10 @@
 //   se mira el perfil «por si acaso», porque abrir `data-v1` para eso es justo lo que se quería evitar. La app pone el
 //   buzón al día al cambiar el interruptor, también desde un aparato sin permiso (F4), y lo borra al quitar los dos.
 // - **Con `data-v1`**, como antes: si el buzón no trae los tres datos (lo escribió una copia de la app anterior a
-//   la tanda B, o un dato no tiene la forma esperada). Abre los datos de esa cuenta y, si el perfil dice que el
-//   recordatorio está desactivado, manda el perfil. Este camino se queda mientras pueda haber buzones de antes; con
-//   el tiempo, cada cuenta pasa sola al otro en cuanto abre la app nueva.
+//   la tanda B, o un dato no tiene la forma esperada) o dice «sin seguimiento» (`pesoVecesSemana: null`, que con el
+//   recordatorio activado solo sale de un buzón a medias: pesajeDelBuzon). Abre los datos de esa cuenta y, si el
+//   perfil dice que el recordatorio está desactivado, manda el perfil. Este camino se queda mientras pueda haber
+//   buzones de antes; con el tiempo, cada cuenta pasa sola al otro en cuanto abre la app nueva.
 // Los dos deciden exactamente igual (motivoParaNoAvisar), y una prueba lo comprueba con los mismos seguimientos
 // por los dos caminos (functions/pruebas-funciones/).
 //
@@ -64,10 +65,12 @@ function motivoParaNoAvisar({ conSeguimiento, vecesSemana, pausado, pesadoHoy },
   return null;
 }
 
-// El seguimiento sacado del buzón (tanda B). `ultimaPesada` es la fecha más reciente del ciclo: si alguna pesada es
-// de hoy, es esa (la app no guarda pesadas con fecha posterior al día en que se hacen).
+// El seguimiento sacado del buzón (tanda B). Siempre hay seguimiento: un buzón con `pesoVecesSemana: null` no llega
+// aquí, va por `data-v1` (pesajeDelBuzon, en buzonAvisos.js, con el porqué). `ultimaPesada` es la fecha más reciente
+// del ciclo sin contar las posteriores a hoy (logica/buzon-avisos.js, datosPesajeBuzon): si alguna pesada es de hoy,
+// es esa.
 function seguimientoDelBuzon({ vecesSemana, pausado, ultimaPesada }, hoyISO) {
-  return { conSeguimiento: vecesSemana !== null, vecesSemana, pausado, pesadoHoy: ultimaPesada === hoyISO };
+  return { conSeguimiento: true, vecesSemana, pausado, pesadoHoy: ultimaPesada === hoyISO };
 }
 
 // El seguimiento sacado de `data-v1` (camino de antes), con las mismas comprobaciones que antes de la tanda B.
