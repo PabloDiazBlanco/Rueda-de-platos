@@ -238,19 +238,22 @@ en este orden, ya hecho: reglas con el buzón (`dev`, prueba en `localhost`, `pr
 sigue escribiendo el token de antes → comprobar que las cuentas con token tienen ya su buzón → desplegar solo las
 dos funciones (`firebase deploy --only functions:sendWeighInReminders,functions:sendDefrostReminders`).
 
-Queda la limpieza, en dos fases:
+Después vino la limpieza, también hecha:
 
-1. **La app** (hecha): deja de escribir `push-token-v1` y lo borra una sola vez por cuenta y aparato, al abrirse
-   (marca `fooddraft:push-token-v1-borrado:<uid>`; borrarlo en cada apertura costaría una escritura aunque el
-   documento ya no exista). Las funciones no lo leen, así que no hay prisa ni orden que respetar con ellas.
-2. **Las reglas**, con margen (una o dos semanas después de subir la fase 1): quitar la clave de
-   `firestore.rules` (lista de claves y el caso especial de 4096 en `tamanoMaximo`), de sus pruebas y de
-   `datos.md`, y el código de la limpieza de `auth-bootstrap.jsx` (`limpiarTokenDeAntes`, su marca y su paso en
-   `planSincronizacion`). El margen es porque la versión anterior de la app hace `await setDoc(push-token-v1)`
-   sin proteger al activar los avisos: un aparato que aún la tenga guardada, con las reglas ya sin la clave, no
-   podría activarlos. Borrar seguirá permitido después (las reglas dejan borrar cualquier clave propia, también
-   una desconocida), así que la limpieza no se rompe. Si una copia vieja vuelve a escribir el token después de
-   limpiarlo, no lo lee nadie; se va con «Eliminar cuenta» o con otra pasada si algún día hiciera falta.
+- **La app** deja de escribir `push-token-v1` y lo borra una sola vez por cuenta y aparato, al abrirse (marca
+  `fooddraft:push-token-v1-borrado:<uid>`; borrarlo en cada apertura costaría una escritura aunque el documento
+  ya no exista). Las funciones no lo leen, así que no hay orden que respetar con ellas.
+- **Las reglas** ya no aceptan la clave (ni el caso especial de 4096 caracteres que tenía en `tamanoMaximo`). Se
+  quitó a la vez que la app dejaba de escribirla, sin esperar: el service worker pide los archivos de la app a la
+  red primero, así que cada aparato estrena la versión nueva la próxima vez que abre la app con conexión. Solo
+  una copia vieja que siguiera abierta (o sin conexión) haría su `await setDoc(push-token-v1)` sin proteger al
+  activar los avisos; fallaría esa vez y funcionaría al volver a abrir la app. No se pierde nada.
+- **Lo que se queda a propósito**: el borrado de la app (`limpiarTokenDeAntes`, su marca y su paso en
+  `planSincronizacion`). Borrar sigue permitido (las reglas dejan borrar cualquier clave propia, también una
+  desconocida, con su prueba), y es lo que quita el token de las cuentas que aún no han abierto la app nueva.
+  Cuesta una escritura por cuenta y aparato, una sola vez. Se podrá quitar cuando ya no quede ninguno; si no, el
+  que quede no lo lee nadie y se va con «Eliminar cuenta». La prueba de las reglas que lee el código de la app
+  salta esta clave (`CLAVES_QUE_SOLO_BORRA`), porque la app la nombra solo para borrarla.
 
 ## Coste
 

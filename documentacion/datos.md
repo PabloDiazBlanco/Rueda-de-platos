@@ -36,8 +36,8 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   `VerificarCorreoScreen`, `arquitectura.md`; las de Google llegan verificadas); `users/{uid}` es de solo
   lectura; en `keys/` solo se aceptan las claves de la tabla de abajo (y los meses del entreno de 1970 a 2099,
   el mismo rango que `ANIO_MIN_ENTRENO`/`ANIO_MAX_ENTRENO` de `entreno-calculo.js`), con un único
-  campo `value` de texto, de hasta 4096 caracteres el token y 1 048 000 el resto (justo por debajo del tope de
-  1 MiB de Firestore, para no bloquear nunca a una cuenta con muchos datos). Listar la colección está
+  campo `value` de texto, de hasta 1 048 000 caracteres (justo por debajo del tope de 1 MiB de Firestore, para
+  no bloquear nunca a una cuenta con muchos datos). Listar la colección está
   denegado, lo que garantiza que nadie use `storage.list()`. Se puede leer y borrar una clave propia que no
   esté en la lista, pero no reescribirla. Aparte, el buzón de avisos `users/{uid}/avisos/push` (abajo), con
   su propia forma. Todo lo demás, denegado.
@@ -72,10 +72,10 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   subscriptionId, updatedAt }`) y los contadores de cuota (`usoFotos`, `usoCocinar`). Es de **solo lectura
   para el cliente**: solo lo escriben las Cloud Functions con el Admin SDK (ver `backend.md`).
 - `rueda-de-platos:push-token-v1` guardaba el token de notificaciones en `value` como **texto plano**, no JSON.
-  **En retirada** (R8): lo leían las funciones de notificaciones de antes; las de ahora leen el buzón de avisos
-  y no lo miran. La app ya no lo escribe y lo borra una sola vez por cuenta y aparato (marca
-  `fooddraft:push-token-v1-borrado:<uid>`). Las reglas lo siguen aceptando a propósito hasta la fase 2 de la
-  limpieza (`backend.md`, «Notificaciones push»).
+  **Retirado** (R8): lo leían las funciones de notificaciones de antes; las de ahora leen el buzón de avisos
+  y no lo miran. La app ya no lo escribe y las reglas ya no lo aceptan; la app lo borra una sola vez por cuenta
+  y aparato (marca `fooddraft:push-token-v1-borrado:<uid>`) en las cuentas que aún lo tengan (`backend.md`,
+  «Paso del token de antes al buzón»).
 
 ## Claves en la nube (`users/{uid}/keys/`)
 
@@ -91,7 +91,7 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
 | `rueda-de-platos:entreno-AAAA-MM-v1` | `useEntreno` (un documento por mes) | 1 | `migrarMes` | no |
 | `rueda-de-platos:cuerpo-diario-v1` | `useCuerpo` | 1 | `migrarDiario` (`logica/cuerpo-diario.js`) | sí |
 | `rueda-de-platos:informes-favoritos-v1` | `useCuerpo` | 1 | `migrarFavoritos` | sí |
-| `rueda-de-platos:push-token-v1` | nadie: `auth-bootstrap.jsx` solo lo borra (texto plano; en retirada, R8) | — | — | no |
+| `rueda-de-platos:push-token-v1` | nadie: `auth-bootstrap.jsx` solo lo borra (texto plano; retirado, R8: las reglas ya no lo aceptan) | — | — | no |
 
 `data-v1` lleva `{ foods, ingredients, blocks, rules, perfil, perfilOnboardingDone, objetivos, pesoTracking,
 listaCompra, listaCompraSimple, comidasCompletadas }` y crece con `comidasCompletadas` (≈ 150 KB al año
