@@ -11,8 +11,8 @@
 // carpeta), igual que las pruebas de las reglas.
 //
 // Qué se prueba, además de a quién se avisa y en qué idioma: que las funciones **solo leen lo que necesitan**
-// (los buzones y, para el pesaje, los datos de quien lo tiene activado), que ya no buscan el token de antes y que
-// los aparatos con el token caducado salen de la lista.
+// (los buzones y, para el pesaje, los datos de quien lo tiene activado), que ya no buscan el token de antes, que
+// los aparatos con el token caducado o inválido salen de la lista y que un fallo pasajero de FCM no saca a nadie.
 
 const { describe, it, before, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
@@ -28,16 +28,18 @@ const db = admin.firestore();
 
 // ---------- FCM falso ----------
 // Las funciones llaman a admin.messaging().sendEachForMulticast; la instancia es siempre la misma, así que basta con
-// cambiarle ese método. Los tokens de `tokensMuertos` responden como un aparato que ya no existe.
+// cambiarle ese método. Los tokens de `fallosFCM` responden con el error que se les ponga: los dos que significan
+// «este aparato ya no existe» (NO_REGISTRADO, INVALIDO) o uno pasajero, que no dice nada del token.
+const NO_REGISTRADO = "messaging/registration-token-not-registered";
+const INVALIDO = "messaging/invalid-registration-token";
+const PASAJERO = "messaging/internal-error";
 const mensajeria = admin.messaging();
 let enviados = [];
-let tokensMuertos = new Set();
+let fallosFCM = new Map();
 mensajeria.sendEachForMulticast = async (mensaje) => {
   enviados.push(JSON.parse(JSON.stringify(mensaje)));
   const responses = mensaje.tokens.map((t) =>
-    tokensMuertos.has(t)
-      ? { success: false, error: { code: "messaging/registration-token-not-registered" } }
-      : { success: true, messageId: "m-" + t }
+    fallosFCM.has(t) ? { success: false, error: { code: fallosFCM.get(t) } } : { success: true, messageId: "m-" + t }
   );
   const successCount = responses.filter((r) => r.success).length;
   return { responses, successCount, failureCount: responses.length - successCount };
@@ -90,7 +92,7 @@ beforeEach(async () => {
   assert.ok(respuesta.ok, "no se ha podido vaciar el emulador");
   enviados = [];
   lecturas = [];
-  tokensMuertos = new Set();
+  fallosFCM = new Map();
 });
 
 describe("Aviso para descongelar", () => {
@@ -114,7 +116,7 @@ describe("Aviso para descongelar", () => {
 
   it("quita de la lista los aparatos con el token caducado y no toca la hora de la app", async () => {
     await ponerBuzon("dani", { descongelar: true, tokens: ["dani-viejo", "dani-nuevo"] });
-    tokensMuertos.add("dani-viejo");
+    fallosFCM.set("dani-viejo", NO_REGISTRADO);
 
     await sendDefrostReminders.run(MIERCOLES);
 
@@ -122,6 +124,35 @@ describe("Aviso para descongelar", () => {
     const buzon = await leerBuzon("dani");
     assert.deepEqual(buzon.tokens, ["dani-nuevo"]);
     assert.ok(buzon.actualizado.isEqual(HACE_UN_RATO));
+  });
+
+  it("también quita un token que FCM da por inválido (el otro código de «este aparato ya no existe»)", async () => {
+    await ponerBuzon("dani", { descongelar: true, tokens: ["dani-roto", "dani-bueno"] });
+    fallosFCM.set("dani-roto", INVALIDO);
+
+    await sendDefrostReminders.run(MIERCOLES);
+
+    assert.deepEqual((await leerBuzon("dani")).tokens, ["dani-bueno"]);
+  });
+
+  it("un fallo pasajero de FCM no quita el token: se vuelve a intentar en el siguiente aviso", async () => {
+    // Si un error cualquiera (red, cuota puntual de FCM) quitara el token, un mal momento de FCM dejaría a ese
+    // aparato sin avisos hasta que la app volviera a apuntarlo, al día siguiente como pronto.
+    await ponerBuzon("dani", { descongelar: true, tokens: ["dani-movil", "dani-portatil", "dani-viejo"] });
+    fallosFCM.set("dani-movil", PASAJERO);
+    fallosFCM.set("dani-viejo", NO_REGISTRADO);
+
+    await sendDefrostReminders.run(MIERCOLES);
+
+    // El portátil lo recibe, el viejo sale y el móvil se queda para la próxima.
+    assert.deepEqual(enviados[0].tokens, ["dani-movil", "dani-portatil", "dani-viejo"]);
+    assert.deepEqual((await leerBuzon("dani")).tokens, ["dani-movil", "dani-portatil"]);
+
+    // Al día siguiente FCM ya responde: el móvil lo recibe.
+    fallosFCM = new Map();
+    enviados = [];
+    await sendDefrostReminders.run(MIERCOLES);
+    assert.deepEqual(enviados[0].tokens, ["dani-movil", "dani-portatil"]);
   });
 
   it("aguanta un buzón raro: idioma desconocido, tokens repetidos o que no son texto, y otros documentos", async () => {
@@ -197,7 +228,7 @@ describe("Recordatorio de pesaje", () => {
   it("también quita los aparatos con el token caducado", async () => {
     await ponerBuzon("ana", { pesaje: true, tokens: ["ana-viejo", "ana-nuevo"] });
     await ponerDatos("ana", { perfil: { notificacionesPush: true }, pesoTracking: peso() });
-    tokensMuertos.add("ana-viejo");
+    fallosFCM.set("ana-viejo", NO_REGISTRADO);
 
     await sendWeighInReminders.run(MIERCOLES);
 

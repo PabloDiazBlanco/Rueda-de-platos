@@ -557,11 +557,46 @@ describe("Buzón de avisos (R8): lo que leen las funciones de notificaciones", (
     for (const malo of ["", "t".repeat(4097), 5, null, true, { a: 1 }]) {
       await assertFails(setDoc(refBuzon(db), buzon({ tokens: [malo] })));
     }
-    // Un token malo en la última posición posible también se detecta (las reglas miran cada posición).
-    const nueveBuenos = Array.from({ length: 9 }, (_, i) => `fcm-${i}:APA91b`);
-    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: [...nueveBuenos, "fcm-9:APA91b"] })));
-    await assertFails(setDoc(refBuzon(db), buzon({ tokens: [...nueveBuenos, ""] })));
-    await assertFails(setDoc(refBuzon(db), buzon({ tokens: [...nueveBuenos, 42] })));
+    // Las reglas no tienen bucles y miran cada posición por separado (esTokenValido(tokens, 0) … (tokens, 9)): un
+    // token malo se tiene que detectar en cualquiera de ellas, también en las del medio. Si alguien borrara sin
+    // querer la comprobación de una posición, solo fallaría la prueba de esa posición; por eso se prueban todas.
+    const diezBuenos = Array.from({ length: 10 }, (_, i) => `fcm-${i}:APA91b`);
+    await assertSucceeds(setDoc(refBuzon(db), buzon({ tokens: diezBuenos })));
+    for (let posicion = 0; posicion < 10; posicion++) {
+      for (const malo of ["", 42]) {
+        const tokens = diezBuenos.map((t, i) => (i === posicion ? malo : t));
+        await assertFails(setDoc(refBuzon(db), buzon({ tokens })));
+      }
+    }
+    // Y en una lista más corta, en una posición del medio (la 2 de 5).
+    await assertFails(setDoc(refBuzon(db), buzon({ tokens: ["fcm-a", "fcm-b", "", "fcm-d", "fcm-e"] })));
+  });
+
+  it("lo que hace la app al quitar los avisos, cerrar sesión o cambiar algo sin permiso (tanda A)", async () => {
+    const db = de("alicia");
+    // F4: un aparato sin permiso pone al día el idioma y los interruptores sin tocar la lista.
+    await prepararBuzon("alicia", { tokens: [MOVIL, ORDENADOR] });
+    await assertSucceeds(
+      updateDoc(refBuzon(db), { idioma: "gl", pesaje: true, descongelar: false, actualizado: serverTimestamp() })
+    );
+    const leido = (await assertSucceeds(getDoc(refBuzon(db)))).data();
+    assert.deepEqual(leido.tokens, [MOVIL, ORDENADOR]);
+    assert.equal(leido.idioma, "gl");
+    // Si no hay buzón, esa escritura no crea nada y falla. Ojo: no con `not-found`, como en `keys`, sino con
+    // `permission-denied`, porque las reglas miran antes el documento resultante y sin buzón solo tiene los campos
+    // que manda la escritura (faltan `tokens`). Lo mismo al cerrar sesión (solo `tokens` y `actualizado`). Por eso la
+    // app, ante ese error, lee el buzón para distinguir «no existe» de un rechazo de verdad (faltaElBuzon,
+    // auth-bootstrap.jsx); leer el propio buzón aunque no exista está permitido.
+    await assertSucceeds(deleteDoc(refBuzon(db)));
+    const sinBuzon = await updateDoc(refBuzon(db), {
+      idioma: "gl", pesaje: true, descongelar: false, actualizado: serverTimestamp(),
+    }).then(() => null, (e) => e);
+    assert.equal(sinBuzon && sinBuzon.code, "permission-denied");
+    await assertFails(updateDoc(refBuzon(db), { tokens: arrayRemove(MOVIL), actualizado: serverTimestamp() }));
+    const leidoSinBuzon = await assertSucceeds(getDoc(refBuzon(db)));
+    assert.equal(leidoSinBuzon.exists(), false);
+    // F1: borrar un buzón que ya no existe también vale (se repite al abrir la app si el primer borrado no llegó).
+    await assertSucceeds(deleteDoc(refBuzon(db)));
   });
 
   it("actualizado: la hora del servidor, nunca una puesta por la app", async () => {
