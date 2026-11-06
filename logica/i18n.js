@@ -1497,9 +1497,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Aviso para descongelar",
     "ajustes.descongelar.ayuda": "Cada noche a las 21:30, una notificación para revisar las comidas de mañana por si tienes que descongelar algo o comprar. Usa el mismo permiso de notificaciones que el recordatorio de pesaje; en iPhone solo llega con la app instalada.",
-    "ajustes.esteAparato.noLlegan": "En este aparato no te llegan los avisos: cada aparato necesita su propio permiso de notificaciones.",
+    "ajustes.esteAparato.noLlegan": "En este dispositivo no te llegan los avisos: cada dispositivo necesita su propio permiso de notificaciones.",
     "ajustes.esteAparato.recibirAqui": "Recibirlos aquí",
-    "ajustes.esteAparato.bloqueados": "En este aparato no te llegan los avisos: el navegador tiene bloqueadas las notificaciones de FoodDraft. Para recibirlos aquí, permítelas en los ajustes del navegador (o del teléfono, si tienes la app instalada) y vuelve a abrir la app.",
+    "ajustes.esteAparato.bloqueados": "En este dispositivo no te llegan los avisos: el navegador tiene bloqueadas las notificaciones de FoodDraft. Para recibirlos aquí, permítelas en los ajustes del navegador (o del teléfono, si tienes la app instalada) y vuelve a abrir la app.",
 
     "queCocino.intro": "Dinos qué tienes —tu despensa, una foto o una lista— y te proponemos recetas con ingredientes y pasos.",
     "queCocino.modo.conLoQueTengo": "Con lo que tengo",
@@ -5355,9 +5355,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Avís per descongelar",
     "ajustes.descongelar.ayuda": "Cada nit a les 21:30, una notificació per revisar els àpats de demà per si has de descongelar alguna cosa o comprar. Fa servir el mateix permís de notificacions que el recordatori de pes; a l’iPhone només arriba amb l’app instal·lada.",
-    "ajustes.esteAparato.noLlegan": "En aquest aparell no et arriben els avisos: cada aparell necessita el seu propi permís de notificacions.",
+    "ajustes.esteAparato.noLlegan": "En aquest dispositiu no t’arriben els avisos: cada dispositiu necessita el seu propi permís de notificacions.",
     "ajustes.esteAparato.recibirAqui": "Rebre’ls aquí",
-    "ajustes.esteAparato.bloqueados": "En aquest aparell no et arriben els avisos: el navegador té bloquejades les notificacions de FoodDraft. Per rebre’ls aquí, permet-les als ajustos del navegador (o del telèfon, si tens l’app instal·lada) i torna a obrir l’app.",
+    "ajustes.esteAparato.bloqueados": "En aquest dispositiu no t’arriben els avisos: el navegador té bloquejades les notificacions de FoodDraft. Per rebre’ls aquí, permet-les als ajustos del navegador (o del telèfon, si tens l’app instal·lada) i torna a obrir l’app.",
 
     "queCocino.intro": "Digues-nos què tens —el teu rebost, una foto o una llista— i et proposem receptes amb ingredients i passos.",
     "queCocino.modo.conLoQueTengo": "Amb el que tinc",
@@ -7284,9 +7284,9 @@ const TEXTOS = {
 
     "ajustes.descongelar.label": "Aviso para desconxelar",
     "ajustes.descongelar.ayuda": "Cada noite ás 21:30, unha notificación para revisar as comidas de mañá por se tes que desconxelar algo ou mercar. Usa o mesmo permiso de notificacións que o recordatorio de pesaxe; no iPhone só chega coa app instalada.",
-    "ajustes.esteAparato.noLlegan": "Neste aparello non che chegan os avisos: cada aparello precisa o seu propio permiso de notificacións.",
+    "ajustes.esteAparato.noLlegan": "Neste dispositivo non che chegan os avisos: cada dispositivo precisa o seu propio permiso de notificacións.",
     "ajustes.esteAparato.recibirAqui": "Recibilos aquí",
-    "ajustes.esteAparato.bloqueados": "Neste aparello non che chegan os avisos: o navegador ten bloqueadas as notificacións de FoodDraft. Para recibilos aquí, permíteas nos axustes do navegador (ou do teléfono, se tes a app instalada) e volve abrir a app.",
+    "ajustes.esteAparato.bloqueados": "Neste dispositivo non che chegan os avisos: o navegador ten bloqueadas as notificacións de FoodDraft. Para recibilos aquí, permíteas nos axustes do navegador (ou do teléfono, se tes a app instalada) e volve abrir a app.",
 
     "queCocino.intro": "Dinos que tes —a túa despensa, unha foto ou unha lista— e propoñémosche receitas con ingredientes e pasos.",
     "queCocino.modo.conLoQueTengo": "Co que teño",
