@@ -138,21 +138,28 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
     estado: typeof window.estadoAvisosEsteAparato === "function" ? window.estadoAvisosEsteAparato() : "sin-soporte",
   });
 
+  // Apunta este aparato en el buzón ya, con los interruptores que se le pasan, en cuanto el permiso está concedido.
+  // Hace falta porque el efecto de app.jsx solo se lanza si cambia el perfil: con «Recibirlos aquí», o al pulsar
+  // «Activadas» en un aviso que ya lo estaba (en un aparato sin permiso es lo que más de uno haría), el perfil no
+  // cambia, el aviso de este aparato desaparece porque ya hay permiso, y sin esto el aparato no se apuntaba hasta la
+  // siguiente apertura. Si el perfil sí cambia, el efecto la llama otra vez detrás y no escribe nada (la firma ya
+  // está al día). Sin esperar: sin conexión la escritura queda en cola y el botón no debe quedarse «pidiendo…» por
+  // eso (si no llega, se repite la próxima vez que se abra la app). Con los datos de pesaje, como el efecto de
+  // app.jsx (si faltaran, el buzón diría «sin seguimiento» y el recordatorio no llegaría).
+  function apuntarEsteAparato({ pesaje, descongelar }) {
+    if (typeof window.sincronizarBuzonAvisos !== "function") return;
+    window.sincronizarBuzonAvisos({
+      idioma, pesaje, descongelar,
+      ...datosPesajeBuzon({ pesaje, pesoTracking: data && data.pesoTracking }),
+    });
+  }
+
   async function recibirAqui() {
     setAparatoError("");
     setAparatoEstado("pidiendo");
     try {
       await window.requestPushPermission();
-      // Apunta este aparato ya, con los interruptores como están: el efecto de app.jsx no se vuelve a lanzar porque
-      // el perfil no cambia. Sin esperar: sin conexión la escritura queda en cola y el botón no debe quedarse
-      // «pidiendo…» por eso (si no llega, se repite la próxima vez que se abra la app). Con los datos de pesaje,
-      // como el efecto de app.jsx (si faltaran, el buzón diría «sin seguimiento» y el recordatorio no llegaría).
-      if (typeof window.sincronizarBuzonAvisos === "function") {
-        window.sincronizarBuzonAvisos({
-          idioma, pesaje: notifPush, descongelar: avisoDescongelar,
-          ...datosPesajeBuzon({ pesaje: notifPush, pesoTracking: data && data.pesoTracking }),
-        });
-      }
+      apuntarEsteAparato({ pesaje: notifPush, descongelar: avisoDescongelar });
       setAparatoEstado("");
     } catch (err) {
       setAparatoEstado("error");
@@ -172,6 +179,7 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
     try {
       await window.requestPushPermission();
       onSave({ ...perfil, avisoDescongelar: true });
+      apuntarEsteAparato({ pesaje: notifPush, descongelar: true });
       setDescongelarEstado("");
     } catch (err) {
       setDescongelarEstado("error");
@@ -199,6 +207,7 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
     try {
       await window.requestPushPermission();
       onSave({ ...perfil, notificacionesPush: true });
+      apuntarEsteAparato({ pesaje: true, descongelar: avisoDescongelar });
       setNotifEstado("");
     } catch (err) {
       setNotifEstado("error");
