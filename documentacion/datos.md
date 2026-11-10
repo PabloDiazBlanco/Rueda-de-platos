@@ -180,13 +180,16 @@ El libro de firmas de la cuenta (auditoría de noviembre de 2026, etapa 2: conse
 salud, aceptación de los términos y edad mínima). Casi todo lo que guarda la app son datos de salud, y la única base
 legal que encaja es el consentimiento explícito (RGPD, art. 9.2.a), que hay que poder demostrar: quién, cuándo y a
 qué texto. Las decisiones, sin Firebase, en `logica/consentimientos.js`; la forma y los límites, en `firestore.rules`.
-La pantalla que lee y escribe las firmas («Antes de empezar», en `auth-bootstrap.jsx`) está en preparación: hasta
-entonces la app no escribe nada aquí.
+Las lee y las escribe `auth-bootstrap.jsx` (`asegurarConsentimientos`) al entrar, antes de montar la app; si falta
+alguna, enseña «Antes de empezar» (`ui/onboarding/antes-de-empezar.jsx`) con solo lo que falte (`arquitectura.md`,
+«Cuentas»). Las 20 cuentas de antes la ven una vez, como las nuevas.
 
 - **Tres firmas, un documento cada una**:
   - `edad`: `{ tipo: "edad", anioNacimiento, fecha }`, más `cumplidosEsteAnio: true` solo cuando el año no basta
     (quien cumple 18 este año puede tener aún 17: la app lo pregunta y esto es la prueba de que lo hizo). Una sola
-    vez por cuenta. El asistente de perfil reutiliza ese año (`anioDeclarado`).
+    vez por cuenta. El asistente de perfil reutiliza ese año (`anioDeclarado`) y no lo pregunta; Perfil parte de él
+    si el perfil no tiene año (quien se saltó el asistente) y no deja guardar un año de menos de 18
+    (`rangoAnioNacimiento`, con el año de hoy).
   - `terminos-AAAA-MM-DD` y `salud-AAAA-MM-DD`: `{ tipo, version, fecha }`. La versión del texto aceptado va en el
     nombre del documento.
 - **Edad mínima: 18 años** (`EDAD_MINIMA`; hasta 120, `EDAD_MAXIMA`). Las reglas la comprueban con el año del
@@ -204,8 +207,11 @@ entonces la app no escribe nada aquí.
   cualquier versión con forma `AAAA-MM-DD` (no una lista), para que subirla no obligue a publicar también las reglas;
   una prueba de las reglas comprueba que las de la app tienen esa forma. Un **tipo** nuevo (el de estudios, cuando haya
   un estudio concreto) sí va en las reglas y se publica antes de subir la app.
-- **Retirar el consentimiento de salud equivale a eliminar la cuenta** (sin esos datos la app no funciona):
-  «Eliminar cuenta» borra `users/{uid}` entero, firmas incluidas.
+- **Ajustes → «Privacidad»** (`ui/ajustes/privacidad.jsx`) enseña lo firmado, con su fecha (como número: día/mes/año;
+  en euskera, año/mes/día, `fechaDeFirma`) y su versión (`resumenFirmas`), y los enlaces a los términos y la política.
+- **Retirar el consentimiento de salud equivale a eliminar la cuenta** (sin esos datos la app no funciona): el botón
+  de «Privacidad» lo explica, ofrece descargar antes una copia de los datos y abre la misma ventana de «Eliminar
+  cuenta» de Ajustes, que borra `users/{uid}` entero, firmas incluidas. No hay un borrado aparte.
 - Una lectura de las firmas que falla no es «no ha firmado nada»: no se enseña la pantalla de firma, sino el error
   con «Reintentar», como en la carga de datos.
 - Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`) y decisiones de la app en `validacion/`

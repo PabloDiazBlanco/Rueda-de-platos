@@ -61,8 +61,10 @@ La app son tres **áreas** y una zona **común** sin área:
   pinta arriba la vuelta mientras se siga en esa pestaña. Hoy solo lo usa el gimnasio dibujado (Progreso,
   Historial, Rutinas y la ficha de un ejercicio).
 - **Cerrar sesión** (`ui/comun/cerrar-sesion.jsx`, con una confirmación breve) está en Ajustes y, en
-  pequeño arriba a la derecha, en la pantalla de alta (asistente de perfil y cuestionario), por si se ha
-  entrado con otra cuenta. Lo cierra `window.signOutUser` (`auth-bootstrap.jsx`).
+  pequeño arriba a la derecha, en las pantallas de antes de la app («Antes de empezar», asistente de perfil y
+  cuestionario), por si se ha entrado con otra cuenta. Lo cierra `window.signOutUser` (`auth-bootstrap.jsx`).
+- **«Antes de empezar»** (`ui/onboarding/antes-de-empezar.jsx`) no es una pantalla de `PANTALLAS`: la pinta
+  `auth-bootstrap.jsx` antes de montar la app, sin cabecera, barra ni menú (`arquitectura.md`, «Cuentas»).
 
 ## Capas (`z-index`)
 

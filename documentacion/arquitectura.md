@@ -56,6 +56,17 @@ Todo vive en `auth-bootstrap.jsx`, antes de cargar la interfaz: `WelcomeScreen` 
 modos (iniciar sesión, crear cuenta y recuperar la contraseña) y «Continuar con Google»; con sesión, o
 `VerificarCorreoScreen` o la app (`entrarEnLaApp`).
 
+`entrarEnLaApp`, en este orden: carga la interfaz (`cargarApp`, solo código); comprueba las firmas de
+consentimiento (`asegurarConsentimientos`) y, si falta alguna, enseña «Antes de empezar» y espera; solo después
+crea `window.storage`, copia los datos antiguos del navegador (`migrateLocalDataIfNeeded`) y monta la app. Así
+ningún dato de la cuenta se lee ni se guarda antes del consentimiento (`datos.md`, «Consentimientos»). La
+pantalla vive en `ui/onboarding/antes-de-empezar.jsx` y `app.jsx` la exporta (`PantallaAntesDeEmpezar`) para que
+`auth-bootstrap.jsx` la pinte con el mismo módulo de la interfaz, con su propio `Shell`. Si las firmas no se pueden
+leer, sale la pantalla de «Reintentar» de la carga de datos (`ErrorCarga`), no la de firma. Lo firmado queda en
+`window.consentimientos` (el año declarado lo usan el asistente de perfil y Perfil); se vacía al cambiar de cuenta.
+`window.authProvider` se pone antes de las firmas, porque «Antes de empezar» ofrece «Eliminar cuenta» a quien no
+llega a la edad mínima.
+
 - **Verificación estricta del email**: una cuenta de correo y contraseña sin verificar (`necesitaVerificar`) no
   entra en la app ni lee nada: ve `VerificarCorreoScreen` hasta abrir el enlace del correo. Las de Google
   llegan verificadas. Las reglas de Firestore exigen lo mismo (`datos.md`).
@@ -78,6 +89,10 @@ modos (iniciar sesión, crear cuenta y recuperar la contraseña) y «Continuar c
   idioma elegido. Remitente, asunto y textos son las plantillas de Firebase (consola → Authentication →
   Plantillas); el nombre que enseñan es el **nombre público del proyecto**, que se cambia en la consola
   (Configuración del proyecto → General), no en el código.
+- **Idioma de las pantallas de antes de abrir la app** (bienvenida, verificar el correo, «Antes de empezar»): el
+  guardado en el navegador (`fooddraft:idioma`, `leerIdiomaGuardado`), porque se pintan antes de leer el perfil.
+  `app.jsx` copia ahí `perfil.idioma` cada vez que lo lee, así que tras la primera apertura salen en el idioma del
+  perfil; antes solo se guardaba al elegirlo en la bienvenida o en Ajustes.
 - Los errores de Firebase se traducen en `traducirError` (`error.*`); uno sin traducir sale con su código
   (`error.generico`).
 - Los colores de estas pantallas van escritos a mano, no con las variables de tema: se pintan antes de que
@@ -184,7 +199,10 @@ consentimientos.js     las firmas de consentimiento y la edad mínima sin Fireba
                          cada texto, idsConsentimientos, consentimientosPendientes (qué falta por firmar),
                          evaluarAnioNacimiento y edadSuficiente (vale, preguntar si ya los ha cumplido, menor,
                          inválido), documentosAFirmar (el lote que se escribe), anioDeclarado (para el asistente
-                         de perfil) y rangoAnioNacimiento (límites del campo de Perfil con el año de hoy)
+                         de perfil), rangoAnioNacimiento (límites del campo de Perfil con el año de hoy) y
+                         resumenFirmas y fechaDeFirma (lo firmado, para Ajustes). Lo importan auth-bootstrap.jsx,
+                         app.jsx, ui/onboarding/antes-de-empezar.jsx, ui/perfil/campos.jsx,
+                         ui/perfil/perfil.jsx y ui/ajustes/privacidad.jsx
 ```
 
 ### Imports entre módulos de `logica/`
