@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import { NIVELES_ACTIVIDAD_LEGACY } from "objetivos";
 import { uid } from "comun";
 import { t } from "i18n";
+import { anioDeclarado } from "consentimientos";
 import { SectionIntro } from "../comun/tarjetas.jsx";
-import { DatosPersonalesFields, ActividadDiariaFields } from "./campos.jsx";
+import { DatosPersonalesFields, ActividadDiariaFields, anioNacimientoValido } from "./campos.jsx";
 import { MomentoEntrenoFields } from "./preentreno.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
@@ -15,12 +16,14 @@ import { FUENTE_TEXTO } from "../estilos.js";
 export function PerfilView({ perfil, onSave, idioma }) {
   const [nombre, setNombre] = useState(perfil?.nombre ?? "");
   const [sexo, setSexo] = useState(perfil?.sexo ?? "mujer");
-  const [anioNacimiento, setAnioNacimiento] = useState(perfil?.anioNacimiento ?? "");
+  // Quien se saltó el asistente de alta no tiene año en el perfil: se parte del que declaró en «Antes de empezar».
+  const [anioNacimiento, setAnioNacimiento] = useState(perfil?.anioNacimiento ?? anioDeclarado(window.consentimientos) ?? "");
   const [altura, setAltura] = useState(perfil?.altura ?? "");
   const [peso, setPeso] = useState(perfil?.peso ?? "");
   const [saved, setSaved] = useState(false);
 
-  const valid = anioNacimiento && altura && peso;
+  // El año tiene que ser de alguien con la edad mínima (etapa 2 de la auditoría, L18): antes valía cualquiera.
+  const valid = anioNacimientoValido(anioNacimiento) && altura && peso;
 
   function handleSave() {
     if (!valid) return;

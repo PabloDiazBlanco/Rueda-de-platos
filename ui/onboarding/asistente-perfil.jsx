@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { PRESETS_COMIDAS, repartoUniforme } from "objetivos";
 import { t, leerIdiomaGuardado } from "i18n";
-import { DatosPersonalesFields, EstiloVidaFields, EntrenamientosFields, ObjetivoFields } from "../perfil/campos.jsx";
+import { DatosPersonalesFields, EstiloVidaFields, EntrenamientosFields, ObjetivoFields, anioNacimientoValido } from "../perfil/campos.jsx";
 import { RepartoComidasFields } from "../perfil/reparto-comidas.jsx";
 import { MomentoEntrenoFields } from "../perfil/preentreno.jsx";
 import { ElegirAvatar } from "../comun/avatar.jsx";
@@ -16,11 +16,14 @@ import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 // asistente entero, como ya hacía antes.
 const ONBOARDING_PASOS = ["datos", "estiloVida", "entrenamientos", "objetivo", "reparto"];
 
-export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
+// `anioDeclarado`: el año de nacimiento de la pantalla «Antes de empezar» (auditoría de noviembre de 2026, etapa 2),
+// donde ya se comprobó la edad mínima. Con él, el primer paso no vuelve a preguntarlo. Sin él (no debería pasar: la
+// app no se monta sin esa firma), se pregunta aquí como antes.
+export function ProfileOnboarding({ onComplete, onSkip, idioma, anioDeclarado }) {
   const [paso, setPaso] = useState(0);
   const [nombre, setNombre] = useState("");
   const [sexo, setSexo] = useState("mujer");
-  const [anioNacimiento, setAnioNacimiento] = useState("");
+  const [anioNacimiento, setAnioNacimiento] = useState(anioDeclarado ? String(anioDeclarado) : "");
   const [altura, setAltura] = useState("");
   const [peso, setPeso] = useState("");
   const [palBase, setPalBase] = useState("escritorio");
@@ -43,7 +46,8 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
     setPesos(preset.pesosPorDefecto ? { ...preset.pesosPorDefecto } : repartoUniforme(preset.meals));
   }
 
-  const datosValidos = anioNacimiento && altura && peso;
+  // El año, además de estar, tiene que ser de alguien con la edad mínima (solo importa si se pregunta aquí).
+  const datosValidos = anioNacimientoValido(anioNacimiento) && altura && peso;
   const sumaPesos = presetActual.meals.reduce((s, m) => s + (Number(pesos[m]) || 0), 0);
   const repartoValido = sumaPesos === 100;
   const puedeAvanzar = paso === 0 ? datosValidos : paso === 4 ? repartoValido : true;
@@ -102,6 +106,7 @@ export function ProfileOnboarding({ onComplete, onSkip, idioma }) {
             nombre={nombre} setNombre={setNombre}
             sexo={sexo} setSexo={setSexo}
             anioNacimiento={anioNacimiento} setAnioNacimiento={setAnioNacimiento}
+            mostrarAnio={!anioDeclarado}
             altura={altura} setAltura={setAltura}
             peso={peso} setPeso={setPeso}
             idioma={idioma}

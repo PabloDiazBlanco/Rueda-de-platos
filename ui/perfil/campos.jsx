@@ -6,6 +6,7 @@ import { Plus, Trash2, Calculator } from "lucide-react";
 import { PAL_BASE_NIVELES, TIPOS_ENTRENAMIENTO, OBJETIVO_ETAPAS, calcularObjetivosPerfil } from "objetivos";
 import { uid } from "comun";
 import { t } from "i18n";
+import { evaluarAnioNacimiento, rangoAnioNacimiento } from "consentimientos";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
@@ -18,7 +19,17 @@ import { FUENTE_TEXTO } from "../estilos.js";
 // la nueva Actividad diaria (ver ActividadDiariaFields, más abajo) puedan ser pantallas distintas
 // sin duplicar código; ProfileOnboarding sigue usando las dos juntas, en el mismo orden de
 // siempre, así que el alta de un usuario nuevo no cambia todavía (eso es cosa de una tanda futura).
-export function DatosPersonalesFields({ nombre, setNombre, sexo, setSexo, anioNacimiento, setAnioNacimiento, altura, setAltura, peso, setPeso, idioma }) {
+// El año de nacimiento (auditoría de noviembre de 2026, etapa 2, L18): sus límites salen del año de hoy y de la edad
+// mínima (rangoAnioNacimiento), no de números fijos (eran 1926 y 2012, que con los años dejaban pasar a menores), y un
+// año fuera de ellos se dice aquí mismo; quien usa este campo no deja guardar con él (anioNacimientoValido). El
+// asistente de alta no lo enseña (`mostrarAnio`): el año ya se declaró en «Antes de empezar».
+export function anioNacimientoValido(anioNacimiento) {
+  return ["valido", "confirmar"].includes(evaluarAnioNacimiento(anioNacimiento, new Date().getFullYear()).estado);
+}
+
+export function DatosPersonalesFields({ nombre, setNombre, sexo, setSexo, anioNacimiento, setAnioNacimiento, mostrarAnio = true, altura, setAltura, peso, setPeso, idioma }) {
+  const rango = rangoAnioNacimiento(new Date().getFullYear());
+  const anioMal = mostrarAnio && String(anioNacimiento ?? "").trim() !== "" && !anioNacimientoValido(anioNacimiento);
   return (
     <>
       <Field label={t(idioma, "campo.nombre")}>
@@ -44,10 +55,12 @@ export function DatosPersonalesFields({ nombre, setNombre, sexo, setSexo, anioNa
         </div>
       </Field>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-        <Field label={t(idioma, "campo.anioNacimiento")}>
-          <input type="number" min={1926} max={2012} value={anioNacimiento} onChange={(e) => setAnioNacimiento(e.target.value)} style={inputStyle} placeholder={t(idioma, "campo.anioNacimiento.placeholder")} />
-        </Field>
+      <div style={{ display: "grid", gridTemplateColumns: mostrarAnio ? "1fr 1fr 1fr" : "1fr 1fr", gap: 10 }}>
+        {mostrarAnio && (
+          <Field label={t(idioma, "campo.anioNacimiento")}>
+            <input type="number" min={rango.min} max={rango.max} value={anioNacimiento} onChange={(e) => setAnioNacimiento(e.target.value)} style={inputStyle} placeholder={t(idioma, "campo.anioNacimiento.placeholder")} />
+          </Field>
+        )}
         <Field label={t(idioma, "campo.altura")}>
           <input type="number" min={100} max={230} value={altura} onChange={(e) => setAltura(e.target.value)} style={inputStyle} placeholder="cm" />
         </Field>
@@ -55,6 +68,11 @@ export function DatosPersonalesFields({ nombre, setNombre, sexo, setSexo, anioNa
           <input type="number" min={30} max={250} step="0.1" value={peso} onChange={(e) => setPeso(e.target.value)} style={inputStyle} placeholder="kg" />
         </Field>
       </div>
+      {anioMal && (
+        <div role="alert" style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--rust)", marginTop: -4 }}>
+          {t(idioma, "perfilView.anioFueraDeRango", { min: rango.min, max: rango.max })}
+        </div>
+      )}
     </>
   );
 }

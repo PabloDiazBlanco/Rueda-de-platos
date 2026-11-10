@@ -142,6 +142,29 @@ export function anioDeclarado(registro) {
   return Number.isInteger(anio) ? anio : null;
 }
 
+// Lo firmado, para enseñarlo en Ajustes («Privacidad»): qué, cuándo y qué versión. `fecha` llega de Firestore como un
+// Timestamp (con `toDate`); aquí se convierte en Date, o `null` si falta o no lo es (una firma recién escrita sin
+// releer, por ejemplo). Lo que no esté firmado sale como `null` entero.
+export function resumenFirmas(registro) {
+  const leido = registro && typeof registro === "object" ? registro : {};
+  const fechaDe = (firma) => (firma && firma.fecha && typeof firma.fecha.toDate === "function" ? firma.fecha.toDate() : null);
+  const conVersion = (firma) => (firma && typeof firma === "object" ? { version: typeof firma.version === "string" ? firma.version : null, fecha: fechaDe(firma) } : null);
+  return {
+    edad: leido.edad && typeof leido.edad === "object" ? { anio: anioDeclarado(leido), fecha: fechaDe(leido.edad) } : null,
+    terminos: conVersion(leido.terminos),
+    salud: conVersion(leido.salud),
+  };
+}
+
+// Una fecha como número, sin depender de que el navegador traiga el formato de cada idioma (gallego y euskera no
+// siempre están): día/mes/año, y en euskera año/mes/día, que es su orden. Es un registro, no un texto bonito.
+export function fechaDeFirma(fecha, idioma) {
+  if (!(fecha instanceof Date) || isNaN(fecha.getTime())) return null;
+  const dos = (n) => String(n).padStart(2, "0");
+  const [d, m, a] = [dos(fecha.getDate()), dos(fecha.getMonth() + 1), fecha.getFullYear()];
+  return idioma === "eu" ? `${a}/${m}/${d}` : `${d}/${m}/${a}`;
+}
+
 // Límites del campo «Año de nacimiento» de Perfil, calculados con el año de hoy y no con números fijos (antes eran
 // 1926 y 2012, que con los años dejaban pasar a menores). El máximo admite a quien cumple EDAD_MINIMA este año:
 // eso ya se le preguntó en la pantalla «Antes de empezar».

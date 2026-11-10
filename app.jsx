@@ -10,8 +10,9 @@ import { calcularObjetivosPerfil } from "objetivos";
 import { fechaISO, esDiaSugeridoPeso, esCambioRadical, calcularTendenciaPeso, evaluarTendencia } from "peso";
 import { resumenNutrientesSemana } from "salud-publica";
 import { calcularResumenMensual, pesoEnMes } from "resumen-mensual";
-import { t } from "i18n";
+import { t, guardarIdiomaLocal } from "i18n";
 import { datosPesajeBuzon } from "buzon-avisos";
+import { anioDeclarado } from "consentimientos";
 import { useDatos, usePremium, useCargaInicial } from "./ui/estado/datos.js";
 import { useMenu, useComidasCompletadas, MENU_COMPLETO, MENU_SIMPLE } from "./ui/estado/menu.js";
 import { useCatalogo } from "./ui/estado/catalogo.js";
@@ -24,6 +25,7 @@ import { Shell, Header } from "./ui/marco/cabecera.jsx";
 import { DrawerMenu } from "./ui/marco/menu-lateral.jsx";
 import { BarraInferior, RELLENO_BARRA } from "./ui/marco/barra-inferior.jsx";
 import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
+import { PantallaAntesDeEmpezar } from "./ui/onboarding/antes-de-empezar.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
 import { BotonCerrarSesionAlta } from "./ui/comun/cerrar-sesion.jsx";
 import { ErrorCarga } from "./ui/comun/error-carga.jsx";
@@ -42,6 +44,10 @@ export { resumenNutrientesSemana };
 export { calcularResumenMensual, pesoEnMes };
 // Y la descripción de la navegación por áreas, para el grupo «Navegación por áreas».
 export { AREAS, COMUNES, areaDe, pestanaDe, DESTINOS };
+// La pantalla «Antes de empezar» (consentimientos y edad mínima): la pinta auth-bootstrap.jsx antes de montar este
+// componente, con el mismo módulo de la interfaz que ya ha cargado (cargador-ui.js solo devuelve lo que exporta
+// app.jsx). Mientras falte alguna firma, la app no se monta y no lee ni guarda nada.
+export { PantallaAntesDeEmpezar };
 
 // ---------- Componente principal ----------
 // Última pantalla visitada de cada área ({ fooddraft: "despensa", cuerpo: "perfil-peso", ... }), para que
@@ -115,6 +121,13 @@ export default function RuedaDePlatos() {
   // <html lang> con el idioma de la interfaz (el de index.html es fijo, «es»): lo usan los lectores de pantalla,
   // la partición de palabras y el traductor del navegador.
   useEffect(() => { document.documentElement.lang = idioma; }, [idioma]);
+  // El idioma del perfil, también en el navegador (`fooddraft:idioma`): las pantallas de antes de abrir la app
+  // (bienvenida tras cerrar sesión, verificar el correo, «Antes de empezar») se pintan antes de leer el perfil y solo
+  // conocen ese. Antes solo se guardaba al elegirlo en la bienvenida o en Ajustes, así que con el perfil en español y
+  // la bienvenida en inglés, «Antes de empezar» salía en inglés (prueba de la etapa 2 de la auditoría). Solo con un
+  // perfil leído y con idioma: el de reserva ya es el guardado.
+  const idiomaDelPerfil = data && data.perfil && data.perfil.idioma;
+  useEffect(() => { if (idiomaDelPerfil) guardarIdiomaLocal(idiomaDelPerfil); }, [idiomaDelPerfil]);
   const menuCompleto = useMenu(MENU_COMPLETO, data, setData);
   const menuSimple = useMenu(MENU_SIMPLE, data, setData);
   const toggleComidaCompletada = useComidasCompletadas(setData);
@@ -185,7 +198,12 @@ export default function RuedaDePlatos() {
       return (
         <Shell>
           <BotonCerrarSesionAlta idioma={idiomaFallback} />
-          <ProfileOnboarding onComplete={perfil.guardarPerfilInicial} onSkip={perfil.skipPerfil} idioma={idiomaFallback} />
+          {/* El año de nacimiento ya se declaró en «Antes de empezar» (window.consentimientos, auth-bootstrap.jsx):
+              el asistente lo usa y no lo vuelve a preguntar. */}
+          <ProfileOnboarding
+            onComplete={perfil.guardarPerfilInicial} onSkip={perfil.skipPerfil} idioma={idiomaFallback}
+            anioDeclarado={anioDeclarado(window.consentimientos)}
+          />
         </Shell>
       );
     }

@@ -32,10 +32,11 @@ export function detectarIdiomaNavegador() {
   return IDIOMAS_DISPONIBLES.some((i) => i.key === base) ? base : DEFAULT_IDIOMA;
 }
 
-// Idioma elegido (o recordado de la última vez) para las pantallas de antes de iniciar sesión
-// (bienvenida, login, carga), que no tienen acceso todavía al perfil guardado en Firestore.
-// Una vez dentro de la app con sesión iniciada, perfil.idioma manda de verdad — esto es solo
-// el punto de partida y lo que se recuerda tras cerrar sesión.
+// Idioma elegido (o recordado de la última vez) para las pantallas de antes de abrir la app
+// (bienvenida, login, carga, verificar el correo, «Antes de empezar»), que no tienen acceso todavía al
+// perfil guardado en Firestore. Una vez dentro de la app con sesión iniciada, perfil.idioma manda de
+// verdad, y app.jsx lo copia aquí cada vez que lo lee: así lo que se recuerda tras cerrar sesión es el
+// idioma del perfil.
 export function leerIdiomaGuardado() {
   try {
     const guardado = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -92,6 +93,38 @@ const TEXTOS = {
     "verificar.enviado": "Correo enviado. Puede tardar un par de minutos en llegar.",
     "verificar.todaviaNo": "Todavía no consta como verificado. Abre el enlace del correo y vuelve a probar.",
     "verificar.cerrarSesion": "Cerrar sesión",
+
+    // «Antes de empezar»: consentimientos y edad mínima (ui/onboarding/antes-de-empezar.jsx). El texto de salud es el
+    // que se firma (VERSIONES.salud de logica/consentimientos.js): si cambia de fondo, sube su versión.
+    "antesDeEmpezar.titulo": "Antes de empezar",
+    "antesDeEmpezar.introNueva": "Antes de guardar nada, necesitamos saber tu año de nacimiento y que aceptes cómo tratamos tus datos.",
+    "antesDeEmpezar.introActualizada": "Hemos actualizado algunos textos legales. Léelos y acéptalos para seguir usando FoodDraft.",
+    "antesDeEmpezar.edad.ayuda": "FoodDraft es para mayores de {edad} años. Usaremos este año también en tu perfil, para calcular tus objetivos.",
+    "antesDeEmpezar.edad.invalido": "Escribe el año con cuatro cifras, por ejemplo 1995.",
+    "antesDeEmpezar.edad.yaCumplidos": "Ya he cumplido {edad} años",
+    "antesDeEmpezar.menor.titulo": "FoodDraft es solo para mayores de {edad} años",
+    "antesDeEmpezar.menor.texto": "La app calcula déficits de calorías y sigue el peso, y eso no es adecuado para menores sin la supervisión de un profesional. Puedes cerrar sesión o eliminar la cuenta.",
+    "antesDeEmpezar.terminos.titulo": "Términos y privacidad",
+    "antesDeEmpezar.terminos.casilla": "He leído y acepto los términos de uso y la política de privacidad.",
+    "antesDeEmpezar.salud.titulo": "Tus datos de salud",
+    "antesDeEmpezar.salud.que": "Para calcular tus objetivos y seguir tu progreso, FoodDraft guarda datos de salud: tu peso, altura, edad y sexo, tu objetivo, lo que comes, tus entrenos, tu sueño y tus pasos. El período, si lo usas, se queda solo en este dispositivo.",
+    "antesDeEmpezar.salud.uso": "Solo se usan para darte el servicio: no se venden ni se usan para publicidad. Puedes retirar este consentimiento cuando quieras en Ajustes; como sin estos datos la app no puede funcionar, retirarlo supone eliminar tu cuenta.",
+    "antesDeEmpezar.salud.casilla": "Doy mi consentimiento explícito para que FoodDraft trate mis datos de salud con esta finalidad.",
+    "antesDeEmpezar.continuar": "Continuar",
+    "antesDeEmpezar.guardando": "Guardando…",
+    "antesDeEmpezar.errorGuardar": "No se ha podido guardar. Comprueba la conexión y vuelve a intentarlo.",
+    "perfilView.anioFueraDeRango": "Escribe un año entre {min} y {max}.",
+    // Ajustes → Privacidad (ui/ajustes/privacidad.jsx): lo firmado y retirar el consentimiento de salud.
+    "ajustes.privacidad.titulo": "Privacidad",
+    "ajustes.privacidad.intro": "Lo que aceptaste para usar FoodDraft, y cuándo.",
+    "ajustes.privacidad.edad": "Año de nacimiento declarado el {fecha}: {anio}.",
+    "ajustes.privacidad.terminos": "Términos de uso y política de privacidad aceptados el {fecha} (versión {version}).",
+    "ajustes.privacidad.salud": "Consentimiento explícito para tus datos de salud dado el {fecha} (versión {version}).",
+    "ajustes.privacidad.sinDato": "No se han podido leer tus consentimientos. Vuelve a abrir la app para verlos.",
+    "ajustes.privacidad.retirar": "Retirar el consentimiento de salud",
+    "ajustes.privacidad.retirarTexto": "FoodDraft no puede funcionar sin tus datos de salud: con ellos calcula tus objetivos, prepara tus menús y lleva tu peso y tu entreno. Por eso, retirar el consentimiento supone eliminar tu cuenta y todos sus datos, y no se puede deshacer.",
+    "ajustes.privacidad.retirarCopia": "Si quieres conservar tus datos, descarga antes una copia.",
+    "ajustes.privacidad.retirarSeguir": "Seguir y eliminar la cuenta",
 
     "loading.cargando": "Cargando…",
 
@@ -2029,6 +2062,35 @@ const TEXTOS = {
     "verificar.todaviaNo": "It doesn't show as verified yet. Open the link in the email and try again.",
     "verificar.cerrarSesion": "Sign out",
 
+    "antesDeEmpezar.titulo": "Before you start",
+    "antesDeEmpezar.introNueva": "Before we save anything, we need your year of birth and your agreement to how we handle your data.",
+    "antesDeEmpezar.introActualizada": "We've updated some legal texts. Read and accept them to keep using FoodDraft.",
+    "antesDeEmpezar.edad.ayuda": "FoodDraft is for people aged {edad} and over. We'll also use this year in your profile to calculate your targets.",
+    "antesDeEmpezar.edad.invalido": "Enter the year with four digits, for example 1995.",
+    "antesDeEmpezar.edad.yaCumplidos": "I've already turned {edad}",
+    "antesDeEmpezar.menor.titulo": "FoodDraft is only for people aged {edad} and over",
+    "antesDeEmpezar.menor.texto": "The app calculates calorie deficits and tracks weight, which isn't suitable for minors without professional supervision. You can sign out or delete the account.",
+    "antesDeEmpezar.terminos.titulo": "Terms and privacy",
+    "antesDeEmpezar.terminos.casilla": "I have read and accept the terms of use and the privacy policy.",
+    "antesDeEmpezar.salud.titulo": "Your health data",
+    "antesDeEmpezar.salud.que": "To calculate your targets and track your progress, FoodDraft stores health data: your weight, height, age and sex, your goal, what you eat, your workouts, your sleep and your steps. Your period, if you use it, stays on this device only.",
+    "antesDeEmpezar.salud.uso": "It's only used to provide the service: it isn't sold or used for advertising. You can withdraw this consent at any time in Settings; since the app can't work without this data, withdrawing it means deleting your account.",
+    "antesDeEmpezar.salud.casilla": "I give my explicit consent for FoodDraft to process my health data for this purpose.",
+    "antesDeEmpezar.continuar": "Continue",
+    "antesDeEmpezar.guardando": "Saving…",
+    "antesDeEmpezar.errorGuardar": "It couldn't be saved. Check your connection and try again.",
+    "perfilView.anioFueraDeRango": "Enter a year between {min} and {max}.",
+    "ajustes.privacidad.titulo": "Privacy",
+    "ajustes.privacidad.intro": "What you agreed to in order to use FoodDraft, and when.",
+    "ajustes.privacidad.edad": "Year of birth declared on {fecha}: {anio}.",
+    "ajustes.privacidad.terminos": "Terms of use and privacy policy accepted on {fecha} (version {version}).",
+    "ajustes.privacidad.salud": "Explicit consent for your health data given on {fecha} (version {version}).",
+    "ajustes.privacidad.sinDato": "Your consents couldn't be read. Open the app again to see them.",
+    "ajustes.privacidad.retirar": "Withdraw consent for health data",
+    "ajustes.privacidad.retirarTexto": "FoodDraft can't work without your health data: it uses it to calculate your targets, plan your menus and track your weight and workouts. That's why withdrawing consent means deleting your account and all its data, and it can't be undone.",
+    "ajustes.privacidad.retirarCopia": "If you want to keep your data, download a copy first.",
+    "ajustes.privacidad.retirarSeguir": "Continue and delete the account",
+
     "loading.cargando": "Loading…",
 
     "error.emailInvalido": "That email isn't valid.",
@@ -3957,6 +4019,35 @@ const TEXTOS = {
     "verificar.enviado": "Correu enviat. Pot trigar un parell de minuts a arribar.",
     "verificar.todaviaNo": "Encara no consta com a verificat. Obre l'enllaç del correu i torna-ho a provar.",
     "verificar.cerrarSesion": "Tanca la sessió",
+
+    "antesDeEmpezar.titulo": "Abans de començar",
+    "antesDeEmpezar.introNueva": "Abans de desar res, necessitem saber el teu any de naixement i que acceptis com tractem les teves dades.",
+    "antesDeEmpezar.introActualizada": "Hem actualitzat alguns textos legals. Llegeix-los i accepta'ls per continuar fent servir FoodDraft.",
+    "antesDeEmpezar.edad.ayuda": "FoodDraft és per a majors de {edad} anys. També farem servir aquest any al teu perfil, per calcular els teus objectius.",
+    "antesDeEmpezar.edad.invalido": "Escriu l'any amb quatre xifres, per exemple 1995.",
+    "antesDeEmpezar.edad.yaCumplidos": "Ja he fet {edad} anys",
+    "antesDeEmpezar.menor.titulo": "FoodDraft és només per a majors de {edad} anys",
+    "antesDeEmpezar.menor.texto": "L'app calcula dèficits de calories i fa el seguiment del pes, i això no és adequat per a menors sense la supervisió d'un professional. Pots tancar la sessió o eliminar el compte.",
+    "antesDeEmpezar.terminos.titulo": "Termes i privacitat",
+    "antesDeEmpezar.terminos.casilla": "He llegit i accepto els termes d'ús i la política de privacitat.",
+    "antesDeEmpezar.salud.titulo": "Les teves dades de salut",
+    "antesDeEmpezar.salud.que": "Per calcular els teus objectius i fer el seguiment del teu progrés, FoodDraft desa dades de salut: el teu pes, alçada, edat i sexe, el teu objectiu, el que menges, els teus entrenaments, el teu son i les teves passes. El període, si el fas servir, es queda només en aquest dispositiu.",
+    "antesDeEmpezar.salud.uso": "Només es fan servir per oferir-te el servei: no es venen ni es fan servir per a publicitat. Pots retirar aquest consentiment quan vulguis a Ajustos; com que sense aquestes dades l'app no pot funcionar, retirar-lo suposa eliminar el teu compte.",
+    "antesDeEmpezar.salud.casilla": "Dono el meu consentiment explícit perquè FoodDraft tracti les meves dades de salut amb aquesta finalitat.",
+    "antesDeEmpezar.continuar": "Continua",
+    "antesDeEmpezar.guardando": "S'està desant…",
+    "antesDeEmpezar.errorGuardar": "No s'ha pogut desar. Comprova la connexió i torna-ho a provar.",
+    "perfilView.anioFueraDeRango": "Escriu un any entre {min} i {max}.",
+    "ajustes.privacidad.titulo": "Privacitat",
+    "ajustes.privacidad.intro": "El que vas acceptar per fer servir FoodDraft, i quan.",
+    "ajustes.privacidad.edad": "Any de naixement declarat el {fecha}: {anio}.",
+    "ajustes.privacidad.terminos": "Termes d'ús i política de privacitat acceptats el {fecha} (versió {version}).",
+    "ajustes.privacidad.salud": "Consentiment explícit per a les teves dades de salut donat el {fecha} (versió {version}).",
+    "ajustes.privacidad.sinDato": "No s'han pogut llegir els teus consentiments. Torna a obrir l'app per veure'ls.",
+    "ajustes.privacidad.retirar": "Retira el consentiment de salut",
+    "ajustes.privacidad.retirarTexto": "FoodDraft no pot funcionar sense les teves dades de salut: amb elles calcula els teus objectius, prepara els teus menús i porta el teu pes i el teu entrenament. Per això, retirar el consentiment suposa eliminar el teu compte i totes les seves dades, i no es pot desfer.",
+    "ajustes.privacidad.retirarCopia": "Si vols conservar les teves dades, descarrega'n abans una còpia.",
+    "ajustes.privacidad.retirarSeguir": "Continua i elimina el compte",
 
     "loading.cargando": "Carregant…",
 
@@ -5887,6 +5978,35 @@ const TEXTOS = {
     "verificar.todaviaNo": "Aínda non consta como verificado. Abre a ligazón do correo e téntao de novo.",
     "verificar.cerrarSesion": "Pechar sesión",
 
+    "antesDeEmpezar.titulo": "Antes de comezar",
+    "antesDeEmpezar.introNueva": "Antes de gardar nada, necesitamos saber o teu ano de nacemento e que aceptes como tratamos os teus datos.",
+    "antesDeEmpezar.introActualizada": "Actualizamos algúns textos legais. Leos e acéptaos para seguir usando FoodDraft.",
+    "antesDeEmpezar.edad.ayuda": "FoodDraft é para maiores de {edad} anos. Tamén usaremos este ano no teu perfil, para calcular os teus obxectivos.",
+    "antesDeEmpezar.edad.invalido": "Escribe o ano con catro cifras, por exemplo 1995.",
+    "antesDeEmpezar.edad.yaCumplidos": "Xa cumprín {edad} anos",
+    "antesDeEmpezar.menor.titulo": "FoodDraft é só para maiores de {edad} anos",
+    "antesDeEmpezar.menor.texto": "A app calcula déficits de calorías e segue o peso, e iso non é axeitado para menores sen a supervisión dun profesional. Podes pechar a sesión ou eliminar a conta.",
+    "antesDeEmpezar.terminos.titulo": "Termos e privacidade",
+    "antesDeEmpezar.terminos.casilla": "Lin e acepto os termos de uso e a política de privacidade.",
+    "antesDeEmpezar.salud.titulo": "Os teus datos de saúde",
+    "antesDeEmpezar.salud.que": "Para calcular os teus obxectivos e seguir o teu progreso, FoodDraft garda datos de saúde: o teu peso, altura, idade e sexo, o teu obxectivo, o que comes, os teus adestramentos, o teu sono e os teus pasos. O período, se o usas, queda só neste dispositivo.",
+    "antesDeEmpezar.salud.uso": "Só se usan para darche o servizo: non se venden nin se usan para publicidade. Podes retirar este consentimento cando queiras en Axustes; como sen estes datos a app non pode funcionar, retiralo supón eliminar a túa conta.",
+    "antesDeEmpezar.salud.casilla": "Dou o meu consentimento explícito para que FoodDraft trate os meus datos de saúde con esta finalidade.",
+    "antesDeEmpezar.continuar": "Continuar",
+    "antesDeEmpezar.guardando": "Gardando…",
+    "antesDeEmpezar.errorGuardar": "Non se puido gardar. Comproba a conexión e téntao de novo.",
+    "perfilView.anioFueraDeRango": "Escribe un ano entre {min} e {max}.",
+    "ajustes.privacidad.titulo": "Privacidade",
+    "ajustes.privacidad.intro": "O que aceptaches para usar FoodDraft, e cando.",
+    "ajustes.privacidad.edad": "Ano de nacemento declarado o {fecha}: {anio}.",
+    "ajustes.privacidad.terminos": "Termos de uso e política de privacidade aceptados o {fecha} (versión {version}).",
+    "ajustes.privacidad.salud": "Consentimento explícito para os teus datos de saúde dado o {fecha} (versión {version}).",
+    "ajustes.privacidad.sinDato": "Non se puideron ler os teus consentimentos. Volve abrir a app para velos.",
+    "ajustes.privacidad.retirar": "Retirar o consentimento de saúde",
+    "ajustes.privacidad.retirarTexto": "FoodDraft non pode funcionar sen os teus datos de saúde: con eles calcula os teus obxectivos, prepara os teus menús e leva o teu peso e o teu adestramento. Por iso, retirar o consentimento supón eliminar a túa conta e todos os seus datos, e non se pode desfacer.",
+    "ajustes.privacidad.retirarCopia": "Se queres conservar os teus datos, descarga antes unha copia.",
+    "ajustes.privacidad.retirarSeguir": "Seguir e eliminar a conta",
+
     "loading.cargando": "Cargando…",
 
     "error.emailInvalido": "O correo electrónico non é válido.",
@@ -7815,6 +7935,35 @@ const TEXTOS = {
     "verificar.enviado": "Mezua bidali da. Minutu pare bat behar ditzake iristeko.",
     "verificar.todaviaNo": "Oraindik ez da egiaztatuta agertzen. Ireki mezuko esteka eta saiatu berriro.",
     "verificar.cerrarSesion": "Itxi saioa",
+
+    "antesDeEmpezar.titulo": "Hasi aurretik",
+    "antesDeEmpezar.introNueva": "Ezer gorde aurretik, zure jaiotze-urtea jakin behar dugu, eta zure datuak nola tratatzen ditugun onartzea.",
+    "antesDeEmpezar.introActualizada": "Lege-testu batzuk eguneratu ditugu. Irakurri eta onartu FoodDraft erabiltzen jarraitzeko.",
+    "antesDeEmpezar.edad.ayuda": "FoodDraft {edad} urte edo gehiago dituztenentzat da. Urte hau zure profilean ere erabiliko dugu, zure helburuak kalkulatzeko.",
+    "antesDeEmpezar.edad.invalido": "Idatzi urtea lau zifrarekin, adibidez 1995.",
+    "antesDeEmpezar.edad.yaCumplidos": "Dagoeneko {edad} urte bete ditut",
+    "antesDeEmpezar.menor.titulo": "FoodDraft {edad} urte edo gehiago dituztenentzat bakarrik da",
+    "antesDeEmpezar.menor.texto": "Aplikazioak kaloria-defizitak kalkulatzen ditu eta pisuaren jarraipena egiten du, eta hori ez da egokia adingabeentzat profesional baten gainbegiratzerik gabe. Saioa itxi edo kontua ezabatu dezakezu.",
+    "antesDeEmpezar.terminos.titulo": "Baldintzak eta pribatutasuna",
+    "antesDeEmpezar.terminos.casilla": "Erabilera-baldintzak eta pribatutasun-politika irakurri ditut eta onartzen ditut.",
+    "antesDeEmpezar.salud.titulo": "Zure osasun-datuak",
+    "antesDeEmpezar.salud.que": "Zure helburuak kalkulatzeko eta zure aurrerapenaren jarraipena egiteko, FoodDraft-ek osasun-datuak gordetzen ditu: zure pisua, altuera, adina eta sexua, zure helburua, jaten duzuna, zure entrenamenduak, zure loa eta zure urratsak. Hilekoa, erabiltzen baduzu, gailu honetan bakarrik geratzen da.",
+    "antesDeEmpezar.salud.uso": "Zerbitzua emateko bakarrik erabiltzen dira: ez dira saltzen, ezta publizitaterako erabiltzen ere. Baimen hau nahi duzunean kendu dezakezu Ezarpenetan; datu hauek gabe aplikazioak ezin duenez funtzionatu, baimena kentzeak zure kontua ezabatzea dakar.",
+    "antesDeEmpezar.salud.casilla": "Nire baimen esplizitua ematen dut FoodDraft-ek nire osasun-datuak helburu horretarako trata ditzan.",
+    "antesDeEmpezar.continuar": "Jarraitu",
+    "antesDeEmpezar.guardando": "Gordetzen…",
+    "antesDeEmpezar.errorGuardar": "Ezin izan da gorde. Egiaztatu konexioa eta saiatu berriro.",
+    "perfilView.anioFueraDeRango": "Idatzi {min} eta {max} arteko urte bat.",
+    "ajustes.privacidad.titulo": "Pribatutasuna",
+    "ajustes.privacidad.intro": "FoodDraft erabiltzeko onartu zenuena, eta noiz.",
+    "ajustes.privacidad.edad": "Jaiotze-urtea adierazita ({fecha}): {anio}.",
+    "ajustes.privacidad.terminos": "Erabilera-baldintzak eta pribatutasun-politika onartuta ({fecha}, {version} bertsioa).",
+    "ajustes.privacidad.salud": "Zure osasun-datuetarako baimen esplizitua emanda ({fecha}, {version} bertsioa).",
+    "ajustes.privacidad.sinDato": "Ezin izan dira zure baimenak irakurri. Ireki berriro aplikazioa ikusteko.",
+    "ajustes.privacidad.retirar": "Kendu osasun-datuetarako baimena",
+    "ajustes.privacidad.retirarTexto": "FoodDraft-ek ezin du funtzionatu zure osasun-datuak gabe: haiekin kalkulatzen ditu zure helburuak, prestatzen ditu zure menuak eta eramaten du zure pisuaren eta entrenamenduaren jarraipena. Horregatik, baimena kentzeak zure kontua eta haren datu guztiak ezabatzea dakar, eta ezin da desegin.",
+    "ajustes.privacidad.retirarCopia": "Zure datuak gorde nahi badituzu, deskargatu lehenago kopia bat.",
+    "ajustes.privacidad.retirarSeguir": "Jarraitu eta ezabatu kontua",
 
     "loading.cargando": "Kargatzen…",
 

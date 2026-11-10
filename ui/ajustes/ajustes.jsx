@@ -1,6 +1,6 @@
 // ---------- ui/ajustes/ajustes.jsx ----------
-// Ajustes: idioma, notificaciones, descarga de datos, repetir el cuestionario, los ajustes de entreno,
-// cerrar sesión y eliminar la cuenta.
+// Ajustes: idioma, notificaciones, descarga de datos, repetir el cuestionario, los ajustes de entreno, la
+// privacidad (lo firmado y retirar el consentimiento de salud), cerrar sesión y eliminar la cuenta.
 import React, { useState, useEffect, useRef } from "react";
 import { Download } from "lucide-react";
 import { descargarDatosJSON } from "peso";
@@ -13,13 +13,14 @@ import { TarjetaCerrarSesion } from "../comun/cerrar-sesion.jsx";
 import { SeccionAjustesEntreno } from "../entreno/ajustes.jsx";
 import { ElegirAvatar, avatarDePerfil } from "../comun/avatar.jsx";
 import { SeccionLicencias } from "./licencias.jsx";
+import { SeccionPrivacidad } from "./privacidad.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // Requiere reautenticación (contraseña, o pop-up de Google si la cuenta usa ese login) antes de
 // borrar nada — así window.deleteAccount (auth-bootstrap.jsx) nunca se encuentra a mitad de
 // camino con una sesión caducada. Escribir "ELIMINAR" es una segunda confirmación deliberadamente
 // más lenta que un simple clic, dado que la acción es irreversible.
-function DeleteAccountModal({ onClose, idioma }) {
+export function DeleteAccountModal({ onClose, idioma }) {
   const [password, setPassword] = useState("");
   const [confirmText, setConfirmText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -368,6 +369,10 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
           <SeccionAjustesEntreno entreno={entreno} idioma={idioma} />
         </div>
       )}
+
+      {/* Privacidad (etapa 2 de la auditoría): lo firmado en «Antes de empezar» y retirar el consentimiento de salud,
+          que lleva a la misma ventana de «Eliminar cuenta» de abajo. */}
+      <SeccionPrivacidad idioma={idioma} data={data} onEliminarCuenta={() => setShowDeleteAccount(true)} />
 
       {/* Licencias de terceros (26-oct-2026): al final, justo antes de cerrar sesión. */}
       <SeccionLicencias idioma={idioma} />

@@ -74,7 +74,7 @@ import {
 } from "buzon-avisos";
 import {
   EDAD_MINIMA, EDAD_MAXIMA, VERSIONES, TIPOS, idsConsentimientos, consentimientosPendientes, evaluarAnioNacimiento,
-  edadSuficiente, documentosAFirmar, anioDeclarado, rangoAnioNacimiento,
+  edadSuficiente, documentosAFirmar, anioDeclarado, rangoAnioNacimiento, resumenFirmas, fechaDeFirma,
 } from "consentimientos";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
@@ -1567,10 +1567,13 @@ function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
 // son lo que evita que una pantalla nueva se quede sin área, sin pestaña y sin entrada en el menú.
 
 // Prefijos de las claves de i18n creadas para la navegación por áreas y el módulo de entreno (anexo B
-// del plan): todas deben existir en los cinco idiomas, porque en pantalla una que falte no se nota.
+// del plan): todas deben existir en los cinco idiomas, porque en pantalla una que falte no se nota. También las de
+// «Antes de empezar» (consentimientos y edad mínima, etapa 2 de la auditoría): un texto legal que cae al español en
+// otro idioma no es un consentimiento informado.
 const PREFIJOS_NUEVOS = [
   "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
-  "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio", "fitdraft.",
+  "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio", "fitdraft.", "antesDeEmpezar.",
+  "perfilView.anioFueraDeRango", "ajustes.privacidad.",
 ];
 
 function clavesSinTraducir(claves) {
@@ -3941,6 +3944,36 @@ function grupoConsentimientos() {
             {
               declarado: 1990, sinRegistro: null, sinEdad: null, texto: null, decimal: null,
               min2026: 1906, max2026: 2008, min2030: 1910, max2030: 2012,
+            }
+          );
+        },
+      },
+      {
+        nombre: "Ajustes · Privacidad: lo firmado con su fecha (día/mes/año; en euskera, año/mes/día) y su versión",
+        ejecutar: () => {
+          // Un Timestamp de Firestore se parece a esto: un objeto con toDate(). 5 de enero de 2027, 9:30 (meses desde 0).
+          const ts = { toDate: () => new Date(2027, 0, 5, 9, 30) };
+          const r = resumenFirmas({
+            edad: { tipo: "edad", anioNacimiento: 1990, fecha: ts },
+            terminos: { tipo: "terminos", version: "2026-11-10", fecha: ts },
+            salud: { tipo: "salud", version: "2026-11-10", fecha: "2027-01-05" },
+          });
+          const vacio = resumenFirmas(null);
+          return comparar(
+            {
+              edadAnio: r.edad.anio, edadFecha: fechaDeFirma(r.edad.fecha, "es"),
+              terminosVersion: r.terminos.version, terminosFechaEu: fechaDeFirma(r.terminos.fecha, "eu"),
+              // Una fecha que no es un Timestamp no se inventa.
+              saludVersion: r.salud.version, saludFecha: r.salud.fecha,
+              sinRegistro: [vacio.edad, vacio.terminos, vacio.salud].join("|"),
+              fechaMala: fechaDeFirma(new Date("no"), "es"), fechaNula: fechaDeFirma(null, "es"),
+              // 31 de diciembre: día y mes con dos cifras.
+              finDeAnio: fechaDeFirma(new Date(2026, 11, 31), "gl"),
+            },
+            {
+              edadAnio: 1990, edadFecha: "05/01/2027", terminosVersion: "2026-11-10", terminosFechaEu: "2027/01/05",
+              saludVersion: "2026-11-10", saludFecha: null, sinRegistro: "||", fechaMala: null, fechaNula: null,
+              finDeAnio: "31/12/2026",
             }
           );
         },

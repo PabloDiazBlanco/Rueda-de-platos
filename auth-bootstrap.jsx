@@ -28,6 +28,7 @@ import {
   arrayUnion,
   arrayRemove,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
@@ -37,6 +38,7 @@ import {
   quiereAvisos, tokensConSitio, claveFirmaBuzon, claveTokenDeAntesBorrado, CLAVE_ESTRENAR_TOKEN, estadoDelPermiso,
   planSincronizacion, decidirBuzon, firmaAlQuitarAvisos, decidirAlSalir, camposBuzon,
 } from "buzon-avisos";
+import { TIPOS, idsConsentimientos, consentimientosPendientes, documentosAFirmar } from "consentimientos";
 import { cargarApp } from "cargador-ui";
 
 // Identificadores públicos de los proyectos de Firebase (no son claves secretas, es normal que
@@ -1377,22 +1379,112 @@ function loadMainApp() {
   return mainAppModulePromise;
 }
 
+// ---------- Antes de empezar: consentimientos y edad mínima (auditoría de noviembre de 2026, etapa 2) ----------
+// Casi todo lo que guarda la app son datos de salud, y para tratarlos hace falta un consentimiento explícito que se
+// pueda demostrar (RGPD, arts. 9.2.a y 7.1), además de aceptar los términos y tener 18 años (D2). Antes de montar la
+// app (y por tanto antes de leer o guardar ningún dato de la cuenta, y de copiar a la nube los datos antiguos del
+// navegador), se leen las firmas de `users/{uid}/consentimientos/`; si falta alguna, se enseña «Antes de empezar»
+// (ui/onboarding/antes-de-empezar.jsx) y se espera. Las decisiones, sin Firebase, en logica/consentimientos.js; la
+// forma y los límites de las firmas, en firestore.rules. Aquí solo se lee, se escribe y se cambia de pantalla.
+const refConsentimiento = (uid, id) => doc(db, "users", uid, "consentimientos", id);
+
+// Las tres firmas vigentes, por su nombre (las reglas no dejan listar): `{ edad, terminos, salud }`, cada una con su
+// contenido o `null` si no existe. Si una lectura falla, lanza: «no se ha podido leer» no es «no ha firmado».
+async function leerConsentimientos(uid) {
+  const ids = idsConsentimientos();
+  const registro = {};
+  await Promise.all(TIPOS.map(async (tipo) => {
+    const snap = await getDoc(refConsentimiento(uid, ids[tipo]));
+    registro[tipo] = snap.exists() ? snap.data() : null;
+  }));
+  return registro;
+}
+
+// Todas las firmas pendientes en un solo lote, con la hora del servidor (las reglas no aceptan otra): o se guardan
+// todas o ninguna. Si la edad no llega (no debería: la pantalla no deja seguir), no se escribe nada.
+async function firmarConsentimientos(uid, pendientes, { anio, cumplidosEsteAnio }) {
+  const documentos = documentosAFirmar({ pendientes, anio, cumplidosEsteAnio, anioActual: new Date().getFullYear() });
+  if (!documentos) throw new Error("La edad declarada no permite usar la app.");
+  const lote = writeBatch(db);
+  for (const [id, datos] of Object.entries(documentos)) lote.set(refConsentimiento(uid, id), { ...datos, fecha: serverTimestamp() });
+  await lote.commit();
+}
+
+// Sube con cada entrada o salida de una cuenta (onAuthStateChanged). Una lectura de firmas que termina cuando ya se ha
+// cerrado la sesión (o ha entrado otra cuenta) no pinta nada encima de la pantalla de ahora.
+let sesionArranque = 0;
+
+// Resuelve con las firmas de la cuenta cuando no falta ninguna; mientras tanto, enseña la pantalla y espera. `mod`
+// es el módulo de la interfaz (app.jsx), que trae la pantalla.
+function asegurarConsentimientos(user, mod) {
+  const sesion = sesionArranque;
+  const vigente = () => sesion === sesionArranque && esLaCuentaDeAhora(user.uid);
+  const idioma = leerIdiomaGuardado();
+  const pintar = (props) => root.render(React.createElement(mod.PantallaAntesDeEmpezar, { idioma, onReintentar: comprobar, ...props }));
+  let terminar;
+  const listo = new Promise((resolver) => { terminar = resolver; });
+
+  async function comprobar() {
+    let registro;
+    try {
+      registro = await leerConsentimientos(user.uid);
+    } catch (e) {
+      console.warn("No se han podido leer los consentimientos:", (e && (e.code || e.message)) || e);
+      if (vigente()) pintar({ error: "lectura" });
+      return;
+    }
+    if (!vigente()) return;
+    const pendientes = consentimientosPendientes(registro);
+    if (!pendientes.length) {
+      terminar(registro);
+      return;
+    }
+    pintar({ pendientes, onFirmar: (respuestas) => firmar(pendientes, respuestas) });
+  }
+
+  async function firmar(pendientes, respuestas) {
+    try {
+      await firmarConsentimientos(user.uid, pendientes, respuestas);
+    } catch (err) {
+      // Una firma que ya existe no se puede reescribir (las reglas solo dejan crear): si el lote llegó pero su
+      // respuesta no, o si otro aparato de la cuenta firmó a la vez, al repetirlo falla entero aunque ya esté todo
+      // firmado. Antes de dar el error se vuelve a leer.
+      const ahora = await leerConsentimientos(user.uid).catch(() => null);
+      if (!ahora || consentimientosPendientes(ahora).length) throw err;
+    }
+    // Se vuelve a leer lo firmado (con la hora que puso el servidor, para Ajustes) y, si está todo, se entra.
+    if (vigente()) await comprobar();
+  }
+
+  comprobar();
+  return listo;
+}
+
 async function entrarEnLaApp(user) {
-  window.storage = makeFirestoreStorage(user.uid);
+  // La interfaz se carga antes que nada (es solo código): trae la pantalla «Antes de empezar».
+  const mod = await loadMainApp();
+  if (!esLaCuentaDeAhora(user.uid)) return;
+  // Antes de las firmas: «Eliminar cuenta» también se ofrece en «Antes de empezar» (a quien no llega a la edad mínima)
+  // y necesita saber si pedir la contraseña o la ventana de Google.
   window.authProvider = user.providerData[0]?.providerId === "google.com" ? "google" : "password";
+  // Las firmas que vea la app (el año declarado para el asistente de perfil; las fechas, para Ajustes).
+  window.consentimientos = await asegurarConsentimientos(user, mod);
+  window.storage = makeFirestoreStorage(user.uid);
   // Identificador de la cuenta para lo que se guarda solo en el dispositivo y no debe ver otra cuenta que
   // inicie sesión en el mismo móvil (hoy, el período: ui/cuerpo/periodo.jsx).
   window.cuentaId = user.uid;
   await migrateLocalDataIfNeeded(user.uid);
   watchForFirstProfileCompletion(user.uid);
-  const mod = await loadMainApp();
   root.render(React.createElement(mod.default));
 }
 
 onAuthStateChanged(auth, async (user) => {
   // Se ha entrado o salido: empieza otra sesión del buzón de avisos, y lo que quede en su fila de la anterior ya no
-  // toca nada (sesionBuzon, sigueVigente).
+  // toca nada (sesionBuzon, sigueVigente). Lo mismo para la comprobación de las firmas (sesionArranque).
   sesionBuzon++;
+  sesionArranque++;
+  // Las firmas eran de la cuenta que había: la siguiente lee las suyas en «Antes de empezar».
+  window.consentimientos = null;
   if (!user) {
     root.render(React.createElement(LoggedOutFlow));
     return;
