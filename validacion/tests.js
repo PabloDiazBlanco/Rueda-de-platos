@@ -72,6 +72,10 @@ import {
   CLAVE_ESTRENAR_TOKEN, estadoDelPermiso, avisoEsteAparato, planSincronizacion, decidirBuzon, firmaAlQuitarAvisos,
   decidirAlSalir, datosPesajeBuzon, camposBuzon,
 } from "buzon-avisos";
+import {
+  EDAD_MINIMA, EDAD_MAXIMA, VERSIONES, TIPOS, idsConsentimientos, consentimientosPendientes, evaluarAnioNacimiento,
+  edadSuficiente, documentosAFirmar, anioDeclarado, rangoAnioNacimiento,
+} from "consentimientos";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1448,6 +1452,7 @@ export function crearGrupos(mod, carga) {
     grupoMapaCorporal(),
     grupoGimnasio(),
     grupoBuzonAvisos(),
+    grupoConsentimientos(),
   ];
 }
 
@@ -3781,6 +3786,161 @@ function grupoBuzonAvisos() {
               pausa: "escribir", pausaPausado: true, frecuencia: "escribir", cierra: "escribir", cierraFecha: null,
               apagadoSePesa: "nada", apagadoDatos: "|false|", enciende: "escribir", enciendeDatos: "3|false|2026-11-04",
               vieja: "escribir", despuesDeVieja: "nada", sinPermiso: "actualizarSinToken", sinPermisoFecha: "2026-11-06",
+            }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- Consentimientos y edad mínima (auditoría de noviembre de 2026, etapa 2: L1-L3, L18; D2) ----------
+// Qué decide la app, sin Firebase, sobre las firmas de `users/{uid}/consentimientos/` (logica/consentimientos.js).
+// Que las reglas acepten lo que la app escribe, con la misma edad mínima y la misma forma de versión, lo comprueban
+// las pruebas de las reglas (functions/pruebas-reglas/). Los años se calculan con un «año de hoy» fijo (2026) para
+// que los casos no envejezcan con el calendario; las cuentas, a mano: 2026 − 2007 = 19, 2026 − 2008 = 18, etc.
+function grupoConsentimientos() {
+  // Versiones fijas para los casos (las de la app cambiarán con los textos).
+  const V = { terminos: "2026-11-10", salud: "2026-11-10" };
+  const estados = (valores, anioActual = 2026) => valores.map((v) => evaluarAnioNacimiento(v, anioActual).estado).join(",");
+  return {
+    grupo: "Consentimientos y edad mínima",
+    casos: [
+      {
+        nombre: "Constantes: 18 años (D2), hasta 120, el orden edad → términos → salud y versiones AAAA-MM-DD (lo que exigen las reglas)",
+        ejecutar: () => comparar(
+          {
+            minima: EDAD_MINIMA, maxima: EDAD_MAXIMA, tipos: TIPOS.join(","),
+            versionTerminos: /^\d{4}-\d{2}-\d{2}$/.test(VERSIONES.terminos),
+            versionSalud: /^\d{4}-\d{2}-\d{2}$/.test(VERSIONES.salud),
+          },
+          { minima: 18, maxima: 120, tipos: "edad,terminos,salud", versionTerminos: true, versionSalud: true }
+        ),
+      },
+      {
+        nombre: "Año de nacimiento en 2026: 19 o más años vale; 18 justos, preguntar; menos, no; fuera de 1906-2026, inválido",
+        ejecutar: () => {
+          const r = evaluarAnioNacimiento(" 1990 ", 2026);
+          return comparar(
+            {
+              // 2026−2007 = 19 · 2026−2008 = 18 · 2026−2009 = 17 · 2026−2026 = 0 · 2027 es futuro.
+              bordes: estados([2007, 2008, 2009, 2026, 2027]),
+              // 2026−120 = 1906 todavía vale (120 años); 1905 ya no.
+              maxima: estados([1906, 1905]),
+              textoConEspacios: r.estado, anioComoNumero: r.anio,
+              vacios: estados(["", "   ", null, undefined]),
+              malos: estados(["19a0", "90", "1990.0", "01990", 1990.5, NaN, true, {}]),
+              anioDeMenor: evaluarAnioNacimiento(2009, 2026).anio, anioDeInvalido: evaluarAnioNacimiento("19a0", 2026).anio,
+              // El mismo año, un año después: 2027−2009 = 18 → preguntar; 2027−2008 = 19 → vale (se calcula con hoy).
+              unAnioDespues: estados([2009, 2008], 2027),
+            },
+            {
+              bordes: "valido,confirmar,menor,menor,invalido", maxima: "valido,invalido",
+              textoConEspacios: "valido", anioComoNumero: 1990, vacios: "vacio,vacio,vacio,vacio",
+              malos: "invalido,invalido,invalido,invalido,invalido,invalido,invalido,invalido",
+              anioDeMenor: 2009, anioDeInvalido: null, unAnioDespues: "confirmar,valido",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Puede seguir: con 19 o más siempre; con 18 justos solo si dice que ya los ha cumplido (un sí exacto)",
+        ejecutar: () => comparar(
+          {
+            valido: edadSuficiente("valido", undefined), confirmarSi: edadSuficiente("confirmar", true),
+            confirmarNo: edadSuficiente("confirmar", false), confirmarSinContestar: edadSuficiente("confirmar", undefined),
+            confirmarTexto: edadSuficiente("confirmar", "sí"), menor: edadSuficiente("menor", true),
+            invalido: edadSuficiente("invalido", true), vacio: edadSuficiente("vacio", true),
+          },
+          {
+            valido: true, confirmarSi: true, confirmarNo: false, confirmarSinContestar: false, confirmarTexto: false,
+            menor: false, invalido: false, vacio: false,
+          }
+        ),
+      },
+      {
+        nombre: "Qué falta por firmar: cuenta nueva, todo; cuenta al día, nada; términos nuevos, solo los términos",
+        ejecutar: () => {
+          const firmado = { edad: { tipo: "edad", anioNacimiento: 1990 }, terminos: { tipo: "terminos" }, salud: { tipo: "salud" } };
+          return comparar(
+            {
+              nueva: consentimientosPendientes({ edad: null, terminos: null, salud: null }).join(","),
+              alDia: consentimientosPendientes(firmado).join(","),
+              terminosNuevos: consentimientosPendientes({ ...firmado, terminos: null }).join(","),
+              sinRegistro: consentimientosPendientes(null).join(","),
+              registroVacio: consentimientosPendientes({}).join(","),
+              // Lo que no es un documento no cuenta como firma.
+              raros: consentimientosPendientes({ edad: true, terminos: "sí", salud: { tipo: "salud" } }).join(","),
+            },
+            {
+              nueva: "edad,terminos,salud", alDia: "", terminosNuevos: "terminos",
+              sinRegistro: "edad,terminos,salud", registroVacio: "edad,terminos,salud", raros: "edad,terminos",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Nombre de cada firma: «edad» sin versión; términos y salud con la suya",
+        ejecutar: () => {
+          const ids = idsConsentimientos({ terminos: "2026-11-10", salud: "2027-01-15" });
+          return comparar(
+            {
+              edad: ids.edad, terminos: ids.terminos, salud: ids.salud,
+              porDefecto: idsConsentimientos().salud === "salud-" + VERSIONES.salud,
+            },
+            { edad: "edad", terminos: "terminos-2026-11-10", salud: "salud-2027-01-15", porDefecto: true }
+          );
+        },
+      },
+      {
+        nombre: "Lo que se escribe: las firmas pendientes en un lote; nada si no llega a 18; con 18 justos, la prueba de que se preguntó",
+        ejecutar: () => {
+          const todo = ["edad", "terminos", "salud"];
+          const firmar = (cambios) => documentosAFirmar({ pendientes: todo, anio: "1990", anioActual: 2026, versiones: V, ...cambios });
+          const normal = firmar({});
+          const justo = firmar({ anio: 2008, cumplidosEsteAnio: true });
+          const soloTerminos = documentosAFirmar({ pendientes: ["terminos"], anio: "", anioActual: 2026, versiones: V });
+          return comparar(
+            {
+              ids: Object.keys(normal).sort().join(","),
+              edadTipo: normal.edad.tipo, edadAnio: normal.edad.anioNacimiento,
+              edadCampos: Object.keys(normal.edad).sort().join(","),
+              terminos: JSON.stringify(normal["terminos-2026-11-10"]),
+              salud: JSON.stringify(normal["salud-2026-11-10"]),
+              justoAnio: justo.edad.anioNacimiento, justoCumplidos: justo.edad.cumplidosEsteAnio,
+              justoSinCumplir: firmar({ anio: 2008, cumplidosEsteAnio: false }),
+              menor: firmar({ anio: 2009, cumplidosEsteAnio: true }),
+              invalido: firmar({ anio: "abc" }),
+              // Solo los términos (versión nueva): no hace falta el año.
+              soloTerminos: Object.keys(soloTerminos).join(","),
+              nada: Object.keys(documentosAFirmar({ pendientes: [], anioActual: 2026, versiones: V })).length,
+            },
+            {
+              ids: "edad,salud-2026-11-10,terminos-2026-11-10", edadTipo: "edad", edadAnio: 1990,
+              edadCampos: "anioNacimiento,tipo",
+              terminos: '{"tipo":"terminos","version":"2026-11-10"}', salud: '{"tipo":"salud","version":"2026-11-10"}',
+              justoAnio: 2008, justoCumplidos: true, justoSinCumplir: null, menor: null, invalido: null,
+              soloTerminos: "terminos-2026-11-10", nada: 0,
+            }
+          );
+        },
+      },
+      {
+        nombre: "El año declarado para el perfil y los límites del campo de Perfil con el año de hoy (2026: 1906-2008)",
+        ejecutar: () => {
+          const r2026 = rangoAnioNacimiento(2026);
+          const r2030 = rangoAnioNacimiento(2030);
+          return comparar(
+            {
+              declarado: anioDeclarado({ edad: { tipo: "edad", anioNacimiento: 1990 } }),
+              sinRegistro: anioDeclarado(null), sinEdad: anioDeclarado({ edad: null }),
+              texto: anioDeclarado({ edad: { anioNacimiento: "1990" } }), decimal: anioDeclarado({ edad: { anioNacimiento: 1990.5 } }),
+              // 2026 − 120 = 1906 y 2026 − 18 = 2008; en 2030, 1910 y 2012.
+              min2026: r2026.min, max2026: r2026.max, min2030: r2030.min, max2030: r2030.max,
+            },
+            {
+              declarado: 1990, sinRegistro: null, sinEdad: null, texto: null, decimal: null,
+              min2026: 1906, max2026: 2008, min2030: 1910, max2030: 2012,
             }
           );
         },

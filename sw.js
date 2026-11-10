@@ -1,4 +1,4 @@
-const CACHE_NAME = "fooddraft-v37";
+const CACHE_NAME = "fooddraft-v38";
 // Las páginas legales van también: se enlazan desde la app (Ajustes, alta) y tienen que abrirse sin conexión
 // (solo usan logica/i18n.js, que ya está en la lista).
 const FILES_TO_CACHE = [
@@ -12,7 +12,7 @@ const FILES_TO_CACHE = [
   "./logica/entreno-calculo.js", "./logica/entreno-sesion.js", "./logica/entreno-almacen.js",
   "./logica/informes.js", "./logica/comida-real.js", "./logica/entreno-importar.js", "./logica/periodo.js",
   "./logica/cuerpo-diario.js", "./logica/cuerpo-series.js", "./logica/mapa-corporal.js", "./logica/gimnasio.js",
-  "./logica/buzon-avisos.js",
+  "./logica/buzon-avisos.js", "./logica/consentimientos.js",
 ];
 
 // ---------- Notificaciones push en segundo plano (Fase 6) ----------

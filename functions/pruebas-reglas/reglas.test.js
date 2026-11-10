@@ -13,8 +13,10 @@
 // que todo lo demás se deniega. Además, una prueba lee el código de la app y comprueba que **cada clave que la
 // app guarda en la nube está permitida**: si alguien añade una clave nueva y se olvida de las reglas, falla
 // aquí en vez de dejar sin guardar a todas las cuentas en producción. El buzón de avisos (`avisos/push`, R8)
-// tiene sus propias pruebas al final: forma exacta, hasta 10 dispositivos, la hora puesta por el servidor y los
-// datos opcionales del seguimiento de peso (tanda B, M2).
+// tiene sus propias pruebas: forma exacta, hasta 10 dispositivos, la hora puesta por el servidor y los
+// datos opcionales del seguimiento de peso (tanda B, M2). Las firmas de consentimiento (`consentimientos/`, etapa 2)
+// tienen las suyas al final: solo crear, la hora del servidor, 18 años según el año del servidor y la misma edad
+// mínima y forma de versión que la app.
 
 const { describe, it, before, after, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
@@ -38,6 +40,7 @@ const {
   arrayUnion,
   arrayRemove,
   Timestamp,
+  writeBatch,
   setLogLevel,
 } = require("firebase/firestore");
 
@@ -709,5 +712,174 @@ describe("Buzón de avisos (R8): lo que leen las funciones de notificaciones", (
     await assertSucceeds(deleteDoc(refBuzon(db)));
     const sinBuzon = await updateDoc(refBuzon(db), { ...sinToken, actualizado: serverTimestamp() }).then(() => null, (e) => e);
     assert.equal(sinBuzon && sinBuzon.code, "permission-denied");
+  });
+});
+
+describe("Consentimientos y edad mínima (etapa 2): un libro de firmas", () => {
+  // El año del servidor (`request.time.year()`, en UTC): el emulador usa la hora real de este ordenador. Una pasada
+  // justo en el cambio de año podría fallar una vez; no merece complicar las pruebas.
+  const ANIO = new Date().getUTCFullYear();
+  const V = "2026-11-10";
+  const ref = (db, id, uid = "alicia") => doc(db, "users", uid, "consentimientos", id);
+  // Lo que escribe la app (logica/consentimientos.js, documentosAFirmar, más la hora del servidor).
+  const edad = (cambios = {}) => ({ tipo: "edad", anioNacimiento: ANIO - 30, fecha: serverTimestamp(), ...cambios });
+  const firma = (tipo, cambios = {}) => ({ tipo, version: V, fecha: serverTimestamp(), ...cambios });
+  const sin = (datos, campo) => {
+    const copia = { ...datos };
+    delete copia[campo];
+    return copia;
+  };
+  // Lee una constante numérica de logica/consentimientos.js: las reglas llevan los mismos números a mano.
+  const constanteDeLaApp = (nombre) => {
+    const texto = fs.readFileSync(path.join(RAIZ, "logica", "consentimientos.js"), "utf8");
+    return Number((texto.match(new RegExp(`${nombre}\\s*=\\s*(\\d+)`)) || [])[1]);
+  };
+
+  it("firma las tres de una vez (en un lote, como la app), las lee y no las puede cambiar ni borrar", async () => {
+    const db = de("alicia");
+    const lote = writeBatch(db);
+    lote.set(ref(db, "edad"), edad());
+    lote.set(ref(db, `terminos-${V}`), firma("terminos"));
+    lote.set(ref(db, `salud-${V}`), firma("salud"));
+    await assertSucceeds(lote.commit());
+    const leida = await assertSucceeds(getDoc(ref(db, `salud-${V}`)));
+    assert.equal(leida.data().version, V);
+    // Ni reescribirla (aunque traiga lo mismo: eso es un `update`), ni retocarla, ni borrarla.
+    await assertFails(setDoc(ref(db, `salud-${V}`), firma("salud")));
+    await assertFails(updateDoc(ref(db, "edad"), { anioNacimiento: ANIO - 40 }));
+    await assertFails(deleteDoc(ref(db, `terminos-${V}`)));
+    await assertFails(deleteDoc(ref(db, "edad")));
+  });
+
+  it("un lote con una firma mala no guarda ninguna", async () => {
+    const db = de("alicia");
+    const lote = writeBatch(db);
+    lote.set(ref(db, "edad"), edad({ anioNacimiento: ANIO - 10 }));
+    lote.set(ref(db, `terminos-${V}`), firma("terminos"));
+    await assertFails(lote.commit());
+    assert.equal((await assertSucceeds(getDoc(ref(db, `terminos-${V}`)))).exists(), false);
+  });
+
+  it("una versión nueva de un texto se firma aparte y la anterior se queda como prueba", async () => {
+    await preparar(["users", "alicia", "consentimientos", `terminos-${V}`], { tipo: "terminos", version: V, fecha: Timestamp.now() });
+    const db = de("alicia");
+    await assertSucceeds(setDoc(ref(db, "terminos-2027-03-01"), firma("terminos", { version: "2027-03-01" })));
+    assert.equal((await assertSucceeds(getDoc(ref(db, `terminos-${V}`)))).exists(), true);
+  });
+
+  it("no lee ni firma en la cuenta de otra persona", async () => {
+    await preparar(["users", "bruno", "consentimientos", "edad"], { tipo: "edad", anioNacimiento: ANIO - 30, fecha: Timestamp.now() });
+    const db = de("alicia");
+    await assertFails(getDoc(ref(db, "edad", "bruno")));
+    await assertFails(setDoc(ref(db, `salud-${V}`, "bruno"), firma("salud")));
+    await assertFails(setDoc(ref(db, "edad", "carla"), edad()));
+  });
+
+  it("sin sesión o sin el email verificado, nada", async () => {
+    for (const db of [sinSesion(), sinVerificar("alicia")]) {
+      await assertFails(getDoc(ref(db, "edad")));
+      await assertFails(setDoc(ref(db, "edad"), edad()));
+      await assertFails(setDoc(ref(db, `salud-${V}`), firma("salud")));
+    }
+  });
+
+  it("no se lista: la app lee cada firma por su nombre", async () => {
+    await preparar(["users", "alicia", "consentimientos", "edad"], { tipo: "edad", anioNacimiento: ANIO - 30, fecha: Timestamp.now() });
+    await assertFails(getDocs(collection(de("alicia"), "users", "alicia", "consentimientos")));
+    await assertFails(getDocs(collectionGroup(de("alicia"), "consentimientos")));
+  });
+
+  it("fecha: la hora del servidor, nunca una puesta por la app", async () => {
+    const db = de("alicia");
+    for (const fecha of [Timestamp.now(), Timestamp.fromDate(new Date("2020-01-01")), "2026-11-10", null]) {
+      await assertFails(setDoc(ref(db, `salud-${V}`), firma("salud", { fecha })));
+      await assertFails(setDoc(ref(db, "edad"), edad({ fecha })));
+    }
+    await assertFails(setDoc(ref(db, `salud-${V}`), sin(firma("salud"), "fecha")));
+    await assertFails(setDoc(ref(db, "edad"), sin(edad(), "fecha")));
+  });
+
+  it("términos y salud: el tipo, la versión con forma de fecha y el nombre del documento tienen que cuadrar", async () => {
+    const db = de("alicia");
+    // Nombre que no cuadra con lo que dice dentro.
+    await assertFails(setDoc(ref(db, "salud-2026-11-11"), firma("salud")));
+    await assertFails(setDoc(ref(db, `salud-${V}`), firma("terminos")));
+    await assertFails(setDoc(ref(db, "salud"), firma("salud")));
+    // Tipos que no existen (el de estudios llegará con un estudio concreto, D8; la edad no lleva versión).
+    for (const tipo of ["estudios", "periodo", "edad", "Salud", ""]) {
+      await assertFails(setDoc(ref(db, `${tipo}-${V}`), firma(tipo)));
+    }
+    // Versiones sin forma de fecha.
+    for (const version of ["1", "v2", "2026-11", "10-11-2026", "2026-11-10 ", 20261110, null]) {
+      await assertFails(setDoc(ref(db, `salud-${version}`), firma("salud", { version })));
+    }
+    // Bien escrito, sí.
+    await assertSucceeds(setDoc(ref(db, `salud-${V}`), firma("salud")));
+  });
+
+  it("términos y salud: exactamente tipo, versión y fecha", async () => {
+    const db = de("alicia");
+    await assertFails(setDoc(ref(db, `salud-${V}`), firma("salud", { anioNacimiento: 1990 })));
+    await assertFails(setDoc(ref(db, `salud-${V}`), firma("salud", { acepta: true })));
+    await assertFails(setDoc(ref(db, `salud-${V}`), sin(firma("salud"), "version")));
+    await assertFails(setDoc(ref(db, `salud-${V}`), sin(firma("salud"), "tipo")));
+  });
+
+  it("edad: 19 años o más vale; 18 justos solo si ha dicho que ya los ha cumplido; menos, nunca", async () => {
+    const db = de("alicia");
+    const intento = (datos) => setDoc(ref(db, "edad"), edad(datos));
+    // Los que tienen que fallar van antes: una vez firmada, la edad ya no se puede reescribir.
+    await assertFails(intento({ anioNacimiento: ANIO - 18 }));
+    await assertFails(intento({ anioNacimiento: ANIO - 17, cumplidosEsteAnio: true }));
+    await assertFails(intento({ anioNacimiento: ANIO - 10 }));
+    await assertFails(intento({ anioNacimiento: ANIO + 1 }));
+    await assertSucceeds(intento({ anioNacimiento: ANIO - 18, cumplidosEsteAnio: true }));
+  });
+
+  it("edad: el año, un número entero; cumplidosEsteAnio, si está, solo un sí; nada más", async () => {
+    const db = de("alicia");
+    for (const anio of [String(ANIO - 30), ANIO - 30 + 0.5, null, true]) {
+      await assertFails(setDoc(ref(db, "edad"), edad({ anioNacimiento: anio })));
+    }
+    await assertFails(setDoc(ref(db, "edad"), sin(edad(), "anioNacimiento")));
+    for (const valor of [false, "sí", 1, null]) {
+      await assertFails(setDoc(ref(db, "edad"), edad({ anioNacimiento: ANIO - 18, cumplidosEsteAnio: valor })));
+      await assertFails(setDoc(ref(db, "edad"), edad({ anioNacimiento: ANIO - 30, cumplidosEsteAnio: valor })));
+    }
+    await assertFails(setDoc(ref(db, "edad"), edad({ mes: 5 })));
+    await assertFails(setDoc(ref(db, "edad"), edad({ tipo: "salud" })));
+    await assertFails(setDoc(ref(db, "edad"), sin(edad(), "tipo")));
+    // La edad, solo en el documento `edad`.
+    await assertFails(setDoc(ref(db, "edad-2026"), edad()));
+    await assertSucceeds(setDoc(ref(db, "edad"), edad()));
+  });
+
+  it("la edad mínima y la máxima de las reglas son las de la app (EDAD_MINIMA y EDAD_MAXIMA)", async () => {
+    // La app decide con logica/consentimientos.js si alguien puede seguir; si las reglas pidieran otra edad, quien
+    // está en el borde vería la pantalla decir que sí y la firma fallar (o al revés). Cada borde, en su propia cuenta:
+    // la edad se firma una sola vez.
+    const minima = constanteDeLaApp("EDAD_MINIMA");
+    const maxima = constanteDeLaApp("EDAD_MAXIMA");
+    assert.ok(minima > 0 && maxima > minima, "no se han encontrado EDAD_MINIMA y EDAD_MAXIMA en logica/consentimientos.js");
+    const firmaEdad = (uid, datos) => setDoc(ref(de(uid), "edad", uid), edad(datos));
+    await assertSucceeds(firmaEdad("u1", { anioNacimiento: ANIO - minima - 1 }));
+    await assertSucceeds(firmaEdad("u2", { anioNacimiento: ANIO - minima, cumplidosEsteAnio: true }));
+    await assertFails(firmaEdad("u3", { anioNacimiento: ANIO - minima }));
+    await assertFails(firmaEdad("u4", { anioNacimiento: ANIO - minima + 1, cumplidosEsteAnio: true }));
+    await assertSucceeds(firmaEdad("u5", { anioNacimiento: ANIO - maxima }));
+    await assertFails(firmaEdad("u6", { anioNacimiento: ANIO - maxima - 1 }));
+  });
+
+  it("la versión vigente de cada texto en la app se puede firmar", async () => {
+    // Si alguien sube una versión en la app con otra forma (`v2`, `10/11/2026`...), nadie podría pasar de la pantalla
+    // de firma. Esta prueba lo nota antes de publicar.
+    const texto = fs.readFileSync(path.join(RAIZ, "logica", "consentimientos.js"), "utf8");
+    const bloque = (texto.match(/VERSIONES\s*=\s*\{([^}]*)\}/) || [])[1] || "";
+    const terminos = (bloque.match(/terminos:\s*"([^"]+)"/) || [])[1];
+    const salud = (bloque.match(/salud:\s*"([^"]+)"/) || [])[1];
+    assert.ok(terminos && salud, "no se han encontrado las VERSIONES en logica/consentimientos.js");
+    const db = de("alicia");
+    await assertSucceeds(setDoc(ref(db, `terminos-${terminos}`), firma("terminos", { version: terminos })));
+    await assertSucceeds(setDoc(ref(db, `salud-${salud}`), firma("salud", { version: salud })));
   });
 });
