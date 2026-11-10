@@ -179,6 +179,12 @@ buzon-avisos.js        el buzón de avisos sin Firebase (R8): todo lo que decide
                          Ajustes); tokensConSitio (hacer sitio con la lista llena); las claves de localStorage
                          (firma, limpieza, estrenar token) y MAX_DISPOSITIVOS (el mismo tope que
                          firestore.rules). Lo importan auth-bootstrap.jsx, app.jsx y ui/ajustes/ajustes.jsx
+consentimientos.js     las firmas de consentimiento y la edad mínima sin Firebase (etapa 2 de la auditoría):
+                         EDAD_MINIMA (18) y EDAD_MAXIMA (los mismos números que firestore.rules), VERSIONES de
+                         cada texto, idsConsentimientos, consentimientosPendientes (qué falta por firmar),
+                         evaluarAnioNacimiento y edadSuficiente (vale, preguntar si ya los ha cumplido, menor,
+                         inválido), documentosAFirmar (el lote que se escribe), anioDeclarado (para el asistente
+                         de perfil) y rangoAnioNacimiento (límites del campo de Perfil con el año de hoy)
 ```
 
 ### Imports entre módulos de `logica/`
@@ -207,7 +213,8 @@ nada:
 | `buzon-avisos` | peso (`fechaISO`, `PESO_FRECUENCIAS`) |
 
 No importan nada: `comun`, `macros`, `seleccion`, `objetivos`, `resumen-mensual`, `i18n`, `nevera`,
-`periodo`, `cuerpo-diario`, `mapa-corporal`, `entreno-ejercicios`, `entreno-nombres` y `entreno-calculo`.
+`periodo`, `cuerpo-diario`, `mapa-corporal`, `consentimientos`, `entreno-ejercicios`, `entreno-nombres` y
+`entreno-calculo`.
 Los tres últimos del entreno reciben `ejercicioDe(id)` y `nombreDe` como funciones, para no depender de la
 biblioteca ni de los nombres. No hay ciclos.
 

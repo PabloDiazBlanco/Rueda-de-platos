@@ -39,8 +39,8 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   campo `value` de texto, de hasta 1 048 000 caracteres (justo por debajo del tope de 1 MiB de Firestore, para
   no bloquear nunca a una cuenta con muchos datos). Listar la colección está
   denegado, lo que garantiza que nadie use `storage.list()`. Se puede leer y borrar una clave propia que no
-  esté en la lista, pero no reescribirla. Aparte, el buzón de avisos `users/{uid}/avisos/push` (abajo), con
-  su propia forma. Todo lo demás, denegado.
+  esté en la lista, pero no reescribirla. Aparte, el buzón de avisos `users/{uid}/avisos/push` y las firmas de
+  consentimiento `users/{uid}/consentimientos/` (abajo), cada uno con su propia forma. Todo lo demás, denegado.
 - **Índices**: `firestore.indexes.json`, en la raíz, también es la única fuente. Solo tiene los de las dos
   consultas de las funciones de notificaciones sobre todos los buzones (`backend.md`, «Escala e índices»). Se
   publican aparte (`firebase deploy --only firestore:indexes --project dev` y luego `--project prod`); el emulador
@@ -173,6 +173,43 @@ y R17). No es una clave de `window.storage`: tiene campos propios y lo escribe d
 - Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`: también los datos de pesaje, buenos,
   malos y ausentes), decisiones de la app en `validacion/` (grupo «Avisos: el buzón de las notificaciones») y
   funciones en `functions/pruebas-funciones/` (`npm run test:avisos`).
+
+## Consentimientos y edad mínima (`users/{uid}/consentimientos/`)
+
+El libro de firmas de la cuenta (auditoría de noviembre de 2026, etapa 2: consentimiento explícito para los datos de
+salud, aceptación de los términos y edad mínima). Casi todo lo que guarda la app son datos de salud, y la única base
+legal que encaja es el consentimiento explícito (RGPD, art. 9.2.a), que hay que poder demostrar: quién, cuándo y a
+qué texto. Las decisiones, sin Firebase, en `logica/consentimientos.js`; la forma y los límites, en `firestore.rules`.
+La pantalla que lee y escribe las firmas («Antes de empezar», en `auth-bootstrap.jsx`) está en preparación: hasta
+entonces la app no escribe nada aquí.
+
+- **Tres firmas, un documento cada una**:
+  - `edad`: `{ tipo: "edad", anioNacimiento, fecha }`, más `cumplidosEsteAnio: true` solo cuando el año no basta
+    (quien cumple 18 este año puede tener aún 17: la app lo pregunta y esto es la prueba de que lo hizo). Una sola
+    vez por cuenta. El asistente de perfil reutiliza ese año (`anioDeclarado`).
+  - `terminos-AAAA-MM-DD` y `salud-AAAA-MM-DD`: `{ tipo, version, fecha }`. La versión del texto aceptado va en el
+    nombre del documento.
+- **Edad mínima: 18 años** (`EDAD_MINIMA`; hasta 120, `EDAD_MAXIMA`). Las reglas la comprueban con el año del
+  servidor: 19 años o más, siempre; 18 justos, solo con `cumplidosEsteAnio: true`. Una prueba de las reglas lee las
+  dos constantes de la app y comprueba los bordes. Borde conocido: entre las 00:00 y la 01:00 del 1 de enero en España
+  (aún 31 de diciembre en UTC), quien cumple 18 ese año todavía no puede firmar.
+- **Es una prueba, no una casilla**: la hora la pone el servidor (`fecha == request.time`); solo se puede **crear**,
+  nunca cambiar ni borrar desde la app (reescribir una firma, aunque sea igual, es un `update` y se rechaza); no se
+  lista (la app lee las tres vigentes por su nombre, `idsConsentimientos`). Se escriben en un lote: o se guardan
+  todas las pendientes o ninguna (`documentosAFirmar`).
+- **Sin Cloud Function** a propósito: una app modificada podría llamarla igual que escribe aquí, así que no protegería
+  más, y en `localhost` no se podría probar (el proyecto de pruebas no tiene funciones).
+- **Versiones** (`VERSIONES`): la fecha en que un texto cambió de fondo. Subirla hace que todas las cuentas vuelvan a
+  firmar **solo ese texto**; la firma anterior se queda como prueba de lo que se aceptó entonces. Las reglas aceptan
+  cualquier versión con forma `AAAA-MM-DD` (no una lista), para que subirla no obligue a publicar también las reglas;
+  una prueba de las reglas comprueba que las de la app tienen esa forma. Un **tipo** nuevo (el de estudios, cuando haya
+  un estudio concreto) sí va en las reglas y se publica antes de subir la app.
+- **Retirar el consentimiento de salud equivale a eliminar la cuenta** (sin esos datos la app no funciona):
+  «Eliminar cuenta» borra `users/{uid}` entero, firmas incluidas.
+- Una lectura de las firmas que falla no es «no ha firmado nada»: no se enseña la pantalla de firma, sino el error
+  con «Reintentar», como en la carga de datos.
+- Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`) y decisiones de la app en `validacion/`
+  (grupo «Consentimientos y edad mínima»).
 
 La primera vez que una cuenta entra en un navegador con datos antiguos en `localStorage`,
 `migrateLocalDataIfNeeded` (`auth-bootstrap.jsx`) ofrece copiar a la nube las claves `rueda-de-platos:*` que
