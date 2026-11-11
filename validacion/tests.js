@@ -1568,12 +1568,12 @@ function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
 
 // Prefijos de las claves de i18n creadas para la navegación por áreas y el módulo de entreno (anexo B
 // del plan): todas deben existir en los cinco idiomas, porque en pantalla una que falte no se nota. También las de
-// «Antes de empezar» (consentimientos y edad mínima, etapa 2 de la auditoría): un texto legal que cae al español en
-// otro idioma no es un consentimiento informado.
+// «Antes de empezar» (consentimientos y edad mínima, etapa 2 de la auditoría) y las de la política de privacidad: un
+// texto legal que cae al español en otro idioma no informa a quien consiente.
 const PREFIJOS_NUEVOS = [
   "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
   "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio", "fitdraft.", "antesDeEmpezar.",
-  "perfilView.anioFueraDeRango", "ajustes.privacidad.",
+  "perfilView.anioFueraDeRango", "ajustes.privacidad.", "privacidad.",
 ];
 
 function clavesSinTraducir(claves) {
