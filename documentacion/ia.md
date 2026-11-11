@@ -25,6 +25,13 @@ cálculo puramente local.
 - **Las macros nunca vienen de la IA**: si se guarda una receta, las calcula la app con `composedMacros`.
 - Al cambiar lo que recibe una función, despliégala antes de subir la app (ver `backend.md`).
 - Lo que se manda a Gemini tiene que estar en la política de privacidad (`privacidad.*` en `logica/i18n.js`).
+- **Las fotos nunca van tal cual salen del móvil**: `reducirFoto` (`ui/comun/reducir-foto.js`) las vuelve a dibujar en
+  un `<canvas>` (como mucho 1600 px por el lado largo, JPEG al 0,85, fondo blanco para los PNG transparentes) antes de
+  mandarlas, en el lector de etiquetas y en «¿Qué cocino?». Así no viajan los datos ocultos del archivo (EXIF: la
+  ubicación GPS, el móvil, la hora), una foto de 3-8 MB no choca con el tope de 10 MB de las funciones callable y
+  Gemini procesa menos. La orientación del EXIF la aplica el navegador al abrir la foto en una `<img>`, así que sale
+  derecha. Si el navegador no puede abrir el archivo, la pantalla dice `foto.errorPreparar` y no se manda nada (nunca el
+  original). Un sitio nuevo que mande fotos tiene que pasar por `reducirFoto`; la política lo promete.
 
 ## Cómo funciona
 
