@@ -62,6 +62,8 @@ import {
 import { SLUG_A_GRUPO, GRUPOS_MAPA, nivelSeries, colorSeries, generoMapa, seriesDeRutina, valoresDeEjercicio } from "mapa-corporal";
 // Los trazados del mapa corporal son un archivo de datos de ui/ sin JSX: se importa directamente.
 import { TRAZADOS_MIT } from "../ui/comun/mapa-trazados.js";
+// Lo mismo con el cálculo de medidas de las fotos que se mandan a la IA (sin JSX ni imports).
+import { medidasReducidas, LADO_MAXIMO_FOTO } from "../ui/comun/reducir-foto.js";
 import {
   ZONAS, ESTACIONES, ESTACION_DE, SITIOS, ENTRADA_DENTRO, zonaDeMusculo, estacionDeEjercicio, ejerciciosDeZona, libre, aEstrella,
   puntoDe, paradasDeRutina, pasoEntreEjercicios, ultimaVezPorZona, estadoZonas, situacionMonitor, fraseMonitor, rutinaDeHoy,
@@ -1453,7 +1455,47 @@ export function crearGrupos(mod, carga) {
     grupoGimnasio(),
     grupoBuzonAvisos(),
     grupoConsentimientos(),
+    grupoFotosIA(),
   ];
+}
+
+// ---------- Fotos para la IA (auditoría de noviembre de 2026, etapa 3: R14) ----------
+// Medidas a las que se reduce una foto antes de mandarla a Gemini (ui/comun/reducir-foto.js). Que la foto reducida no
+// lleve los datos ocultos del móvil (EXIF) y salga derecha se comprueba a mano en el navegador: necesita un <canvas>.
+// Cuentas a mano: 1600 / 4000 = 0,4 → 3000 × 0,4 = 1200; 1600 / 4032 = 0,39683 → 3024 × 0,39683 = 1200,0.
+function grupoFotosIA() {
+  const medidas = (a, b) => {
+    const m = medidasReducidas(a, b);
+    return m ? `${m.ancho}x${m.alto}` : null;
+  };
+  return {
+    grupo: "Fotos para la IA: más pequeñas y sin datos ocultos",
+    casos: [
+      {
+        nombre: "El lado largo se queda en 1600 px, con la misma proporción, en horizontal y en vertical",
+        ejecutar: () => comparar(
+          {
+            lado: LADO_MAXIMO_FOTO,
+            horizontal: medidas(4000, 3000), vertical: medidas(3000, 4000),
+            movil12mpx: medidas(4032, 3024), cuadrada: medidas(3000, 3000),
+            // 1600 / 4000 = 0,4 → 1 × 0,4 = 0,4, que redondea a 0: como mínimo 1 px.
+            tira: medidas(4000, 1),
+          },
+          { lado: 1600, horizontal: "1600x1200", vertical: "1200x1600", movil12mpx: "1600x1200", cuadrada: "1600x1600", tira: "1600x1" }
+        ),
+      },
+      {
+        nombre: "Una foto ya pequeña no se amplía; medidas imposibles no dan medidas",
+        ejecutar: () => comparar(
+          {
+            pequena: medidas(1000, 800), justa: medidas(1600, 900),
+            cero: medidas(0, 100), negativa: medidas(-5, 100), sinNumero: medidas(NaN, 100), sinAlto: medidas(100),
+          },
+          { pequena: "1000x800", justa: "1600x900", cero: null, negativa: null, sinNumero: null, sinAlto: null }
+        ),
+      },
+    ],
+  };
 }
 
 // Fecha fija para los casos de la despensa (los consumos se guardan por fecha).
@@ -1573,7 +1615,7 @@ function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
 const PREFIJOS_NUEVOS = [
   "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
   "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio", "fitdraft.", "antesDeEmpezar.",
-  "perfilView.anioFueraDeRango", "ajustes.privacidad.", "privacidad.",
+  "perfilView.anioFueraDeRango", "ajustes.privacidad.", "privacidad.", "foto.",
 ];
 
 function clavesSinTraducir(claves) {

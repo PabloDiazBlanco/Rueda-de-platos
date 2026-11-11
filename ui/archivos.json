@@ -19,6 +19,7 @@
   "ui/comun/mapa-corporal.jsx",
   "ui/comun/mapa-trazados.js",
   "ui/comun/modal.jsx",
+  "ui/comun/reducir-foto.js",
   "ui/comun/tarjetas.jsx",
   "ui/cuerpo/constructor.jsx",
   "ui/cuerpo/graficas.jsx",

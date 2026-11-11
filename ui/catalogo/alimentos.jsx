@@ -8,6 +8,7 @@ import { uid, primerEmoji } from "comun";
 import { fechaISO, formatFechaCorta } from "peso";
 import { t } from "i18n";
 import { mensajeErrorFuncion } from "../comun/errores.js";
+import { reducirFoto } from "../comun/reducir-foto.js";
 import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
@@ -61,13 +62,19 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
     setExpandido((e) => ({ ...e, [key]: !e[key] }));
   }
 
-  function handleFileChange(e) {
+  // La foto se reduce y pierde sus datos ocultos (la ubicación, el móvil, la hora) antes de llegar al lector, que la
+  // manda a Gemini (ui/comun/reducir-foto.js). Si el navegador no puede abrirla, se dice aquí y no se manda nada.
+  const [errorFoto, setErrorFoto] = useState(false);
+  async function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
     e.target.value = ""; // permite volver a elegir la misma foto si hace falta repetir
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => onNewFromPhoto(reader.result);
-    reader.readAsDataURL(file);
+    setErrorFoto(false);
+    try {
+      onNewFromPhoto(await reducirFoto(file));
+    } catch (err) {
+      setErrorFoto(true);
+    }
   }
 
   return (
@@ -127,6 +134,11 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
           <Download size={14} /> {t(idioma, "foodsView.exportarCatalogo")}
         </button>
       </div>
+      {errorFoto && (
+        <div role="alert" style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--rust)", margin: "-8px 0 14px" }}>
+          {t(idioma, "foto.errorPreparar")}
+        </div>
+      )}
 
       <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, color: "var(--ink-soft)", marginBottom: 8 }}>
         {t(idioma, "foodsView.deTotal", { n: totalVisible, total: foods.length })}

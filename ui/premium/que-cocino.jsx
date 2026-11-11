@@ -16,6 +16,7 @@ import { getFood } from "macros";
 import { resumenDespensaParaIA } from "despensa";
 import { t } from "i18n";
 import { mensajeErrorFuncion } from "../comun/errores.js";
+import { reducirFoto } from "../comun/reducir-foto.js";
 import { inputStyle } from "../comun/modal.jsx";
 import { SectionIntro } from "../comun/tarjetas.jsx";
 import { PensandoCocina, esperaMinimaPensando } from "./cocinando.jsx";
@@ -37,13 +38,18 @@ export function SuggestMealsView({ data, despensa, onGuardarComoCerrado, idioma 
   const mandaDespensa = usarDespensa && enCasa.length > 0;
   const puedePedir = !!photo || !!otrosIngredientes.trim() || mandaDespensa;
 
-  function handleFileChange(e) {
+  // La foto se reduce y pierde sus datos ocultos (la ubicación, el móvil, la hora) antes de mandarla a Gemini
+  // (ui/comun/reducir-foto.js). Si el navegador no puede abrirla, se dice y no se manda nada.
+  async function handleFileChange(e) {
     const file = e.target.files && e.target.files[0];
     e.target.value = "";
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setPhoto(reader.result);
-    reader.readAsDataURL(file);
+    setError("");
+    try {
+      setPhoto(await reducirFoto(file));
+    } catch (err) {
+      setError(t(idioma, "foto.errorPreparar"));
+    }
   }
 
   async function pedir() {
