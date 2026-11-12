@@ -51,6 +51,12 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
   `us-central1`. Para mudarlas sin corte: desplegar (las nuevas conviven con las viejas; a la pregunta de borrar las de
   la otra región, «No»), borrar enseguida las dos programadas de la región vieja (si no, cada aviso llega dos veces),
   cambiar la URL del webhook en Stripe, subir la app y, días después, borrar el resto de la región vieja.
+  **Ojo con un primer despliegue a medias en una región nueva** (pasó en noviembre de 2026: un 409 al crear el almacén
+  de la región dejó 6 funciones a medio crear): la CLI solo da a una callable el permiso público de Cloud Run al
+  **crearla**; si se repite el despliegue, las «actualiza» sin ese permiso y rechazan todas las llamadas (la app ve un
+  error `internal`). `invoker: "public"` en `onCall` no lo arregla (el endpoint de una callable no lo lleva). Lo que
+  funciona: borrarlas en esa región (`firebase functions:delete … --region …`) y volver a desplegarlas. Para
+  comprobarlo sin sesión: un POST vacío tiene que contestar 401 «Unauthenticated», no fallar por CORS.
 - **El cliente nunca escribe en `users/{uid}`** (`firestore.rules`, con su prueba): premium y cuotas solo los
   escriben las funciones con el Admin SDK, que no pasa por las reglas.
 - **Convenio obligatorio al crear un Checkout**: `client_reference_id: uid` y
