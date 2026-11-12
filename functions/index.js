@@ -6,10 +6,15 @@ const { setGlobalOptions } = require("firebase-functions");
 
 admin.initializeApp();
 
+// Región de todas las funciones: Bélgica (`europe-west1`), al lado de los datos (Firestore está en `eur3`, Bélgica y
+// Países Bajos). Hasta noviembre de 2026 no se fijaba ninguna y caían en `us-central1` (Iowa): cada llamada cruzaba el
+// Atlántico dos veces y los datos de salud se procesaban en EE. UU. sin necesidad (auditoría de noviembre, R7). La
+// app llama a esta misma región (`REGION_FUNCIONES` en auth-bootstrap.jsx): **si cambia una, cambia la otra**, y el
+// webhook de Stripe apunta a la URL de esta región (documentacion/backend.md, «Región»).
 // Límite de instancias simultáneas por función: si algo se dispara sin control (un bucle, un
 // abuso), esto pone un techo duro al coste antes de que se convierta en un problema de verdad.
 // Ver la hoja de ruta de publicación, Fase 2 — control de coste.
-setGlobalOptions({ maxInstances: 10 });
+setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
 exports.stripeWebhook = require("./stripeWebhook").stripeWebhook;
 exports.analyzeFoodPhoto = require("./analyzeFoodPhoto").analyzeFoodPhoto;

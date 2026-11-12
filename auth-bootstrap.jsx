@@ -86,7 +86,11 @@ if (!ES_ENTORNO_LOCAL) {
 
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
-const functions = getFunctions(firebaseApp);
+// Las funciones viven en Bélgica, junto a los datos (auditoría de noviembre de 2026, R7). Sin región, el SDK llama a
+// `us-central1`, donde estaban antes. La misma que `setGlobalOptions` en functions/index.js: si cambia una, cambia la
+// otra (si no, todas las llamadas darían «not-found»).
+const REGION_FUNCIONES = "europe-west1";
+const functions = getFunctions(firebaseApp, REGION_FUNCIONES);
 
 // ---------- Lectura de etiquetas nutricionales por foto ----------
 // La llamada a Gemini en sí ya no vive aquí: vive en functions/analyzeFoodPhoto.js, detrás de una
