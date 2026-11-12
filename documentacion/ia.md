@@ -1,6 +1,6 @@
 # Servicios de IA (Gemini)
 
-Léelo antes de tocar `functions/analyzeFoodPhoto.js`, `suggestRecipes.js`, `suggestMeals.js`,
+Léelo antes de tocar `functions/analyzeFoodPhoto.js`, `suggestRecipes.js`,
 `ui/premium/que-cocino.jsx`, `ui/premium/cocinando.jsx` o el lector de etiquetas. El resto de la app es
 cálculo puramente local.
 
@@ -10,16 +10,15 @@ cálculo puramente local.
   por foto.
 - `functions/suggestRecipes.js` → `window.suggestRecipes`; pantalla `ui/premium/que-cocino.jsx`; animación
   `ui/premium/cocinando.jsx` (`PensandoCocina`).
-- `functions/suggestMeals.js`: versión anterior de «¿Qué cocino?». El cliente ya no la llama, aunque el
-  puente `window.suggestMeals` sigue definido en `auth-bootstrap.jsx` y las claves de i18n y el componente
-  conservan el nombre `suggestMeals` / `SuggestMealsView`.
+- La versión anterior de «¿Qué cocino?» (`suggestMeals`) se retiró en noviembre de 2026: ni la función ni su puente
+  existen ya. Las claves de i18n y el componente conservan el nombre `suggestMeals` / `SuggestMealsView`.
 
 ## Reglas de esta área
 
 - **Todas son Cloud Functions callable**, nunca llamadas directas desde el navegador: un límite comprobado
   solo en el navegador no protege nada cuando hay varios usuarios y la IA cuesta dinero.
 - Usan `@google/genai` con `GEMINI_API_KEY` (secreto de Firebase). **El nombre del modelo
-  (`gemini-3.1-flash-lite`) está escrito en los tres archivos**: si Google lo retira, cámbialo en todos.
+  (`gemini-3.1-flash-lite`) está escrito en los dos archivos** (`analyzeFoodPhoto.js` y `suggestRecipes.js`): si Google lo retira, cámbialo en los dos.
 - La cuota mensual se reserva en una transacción de Firestore **antes** de llamar a Gemini y se devuelve si la
   llamada falla.
 - **Las macros nunca vienen de la IA**: si se guarda una receta, las calcula la app con `composedMacros`.

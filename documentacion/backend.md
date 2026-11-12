@@ -11,7 +11,7 @@ reexporta y fija `setGlobalOptions({ maxInstances: 10 })`. `functions/node_modul
 
 `functions/pruebas-reglas/` no es una función: son las pruebas de `firestore.rules` (`npm run test:reglas`,
 ver `datos.md`); `functions/pruebas-funciones/` tampoco: son las de las dos funciones de notificaciones
-(`npm run test:avisos`). Viven aquí porque es el único proyecto Node; `firebase.json` las excluye del
+(`npm run test:avisos`, con el emulador) y las de la decisión del premium (`npm run test:premium`, sin emulador). Viven aquí porque es el único proyecto Node; `firebase.json` las excluye del
 despliegue y sus dependencias (`@firebase/rules-unit-testing`, `firebase`) son solo de desarrollo. Los índices
 que necesitan las funciones de notificaciones están en `firestore.indexes.json`, en la raíz («Escala e
 índices», abajo).
@@ -21,7 +21,6 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
 | `stripeWebhook` | HTTP (lo llama Stripe) | Única pieza que escribe `users/{uid}.premium`; verifica la firma de Stripe |
 | `createCheckoutSession` / `createPortalSession` | callable | Devuelven la URL de pago o de gestión de la suscripción |
 | `analyzeFoodPhoto` / `suggestRecipes` | callable | Gemini con premium + cuota (ver `ia.md`) |
-| `suggestMeals` | callable | Versión anterior de «¿Qué cocino?»; se conserva para las copias de la app sin actualizar |
 | `sendWeighInReminders` | programada, 09:00 Europe/Madrid | Push diario de recordatorio de pesaje a quien le toca ese día, a todos sus aparatos. Lee solo los buzones con el recordatorio activado y decide con lo que traen; solo abre `data-v1` si el buzón es de una app sin actualizar o está a medias |
 | `deleteAccount` | callable | Elimina la cuenta de verdad: cancela la suscripción de Stripe, borra `users/{uid}` entero (`recursiveDelete`) y la cuenta de Auth. La llama `window.deleteAccount` tras reautenticar |
 | `sendDefrostReminders` | programada, 21:30 Europe/Madrid | Push «revisa las comidas de mañana por si tienes que descongelar algo o comprar» a quien tenga el aviso activado (C8, gratis). Solo lee los buzones con ese aviso activado: ningún dato de la cuenta |
@@ -83,7 +82,27 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
 
 - 2,99 €/mes con Stripe, gestionado en la web (no con Google Play Billing). El precio real lo fija
   `PREMIUM_PRICE_ID` en Stripe; el texto de la app solo lo enseña.
-- La app se entera en vivo con `window.subscribePremiumStatus` (`onSnapshot` sobre `users/{uid}`).
+- La app se entera en vivo con `window.subscribePremiumStatus` (`onSnapshot` sobre `users/{uid}`). Si la escucha
+  falla, se apunta en la consola y se vuelve a escuchar sola (5 s, 15 s, 30 s y luego cada minuto); mientras tanto se
+  mantiene lo último que se sabía, así que un corte de red no quita el premium.
+- **Qué premium toca lo decide Stripe, no el aviso** (`functions/estadoPremium.js`, con sus pruebas: `npm run
+  test:premium`). Ante cualquiera de los avisos atendidos, `stripeWebhook` pide a Stripe la suscripción tal como está
+  ahora (`subscriptions.retrieve` con `latest_invoice`) y escribe `premium { active, pendiente, … }`. Así da igual el
+  orden en que lleguen los avisos (Stripe no lo garantiza) o que se repitan. La regla:
+  - suscripción `active`/`trialing` con la primera factura pagada, o ya en renovaciones → premium;
+  - **primera factura aún sin cobrar** (domiciliación y otros pagos que tardan) → `pendiente: true`, sin premium: la
+    pantalla de Premium explica que se activará solo cuando el banco confirme el cobro (y, antes de pagar, avisa de que
+    esos pagos tardan unos días). Con un pago así, Stripe puede dejar la suscripción `active` desde el principio y, si el
+    cobro falla, anula la factura **sin** cancelar la suscripción: por eso se mira la primera factura;
+  - **una renovación que aún se está cobrando no quita el premium** (sería quitárselo unos días cada mes);
+  - primera factura anulada, o `past_due`, `unpaid`, `canceled`, `incomplete_expired`, `paused` → sin premium.
+  - No se da premium «mientras tanto» (decisión de Pablo: quitárselo luego a quien creía tenerlo es peor).
+- **Avisos que tiene que tener marcados el destino del webhook en Stripe** (`AVISOS_ATENDIDOS`):
+  `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
+  `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid` e `invoice.payment_failed`. Uno que
+  falte es un caso que nunca llega (por ejemplo, sin `invoice.paid` un pago por domiciliación se quedaría «pendiente»
+  hasta el siguiente cambio de la suscripción).
+- Los métodos de pago del Checkout los decide el panel de Stripe (Configuración → Métodos de pago); el código no los fija.
 - **Gratis**: generador de menús, objetivos, catálogo, Menú simple, lista de la compra, despensa, todo el
   entreno (sin límites: rutinas, ejercicios propios, historial, gráficas, récords, exportar e importar), el
   resumen mensual (nutrición y entreno), sueño, pasos y período.

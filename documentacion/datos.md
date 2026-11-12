@@ -68,7 +68,7 @@ Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de toc
   empieza de nuevo), porque no hay nada que proteger en ellos.
 - Si un guardado de los datos principales falla, la cabecera dice «Sin guardar» y se reintenta al volver la
   conexión; despensa y cuerpo lo dejan en la consola y lo reintentan con el siguiente cambio.
-- El documento padre `users/{uid}` guarda el estado premium (`premium { active, stripeCustomerId,
+- El documento padre `users/{uid}` guarda el estado premium (`premium { active, pendiente, stripeCustomerId,
   subscriptionId, updatedAt }`) y los contadores de cuota (`usoFotos`, `usoCocinar`). Es de **solo lectura
   para el cliente**: solo lo escriben las Cloud Functions con el Admin SDK (ver `backend.md`).
 - `rueda-de-platos:push-token-v1` guardaba el token de notificaciones en `value` como **texto plano**, no JSON.
