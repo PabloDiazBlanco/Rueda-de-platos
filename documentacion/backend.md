@@ -38,7 +38,19 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
   `package-lock.json` nuevo no llega a producción hasta el siguiente `firebase deploy --only functions`. Queda
   abierto a propósito un aviso moderado de `uuid@9` dentro de `firebase-admin` 13 (vía `google-gax` y
   `@google-cloud/storage`): afecta a `v3`/`v5`/`v6` con un búfer propio y esas librerías solo usan `v4`. Se
-  arregla pasando a `firebase-admin` 14, versión mayor que pide su propia revisión.
+  arregla pasando a `firebase-admin` 14, versión mayor que pide su propia revisión: **quita la forma de escribir
+  con espacios de nombres** (`admin.firestore()`, `admin.messaging()`, `admin.auth()`, `admin.firestore.FieldValue`),
+  que usan todas las funciones; hay que pasarlas antes a la modular (`getFirestore`, `FieldValue` de
+  `firebase-admin/firestore`, `getMessaging`, `getAuth`) y probar a mano las que no tienen pruebas (pagos, borrar la
+  cuenta, IA). Pide además Node 22, que ya es el de las funciones.
+- **Región: Bélgica (`europe-west1`)**, junto a Firestore (`eur3`). La fijan `setGlobalOptions` en `functions/index.js`
+  y `REGION_FUNCIONES` en `auth-bootstrap.jsx` (el SDK sin región llama a `us-central1`): **si cambia una, cambia la
+  otra**. El webhook de Stripe apunta a la URL de esta región (la que escribe `firebase deploy` junto a
+  `stripeWebhook(europe-west1)`); se cambia **editando el destino que ya existe** en Stripe, para que siga valiendo su
+  secreto de firma (`STRIPE_WEBHOOK_SECRET`). Hasta noviembre de 2026 todas estaban en
+  `us-central1`. Para mudarlas sin corte: desplegar (las nuevas conviven con las viejas; a la pregunta de borrar las de
+  la otra región, «No»), borrar enseguida las dos programadas de la región vieja (si no, cada aviso llega dos veces),
+  cambiar la URL del webhook en Stripe, subir la app y, días después, borrar el resto de la región vieja.
 - **El cliente nunca escribe en `users/{uid}`** (`firestore.rules`, con su prueba): premium y cuotas solo los
   escriben las funciones con el Admin SDK, que no pasa por las reglas.
 - **Convenio obligatorio al crear un Checkout**: `client_reference_id: uid` y
