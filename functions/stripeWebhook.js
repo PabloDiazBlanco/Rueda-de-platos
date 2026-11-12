@@ -20,6 +20,7 @@ const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
 const admin = require("firebase-admin");
 const Stripe = require("stripe");
+const { estadoPremium, suscripcionDelAviso, AVISOS_ATENDIDOS } = require("./estadoPremium");
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
 const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
@@ -28,7 +29,8 @@ const stripeWebhookSecret = defineSecret("STRIPE_WEBHOOK_SECRET");
 // "keys" donde vive el resto de datos de la app) — así una única regla de seguridad ("nadie
 // salvo esta función escribe aquí") basta para proteger el campo entero, sin depender de una
 // excepción especial sobre un nombre de clave concreto dentro de "keys".
-async function guardarEstadoPremium(uid, { activo, stripeCustomerId, subscriptionId }) {
+// `pendiente`: el primer pago se está cobrando (domiciliación y parecidos, ver estadoPremium.js); la app lo explica.
+async function guardarEstadoPremium(uid, { activo, pendiente, stripeCustomerId, subscriptionId }) {
   if (!uid) {
     logger.error(
       "Evento de Stripe sin uid de Firebase asociado (falta client_reference_id o " +
@@ -52,11 +54,14 @@ async function guardarEstadoPremium(uid, { activo, stripeCustomerId, subscriptio
   const ref = admin.firestore().doc(`users/${uid}`);
   const premium = {
     active: activo,
+    pendiente: !!pendiente,
     stripeCustomerId,
     subscriptionId,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
   };
-  if (activo) {
+  // Activar, o dejar el pago «pendiente», sí crea el documento: es el primer contacto de la cuenta con Stripe y la app
+  // tiene que poder enseñar que el pago se está procesando.
+  if (activo || pendiente) {
     await ref.set({ premium }, { merge: true });
     return;
   }
@@ -100,46 +105,33 @@ exports.stripeWebhook = onRequest(
       return;
     }
 
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object;
-        await guardarEstadoPremium(session.client_reference_id, {
-          activo: true,
-          stripeCustomerId: session.customer,
-          subscriptionId: session.subscription,
-        });
-        break;
-      }
-
-      case "customer.subscription.updated": {
-        const subscription = event.data.object;
-        // "active" y "trialing" cuentan como premium activo; cualquier otro estado (past_due,
-        // canceled, unpaid...) se trata como inactivo de inmediato — más estricto que esperar al
-        // evento "deleted", para no dejar acceso premium a una suscripción con el pago fallido.
-        const activo = subscription.status === "active" || subscription.status === "trialing";
-        await guardarEstadoPremium(subscription.metadata && subscription.metadata.firebaseUID, {
+    // Todos los avisos que importan acaban igual (auditoría de noviembre de 2026, R9): no se lee el estado que trae el
+    // aviso, sino que se pide a Stripe la suscripción tal como está AHORA y se decide con ella (estadoPremium.js). Así
+    // da igual el orden en que lleguen (Stripe no lo garantiza) o que lleguen repetidos: siempre se escribe lo mismo, la
+    // verdad del momento. Y un pago que tarda (domiciliación) no da premium hasta que se cobra la primera factura.
+    if (AVISOS_ATENDIDOS.includes(event.type)) {
+      const subscriptionId = suscripcionDelAviso(event);
+      if (!subscriptionId) {
+        logger.info("Aviso de Stripe sin suscripción asociada: no se hace nada.", { tipo: event.type });
+      } else {
+        // Si Stripe no contesta, la función falla y Stripe reintenta el aviso más tarde (hasta 3 días).
+        const suscripcion = await stripe.subscriptions.retrieve(subscriptionId, { expand: ["latest_invoice"] });
+        const { activo, pendiente } = estadoPremium(suscripcion);
+        // El uid va pegado a la suscripción (subscription_data.metadata al crear el Checkout); el del checkout, por si
+        // una suscripción antigua no lo tuviera.
+        const objeto = event.data.object;
+        const uid = (suscripcion.metadata && suscripcion.metadata.firebaseUID) ||
+          (event.type.startsWith("checkout.session.") ? objeto.client_reference_id : null);
+        await guardarEstadoPremium(uid, {
           activo,
-          stripeCustomerId: subscription.customer,
-          subscriptionId: subscription.id,
+          pendiente,
+          stripeCustomerId: typeof suscripcion.customer === "string" ? suscripcion.customer : suscripcion.customer && suscripcion.customer.id,
+          subscriptionId,
         });
-        break;
+        logger.info("Premium según Stripe.", { tipo: event.type, uid, estado: suscripcion.status, activo, pendiente });
       }
-
-      case "customer.subscription.deleted": {
-        const subscription = event.data.object;
-        await guardarEstadoPremium(subscription.metadata && subscription.metadata.firebaseUID, {
-          activo: false,
-          stripeCustomerId: subscription.customer,
-          subscriptionId: subscription.id,
-        });
-        break;
-      }
-
-      default:
-        // El resto de eventos no nos interesan — llegan porque el endpoint está suscrito a
-        // todos por defecto, pero no hace falta registrar nada por ellos.
-        break;
     }
+    // El resto de avisos no nos interesan.
 
     res.status(200).send();
   }

@@ -2,8 +2,9 @@
 // Desplegada (comprobado con `firebase functions:list` el 29-oct-2026). La usa la pantalla de «¿Qué cocino?»
 // (ui/premium/que-cocino.jsx, vía window.suggestRecipes de auth-bootstrap.jsx): **la función y el cliente
 // tienen que desplegarse juntos** (primero `firebase deploy --only functions`, después subir la app); si
-// se sube la app sin la función, la pantalla dará error al pedir sugerencias. suggestMeals.js se conserva tal
-// cual para las copias de la app que aún no se hayan actualizado.
+// se sube la app sin la función, la pantalla dará error al pedir sugerencias. La versión anterior (suggestMeals) se
+// retiró en noviembre de 2026 (auditoría, R22): el cliente no la llamaba desde octubre. Lo que dice abajo de ella es
+// historia de por qué esta es como es.
 //
 // Qué cambia frente a suggestMeals (decisión del usuario, local/ideas/registro-2026-10-25.md, E2):
 // - Dos modos. «conLoQueTengo»: con lo que hay en casa —toda la despensa, además de la foto y del texto, como

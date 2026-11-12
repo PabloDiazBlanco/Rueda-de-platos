@@ -22,9 +22,15 @@ const VENTAJAS_PREMIUM = [
 // window.subscribePremiumStatus en auth-bootstrap.jsx). El botón redirige entero a Stripe
 // (Checkout o el portal de facturación, según el caso) — no hay formulario de tarjeta propio en
 // ningún sitio de esta app.
+// Tres situaciones (auditoría de noviembre de 2026, R9, decisión de Pablo del 12-nov):
+// - premium activo → «Ya eres premium» y gestionar la suscripción;
+// - `premium.pendiente`: el primer pago se está cobrando (domiciliación u otro pago que tarda; lo decide el webhook,
+//   functions/estadoPremium.js) → se explica que se activará solo y se puede gestionar la suscripción (cancelarla);
+// - nada → hacerse premium, con el aviso de antes de pagar de que los pagos lentos tardan unos días en activarlo.
 export function PremiumView({ premium, idioma }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const pendiente = !premium.active && !!premium.pendiente;
 
   async function irA(crearSesion, contexto) {
     setError("");
@@ -43,9 +49,9 @@ export function PremiumView({ premium, idioma }) {
       <div style={{ textAlign: "center", marginBottom: 20 }}>
         <Sparkles size={30} color="var(--mustard-dark)" style={{ marginBottom: 8 }} />
         <h1 style={{ fontFamily: FUENTE_TITULOS, fontSize: 24, color: "var(--green-dark)", margin: "0 0 4px" }}>
-          {premium.active ? t(idioma, "premiumView.yaEres") : t(idioma, "premiumView.hazte")}
+          {premium.active ? t(idioma, "premiumView.yaEres") : pendiente ? t(idioma, "premiumView.pendienteTitulo") : t(idioma, "premiumView.hazte")}
         </h1>
-        {!premium.active && (
+        {!premium.active && !pendiente && (
           <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 13, color: "var(--ink-soft)" }}>
             {t(idioma, "premiumView.precio")}
           </div>
@@ -74,7 +80,19 @@ export function PremiumView({ premium, idioma }) {
         </div>
       )}
 
-      {premium.active ? (
+      {pendiente && (
+        <div
+          role="status"
+          style={{
+            fontFamily: FUENTE_TEXTO, fontSize: 13, lineHeight: 1.5, color: "var(--ink)",
+            background: "var(--mustard-soft)", borderRadius: 10, padding: "12px 14px", marginBottom: 12,
+          }}
+        >
+          {t(idioma, "premiumView.pendienteTexto")}
+        </div>
+      )}
+
+      {premium.active || pendiente ? (
         <button
           onClick={() => irA(window.createPortalSession, "portal")}
           disabled={loading}
@@ -98,6 +116,13 @@ export function PremiumView({ premium, idioma }) {
         >
           {loading ? t(idioma, "premiumView.unMomento") : t(idioma, "premiumView.suscribirme")}
         </button>
+      )}
+
+      {/* Antes de pagar: los pagos que tardan (domiciliación) no activan el premium al momento. */}
+      {!premium.active && !pendiente && (
+        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11.5, lineHeight: 1.5, color: "var(--ink-soft)", marginTop: 10 }}>
+          {t(idioma, "premiumView.avisoMetodos")}
+        </div>
       )}
     </div>
   );

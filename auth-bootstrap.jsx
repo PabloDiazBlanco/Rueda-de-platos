@@ -21,8 +21,6 @@ import {
   getDoc,
   setDoc,
   deleteDoc,
-  collection,
-  getDocs,
   onSnapshot,
   updateDoc,
   arrayUnion,
@@ -146,27 +144,11 @@ window.createPortalSession = async function () {
   }
 };
 
-// ---------- "Qué puedo cocinar con lo que tengo" ----------
-// Igual que analyzeFoodPhoto: la lógica de verdad (premium, cuota, prompt a Gemini) vive en
-// functions/suggestMeals.js. Aquí solo se invoca y se traducen los errores — el catálogo de
-// alimentos hay que mandarlo desde app.jsx en cada llamada, porque la función no tiene forma de
-// leer el JSON de datos de la app (vive bajo una clave opaca en Firestore que solo entiende
-// app.jsx, no la Cloud Function).
-const suggestMealsCallable = httpsCallable(functions, "suggestMeals");
-
-window.suggestMeals = async function ({ photoDataUrl, especias, otrosIngredientes, catalogo }) {
-  try {
-    const respuesta = await suggestMealsCallable({ photoDataUrl, especias, otrosIngredientes, catalogo });
-    return respuesta.data.sugerencias;
-  } catch (err) {
-    throw errorDeFuncion(err, "No se han podido generar sugerencias. Inténtalo de nuevo.");
-  }
-};
-
 // ---------- «¿Qué cocino?» con dos modos: recetas (E2, 25-oct-2026) ----------
 // La pantalla nueva llama a esta (functions/suggestRecipes.js): recetas con ingredientes y pasos, sin macros,
-// en modo «con lo que tengo» o «tipo restaurante», con la despensa si el usuario la incluye. Comparte la cuota
-// de suggestMeals. Hay que desplegar la función antes de subir la app (ver suggestRecipes.js).
+// en modo «con lo que tengo» o «tipo restaurante», con la despensa si el usuario la incluye. Hay que desplegar la
+// función antes de subir la app (ver suggestRecipes.js). La versión de antes (suggestMeals) se retiró en noviembre de
+// 2026 (auditoría, R22): no la llamaba nadie desde octubre.
 const suggestRecipesCallable = httpsCallable(functions, "suggestRecipes");
 
 window.suggestRecipes = async function ({ modo, photoDataUrl, especias, otrosIngredientes, despensa, catalogo, idioma }) {
@@ -574,8 +556,10 @@ window.disablePushNotifications = function () {
 };
 
 // ---------- Almacenamiento respaldado por Firestore, ligado al usuario que ha iniciado sesión ----------
-// Misma forma que window.storage (get/set/delete/list), para que el resto de la app
-// (app.jsx) funcione exactamente igual sin tener que tocarlo.
+// Misma forma que window.storage (get/set/delete), para que el resto de la app (app.jsx) funcione exactamente igual
+// sin tener que tocarlo. Sin `list` a propósito (auditoría de noviembre de 2026, R11): leía la colección entera de la
+// cuenta, con todo su contenido, para quedarse con los nombres; estaba prohibido usarlo (CLAUDE.md) y nadie lo usaba,
+// así que se quitó para que nadie lo use sin querer. Las reglas de Firestore tampoco dejan listar.
 function makeFirestoreStorage(uid) {
   return {
     async get(key) {
@@ -593,14 +577,6 @@ function makeFirestoreStorage(uid) {
       const ref = doc(db, "users", uid, "keys", key);
       await deleteDoc(ref);
       return { key, deleted: true, shared: false };
-    },
-    async list(prefix) {
-      const snaps = await getDocs(collection(db, "users", uid, "keys"));
-      const keys = [];
-      snaps.forEach((d) => {
-        if (!prefix || d.id.startsWith(prefix)) keys.push(d.id);
-      });
-      return { keys, prefix, shared: false };
     },
   };
 }
@@ -679,16 +655,46 @@ window.deleteAccount = async function (password) {
 // React (mismo patrón que window.storage: el puente con Firebase vive aquí, app.jsx no sabe nada
 // de Firestore). Devuelve la función de "dejar de escuchar" de onSnapshot, para poder limpiarla
 // si el componente se desmonta.
+//
+// Si la escucha falla (sin red al abrir, una regla, un corte largo), Firestore la da por terminada y no vuelve a avisar
+// nunca en esa sesión: la app se quedaba «congelada» con lo último que sabía (si alguien pagaba justo después, no se
+// enteraba hasta recargar) y el error no quedaba en ningún sitio (auditoría de noviembre de 2026, R10). Ahora se apunta
+// en la consola y se vuelve a escuchar sola al cabo de un rato (más rato cada vez que falla seguido, hasta un minuto).
+// Mientras tanto se mantiene lo último que se sabía: un corte de red no le quita el premium a nadie.
+const ESPERA_PREMIUM_MS = [5000, 15000, 30000, 60000];
 window.subscribePremiumStatus = function (callback) {
   const user = auth.currentUser;
   if (!user) {
     callback({ active: false });
     return () => {};
   }
-  return onSnapshot(doc(db, "users", user.uid), (snap) => {
-    const datos = snap.data() || {};
-    callback(datos.premium || { active: false });
-  });
+  let dejarDeEscuchar = () => {};
+  let reintento = null;
+  let fallosSeguidos = 0;
+  let terminado = false;
+  const escuchar = () => {
+    dejarDeEscuchar = onSnapshot(
+      doc(db, "users", user.uid),
+      (snap) => {
+        fallosSeguidos = 0;
+        const datos = snap.data() || {};
+        callback(datos.premium || { active: false });
+      },
+      (err) => {
+        const espera = ESPERA_PREMIUM_MS[Math.min(fallosSeguidos, ESPERA_PREMIUM_MS.length - 1)];
+        fallosSeguidos++;
+        console.warn(`No se ha podido comprobar el premium (se reintenta en ${espera / 1000} s):`, (err && (err.code || err.message)) || err);
+        // Con otra cuenta (o sin ninguna) ya no se escucha: lo de esta sesión no tiene que pisar nada.
+        if (!terminado && esLaCuentaDeAhora(user.uid)) reintento = setTimeout(escuchar, espera);
+      }
+    );
+  };
+  escuchar();
+  return () => {
+    terminado = true;
+    clearTimeout(reintento);
+    dejarDeEscuchar();
+  };
 };
 
 // ---------- Migración: traer, una sola vez, los datos que ya hubiera en este navegador ----------

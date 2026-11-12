@@ -1615,7 +1615,8 @@ function escenarioNutrientesSalud({ azucaresAltoEnSal, carboSinDatos } = {}) {
 const PREFIJOS_NUEVOS = [
   "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
   "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio", "fitdraft.", "antesDeEmpezar.",
-  "perfilView.anioFueraDeRango", "ajustes.privacidad.", "privacidad.", "foto.",
+  "perfilView.anioFueraDeRango", "ajustes.privacidad.", "privacidad.", "foto.", "premiumView.pendiente",
+  "premiumView.avisoMetodos",
 ];
 
 function clavesSinTraducir(claves) {
