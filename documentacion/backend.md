@@ -34,14 +34,22 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
 - **Dependencias al día**: `npm audit --omit=dev` mira solo lo que se despliega. Los arreglos compatibles se
   aplican con `npm audit fix` (nunca `--force`, que sube versiones mayores sin revisarlas) y después se
   comprueba que `node -e "require('./index.js')"` carga y que `npm run test:reglas` sigue en verde; el
-  `package-lock.json` nuevo no llega a producción hasta el siguiente `firebase deploy --only functions`. Queda
-  abierto a propósito un aviso moderado de `uuid@9` dentro de `firebase-admin` 13 (vía `google-gax` y
-  `@google-cloud/storage`): afecta a `v3`/`v5`/`v6` con un búfer propio y esas librerías solo usan `v4`. Se
-  arregla pasando a `firebase-admin` 14, versión mayor que pide su propia revisión: **quita la forma de escribir
-  con espacios de nombres** (`admin.firestore()`, `admin.messaging()`, `admin.auth()`, `admin.firestore.FieldValue`),
-  que usan todas las funciones; hay que pasarlas antes a la modular (`getFirestore`, `FieldValue` de
-  `firebase-admin/firestore`, `getMessaging`, `getAuth`) y probar a mano las que no tienen pruebas (pagos, borrar la
-  cuenta, IA). Pide además Node 22, que ya es el de las funciones.
+  `package-lock.json` nuevo no llega a producción hasta el siguiente `firebase deploy --only functions`. Lo que se
+  despliega está a 0 avisos. El `npm audit` completo enseña uno alto de `@grpc/grpc-js` que solo está en las
+  herramientas de prueba (`firebase` → `@firebase/rules-unit-testing`): no se despliega.
+- **`firebase-admin` 14, en su forma modular**: `initializeApp` de `firebase-admin/app` (solo en `index.js`) y, en
+  cada función, `getFirestore`, `FieldValue` y `FieldPath` de `firebase-admin/firestore`, `getAuth` de
+  `firebase-admin/auth` y `getMessaging` de `firebase-admin/messaging`. La forma con espacios de nombres
+  (`admin.firestore()`, `admin.auth()`, `admin.firestore.FieldValue`…) **ya no existe** en la 14: escrita así, la
+  función carga bien y falla al llamarla. Los códigos de error de los que dependen las funciones no cambiaron con la
+  14 (`auth/user-not-found`, comprobado contra el emulador de Auth; `messaging/registration-token-not-registered` e
+  `invalid-registration-token`; los errores de las consultas de Firestore siguen llegando con su número de gRPC).
+  `firebase-functions-test` se quitó: no lo usaba ninguna prueba y no admite la 14.
+- **Node 22.12 o posterior en el ordenador desde el que se prueba y se despliega.** La 14 trae `jwks-rsa` 4, que
+  carga `jose` (un módulo ESM) con `require()`, y Node solo lo permite sin más desde la 22.12. Con una 22 anterior,
+  `firebase-admin/auth` no carga: fallan `node -e "require('./index.js')"`, las pruebas y **`firebase deploy`**, que
+  carga `index.js` en este ordenador para saber qué funciones hay. Las funciones en la nube usan la última 22 que
+  da Google (cada despliegue coge la del momento).
 - **Región: Bélgica (`europe-west1`)**, junto a Firestore (`eur3`). La fijan `setGlobalOptions` en `functions/index.js`
   y `REGION_FUNCIONES` en `auth-bootstrap.jsx` (el SDK sin región llama a `us-central1`): **si cambia una, cambia la
   otra**. El webhook de Stripe apunta a la URL de esta región (la que escribe `firebase deploy` junto a
