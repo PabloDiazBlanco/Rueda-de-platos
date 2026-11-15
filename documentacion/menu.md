@@ -80,8 +80,13 @@ Estos cuatro documentos no tienen `version` ni migración: si cambia la forma de
   «documento» (título, secciones y líneas) y la pieza común lo pasa a texto o lo dibuja. El del menú lo arma
   `documentoMenu`: en texto, cada comida con sus ingredientes (y gramos en el completo); en imagen, solo los
   platos (y las kcal en el completo). La imagen se prepara al abrir las opciones, no al elegir «Imagen»,
-  porque Safari solo deja abrir el menú de compartir justo después de un toque. El menú no tiene versión
-  imprimible; el seguimiento de peso y el catálogo de alimentos sí (`window.print`).
+  porque Safari solo deja abrir el menú de compartir justo después de un toque.
+  La misma pieza comparte un entreno, el seguimiento de peso (ver `cuerpo.md`) y el catálogo de alimentos
+  (`documentoCatalogo`, `ui/catalogo/alimentos.jsx`: por carpetas; en texto, todos los valores por 100 g y el
+  origen; en imagen, las kcal y P/G/C). **No queda ninguna versión imprimible** (`window.print`): salían con
+  mal formato y en iPhone no se podían usar. El documento admite una `nota` bajo la cabecera y una `grafica`
+  de puntos (solo en la imagen). Si la imagen pasaría de unos 16 millones de píxeles (lo que pinta como mucho
+  un iPhone; con 1080 px de ancho, unos 15 500 de alto), se dibuja a escala para que salga igual.
 
 ## Limitaciones conocidas
 

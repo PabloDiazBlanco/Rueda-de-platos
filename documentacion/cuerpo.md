@@ -11,8 +11,9 @@ gráficas, `local/ideas/esteticas/09-graficas.html`. El mapa corporal tiene su p
 
 - `ui/cuerpo/`: `informes.jsx` (`textosInforme`), `constructor.jsx`, `graficas.jsx`, `sueno.jsx`,
   `pasos.jsx`, `periodo.jsx` (`leerPeriodoLocal`).
-- `ui/peso/`: `seguimiento.jsx` (seguimiento de peso, premium), `bascula.jsx`, `grafica.jsx`,
-  `resumen-mensual.jsx`, `medidas.jsx` (solo el aviso de «próximamente»).
+- `ui/peso/`: `seguimiento.jsx` (seguimiento de peso, premium), `bascula.jsx`, `grafica.jsx` (la gráfica y
+  `documentoSeguimiento`, para compartir), `resumen-mensual.jsx`, `medidas.jsx` (solo el aviso de
+  «próximamente»).
 - `ui/entreno/aviso-actividad.jsx` y `aviso-grupos.jsx` (los avisos, que se ven en Entrenar).
 - Estado: `ui/estado/cuerpo.js` (`useCuerpo`), `ui/estado/peso.js`.
 - Lógica: `informes.js`, `cuerpo-series.js`, `cuerpo-diario.js`, `periodo.js`, `peso.js`,
@@ -79,6 +80,11 @@ El peso vive en `data.pesoTracking` (clave principal, ver `datos.md`).
   adultos: AASM/SRS, Watson et al., 2015) y enlace al constructor.
 - **Pasos** (`pasos.jsx`, al final de Actividad diaria, gratis): campo con −1000 / +1000 y barras de la
   semana. Solo para los informes; no cambian el gasto.
+- **Compartir el seguimiento de peso** (`documentoSeguimiento` en `ui/peso/grafica.jsx`, con `BotonCompartir`,
+  ver «Compartir» en `menu.md`): el cierre de un ciclo y el rango elegido en la progresión, como texto o
+  imagen. Cabecera con la tendencia (si la hay), las pesadas por años (la fecha corta no lleva año y el
+  histórico completo puede abarcar varios) con las atípicas y su motivo, y en la imagen la misma gráfica que
+  en pantalla (`serieGraficaPeso` calcula los puntos y el rango para las dos). Sustituye al PDF.
 - **Báscula** (`ui/peso/bascula.jsx`, en el registro de peso): cinta bajo la línea roja, lupa donde se
   escribe, pies que se suben. Sin nada escrito, la cinta descansa en el peso del perfil (no en el del día: el
   ciclo abierto no enseña cifras). Con «reducir movimiento», sin animaciones.
