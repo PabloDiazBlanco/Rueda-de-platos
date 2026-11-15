@@ -24,7 +24,7 @@
 const { onCall, HttpsError } = require("firebase-functions/https");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { GoogleGenAI } = require("@google/genai");
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
@@ -91,8 +91,8 @@ function construirPrompt({ modo, despensa, catalogo, especias, otrosIngredientes
 
 async function reservarHuecoDeCuota(uid) {
   const mesActual = new Date().toISOString().slice(0, 7);
-  const ref = admin.firestore().doc(`users/${uid}`);
-  await admin.firestore().runTransaction(async (tx) => {
+  const ref = getFirestore().doc(`users/${uid}`);
+  await getFirestore().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const datos = snap.data() || {};
     if (!datos.premium || !datos.premium.active) {
@@ -107,8 +107,8 @@ async function reservarHuecoDeCuota(uid) {
 }
 
 async function devolverHuecoDeCuota(uid) {
-  await admin.firestore().doc(`users/${uid}`)
-    .update({ "usoCocinar.contador": admin.firestore.FieldValue.increment(-1) })
+  await getFirestore().doc(`users/${uid}`)
+    .update({ "usoCocinar.contador": FieldValue.increment(-1) })
     .catch((err) => logger.error("No se ha podido devolver el hueco de cuota de suggestRecipes tras un fallo", err));
 }
 

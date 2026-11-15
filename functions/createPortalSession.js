@@ -6,7 +6,7 @@
 
 const { onCall, HttpsError } = require("firebase-functions/https");
 const { defineSecret } = require("firebase-functions/params");
-const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 const Stripe = require("stripe");
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
@@ -18,7 +18,7 @@ exports.createPortalSession = onCall({ secrets: [stripeSecretKey], enforceAppChe
   }
 
   const uid = request.auth.uid;
-  const snap = await admin.firestore().doc(`users/${uid}`).get();
+  const snap = await getFirestore().doc(`users/${uid}`).get();
   const datos = snap.data() || {};
   const stripeCustomerId = datos.premium && datos.premium.stripeCustomerId;
 

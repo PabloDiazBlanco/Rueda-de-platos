@@ -42,7 +42,8 @@
 // cubre un despliegue en mal orden (las funciones antes que los índices) y los minutos que tarda en crearse un
 // índice nuevo. El emulador de Firestore no exige índices, así que las pruebas no notarían que falta uno: el plan B
 // se prueba simulando el error (functions/pruebas-funciones/).
-const admin = require("firebase-admin");
+const { getFirestore, FieldValue, FieldPath } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 const logger = require("firebase-functions/logger");
 
 // Los cinco idiomas de la app (logica/i18n.js). Las reglas ya solo aceptan estos; si llegara otro, español.
@@ -169,9 +170,8 @@ async function aLaVez(lista, limite, tarea) {
 // tiene su plan B, ni un fallo pasajero que se arregle al reintentarlo: leerPagina): las cuentas de las páginas
 // anteriores ya han recibido su aviso; las demás no, y queda el error en el registro.
 async function recorrerBuzones(campo, nombre, tratar) {
-  const { FieldPath } = admin.firestore;
   // Una sola búsqueda en todas las cuentas: la filtrada y la de todos (plan B) salen de aquí.
-  const grupo = admin.firestore().collectionGroup("avisos");
+  const grupo = getFirestore().collectionGroup("avisos");
   let filtrar = true;
   let ultimo = null; // el último documento de la página anterior: la siguiente empieza justo después
   let tratados = 0;
@@ -215,7 +215,7 @@ async function enviarAlBuzon(buzon, { titulo, cuerpo, etiqueta }) {
   const mensaje = { tokens: buzon.tokens, notification: { title: titulo, body: cuerpo } };
   // `data.tag` le dice a sw.js con qué etiqueta mostrarla, para que un aviso no sustituya al otro.
   if (etiqueta) mensaje.data = { tag: etiqueta };
-  const respuesta = await admin.messaging().sendEachForMulticast(mensaje);
+  const respuesta = await getMessaging().sendEachForMulticast(mensaje);
 
   const caducados = [];
   respuesta.responses.forEach((r, i) => {
@@ -225,7 +225,7 @@ async function enviarAlBuzon(buzon, { titulo, cuerpo, etiqueta }) {
   });
   if (caducados.length) {
     await buzon.ref
-      .update({ tokens: admin.firestore.FieldValue.arrayRemove(...caducados) })
+      .update({ tokens: FieldValue.arrayRemove(...caducados) })
       .then(() => logger.info(`${buzon.uid}: ${caducados.length} aparato(s) con el token caducado, se quitan del buzón`))
       .catch((err) => logger.error(`${buzon.uid}: no se han podido quitar los tokens caducados`, err));
   }

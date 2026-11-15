@@ -32,7 +32,7 @@
 // sugeridos en logica/peso.js, hay que replicar el cambio aquí también — son solo dos líneas.
 const { onSchedule } = require("firebase-functions/scheduler");
 const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
 const { recorrerBuzones, enviarAlBuzon } = require("./buzonAvisos");
 
 const STORAGE_KEY = "rueda-de-platos:data-v1";
@@ -142,7 +142,7 @@ exports.sendWeighInReminders = onSchedule(
           conDatos++;
           let datos;
           try {
-            const snap = await admin.firestore().doc(`users/${uid}/keys/${STORAGE_KEY}`).get();
+            const snap = await getFirestore().doc(`users/${uid}/keys/${STORAGE_KEY}`).get();
             if (!snap.exists) {
               logger.info(`${uid}: sin documento de datos guardado, se omite`);
               return;

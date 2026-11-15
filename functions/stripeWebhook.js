@@ -18,7 +18,8 @@
 const { onRequest } = require("firebase-functions/https");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 const Stripe = require("stripe");
 const { estadoPremium, suscripcionDelAviso, AVISOS_ATENDIDOS } = require("./estadoPremium");
 
@@ -43,7 +44,7 @@ async function guardarEstadoPremium(uid, { activo, pendiente, stripeCustomerId, 
   // customer.subscription.deleted: escribir aquí recrearía users/{uid} para alguien que ya no existe. Si el
   // usuario no está en Auth, no se escribe nada.
   try {
-    await admin.auth().getUser(uid);
+    await getAuth().getUser(uid);
   } catch (err) {
     if (err && err.code === "auth/user-not-found") {
       logger.info("Evento de Stripe de una cuenta ya eliminada: no se escribe nada.", { uid, subscriptionId });
@@ -51,13 +52,13 @@ async function guardarEstadoPremium(uid, { activo, pendiente, stripeCustomerId, 
     }
     throw err;
   }
-  const ref = admin.firestore().doc(`users/${uid}`);
+  const ref = getFirestore().doc(`users/${uid}`);
   const premium = {
     active: activo,
     pendiente: !!pendiente,
     stripeCustomerId,
     subscriptionId,
-    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
   // Activar, o dejar el pago «pendiente», sí crea el documento: es el primer contacto de la cuenta con Stripe y la app
   // tiene que poder enseñar que el pago se está procesando.

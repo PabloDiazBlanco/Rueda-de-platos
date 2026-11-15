@@ -21,24 +21,26 @@
 
 const { describe, it, before, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
-const admin = require("firebase-admin");
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore, Query, Timestamp } = require("firebase-admin/firestore");
+const { getMessaging } = require("firebase-admin/messaging");
 
 const ID_PROYECTO = "demo-rueda-de-platos";
 // `firebase emulators:exec` pone FIRESTORE_EMULATOR_HOST: así el Admin SDK habla con el emulador y no con la nube.
 if (!process.env.FIRESTORE_EMULATOR_HOST) {
   throw new Error("Estas pruebas se lanzan con `npm run test:avisos` (necesitan el emulador de Firestore).");
 }
-admin.initializeApp({ projectId: ID_PROYECTO });
-const db = admin.firestore();
+initializeApp({ projectId: ID_PROYECTO });
+const db = getFirestore();
 
 // ---------- FCM falso ----------
-// Las funciones llaman a admin.messaging().sendEachForMulticast; la instancia es siempre la misma, así que basta con
+// Las funciones llaman a getMessaging().sendEachForMulticast; la instancia es siempre la misma, así que basta con
 // cambiarle ese método. Los tokens de `fallosFCM` responden con el error que se les ponga: los dos que significan
 // «este aparato ya no existe» (NO_REGISTRADO, INVALIDO) o uno pasajero, que no dice nada del token.
 const NO_REGISTRADO = "messaging/registration-token-not-registered";
 const INVALIDO = "messaging/invalid-registration-token";
 const PASAJERO = "messaging/internal-error";
-const mensajeria = admin.messaging();
+const mensajeria = getMessaging();
 let enviados = [];
 let fallosFCM = new Map();
 // Para las tandas: cada envío tarda `retrasoFCM` ms, y se apunta cuántos hay en marcha a la vez como máximo.
@@ -77,7 +79,7 @@ db.collectionGroup = (nombre) => {
 // documentos ha traído. `_queryOptions` es interno del SDK de Firestore: se usa solo aquí, en las pruebas, para ver
 // con qué filtro se ha pedido cada página. `faltaIndice(n)` simula que la n-ésima consulta filtrada falla porque el
 // índice no existe (el error que daría Firestore de verdad: el emulador no exige índices).
-const Consulta = admin.firestore.Query.prototype;
+const Consulta = Query.prototype;
 const getConsultaOriginal = Consulta.get;
 let paginas = [];
 let faltaIndice = () => false;
@@ -114,7 +116,7 @@ const { ESCALA } = require("../buzonAvisos");
 const ESCALA_DE_SERIE = { ...ESCALA };
 
 // ---------- Datos de prueba ----------
-const HACE_UN_RATO = admin.firestore.Timestamp.fromDate(new Date("2026-11-03T18:00:00Z"));
+const HACE_UN_RATO = Timestamp.fromDate(new Date("2026-11-03T18:00:00Z"));
 // Se escriben con docOriginal para que no cuenten como lecturas de las funciones.
 const ponerBuzon = (uid, datos, id = "push") =>
   docOriginal(`users/${uid}/avisos/${id}`).set({
@@ -130,8 +132,8 @@ const peso = (cambios = {}) => ({ vecesSemana: 3, pausas: [], entradas: [], ...c
 const MIERCOLES = { scheduleTime: "2026-11-04T08:00:00.000Z" };
 
 before(() => {
-  assert.equal(admin.messaging(), mensajeria, "admin.messaging() tiene que devolver siempre la misma instancia");
-  assert.equal(admin.firestore(), db, "admin.firestore() tiene que devolver siempre la misma instancia");
+  assert.equal(getMessaging(), mensajeria, "getMessaging() tiene que devolver siempre la misma instancia");
+  assert.equal(getFirestore(), db, "getFirestore() tiene que devolver siempre la misma instancia");
 });
 
 beforeEach(async () => {

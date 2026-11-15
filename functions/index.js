@@ -1,10 +1,12 @@
 // Punto de entrada de las Cloud Functions del proyecto. Cada función vive en su propio archivo
 // (mismo criterio que logica/ en la app principal: un archivo, una responsabilidad) — este
 // fichero solo inicializa lo compartido por todas y las reexporta.
-const admin = require("firebase-admin");
+// Forma modular de firebase-admin (`initializeApp` aquí; `getFirestore`, `getAuth`, `getMessaging` y `FieldValue` en
+// cada función): la de espacios de nombres (`admin.firestore()`, `admin.auth()`...) desapareció en la versión 14.
+const { initializeApp } = require("firebase-admin/app");
 const { setGlobalOptions } = require("firebase-functions");
 
-admin.initializeApp();
+initializeApp();
 
 // Región de todas las funciones: Bélgica (`europe-west1`), al lado de los datos (Firestore está en `eur3`, Bélgica y
 // Países Bajos). Hasta noviembre de 2026 no se fijaba ninguna y caían en `us-central1` (Iowa): cada llamada cruzaba el

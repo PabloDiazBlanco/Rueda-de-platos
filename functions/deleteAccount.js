@@ -23,7 +23,8 @@
 const { onCall, HttpsError } = require("firebase-functions/https");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { getFirestore } = require("firebase-admin/firestore");
+const { getAuth } = require("firebase-admin/auth");
 const Stripe = require("stripe");
 
 const stripeSecretKey = defineSecret("STRIPE_SECRET_KEY");
@@ -83,7 +84,7 @@ exports.deleteAccount = onCall({ secrets: [stripeSecretKey], enforceAppCheck: tr
     throw new HttpsError("failed-precondition", "Por seguridad, vuelve a confirmar tu identidad antes de eliminar la cuenta.");
   }
 
-  const db = admin.firestore();
+  const db = getFirestore();
   const ref = db.doc(`users/${uid}`);
   const datos = (await ref.get()).data() || {};
 
@@ -101,7 +102,7 @@ exports.deleteAccount = onCall({ secrets: [stripeSecretKey], enforceAppCheck: tr
   // 3-5. Datos y cuenta.
   await db.recursiveDelete(ref);
   try {
-    await admin.auth().deleteUser(uid);
+    await getAuth().deleteUser(uid);
   } catch (err) {
     if (!err || err.code !== "auth/user-not-found") throw err;
   }

@@ -13,7 +13,7 @@
 const { onCall, HttpsError } = require("firebase-functions/https");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
-const admin = require("firebase-admin");
+const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 const { GoogleGenAI } = require("@google/genai");
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
@@ -49,9 +49,9 @@ function dataUrlAImagePart(dataUrl) {
 // Esta es la pieza de toda la Fase 2 que más cuidado pedía tener — ver la hoja de ruta.
 async function reservarHuecoDeCuota(uid) {
   const mesActual = new Date().toISOString().slice(0, 7); // "2026-09"
-  const ref = admin.firestore().doc(`users/${uid}`);
+  const ref = getFirestore().doc(`users/${uid}`);
 
-  await admin.firestore().runTransaction(async (tx) => {
+  await getFirestore().runTransaction(async (tx) => {
     const snap = await tx.get(ref);
     const datos = snap.data() || {};
 
@@ -79,10 +79,9 @@ async function reservarHuecoDeCuota(uid) {
 // impreciso a favor del usuario, nunca en contra ni por encima del límite real (eso ya lo
 // garantiza solo la reserva de arriba).
 async function devolverHuecoDeCuota(uid) {
-  await admin
-    .firestore()
+  await getFirestore()
     .doc(`users/${uid}`)
-    .update({ "usoFotos.contador": admin.firestore.FieldValue.increment(-1) })
+    .update({ "usoFotos.contador": FieldValue.increment(-1) })
     .catch((err) => logger.error("No se ha podido devolver el hueco de cuota tras un fallo de Gemini", err));
 }
 
