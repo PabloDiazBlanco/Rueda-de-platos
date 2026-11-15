@@ -240,7 +240,7 @@ export function TerminarEntreno({ entreno, idioma, onVolver, onGuardado }) {
       )}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
-        {!vacia && <BotonCompartir construirDocumento={() => documentoSesion(final, entreno, idioma)} nombreArchivo="entreno" idioma={idioma} />}
+        {!vacia && <BotonCompartir construirDocumento={() => documentoSesion(final, entreno, idioma)} nombreArchivo="entreno.png" idioma={idioma} />}
         <BotonSecundario peligro onClick={() => setDescartar(true)}>{t(idioma, "entreno.terminar.descartar")}</BotonSecundario>
       </div>
 

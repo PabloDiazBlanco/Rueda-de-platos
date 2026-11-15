@@ -5,8 +5,9 @@ import { DIAS_SEMANA_CORTO, DIAS_SUGERIDOS_PESO, PESO_FRECUENCIAS, PESO_DURACION
 import { t } from "i18n";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
-import { PesoLineChart, PrintSeguimiento } from "./grafica.jsx";
+import { PesoLineChart, documentoSeguimiento } from "./grafica.jsx";
 import { Bascula } from "./bascula.jsx";
+import { BotonCompartir } from "../comun/compartir.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
 
 // DIAS_SEMANA_CORTO (logica/peso.js) ya viene abreviado en español ("Dom","Lun"...) — para
@@ -87,16 +88,8 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
   const [rangoProgresion, setRangoProgresion] = useState("3m");
   const [aplicarKcalToggle, setAplicarKcalToggle] = useState(false);
   const [actualizarPesoToggle, setActualizarPesoToggle] = useState(true);
-  const [printPayload, setPrintPayload] = useState(null);
   const [pausando, setPausando] = useState(false);
   const [motivoPausa, setMotivoPausa] = useState("");
-
-  // Deja el contenido a imprimir listo en el DOM y espera a que React lo pinte (doble
-  // requestAnimationFrame) antes de abrir el diálogo de impresión del navegador.
-  function exportarSeguimiento(entradasAExportar, tendenciaAExportar, titulo) {
-    setPrintPayload({ entradas: entradasAExportar, tendencia: tendenciaAExportar, titulo });
-    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-  }
 
   const hoy = new Date();
   const hoyISO = fechaISO(hoy);
@@ -241,15 +234,12 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
                 >
                   {t(idioma, "pesoView.cerrarCiclo")}
                 </ModalBtn>
-                <button
-                  onClick={() => exportarSeguimiento(entradas, tendencia, t(idioma, "pesoView.cicloCerradoHoyTitulo"))}
-                  style={{
-                    background: "none", border: "none", cursor: "pointer", padding: 0,
-                    fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
-                  }}
-                >
-                  {t(idioma, "pesoView.exportarCierre")}
-                </button>
+                {/* Compartir el cierre como texto o imagen (antes, un PDF con window.print). */}
+                <BotonCompartir
+                  construirDocumento={(formato) => documentoSeguimiento(entradas, tendencia, t(idioma, "pesoView.cicloCerradoHoyTitulo"), idioma, formato)}
+                  nombreArchivo="seguimiento-peso.png"
+                  idioma={idioma}
+                />
               </div>
             </>
           ) : (
@@ -453,15 +443,13 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
           {historialFiltrado.length >= 2 ? (
             <>
               <PesoLineChart entradas={historialFiltrado} tendencia={null} idioma={idioma} />
-              <button
-                onClick={() => exportarSeguimiento(historialFiltrado, null, t(idioma, "rango." + rangoProgresion))}
-                style={{
-                  marginTop: 10, background: "none", border: "none", cursor: "pointer", padding: 0,
-                  fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--green-dark)",
-                }}
-              >
-                {t(idioma, "pesoView.exportarRango")}
-              </button>
+              <div style={{ marginTop: 10, display: "flex" }}>
+                <BotonCompartir
+                  construirDocumento={(formato) => documentoSeguimiento(historialFiltrado, null, t(idioma, "rango." + rangoProgresion), idioma, formato)}
+                  nombreArchivo="seguimiento-peso.png"
+                  idioma={idioma}
+                />
+              </div>
             </>
           ) : (
             <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--ink-soft)", lineHeight: 1.55, margin: 0 }}>
@@ -471,10 +459,6 @@ export function PesoView({ perfil, pesoTracking, onAddPeso, onUpdateConfig, onDi
             </p>
           )}
         </div>
-      )}
-
-      {printPayload && (
-        <PrintSeguimiento entradas={printPayload.entradas} tendencia={printPayload.tendencia} titulo={printPayload.titulo} idioma={idioma} />
       )}
     </div>
   );

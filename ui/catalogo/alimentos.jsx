@@ -1,8 +1,8 @@
 // ---------- ui/catalogo/alimentos.jsx ----------
 // Base de datos de alimentos: lista con buscador, edición (también desde foto de etiqueta),
-// borrado e impresión.
+// borrado y compartir el catálogo como texto o imagen.
 import React, { useState, useRef } from "react";
-import { Plus, Trash2, Pencil, AlertCircle, Search, Link2, Download, Camera, ChevronDown } from "lucide-react";
+import { Plus, Trash2, Pencil, AlertCircle, Search, Link2, Camera, ChevronDown } from "lucide-react";
 import { fmt } from "macros";
 import { uid, primerEmoji } from "comun";
 import { fechaISO, formatFechaCorta } from "peso";
@@ -13,22 +13,15 @@ import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
 import { ModalShell, Field, inputStyle, ModalBtn, IconBtn } from "../comun/modal.jsx";
 import { SectionIntro, MacroPill } from "../comun/tarjetas.jsx";
 import { emojiCarpeta } from "../despensa/piezas.jsx";
-import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
+import { BotonCompartir } from "../comun/compartir.jsx";
+import { FUENTE_TEXTO } from "../estilos.js";
 
 export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFromPhoto, idioma }) {
   const [query, setQuery] = useState("");
   // Igual que el menú lateral: cada categoría se expande de forma independiente, varias pueden
   // estar abiertas a la vez (no es un acordeón de "una sola a la vez").
   const [expandido, setExpandido] = useState({});
-  const [exportando, setExportando] = useState(false);
   const fileInputRef = useRef(null);
-
-  // Mismo mecanismo que la exportación del menú y del seguimiento de peso: deja el contenido
-  // listo en el DOM (oculto en pantalla) y espera a que React lo pinte antes de abrir "Imprimir".
-  function exportarCatalogo() {
-    setExportando(true);
-    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-  }
 
   const usageCount = (foodId) => ingredients.filter((i) => i.foodId === foodId).length;
   // Alimentos creados antes de la categorización (Tanda 1) o con una categoria que ya no existe
@@ -122,17 +115,14 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
         >
           <Plus size={14} /> {t(idioma, "foodsView.nuevoAlimento")}
         </button>
-        <button
-          onClick={exportarCatalogo}
-          style={{
-            fontFamily: FUENTE_TEXTO,
-            fontSize: 13, fontWeight: 700, color: "var(--ink-soft)", background: "transparent",
-            border: "1px solid var(--line)", borderRadius: 8, padding: "9px 14px",
-            display: "flex", alignItems: "center", gap: 6, flexShrink: 0,
-          }}
-        >
-          <Download size={14} /> {t(idioma, "foodsView.exportarCatalogo")}
-        </button>
+        {/* Compartir el catálogo como texto o imagen (antes, un PDF con window.print). */}
+        {foods.length > 0 && (
+          <BotonCompartir
+            construirDocumento={(formato) => documentoCatalogo(foods, categorias, bucketKeyFor, idioma, formato)}
+            nombreArchivo="catalogo-alimentos.png"
+            idioma={idioma}
+          />
+        )}
       </div>
       {errorFoto && (
         <div role="alert" style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, color: "var(--rust)", margin: "-8px 0 14px" }}>
@@ -236,75 +226,43 @@ export function FoodsView({ foods, ingredients, onEdit, onNew, onDelete, onNewFr
           </div>
         )}
       </div>
-
-      {exportando && <PrintFoods foods={foods} idioma={idioma} />}
     </>
   );
 }
 
-// Ficha imprimible del catálogo de alimentos completo — mismo mecanismo que PrintSeguimiento
-// (ui/peso/grafica.jsx): oculto en pantalla, visible solo al imprimir vía window.print().
-function PrintFoods({ foods, idioma }) {
-  const ordenados = [...foods].sort((a, b) => a.name.localeCompare(b.name, "es"));
-  return (
-    <div id="print-foods">
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #print-foods, #print-foods * { visibility: visible; }
-          #print-foods { position: absolute; left: 0; top: 0; width: 100%; }
-        }
-        @media screen {
-          #print-foods { display: none; }
-        }
-      `}</style>
-      <div style={{ padding: 24, fontFamily: FUENTE_TITULOS, color: "#2b2b26" }}>
-        <div style={{ marginBottom: 4 }}>
-          <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, letterSpacing: 2, textTransform: "uppercase", color: "#6b6a5e" }}>
-            FoodDraft
-          </div>
-          <h1 style={{ fontSize: 26, color: "#1f4d38", margin: "2px 0 0 0" }}>{t(idioma, "printFoods.titulo")}</h1>
-        </div>
-        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 11, color: "#6b6a5e", marginBottom: 16 }}>
-          {t(idioma, "printFoods.resumen", { n: ordenados.length, fecha: formatFechaCorta(fechaISO(new Date()), idioma) })}
-        </div>
-
-        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: FUENTE_TEXTO, fontSize: 10.5 }}>
-          <thead>
-            <tr style={{ background: "#1f4d38", color: "#fff" }}>
-              {[
-                t(idioma, "printFoods.alimento"), "kcal", t(idioma, "printFoods.prot"), t(idioma, "printFoods.grasa"),
-                t(idioma, "printFoods.carb"), t(idioma, "printFoods.sal"), t(idioma, "printFoods.azuc"),
-                t(idioma, "printFoods.fibra"), t(idioma, "printFoods.sat"), t(idioma, "printFoods.origen"),
-              ].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "6px 7px", fontWeight: 700 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {ordenados.map((f, i) => (
-              <tr key={f.id} style={{ background: i % 2 === 1 ? "#f1ede0" : "transparent", pageBreakInside: "avoid" }}>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{f.name}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.kcal)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.prot)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.fat)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.carb)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.sal)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.azucares)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.fibra)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf" }}>{fmt(f.grasaSaturada)}</td>
-                <td style={{ padding: "5px 7px", borderBottom: "1px solid #ddd6bf", fontSize: 9.5, color: "#6b6a5e" }}>{f.fuente}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        <div style={{ fontFamily: FUENTE_TEXTO, fontSize: 9.5, color: "#999", textAlign: "center", marginTop: 20 }}>
-          {t(idioma, "printFoods.pie")}
-        </div>
-      </div>
-    </div>
-  );
+// El catálogo de alimentos como «documento» para compartirlo como texto o como imagen (BotonCompartir,
+// ui/comun/compartir.jsx). Sustituye a la ficha imprimible (window.print), que salía con mal formato y en
+// iPhone no se podía usar (Pablo, noviembre de 2026). Va por carpetas, en el mismo orden que la lista de la
+// pantalla (las mismas `categorias` y `bucketKeyFor`, para que un alimento sin carpeta válida no se pierda), y
+// por orden alfabético dentro de cada una, como iba el PDF.
+// - Texto: todos los valores por 100 g que llevaba el PDF (kcal, proteína, grasa, carbohidratos, sal, azúcares,
+//   fibra y saturadas) y el origen, para pegarlo donde se quiera.
+// - Imagen: las kcal y los tres macros, con las mismas letras P, G y C que las pastillas de la lista: con los
+//   ocho valores la línea no cabría en el ancho de un móvil y el nombre del alimento se quedaría sin sitio.
+function documentoCatalogo(foods, categorias, bucketKeyFor, idioma, formato) {
+  const valoresTexto = (f) => [
+    `${fmt(f.kcal)} kcal`,
+    `${t(idioma, "printFoods.prot")} ${fmt(f.prot)}`,
+    `${t(idioma, "printFoods.grasa")} ${fmt(f.fat)}`,
+    `${t(idioma, "printFoods.carb")} ${fmt(f.carb)}`,
+    `${t(idioma, "printFoods.sal")} ${fmt(f.sal)}`,
+    `${t(idioma, "printFoods.azuc")} ${fmt(f.azucares)}`,
+    `${t(idioma, "printFoods.fibra")} ${fmt(f.fibra)}`,
+    `${t(idioma, "printFoods.sat")} ${fmt(f.grasaSaturada)}`,
+    f.fuente ? `${t(idioma, "printFoods.origen")} ${f.fuente}` : null,
+  ].filter(Boolean).join(" · ");
+  const valoresImagen = (f) => `${fmt(f.kcal)} kcal · P ${fmt(f.prot)} · G ${fmt(f.fat)} · C ${fmt(f.carb)}`;
+  return {
+    titulo: t(idioma, "printFoods.titulo"),
+    subtitulo: t(idioma, "printFoods.resumen", { n: foods.length, fecha: formatFechaCorta(fechaISO(new Date()), idioma) }),
+    secciones: categorias.map((cat) => ({
+      titulo: t(idioma, cat.labelKey),
+      lineas: foods
+        .filter((f) => bucketKeyFor(f) === cat.key)
+        .sort((a, b) => a.name.localeCompare(b.name, "es"))
+        .map((f) => ({ texto: f.name, detalle: formato === "imagen" ? valoresImagen(f) : valoresTexto(f) })),
+    })),
+  };
 }
 
 export function FoodEditModal({ state, onClose, onSave, idioma }) {

@@ -2,19 +2,21 @@
 // Pantalla de Premium (ventajas, pago y gestión de la suscripción) y el aviso que se enseña en
 // las funciones premium sin suscripción.
 import React, { useState } from "react";
-import { Sparkles, CalendarDays, Camera, Scale, ThumbsUp } from "lucide-react";
+import { Sparkles, CalendarDays, Camera, Scale } from "lucide-react";
 import { t } from "i18n";
 import { mensajeErrorFuncion } from "../comun/errores.js";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 
 // ---------- Premium ----------
 
+// Lo que añade el premium. Hasta noviembre de 2026 había una quinta ventaja, «Sin anuncios», que se
+// quitó al decidir Pablo (15-nov) que la app no tendrá anuncios para nadie: anunciarla como ventaja del
+// premium habría sido vender algo que ya tiene todo el mundo.
 const VENTAJAS_PREMIUM = [
   { icon: Camera, textoKey: "premiumView.ventaja1" },
   { icon: Scale, textoKey: "premiumView.ventaja2" },
   { icon: Sparkles, textoKey: "premiumView.ventaja3" },
   { icon: CalendarDays, textoKey: "premiumView.ventaja4" },
-  { icon: ThumbsUp, textoKey: "premiumView.ventaja5" },
 ];
 
 // Pantalla única para hacerse premium o gestionar la suscripción ya activa — la diferencia entre

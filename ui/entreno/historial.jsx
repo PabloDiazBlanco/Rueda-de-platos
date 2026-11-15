@@ -265,7 +265,7 @@ export function DetalleSesionView({ entreno, idioma, navegar, params, onAbrirEje
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {!pendiente && <BotonSecundario onClick={() => setEditando(JSON.parse(JSON.stringify(sesion)))}><Pencil size={14} /> {t(idioma, "entreno.detalle.editar")}</BotonSecundario>}
             <BotonSecundario onClick={() => setComoRutina(sesion.nombre || "")}><ClipboardList size={14} /> {t(idioma, "entreno.detalle.comoRutina")}</BotonSecundario>
-            <BotonCompartir construirDocumento={() => documentoSesion(sesion, entreno, idioma)} nombreArchivo="entreno" idioma={idioma} />
+            <BotonCompartir construirDocumento={() => documentoSesion(sesion, entreno, idioma)} nombreArchivo="entreno.png" idioma={idioma} />
           </div>
           {!pendiente && (
             <BotonTexto onClick={() => setBorrar(true)} color="var(--rust)"><Trash2 size={14} /> {t(idioma, "entreno.detalle.borrar")}</BotonTexto>

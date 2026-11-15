@@ -655,7 +655,6 @@ const TEXTOS = {
     "premiumView.ventaja2": "Seguimiento de peso completo: ciclos, tendencia y ajuste automático de objetivos",
     "premiumView.ventaja3": "\"Qué puedo cocinar con lo que tengo\" a partir de una foto y/o texto con tus ingredientes",
     "premiumView.ventaja4": "Informes cruzados: tu entreno, tu comida y tu peso juntos, mes a mes",
-    "premiumView.ventaja5": "Sin anuncios",
 
     "suggestMeals.intro": "Manda una foto de lo que tengas (nevera, despensa...), escribe qué ingredientes tienes, o ambas cosas — te sugerimos combinaciones hechas solo con alimentos de tu propio catálogo, con macros reales, no una estimación de la IA.",
     "suggestMeals.cambiarFoto": "Cambiar foto",
@@ -711,11 +710,7 @@ const TEXTOS = {
     "printSeguimiento.titulo": "Seguimiento de peso",
     "printSeguimiento.exportadoEl": "{titulo} · exportado el {fecha}",
     "printSeguimiento.tendencia": "Tendencia: {signo}{pct}%/semana",
-    "printSeguimiento.fecha": "Fecha",
-    "printSeguimiento.pesoKg": "Peso (kg)",
-    "printSeguimiento.nota": "Nota",
     "printSeguimiento.atipica": "Atípica{detalle}",
-    "printSeguimiento.pie": "FoodDraft — documento generado a partir de tu seguimiento de peso",
 
     "pesoView.intro": "Pésate 2-3 veces por semana, repartidas a lo largo de la semana. Mientras el ciclo esté abierto no verás el número evolucionar — solo al cerrarlo, para no obsesionarte con las variaciones del día a día.",
     "pesoView.cicloTerminado": "Ciclo terminado — {n} pesadas registradas",
@@ -727,7 +722,6 @@ const TEXTOS = {
     "pesoView.noCambiaEtapa": "No cambia tu etapa ({etapa}) — solo afina la intensidad dentro de ella.",
     "pesoView.cerrarCiclo": "Cerrar ciclo y empezar el siguiente",
     "pesoView.cicloCerradoHoyTitulo": "Ciclo cerrado hoy",
-    "pesoView.exportarCierre": "📄 Exportar este cierre en PDF",
     "pesoView.sinPesadasSuficientes": "No hay pesadas suficientes (sin contar las atípicas) para calcular una tendencia fiable este ciclo. Puedes empezar el siguiente cuando quieras.",
     "pesoView.empezarSiguienteCiclo": "Empezar el siguiente ciclo",
     "pesoView.corregirPesoHoy": "Corregir el peso de hoy",
@@ -752,7 +746,6 @@ const TEXTOS = {
     "pesoView.noCambiarConCicloAbierto": "No se puede cambiar con un ciclo ya abierto — se aplicará al siguiente.",
     "pesoView.ocultarProgresion": "Ocultar progresión ▲",
     "pesoView.verProgresion": "Ver progresión ▼",
-    "pesoView.exportarRango": "📄 Exportar este rango en PDF",
     "pesoView.sinCiclosCerrados": "Aún no tienes ningún ciclo cerrado — la progresión se rellena al terminar tu primer ciclo.",
     "pesoView.sinPesadasEnRango": "No hay suficientes pesadas en este rango. Prueba con un rango más amplio.",
 
@@ -840,7 +833,6 @@ const TEXTOS = {
     "foodsView.categoriaVacia": "Todavía no hay alimentos en esta categoría.",
     "foodsView.anadirConFoto": "Añadir con foto",
     "foodsView.nuevoAlimento": "Nuevo alimento",
-    "foodsView.exportarCatalogo": "Exportar catálogo",
     "foodsView.deTotal": "{n} de {total} alimentos",
     "foodsView.usadoEn": "usado en {n}",
     "foodsView.por100g": "por 100 g",
@@ -852,7 +844,6 @@ const TEXTOS = {
 
     "printFoods.titulo": "Catálogo de alimentos",
     "printFoods.resumen": "{n} alimentos · valores por 100 g · exportado el {fecha}",
-    "printFoods.alimento": "Alimento",
     "printFoods.prot": "Prot.",
     "printFoods.grasa": "Grasa",
     "printFoods.carb": "Carb.",
@@ -861,7 +852,6 @@ const TEXTOS = {
     "printFoods.fibra": "Fibra",
     "printFoods.sat": "Sat.",
     "printFoods.origen": "Origen",
-    "printFoods.pie": "FoodDraft — catálogo de alimentos exportado",
 
     "foodEditModal.nuevoAlimento": "Nuevo alimento",
     "foodEditModal.editarAlimento": "Editar alimento",
@@ -2630,7 +2620,6 @@ const TEXTOS = {
     "premiumView.ventaja2": "Full weight tracking: cycles, trend and automatic goal adjustment",
     "premiumView.ventaja3": "\"What can I cook with what I have\" from a photo and/or text with your ingredients",
     "premiumView.ventaja4": "Cross reports: your training, meals and weight together, month by month",
-    "premiumView.ventaja5": "No ads",
 
     "suggestMeals.intro": "Send a photo of what you have (fridge, pantry...), type what ingredients you have, or both — we'll suggest combinations made only with food from your own catalog, with real macros, not an AI estimate.",
     "suggestMeals.cambiarFoto": "Change photo",
@@ -2686,11 +2675,7 @@ const TEXTOS = {
     "printSeguimiento.titulo": "Weight tracking",
     "printSeguimiento.exportadoEl": "{titulo} · exported on {fecha}",
     "printSeguimiento.tendencia": "Trend: {signo}{pct}%/week",
-    "printSeguimiento.fecha": "Date",
-    "printSeguimiento.pesoKg": "Weight (kg)",
-    "printSeguimiento.nota": "Note",
     "printSeguimiento.atipica": "Unusual{detalle}",
-    "printSeguimiento.pie": "FoodDraft — document generated from your weight tracking",
 
     "pesoView.intro": "Weigh yourself 2-3 times a week, spread across the week. While the cycle is open you won't see the number evolve — only when you close it, so you don't obsess over day-to-day swings.",
     "pesoView.cicloTerminado": "Cycle finished — {n} weigh-ins logged",
@@ -2702,7 +2687,6 @@ const TEXTOS = {
     "pesoView.noCambiaEtapa": "It doesn't change your stage ({etapa}) — it just fine-tunes the intensity within it.",
     "pesoView.cerrarCiclo": "Close cycle and start the next one",
     "pesoView.cicloCerradoHoyTitulo": "Cycle closed today",
-    "pesoView.exportarCierre": "📄 Export this close as PDF",
     "pesoView.sinPesadasSuficientes": "There aren't enough weigh-ins (not counting unusual ones) to calculate a reliable trend this cycle. You can start the next one whenever you want.",
     "pesoView.empezarSiguienteCiclo": "Start the next cycle",
     "pesoView.corregirPesoHoy": "Correct today's weight",
@@ -2727,7 +2711,6 @@ const TEXTOS = {
     "pesoView.noCambiarConCicloAbierto": "Can't be changed with a cycle already open — it'll apply to the next one.",
     "pesoView.ocultarProgresion": "Hide progression ▲",
     "pesoView.verProgresion": "View progression ▼",
-    "pesoView.exportarRango": "📄 Export this range as PDF",
     "pesoView.sinCiclosCerrados": "You don't have any closed cycles yet — progression fills in once you finish your first cycle.",
     "pesoView.sinPesadasEnRango": "Not enough weigh-ins in this range. Try a wider range.",
 
@@ -2815,7 +2798,6 @@ const TEXTOS = {
     "foodsView.categoriaVacia": "No foods in this category yet.",
     "foodsView.anadirConFoto": "Add with photo",
     "foodsView.nuevoAlimento": "New food",
-    "foodsView.exportarCatalogo": "Export catalog",
     "foodsView.deTotal": "{n} of {total} foods",
     "foodsView.usadoEn": "used in {n}",
     "foodsView.por100g": "per 100 g",
@@ -2827,7 +2809,6 @@ const TEXTOS = {
 
     "printFoods.titulo": "Food catalog",
     "printFoods.resumen": "{n} foods · values per 100 g · exported on {fecha}",
-    "printFoods.alimento": "Food",
     "printFoods.prot": "Prot.",
     "printFoods.grasa": "Fat",
     "printFoods.carb": "Carb.",
@@ -2836,7 +2817,6 @@ const TEXTOS = {
     "printFoods.fibra": "Fiber",
     "printFoods.sat": "Sat.",
     "printFoods.origen": "Source",
-    "printFoods.pie": "FoodDraft — exported food catalog",
 
     "foodEditModal.nuevoAlimento": "New food",
     "foodEditModal.editarAlimento": "Edit food",
@@ -4599,7 +4579,6 @@ const TEXTOS = {
     "premiumView.ventaja2": "Seguiment de pes complet: cicles, tendència i ajust automàtic d'objectius",
     "premiumView.ventaja3": "\"Què puc cuinar amb el que tinc\" a partir d'una foto i/o text amb els teus ingredients",
     "premiumView.ventaja4": "Informes creuats: el teu entrenament, el teu menjar i el teu pes junts, mes a mes",
-    "premiumView.ventaja5": "Sense anuncis",
 
     "suggestMeals.intro": "Envia una foto del que tinguis (nevera, rebost...), escriu quins ingredients tens, o totes dues coses — et suggerim combinacions fetes només amb aliments del teu propi catàleg, amb macros reals, no una estimació de la IA.",
     "suggestMeals.cambiarFoto": "Canvia la foto",
@@ -4655,11 +4634,7 @@ const TEXTOS = {
     "printSeguimiento.titulo": "Seguiment de pes",
     "printSeguimiento.exportadoEl": "{titulo} · exportat el {fecha}",
     "printSeguimiento.tendencia": "Tendència: {signo}{pct}%/setmana",
-    "printSeguimiento.fecha": "Data",
-    "printSeguimiento.pesoKg": "Pes (kg)",
-    "printSeguimiento.nota": "Nota",
     "printSeguimiento.atipica": "Atípica{detalle}",
-    "printSeguimiento.pie": "FoodDraft — document generat a partir del teu seguiment de pes",
 
     "pesoView.intro": "Pesa't 2-3 vegades per setmana, repartides al llarg de la setmana. Mentre el cicle estigui obert no veuràs el número evolucionar — només en tancar-lo, per no obsessionar-te amb les variacions del dia a dia.",
     "pesoView.cicloTerminado": "Cicle acabat — {n} pesades registrades",
@@ -4671,7 +4646,6 @@ const TEXTOS = {
     "pesoView.noCambiaEtapa": "No canvia la teva etapa ({etapa}) — només afina la intensitat dins seu.",
     "pesoView.cerrarCiclo": "Tanca el cicle i comença el següent",
     "pesoView.cicloCerradoHoyTitulo": "Cicle tancat avui",
-    "pesoView.exportarCierre": "📄 Exporta aquest tancament a PDF",
     "pesoView.sinPesadasSuficientes": "No hi ha prou pesades (sense comptar les atípiques) per calcular una tendència fiable aquest cicle. Pots començar el següent quan vulguis.",
     "pesoView.empezarSiguienteCiclo": "Comença el següent cicle",
     "pesoView.corregirPesoHoy": "Corregeix el pes d'avui",
@@ -4696,7 +4670,6 @@ const TEXTOS = {
     "pesoView.noCambiarConCicloAbierto": "No es pot canviar amb un cicle ja obert — s'aplicarà al següent.",
     "pesoView.ocultarProgresion": "Amaga la progressió ▲",
     "pesoView.verProgresion": "Veure progressió ▼",
-    "pesoView.exportarRango": "📄 Exporta aquest rang a PDF",
     "pesoView.sinCiclosCerrados": "Encara no tens cap cicle tancat — la progressió s'omple en acabar el teu primer cicle.",
     "pesoView.sinPesadasEnRango": "No hi ha prou pesades en aquest rang. Prova amb un rang més ampli.",
 
@@ -4784,7 +4757,6 @@ const TEXTOS = {
     "foodsView.categoriaVacia": "Encara no hi ha aliments en aquesta categoria.",
     "foodsView.anadirConFoto": "Afegeix amb foto",
     "foodsView.nuevoAlimento": "Aliment nou",
-    "foodsView.exportarCatalogo": "Exporta el catàleg",
     "foodsView.deTotal": "{n} de {total} aliments",
     "foodsView.usadoEn": "fet servir a {n}",
     "foodsView.por100g": "per 100 g",
@@ -4796,7 +4768,6 @@ const TEXTOS = {
 
     "printFoods.titulo": "Catàleg d'aliments",
     "printFoods.resumen": "{n} aliments · valors per 100 g · exportat el {fecha}",
-    "printFoods.alimento": "Aliment",
     "printFoods.prot": "Prot.",
     "printFoods.grasa": "Greix",
     "printFoods.carb": "Carb.",
@@ -4805,7 +4776,6 @@ const TEXTOS = {
     "printFoods.fibra": "Fibra",
     "printFoods.sat": "Sat.",
     "printFoods.origen": "Origen",
-    "printFoods.pie": "FoodDraft — catàleg d'aliments exportat",
 
     "foodEditModal.nuevoAlimento": "Aliment nou",
     "foodEditModal.editarAlimento": "Edita l'aliment",
@@ -6568,7 +6538,6 @@ const TEXTOS = {
     "premiumView.ventaja2": "Seguimento de peso completo: ciclos, tendencia e axuste automático de obxectivos",
     "premiumView.ventaja3": "\"Que podo cociñar co que teño\" a partir dunha foto e/ou texto cos teus ingredientes",
     "premiumView.ventaja4": "Informes cruzados: o teu adestramento, a túa comida e o teu peso xuntos, mes a mes",
-    "premiumView.ventaja5": "Sen anuncios",
 
     "suggestMeals.intro": "Envía unha foto do que teñas (neveira, despensa...), escribe que ingredientes tes, ou ambas as cousas — suxerímosche combinacións feitas só con alimentos do teu propio catálogo, con macros reais, non unha estimación da IA.",
     "suggestMeals.cambiarFoto": "Cambiar foto",
@@ -6624,11 +6593,7 @@ const TEXTOS = {
     "printSeguimiento.titulo": "Seguimento de peso",
     "printSeguimiento.exportadoEl": "{titulo} · exportado o {fecha}",
     "printSeguimiento.tendencia": "Tendencia: {signo}{pct}%/semana",
-    "printSeguimiento.fecha": "Data",
-    "printSeguimiento.pesoKg": "Peso (kg)",
-    "printSeguimiento.nota": "Nota",
     "printSeguimiento.atipica": "Atípica{detalle}",
-    "printSeguimiento.pie": "FoodDraft — documento xerado a partir do teu seguimento de peso",
 
     "pesoView.intro": "Pésate 2-3 veces por semana, repartidas ao longo da semana. Mentres o ciclo estea aberto non verás o número evolucionar — só ao pechalo, para non obsesionarte coas variacións do día a día.",
     "pesoView.cicloTerminado": "Ciclo rematado — {n} pesadas rexistradas",
@@ -6640,7 +6605,6 @@ const TEXTOS = {
     "pesoView.noCambiaEtapa": "Non cambia a túa etapa ({etapa}) — só afina a intensidade dentro dela.",
     "pesoView.cerrarCiclo": "Pechar ciclo e comezar o seguinte",
     "pesoView.cicloCerradoHoyTitulo": "Ciclo pechado hoxe",
-    "pesoView.exportarCierre": "📄 Exportar este peche en PDF",
     "pesoView.sinPesadasSuficientes": "Non hai pesadas suficientes (sen contar as atípicas) para calcular unha tendencia fiable este ciclo. Podes comezar o seguinte cando queiras.",
     "pesoView.empezarSiguienteCiclo": "Comezar o seguinte ciclo",
     "pesoView.corregirPesoHoy": "Corrixir o peso de hoxe",
@@ -6665,7 +6629,6 @@ const TEXTOS = {
     "pesoView.noCambiarConCicloAbierto": "Non se pode cambiar cun ciclo xa aberto — aplicarase ao seguinte.",
     "pesoView.ocultarProgresion": "Ocultar progresión ▲",
     "pesoView.verProgresion": "Ver progresión ▼",
-    "pesoView.exportarRango": "📄 Exportar este rango en PDF",
     "pesoView.sinCiclosCerrados": "Aínda non tes ningún ciclo pechado — a progresión enchese ao rematar o teu primeiro ciclo.",
     "pesoView.sinPesadasEnRango": "Non hai pesadas suficientes neste rango. Proba cun rango máis amplo.",
 
@@ -6753,7 +6716,6 @@ const TEXTOS = {
     "foodsView.categoriaVacia": "Aínda non hai alimentos nesta categoría.",
     "foodsView.anadirConFoto": "Engadir con foto",
     "foodsView.nuevoAlimento": "Novo alimento",
-    "foodsView.exportarCatalogo": "Exportar catálogo",
     "foodsView.deTotal": "{n} de {total} alimentos",
     "foodsView.usadoEn": "usado en {n}",
     "foodsView.por100g": "por 100 g",
@@ -6765,7 +6727,6 @@ const TEXTOS = {
 
     "printFoods.titulo": "Catálogo de alimentos",
     "printFoods.resumen": "{n} alimentos · valores por 100 g · exportado o {fecha}",
-    "printFoods.alimento": "Alimento",
     "printFoods.prot": "Prot.",
     "printFoods.grasa": "Graxa",
     "printFoods.carb": "Carb.",
@@ -6774,7 +6735,6 @@ const TEXTOS = {
     "printFoods.fibra": "Fibra",
     "printFoods.sat": "Sat.",
     "printFoods.origen": "Orixe",
-    "printFoods.pie": "FoodDraft — catálogo de alimentos exportado",
 
     "foodEditModal.nuevoAlimento": "Novo alimento",
     "foodEditModal.editarAlimento": "Editar alimento",
@@ -8537,7 +8497,6 @@ const TEXTOS = {
     "premiumView.ventaja2": "Pisuaren jarraipen osoa: zikloak, joera eta helburuen doikuntza automatikoa",
     "premiumView.ventaja3": "\"Daukadanarekin zer sukaldatu dezaket\" argazki eta/edo testu bidez, zure osagaiekin",
     "premiumView.ventaja4": "Txosten gurutzatuak: zure entrenamendua, janaria eta pisua batera, hilabetez hilabete",
-    "premiumView.ventaja5": "Iragarkirik gabe",
 
     "suggestMeals.intro": "Bidali daukazunaren argazkia (hozkailua, despentsa...), idatzi zein osagai dituzun, edo biak — zure katalogoko elikagai hutsekin egindako konbinazioak proposatzen dizkizugu, makro errealekin, ez AAren estimazio batekin.",
     "suggestMeals.cambiarFoto": "Aldatu argazkia",
@@ -8593,11 +8552,7 @@ const TEXTOS = {
     "printSeguimiento.titulo": "Pisuaren jarraipena",
     "printSeguimiento.exportadoEl": "{titulo} · {fecha}(e)an esportatua",
     "printSeguimiento.tendencia": "Joera: {signo}% {pct}/astea",
-    "printSeguimiento.fecha": "Data",
-    "printSeguimiento.pesoKg": "Pisua (kg)",
-    "printSeguimiento.nota": "Oharra",
     "printSeguimiento.atipica": "Atipikoa{detalle}",
-    "printSeguimiento.pie": "FoodDraft — zure pisuaren jarraipenetik sortutako dokumentua",
 
     "pesoView.intro": "Pisatu zaitez astean 2-3 aldiz, astean zehar banatuta. Zikloa irekita dagoen bitartean ez duzu zenbakia nola aldatzen den ikusiko — itxi arte bakarrik, eguneroko aldaketekin obsesionatu ez zaitezen.",
     "pesoView.cicloTerminado": "Zikloa amaituta — {n} pisatze erregistratuta",
@@ -8609,7 +8564,6 @@ const TEXTOS = {
     "pesoView.noCambiaEtapa": "Ez du zure etapa aldatzen ({etapa}) — bere baitako intentsitatea baino ez du doitzen.",
     "pesoView.cerrarCiclo": "Itxi zikloa eta hasi hurrengoa",
     "pesoView.cicloCerradoHoyTitulo": "Zikloa gaur itxi da",
-    "pesoView.exportarCierre": "📄 Esportatu itxiera hau PDF gisa",
     "pesoView.sinPesadasSuficientes": "Ez dago nahikoa pisatze (atipikoak kontuan hartu gabe) ziklo honetan joera fidagarri bat kalkulatzeko. Hurrengoa nahi duzunean has dezakezu.",
     "pesoView.empezarSiguienteCiclo": "Hasi hurrengo zikloa",
     "pesoView.corregirPesoHoy": "Zuzendu gaurko pisua",
@@ -8634,7 +8588,6 @@ const TEXTOS = {
     "pesoView.noCambiarConCicloAbierto": "Ezin da aldatu zikloa jada irekita dagoenean — hurrengoan aplikatuko da.",
     "pesoView.ocultarProgresion": "Ezkutatu bilakaera ▲",
     "pesoView.verProgresion": "Ikusi bilakaera ▼",
-    "pesoView.exportarRango": "📄 Esportatu tarte hau PDF gisa",
     "pesoView.sinCiclosCerrados": "Oraindik ez duzu itxitako ziklorik — bilakaera zure lehen zikloa amaitzean beteko da.",
     "pesoView.sinPesadasEnRango": "Ez dago nahikoa pisatze tarte honetan. Probatu tarte zabalago batekin.",
 
@@ -8722,7 +8675,6 @@ const TEXTOS = {
     "foodsView.categoriaVacia": "Kategoria honetan oraindik ez dago elikagairik.",
     "foodsView.anadirConFoto": "Gehitu argazkiarekin",
     "foodsView.nuevoAlimento": "Elikagai berria",
-    "foodsView.exportarCatalogo": "Esportatu katalogoa",
     "foodsView.deTotal": "{total}etik {n} elikagai",
     "foodsView.usadoEn": "{n}tan erabilia",
     "foodsView.por100g": "100 g-ko",
@@ -8734,7 +8686,6 @@ const TEXTOS = {
 
     "printFoods.titulo": "Elikagaien katalogoa",
     "printFoods.resumen": "{n} elikagai · 100 g-ko balioak · {fecha}(e)an esportatua",
-    "printFoods.alimento": "Elikagaia",
     "printFoods.prot": "Prot.",
     "printFoods.grasa": "Gantza",
     "printFoods.carb": "Karb.",
@@ -8743,7 +8694,6 @@ const TEXTOS = {
     "printFoods.fibra": "Zuntza",
     "printFoods.sat": "Ase.",
     "printFoods.origen": "Jatorria",
-    "printFoods.pie": "FoodDraft — esportatutako elikagaien katalogoa",
 
     "foodEditModal.nuevoAlimento": "Elikagai berria",
     "foodEditModal.editarAlimento": "Editatu elikagaia",
