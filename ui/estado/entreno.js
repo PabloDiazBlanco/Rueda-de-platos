@@ -64,6 +64,16 @@ async function leerNube(clave) {
 }
 const escribirNube = (clave, valor) => window.storage.set(clave, JSON.stringify(valor), false);
 
+// Si lo que no se ha podido leer es de una versión más nueva de la app y lo ha parado la migración (capa 2 de
+// logica/versiones.js) sin que window.storage lo viera, se bloquea igual: aquí los errores de lectura se recogen sin
+// llegar a useCargaInicial (el entreno sigue sin conexión), y sin esto el borrador, ya dado por leído, se volvería a
+// subir encima (revisión de R12, ronda 2, R2-3). Hoy no pasa: la capa 1 corta antes.
+function siVersionMayor(e) {
+  if (e && e.versionMayor && window.storage && typeof window.storage.bloquearPorVersion === "function") {
+    window.storage.bloquearPorVersion(e.info);
+  }
+}
+
 const mesActual = () => fechaLocal(Date.now()).slice(0, 7);
 
 export function useEntreno(data) {
@@ -108,6 +118,7 @@ export function useEntreno(data) {
       cargaFiable.current.catalogo = true;
       setCatalogo(valor);
     } catch (e) {
+      siVersionMayor(e);
       if (!ref.current.catalogo) setCatalogo(migrarCatalogo(null).valor);
     }
   }
@@ -122,6 +133,7 @@ export function useEntreno(data) {
       setIndice(valor);
       return valor;
     } catch (e) {
+      siVersionMayor(e);
       return ref.current.indice;
     }
   }
@@ -132,6 +144,7 @@ export function useEntreno(data) {
     try {
       enNube = migrarBorrador(await leerNube(CLAVE_BORRADOR)).valor;
     } catch (e) {
+      siVersionMayor(e);
       setNube("pendiente");
     }
     // Se comparan los envoltorios ({ sesion, actualizado }): un «no hay borrador» más reciente (se terminó
@@ -168,6 +181,7 @@ export function useEntreno(data) {
     try {
       doc = migrarMes(await leerNube(claveMes(mes)), mes).valor;
     } catch (e) {
+      siVersionMayor(e);
       if (estricto) throw e;
       return ref.current.meses[mes] || migrarMes(null, mes).valor;
     }
@@ -215,6 +229,7 @@ export function useEntreno(data) {
       try {
         remoto = migrarIndice(await leerNube(CLAVE_INDICE)).valor;
       } catch (e) {
+        siVersionMayor(e);
         ref.current.indice = nuevo;
         setIndice(nuevo);
         return;
@@ -268,6 +283,7 @@ export function useEntreno(data) {
           if (yaEstaba) await reconstruir();
           else await guardarIndice(actualizarIndiceConSesion(ref.current.indice, sesion, ejercicioDe, ref.current.pesoCorporal));
         } catch (e) {
+          siVersionMayor(e);
           setNube("pendiente");
           return;
         }

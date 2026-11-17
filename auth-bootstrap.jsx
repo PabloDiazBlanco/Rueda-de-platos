@@ -631,13 +631,17 @@ window.deleteAccount = async function (password) {
   // después. Una escritura que ya hubiera salido llega antes que el borrado, y además la función borra dos veces
   // (la segunda, después de borrar la cuenta de Auth, para las escrituras tardías). No se espera a la fila: puede
   // estar atascada sin conexión. Tras borrar, la marca se queda: esa cuenta ya no existe.
+  // Además de la copia que no escribe, se pausa el almacén de dentro (protegerVersiones, R12): una escritura que ya
+  // estaba esperando su lectura previa (el borrador del entreno) lo usa por dentro y, sin la pausa, saldría después.
   const almacen = window.storage;
   const bloqueado = () => Promise.reject(new Error("Eliminando la cuenta: no se guarda nada"));
+  if (almacen && typeof almacen.pausarEscrituras === "function") almacen.pausarEscrituras("Eliminando la cuenta: no se guarda nada");
   window.storage = { ...almacen, set: bloqueado, delete: bloqueado };
   cuentaBorrandose = uid;
   try {
     await deleteAccountCallable();
   } catch (err) {
+    if (almacen && typeof almacen.reanudarEscrituras === "function") almacen.reanudarEscrituras();
     window.storage = almacen;
     cuentaBorrandose = null;
     throw errorDeFuncion(err, "No se ha podido eliminar la cuenta. Inténtalo de nuevo.");

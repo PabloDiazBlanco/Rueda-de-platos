@@ -4466,22 +4466,28 @@ function grupoXlsx() {
 // esperados salen de leer la regla: bloquea solo un número estrictamente mayor que 1 (2, 1,5...); sin versión, una
 // lista, 0 o un texto como "2" no bloquean. Los casos de window.storage usan un almacén falso en memoria y son
 // asíncronos, como el de verdad.
-// `leidos` apunta cada lectura; con `sinRed = true`, las lecturas fallan como sin conexión.
+// `leidos` apunta cada lectura y `valores`, lo escrito en orden; con `sinRed = true`, las lecturas fallan como sin
+// conexión; `retrasos` (ms) hace que las siguientes lecturas tarden, una por elemento.
 function almacenFalso(docs) {
   const escritos = [];
+  const valores = [];
   const borrados = [];
   const leidos = [];
   const almacen = {
     escritos,
+    valores,
     borrados,
     leidos,
     sinRed: false,
+    retrasos: [],
     async get(clave) {
       leidos.push(clave);
+      const ms = almacen.retrasos.shift() || 0;
+      if (ms) await new Promise((r) => setTimeout(r, ms));
       if (almacen.sinRed) throw new Error("sin conexión");
       return Object.prototype.hasOwnProperty.call(docs, clave) ? { key: clave, value: docs[clave], shared: false } : null;
     },
-    async set(clave, valor) { escritos.push(clave); docs[clave] = valor; return { key: clave, value: valor, shared: false }; },
+    async set(clave, valor) { escritos.push(clave); valores.push(valor); docs[clave] = valor; return { key: clave, value: valor, shared: false }; },
     async delete(clave) { borrados.push(clave); delete docs[clave]; return { key: clave, deleted: true, shared: false }; },
   };
   return almacen;
@@ -4709,6 +4715,44 @@ function grupoVersiones(carga) {
               sinRed: "sin conexión", escritosSinRed: 0, avisosB: 0, conRed: "ok", otraVez: "ok", leidasB: 2, escritosB: 2,
               leidasC: "rueda-de-platos:despensa-v1", escritosC: "rueda-de-platos:despensa-v1,rueda-de-platos:push-token-v1",
               leidasD: 1, escritosD: 2, finalD: "segundo",
+            }
+          );
+        },
+      },
+      {
+        // Revisión de R12, ronda 2. R2-1: una escritura espera su lectura previa (300 ms); mientras, la lectura del hook
+        // (10 ms) da la clave por leída; una segunda escritura pedida después tiene que esperar igual a la previa, para
+        // no adelantarse: se escriben «viejo» y luego «nuevo», y queda «nuevo». R2-2: «Eliminar cuenta» pausa el
+        // almacén; una escritura que esperaba su lectura previa (200 ms) se para al volver de ella, y una nueva ni lee;
+        // al reanudar (si la función falla) se escribe sin volver a leer (la previa sí se completó): 1 lectura, 1 escritura.
+        nombre: "window.storage protegido: el orden se mantiene aunque otra lectura termine entre medias, y «Eliminar cuenta» para lo que esperaba su lectura",
+        ejecutar: async () => {
+          const BORRADOR = "rueda-de-platos:entreno-borrador-v1";
+          const docsF = {};
+          const f = almacenFalso(docsF);
+          const w = protegerVersiones(f);
+          f.retrasos = [300, 10];
+          const e1 = w.set(BORRADOR, "viejo");
+          await w.get(BORRADOR);
+          const e2 = w.set(BORRADOR, "nuevo");
+          await Promise.all([e1, e2]);
+          const g = almacenFalso({});
+          const p = protegerVersiones(g);
+          g.retrasos = [200];
+          const esperando = resultadoDe(() => p.set(BORRADOR, "tarde"));
+          p.pausarEscrituras("Eliminando la cuenta");
+          const enPausa = await resultadoDe(() => p.set("rueda-de-platos:data-v1", "{}"));
+          const tarde = await esperando;
+          p.reanudarEscrituras();
+          const despues = await resultadoDe(() => p.set(BORRADOR, "luego"));
+          return comparar(
+            {
+              orden: f.valores.join(","), final: docsF[BORRADOR], leidasF: f.leidos.length,
+              enPausa, tarde, despues, escritosG: g.valores.join(","), leidasG: g.leidos.length,
+            },
+            {
+              orden: "viejo,nuevo", final: "nuevo", leidasF: 2,
+              enPausa: "Eliminando la cuenta", tarde: "Eliminando la cuenta", despues: "ok", escritosG: "luego", leidasG: 1,
             }
           );
         },

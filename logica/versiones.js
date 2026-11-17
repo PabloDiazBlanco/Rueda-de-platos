@@ -163,12 +163,17 @@ export const EVENTO_VERSION_MAYOR = "fooddraft:version-mayor";
 // escritura falla, que para el borrador es lo mismo que ya pasaba sin conexión (se queda «pendiente» en el aparato).
 // Cuesta una lectura de más solo en ese caso: lo leído al cargar ya cuenta, también un «no existe».
 // Las lecturas siguen funcionando. `versionMayor()` dice lo encontrado (o null) y `bloquearPorVersion(info)` bloquea
-// desde fuera (lo usan el período, que vive en localStorage y no pasa por aquí, y useCargaInicial si una migración
-// lo detecta). El bloqueo dura lo que dura esta sesión: al recargar (con la versión nueva de la app) se vuelve a
-// empezar. Las funciones no usan `this`, así que se pueden copiar con `{ ...almacen }` (como hace «Eliminar cuenta»
-// en auth-bootstrap.jsx).
+// desde fuera (lo usan el período, que vive en localStorage y no pasa por aquí, y useCargaInicial y el entreno si una
+// migración lo detecta). El bloqueo dura lo que dura esta sesión: al recargar (con la versión nueva de la app) se
+// vuelve a empezar. Las funciones no usan `this`, así que se pueden copiar con `{ ...almacen }` (como hace «Eliminar
+// cuenta» en auth-bootstrap.jsx).
+// `pausarEscrituras(motivo)` / `reanudarEscrituras()`: lo usa «Eliminar cuenta» mientras la función borra. Cambiar
+// window.storage por una copia que no escribe no basta: una escritura que ya estaba esperando su lectura previa usa
+// este almacén por dentro y saldría después, quizá tras el último borrado del servidor, y volvería a crear un
+// documento en una cuenta borrada (revisión de R12, ronda 2, R2-2). Con la pausa, se para al volver de esa lectura.
 export function protegerVersiones(almacen, alDetectar = () => {}) {
   let bloqueo = null;
+  let pausa = null;
   const leidas = new Set();
   const bloquear = (info) => {
     if (bloqueo) return;
@@ -189,19 +194,31 @@ export function protegerVersiones(almacen, alDetectar = () => {}) {
     leidas.add(clave);
     return res;
   }
-  // Antes de escribir o borrar: nada si ya hay bloqueo, y una clave comprobada que aún no se ha leído se lee primero
-  // (puede bloquear, o fallar sin conexión). Dos escrituras seguidas de la misma clave esperan a **la misma**
-  // lectura (`enCurso`): si cada una leyera por su cuenta, la respuesta de la segunda podría llegar antes y su
-  // escritura adelantarse, y el borrador más viejo acabaría encima del nuevo. Esperando a la misma, siguen en el orden
-  // en que se pidieron. Se vuelve a mirar el bloqueo después, por si lo puso otra lectura mientras tanto.
+  // Antes de escribir o borrar: nada si ya hay bloqueo (o pausa), y una clave comprobada que aún no se ha leído se lee
+  // primero (puede bloquear, o fallar sin conexión). Mientras esa lectura previa está en marcha (`enCurso`), toda
+  // escritura de la misma clave la espera, **también si entretanto otra lectura la ha dado por leída** (la del propio
+  // hook, al pulsar «Reintentar»): si la segunda saliera sin esperar, se adelantaría a la primera y el borrador más
+  // viejo acabaría encima del nuevo (revisión de R12, ronda 2, R2-1). Esperando todas a la misma, salen en el orden en
+  // que se pidieron. Si esa lectura previa falla por la red pero la clave ya se ha leído bien por otro lado, se sigue
+  // (lo que había que comprobar ya está comprobado). Después se vuelven a mirar el bloqueo y la pausa, por si llegaron
+  // mientras tanto.
   const enCurso = new Map();
+  const comprobarQueSePuede = () => {
+    if (bloqueo) throw errorVersionMayor(bloqueo);
+    if (pausa) throw new Error(pausa);
+  };
   async function antesDeEscribir(clave) {
-    if (bloqueo) throw errorVersionMayor(bloqueo);
-    if (versionConocida(clave) !== null && !leidas.has(clave)) {
+    comprobarQueSePuede();
+    if (versionConocida(clave) !== null && (enCurso.has(clave) || !leidas.has(clave))) {
       if (!enCurso.has(clave)) enCurso.set(clave, get(clave).finally(() => enCurso.delete(clave)));
-      await enCurso.get(clave);
+      try {
+        await enCurso.get(clave);
+      } catch (e) {
+        if (e && e.versionMayor) throw e;
+        if (!leidas.has(clave)) throw e;
+      }
     }
-    if (bloqueo) throw errorVersionMayor(bloqueo);
+    comprobarQueSePuede();
   }
   return {
     get,
@@ -215,6 +232,8 @@ export function protegerVersiones(almacen, alDetectar = () => {}) {
     },
     versionMayor: () => (bloqueo ? { ...bloqueo } : null),
     bloquearPorVersion: (info) => bloquear(info || {}),
+    pausarEscrituras: (motivo) => { pausa = motivo || "Escrituras en pausa"; },
+    reanudarEscrituras: () => { pausa = null; },
   };
 }
 
