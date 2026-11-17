@@ -19,14 +19,18 @@
 //
 // Dónde se aplica, en dos capas:
 // 1. **`protegerVersiones`**, que envuelve window.storage al iniciar sesión (auth-bootstrap.jsx). Es la que manda:
-//    todas las lecturas y escrituras de la cuenta pasan por ahí, también las que el entreno hace a mitad de uso
-//    (un mes, el índice), así que no depende de que cada hook se acuerde. Además avisa a la app para que enseñe la
-//    pantalla de actualizar.
+//    todas las lecturas y escrituras de las claves de la cuenta pasan por ahí, también las que el entreno hace a
+//    mitad de uso (un mes, el índice), y **ninguna clave se escribe sin haberla leído antes en esta sesión**: si un
+//    hook va a guardar una que no ha podido leer (el borrador del entreno, que se sube aunque su lectura fallara sin
+//    conexión), se lee primero. Así no depende de que cada hook se acuerde. Además avisa a la app para que enseñe la
+//    pantalla de actualizar. No pasan por aquí el buzón de avisos y las firmas de consentimiento (no son claves, y
+//    tienen su propia forma en las reglas de Firestore).
 // 2. **Las migraciones** de cada clave (`exigirVersionConocida`): si les llega una versión mayor, se niegan a
 //    tocarla y lanzan un error, en vez de rebajarla a la suya. No debería llegarles nunca (la capa 1 corta antes),
-//    pero así ninguna migración vuelve a «arreglar» a la baja un documento nuevo, venga de donde venga. Lo que solo
-//    vive en el aparato (el período, en localStorage, que no pasa por window.storage) lo comprueba además su
-//    pantalla antes de escribir (ui/cuerpo/periodo.jsx).
+//    pero así ninguna migración vuelve a «arreglar» a la baja un documento nuevo, venga de donde venga; si alguna
+//    vez lo hicieran, useCargaInicial (ui/estado/datos.js) bloquea igual. Lo que solo vive en el aparato (el período,
+//    en localStorage, que no pasa por window.storage) lo comprueba además su pantalla antes de escribir
+//    (ui/cuerpo/periodo.jsx).
 //
 // Lo que esta protección **no** cubre (documentacion/datos.md, «Versiones y copias viejas de la app»): una copia
 // vieja que leyó los datos antes de que la nueva los cambiara y los guarda desde la memoria. Ese es el caso de dos
@@ -124,9 +128,11 @@ export function exigirVersionConocida(guardado, conocida, clave) {
 
 // Lo que `protegerVersiones` mira en cada lectura: null si se puede seguir, o lo encontrado. Un texto que no es
 // JSON se deja pasar tal cual: es un documento ilegible, no de otra versión, y lo decide su hook (como siempre).
+// Un texto sin `"version"` no puede llevar el campo (JSON.stringify nunca lo escribe de otra forma): no se lee dos
+// veces (el hook lo vuelve a leer), que en los datos principales, de cientos de KB, son unos milisegundos más.
 export function revisarLectura(clave, texto) {
   const conocida = versionConocida(clave);
-  if (conocida === null || typeof texto !== "string") return null;
+  if (conocida === null || typeof texto !== "string" || !texto.includes('"version"')) return null;
   let valor;
   try {
     valor = JSON.parse(texto);
@@ -146,14 +152,24 @@ export const EVENTO_VERSION_MAYOR = "fooddraft:version-mayor";
 // - esa lectura falla con errorVersionMayor (para su hook es «no se ha podido leer»: no sigue con datos vacíos ni
 //   escribe nada, que es justo lo que ya hacían todos ante una lectura fallida);
 // - desde ese momento, **toda** escritura y todo borrado fallan, de cualquier clave, también los guardados con
-//   retardo que ya estaban programados;
+//   retardo que ya estaban programados (lo que ya había salido antes de detectarlo, llega: era de la versión de
+//   siempre);
 // - se llama una sola vez a `alDetectar(info)`, para que la app enseñe la pantalla de actualizar.
+// **Leer antes de escribir**: una clave comprobada (las de VERSIONES) no se escribe ni se borra sin haberla leído
+// bien en esta sesión. Casi todos los hooks ya lo hacen (no guardan lo que no han podido leer), pero el borrador del
+// entreno se sube aunque su lectura fallara (sin conexión en el gimnasio, el entreno sigue), y así una copia vieja
+// lo escribía encima de uno de una versión mayor sin haberlo visto nunca (revisión de R12, ronda 1, I1). Ahora esa
+// primera escritura lee antes: si encuentra una versión mayor, bloquea; si no se puede leer (sin conexión), la
+// escritura falla, que para el borrador es lo mismo que ya pasaba sin conexión (se queda «pendiente» en el aparato).
+// Cuesta una lectura de más solo en ese caso: lo leído al cargar ya cuenta, también un «no existe».
 // Las lecturas siguen funcionando. `versionMayor()` dice lo encontrado (o null) y `bloquearPorVersion(info)` bloquea
-// desde fuera (lo usa el período, que vive en localStorage y no pasa por aquí). El bloqueo dura lo que dura esta
-// sesión: al recargar (con la versión nueva de la app) se vuelve a empezar. Las funciones no usan `this`, así que
-// se pueden copiar con `{ ...almacen }` (como hace «Eliminar cuenta» en auth-bootstrap.jsx).
+// desde fuera (lo usan el período, que vive en localStorage y no pasa por aquí, y useCargaInicial si una migración
+// lo detecta). El bloqueo dura lo que dura esta sesión: al recargar (con la versión nueva de la app) se vuelve a
+// empezar. Las funciones no usan `this`, así que se pueden copiar con `{ ...almacen }` (como hace «Eliminar cuenta»
+// en auth-bootstrap.jsx).
 export function protegerVersiones(almacen, alDetectar = () => {}) {
   let bloqueo = null;
+  const leidas = new Set();
   const bloquear = (info) => {
     if (bloqueo) return;
     bloqueo = { clave: (info && info.clave) || null, guardada: info ? info.guardada : null, conocida: info ? info.conocida : null };
@@ -163,22 +179,38 @@ export function protegerVersiones(almacen, alDetectar = () => {}) {
       // Quien avisa no puede romper la lectura: el bloqueo ya está puesto.
     }
   };
+  async function get(clave, ...resto) {
+    const res = await almacen.get(clave, ...resto);
+    const info = revisarLectura(clave, res && res.value);
+    if (info) {
+      bloquear(info);
+      throw errorVersionMayor(info);
+    }
+    leidas.add(clave);
+    return res;
+  }
+  // Antes de escribir o borrar: nada si ya hay bloqueo, y una clave comprobada que aún no se ha leído se lee primero
+  // (puede bloquear, o fallar sin conexión). Dos escrituras seguidas de la misma clave esperan a **la misma**
+  // lectura (`enCurso`): si cada una leyera por su cuenta, la respuesta de la segunda podría llegar antes y su
+  // escritura adelantarse, y el borrador más viejo acabaría encima del nuevo. Esperando a la misma, siguen en el orden
+  // en que se pidieron. Se vuelve a mirar el bloqueo después, por si lo puso otra lectura mientras tanto.
+  const enCurso = new Map();
+  async function antesDeEscribir(clave) {
+    if (bloqueo) throw errorVersionMayor(bloqueo);
+    if (versionConocida(clave) !== null && !leidas.has(clave)) {
+      if (!enCurso.has(clave)) enCurso.set(clave, get(clave).finally(() => enCurso.delete(clave)));
+      await enCurso.get(clave);
+    }
+    if (bloqueo) throw errorVersionMayor(bloqueo);
+  }
   return {
-    async get(clave, ...resto) {
-      const res = await almacen.get(clave, ...resto);
-      const info = revisarLectura(clave, res && res.value);
-      if (info) {
-        bloquear(info);
-        throw errorVersionMayor(info);
-      }
-      return res;
-    },
+    get,
     async set(clave, ...resto) {
-      if (bloqueo) throw errorVersionMayor(bloqueo);
+      await antesDeEscribir(clave);
       return almacen.set(clave, ...resto);
     },
     async delete(clave, ...resto) {
-      if (bloqueo) throw errorVersionMayor(bloqueo);
+      await antesDeEscribir(clave);
       return almacen.delete(clave, ...resto);
     },
     versionMayor: () => (bloqueo ? { ...bloqueo } : null),
@@ -193,7 +225,10 @@ export function protegerVersiones(almacen, alDetectar = () => {}) {
 // los móviles no sabría abrir ese sobre (le llegaría un objeto donde espera una lista), así que va en dos pasos:
 // 1. (ahora) la app aprende a leer los dos formatos, y sigue guardando la lista suelta de siempre;
 // 2. (cuando esto lleve un tiempo en producción, con el primer cambio de forma de los menús) empieza a guardar el
-//    sobre. Su `version` será la 1: estas copias ya lo entienden entero, así que no hay por qué bloquearlas.
+//    sobre. Su `version` será la 1 **solo si el sobre no lleva nada más que `version` y `slots` (o `lista`)**: estas
+//    copias lo entienden entero y no hay por qué bloquearlas. Pero guardan la lista suelta, así que cualquier otro
+//    campo del sobre (la fecha que le falta al menú, H3) lo borrarían sin bloquearse: un sobre con algo más tiene
+//    que ser ya la versión 2. Lo de dentro de cada hueco sí lo conservan (updateMeal copia el hueco entero).
 // Como cuando sale un formato de archivo nuevo: primero todos los programas aprenden a abrirlo, y solo después se
 // empieza a guardar en él. Una versión mayor la para antes protegerVersiones; estas funciones solo leen la forma.
 

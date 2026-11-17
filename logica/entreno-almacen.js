@@ -31,7 +31,9 @@ export const mesDe = (fecha) => fechaLocal(fecha).slice(0, 7);
 
 // Las versiones viven en logica/versiones.js, con las de las demás claves (R12). Hasta noviembre de 2026 las cuatro
 // claves compartían una sola (`VERSION = 1`); ahora cada una tiene la suya, para que cambiar la forma de una (los
-// meses, por ejemplo) no obligue a subir las otras tres ni bloquee por ellas a las copias viejas de la app.
+// meses, por ejemplo) no obligue a subir las otras tres ni bloquee por ellas a las copias viejas de la app. Ojo: la
+// forma de una sesión va a la vez en los meses y en el borrador (y en el borrador y la cola del aparato, sin versión):
+// un cambio en ella sube `entrenoMes` y `entrenoBorrador` juntos (documentacion/datos.md, «Subir una versión»).
 const V_CATALOGO = VERSIONES.entrenoCatalogo;
 const V_INDICE = VERSIONES.entrenoIndice;
 const V_BORRADOR = VERSIONES.entrenoBorrador;

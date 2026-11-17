@@ -728,9 +728,11 @@ async function migrateLocalDataIfNeeded(uid) {
 
     const quiere = window.confirm(t(leerIdiomaGuardado(), "migracionLocal.pregunta"));
     if (quiere) {
+      // Por window.storage (ya protegido, R12): como cualquier escritura de una clave, lee antes la de la nube y no
+      // escribe encima de una de una versión más nueva de la app. Escribe lo mismo que antes (`{ value }`).
       for (const key of localKeys) {
         const value = localStorage.getItem(key);
-        await setDoc(doc(db, "users", uid, "keys", key), { value });
+        await window.storage.set(key, value);
       }
     }
     localStorage.setItem(marker, "1");

@@ -136,6 +136,12 @@ export function useCargaInicial(cargadores, alTerminar) {
       console.warn("No se ha podido cargar una parte de los datos:", (r.reason && (r.reason.code || r.reason.message)) || r.reason);
       fallos.push(indices[n]);
       if (r.reason && r.reason.ilegible) ilegible = true;
+      // Una migración que se niega a tocar datos de una versión más nueva (R12, capa 2 de logica/versiones.js) sin que
+      // window.storage lo haya visto antes: también se bloquea todo y sale «Actualiza FoodDraft», no «Reintentar»
+      // (que no lo arreglaría). Hoy no pasa (la capa 1 corta antes); es por si algo se lee por otro camino.
+      if (r.reason && r.reason.versionMayor && window.storage && typeof window.storage.bloquearPorVersion === "function") {
+        window.storage.bloquearPorVersion(r.reason.info);
+      }
     });
     pendientes.current = fallos.length ? fallos : null;
     fin.current(fallos, { ilegible });
@@ -151,11 +157,18 @@ export function useCargaInicial(cargadores, alTerminar) {
 // lo encontrado (`{ clave, guardada, conocida }`) o null, y app.jsx cambia entonces la app entera por
 // «Actualiza FoodDraft». Puede pasar al abrir (los cargadores iniciales) o a mitad de uso (el entreno lee meses
 // bajo demanda). Se mira también lo que ya sabe window.storage al montar, por si se detectó antes del efecto.
+// Un aviso que llegue cuando el window.storage de ahora no está bloqueado se ignora: es de otra cuenta (una lectura
+// tardía de la sesión anterior, tras cerrar sesión y entrar con otra en la misma página). Todo aviso de verdad pasa
+// antes por el bloqueo de window.storage (protegerVersiones, también el del período y el de useCargaInicial).
 export function useVersionMayor() {
   const yaDetectado = () => (window.storage && typeof window.storage.versionMayor === "function" ? window.storage.versionMayor() : null);
   const [info, setInfo] = useState(yaDetectado);
   useEffect(() => {
-    const alDetectar = (e) => setInfo((e && e.detail) || yaDetectado() || {});
+    const alDetectar = (e) => {
+      const protegido = window.storage && typeof window.storage.versionMayor === "function";
+      if (protegido && !window.storage.versionMayor()) return;
+      setInfo(yaDetectado() || (e && e.detail) || {});
+    };
     window.addEventListener(EVENTO_VERSION_MAYOR, alDetectar);
     const ya = yaDetectado();
     if (ya) setInfo(ya);

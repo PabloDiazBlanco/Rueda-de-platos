@@ -99,7 +99,8 @@ export function diarioVacio() {
 // Lo desconocido (de un día, de su sueño o del documento) se conserva tal cual (cabecera); un día que solo tenga
 // campos desconocidos también se queda.
 export function migrarDiario(guardado) {
-  if (!guardado || typeof guardado !== "object") return { diario: diarioVacio(), changed: !!guardado };
+  // Una lista no es un diario (y `...guardado` le copiaría las posiciones como campos): se empieza vacío, como antes.
+  if (!guardado || typeof guardado !== "object" || Array.isArray(guardado)) return { diario: diarioVacio(), changed: !!guardado };
   exigirVersionConocida(guardado, VERSION_DIARIO, "rueda-de-platos:cuerpo-diario-v1");
   const dias = {};
   Object.entries(guardado.dias && typeof guardado.dias === "object" ? guardado.dias : {}).forEach(([fecha, d]) => {
@@ -188,7 +189,7 @@ export function favoritosVacios() {
 // Lo desconocido de cada favorito bien formado, y del documento, se conserva (cabecera).
 const CAMPOS_FAVORITO = ["id", "tipo", "spec"];
 export function migrarFavoritos(guardado) {
-  if (!guardado || typeof guardado !== "object") return { favoritos: favoritosVacios(), changed: !!guardado };
+  if (!guardado || typeof guardado !== "object" || Array.isArray(guardado)) return { favoritos: favoritosVacios(), changed: !!guardado };
   exigirVersionConocida(guardado, VERSION_FAVORITOS, "rueda-de-platos:informes-favoritos-v1");
   const vistos = new Set();
   const lista = (Array.isArray(guardado.lista) ? guardado.lista : []).filter((f) => {
