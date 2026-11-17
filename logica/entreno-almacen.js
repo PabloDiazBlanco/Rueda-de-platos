@@ -1,7 +1,7 @@
 // ---------- Entreno: almacén ----------
 // Módulo de lógica pura (sin JSX, sin React): cómo se reparten los entrenos en documentos guardados, sus
-// versiones y migraciones, el índice, el borrador de la sesión en curso, la cola de envíos pendientes y
-// la exportación a CSV. No lee ni escribe nada: eso lo hace el hook (ui/estado/entreno.js) con
+// versiones y migraciones, el índice, el borrador de la sesión en curso y la cola de envíos pendientes (los
+// entrenos se exportan con todo lo demás en logica/exportacion.js). No lee ni escribe nada: eso lo hace el hook (ui/estado/entreno.js) con
 // window.storage; aquí solo está lo que se puede probar en validacion/.
 //
 // Por qué se reparte así (local/ideas/gimnasio/03-diseno-modulo-entreno.md, §5):
@@ -322,34 +322,4 @@ export function migrarLocalesEntreno(almacen, cuenta) {
   if (almacen.getItem(LOCAL_COLA_SIN_CUENTA) !== null) almacen.removeItem(LOCAL_COLA_SIN_CUENTA);
   if (almacen.getItem(LOCAL_BORRADOR_SIN_CUENTA) !== null) almacen.removeItem(LOCAL_BORRADOR_SIN_CUENTA);
   return movidas;
-}
-
-// ---------- Exportar ----------
-// CSV con una fila por serie, separado por «;» y con coma decimal salvo en inglés: es lo que abre bien
-// Excel con la configuración regional española (con «,» de separador, partiría los decimales). Los
-// textos con «;», comillas o saltos de línea van entre comillas, con las comillas duplicadas.
-export const CABECERA_CSV = "fecha;entreno;ejercicio;ejercicio_id;serie;tipo;kg;reps;segundos;km;rir;nota";
-
-function campoCSV(valor) {
-  const texto = valor === null || valor === undefined ? "" : String(valor);
-  return /[;"\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
-}
-
-export function sesionesACSV(sesiones, nombreDe, idioma) {
-  const num = (x) => (x === null || x === undefined || x === "" ? "" : idioma === "en" ? String(x) : String(x).replace(".", ","));
-  const filas = [CABECERA_CSV];
-  [...(sesiones || [])].sort(porInicio).forEach((s) => {
-    const d = new Date(s.inicio);
-    const hora = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-    const fecha = `${fechaLocal(s.inicio)} ${hora}`;
-    (s.ejercicios || []).forEach((ej) => {
-      (ej.series || []).filter((sr) => sr.hecha !== false).forEach((sr, i) => {
-        filas.push([
-          fecha, s.nombre, nombreDe(ej.ejercicioId), ej.ejercicioId, i + 1, sr.tipo,
-          num(sr.kg), num(sr.reps), num(sr.seg), num(sr.km), num(sr.rir), ej.nota,
-        ].map(campoCSV).join(";"));
-      });
-    });
-  });
-  return filas.join("\n");
 }

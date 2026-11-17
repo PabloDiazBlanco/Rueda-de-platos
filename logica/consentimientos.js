@@ -62,6 +62,22 @@ export function idsConsentimientos(versiones = VERSIONES) {
   };
 }
 
+// Versiones que **dejaron** de estar vigentes. **Al subir una versión de `VERSIONES`, la que había pasa aquí.** Las
+// firmas de antes se quedan en la cuenta como prueba de lo que se aceptó entonces, pero las reglas no dejan listar
+// la colección: sin esta lista nadie sabría su nombre, y «Descargar mis datos» (logica/exportacion.js) no las
+// incluiría. Vacía mientras ningún texto haya cambiado de fondo.
+export const VERSIONES_ANTERIORES = { terminos: [], salud: [] };
+
+// Todas las firmas que puede tener una cuenta, por el nombre de su documento: la edad, las vigentes y las de las
+// versiones anteriores, sin repetir. Las que no existan simplemente no se encuentran al leerlas.
+export function idsFirmasGuardadas(versiones = VERSIONES, anteriores = VERSIONES_ANTERIORES) {
+  const ids = Object.values(idsConsentimientos(versiones));
+  ["terminos", "salud"].forEach((tipo) => {
+    ((anteriores && anteriores[tipo]) || []).forEach((v) => ids.push(`${tipo}-${v}`));
+  });
+  return [...new Set(ids)];
+}
+
 // Qué firmas faltan, en el orden de TIPOS. `registro` es lo leído de la nube con los nombres de idsConsentimientos:
 // `{ edad, terminos, salud }`, cada uno el contenido del documento o `null` si no existe. **Una lectura que falla no
 // llega aquí**: no es «no ha firmado nada», es «no se sabe», y quien lee tiene que enseñar el error y reintentar en

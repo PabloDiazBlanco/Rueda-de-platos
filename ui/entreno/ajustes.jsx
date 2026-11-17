@@ -4,17 +4,16 @@
 // petición del usuario: un único sitio para todos los ajustes. «Ajustes de entreno», en la pantalla
 // Entrenar, lleva ahí directamente (`navegar("ajustes", { seccion: "entreno" })`).
 // Cada gusto, un interruptor (principio 6): las reseñas muestran preferencias opuestas (precargar valores,
-// columna de esfuerzo...), así que nada es obligatorio. Aquí también está la salvaguarda del usuario:
-// exportar todos sus entrenos en CSV o JSON, gratis.
+// columna de esfuerzo...), así que nada es obligatorio. Los entrenos se descargan con todo lo demás desde
+// Ajustes → Privacidad («Descargar mis datos», con su tabla de series en CSV): aquí había dos botones propios (CSV y
+// JSON) que se quitaron para que la descarga esté en un solo sitio (etapa 4 de la auditoría, punto 12b).
 import React, { useState } from "react";
-import { Download, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { t } from "i18n";
-import { sesionesACSV } from "entreno-almacen";
 import { GIMNASIOS_HABITUALES } from "entreno-ejercicios";
-import { fechaLocal } from "entreno-calculo";
 import { Field, inputStyle } from "../comun/modal.jsx";
 import { FUENTE_TEXTO } from "../estilos.js";
-import { BotonSecundario, Chip, TextoSuave, TituloSeccion, nombreDe, reloj } from "./comun.jsx";
+import { BotonSecundario, Chip, TextoSuave, TituloSeccion, reloj } from "./comun.jsx";
 import { ImportarEntrenos } from "./importar.jsx";
 
 const DESCANSOS = [30, 45, 60, 75, 90, 105, 120, 150, 180, 240, 300];
@@ -31,47 +30,10 @@ function Interruptor({ etiqueta, ayuda, activo, onCambio }) {
   );
 }
 
-function descargar(texto, nombre, tipo) {
-  const blob = new Blob([texto], { type: tipo });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = nombre;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export function SeccionAjustesEntreno({ entreno, idioma }) {
   const a = entreno.ajustes;
   const cambiar = (cambios) => entreno.cambiarAjustes(cambios);
   const [estado, setEstado] = useState("");
-
-  // Todas las sesiones: las de todos los meses del índice más las que aún esperan en la cola.
-  async function todasLasSesiones() {
-    const docs = await entreno.cargarTodosLosMeses();
-    const sesiones = docs.flatMap((d) => d.sesiones || []);
-    entreno.cola.forEach((s) => { if (!sesiones.some((x) => x.id === s.id)) sesiones.push(s); });
-    return sesiones.sort((x, y) => new Date(x.inicio) - new Date(y.inicio));
-  }
-
-  async function exportar(formato) {
-    setEstado(t(idioma, "entreno.ajustes.preparando"));
-    try {
-      const sesiones = await todasLasSesiones();
-      const hoy = fechaLocal(Date.now());
-      if (formato === "csv") {
-        // BOM al principio para que Excel lea bien las tildes.
-        descargar("﻿" + sesionesACSV(sesiones, (id) => nombreDe(entreno, id, idioma), idioma), `fooddraft-entrenos-${hoy}.csv`, "text/csv;charset=utf-8");
-      } else {
-        descargar(JSON.stringify({ exportado: new Date().toISOString(), catalogo: entreno.catalogo, sesiones }, null, 2), `fooddraft-entrenos-${hoy}.json`, "application/json");
-      }
-      setEstado(t(idioma, "entreno.ajustes.exportado", { n: sesiones.length }));
-    } catch (e) {
-      setEstado(t(idioma, "entreno.ajustes.errorExportar"));
-    }
-  }
 
   async function reconstruir() {
     setEstado(t(idioma, "entreno.ajustes.reconstruyendo"));
@@ -79,7 +41,7 @@ export function SeccionAjustesEntreno({ entreno, idioma }) {
       await entreno.reconstruir();
       setEstado(t(idioma, "entreno.ajustes.reconstruido"));
     } catch (e) {
-      setEstado(t(idioma, "entreno.ajustes.errorExportar"));
+      setEstado(t(idioma, "entreno.ajustes.errorConexion"));
     }
   }
 
@@ -143,11 +105,6 @@ export function SeccionAjustesEntreno({ entreno, idioma }) {
       <Interruptor etiqueta={t(idioma, "fitdraft.ajustes.paseo")} ayuda={t(idioma, "fitdraft.ajustes.paseoAyuda")} activo={a.paseoDescanso !== false} onCambio={(v) => cambiar({ paseoDescanso: v })} />
 
       <TituloSeccion>{t(idioma, "entreno.ajustes.tusDatos")}</TituloSeccion>
-      <TextoSuave style={{ marginBottom: 10 }}>{t(idioma, "entreno.ajustes.exportarAyuda")}</TextoSuave>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <BotonSecundario onClick={() => exportar("csv")}><Download size={14} /> {t(idioma, "entreno.ajustes.exportarCSV")}</BotonSecundario>
-        <BotonSecundario onClick={() => exportar("json")}><Download size={14} /> {t(idioma, "entreno.ajustes.exportarJSON")}</BotonSecundario>
-      </div>
       {/* Importar de otra app (G10; hoy, Hevy o Lyfta, pero la interfaz no las nombra desde el 27-oct-2026). */}
       <ImportarEntrenos entreno={entreno} idioma={idioma} />
       <div style={{ marginTop: 14 }}>

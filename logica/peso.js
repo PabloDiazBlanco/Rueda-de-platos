@@ -74,21 +74,6 @@ export function formatFechaCorta(fechaStr, idioma = "es") {
   return idioma === "eu" ? `${meses[m - 1]} ${d}` : `${d} ${meses[m - 1]}`;
 }
 
-// Descarga una copia de todos los datos guardados (perfil, ingredientes, seguimiento de peso...)
-// como un archivo .json — para que nada quede atrapado solo en Firestore. Es una acción puramente
-// del navegador (Blob + enlace temporal), no toca ni envía nada a ningún sitio.
-export function descargarDatosJSON(data) {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `fooddraft-datos-${fechaISO(new Date())}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 export function esDiaSugeridoPeso(vecesSemana, fecha = new Date()) {
   const dias = DIAS_SUGERIDOS_PESO[vecesSemana] || DIAS_SUGERIDOS_PESO[3];
   return dias.includes(fecha.getDay());

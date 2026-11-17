@@ -36,7 +36,7 @@ import {
   quiereAvisos, tokensConSitio, claveFirmaBuzon, claveTokenDeAntesBorrado, CLAVE_ESTRENAR_TOKEN, estadoDelPermiso,
   planSincronizacion, decidirBuzon, firmaAlQuitarAvisos, decidirAlSalir, camposBuzon,
 } from "buzon-avisos";
-import { TIPOS, idsConsentimientos, consentimientosPendientes, documentosAFirmar } from "consentimientos";
+import { TIPOS, idsConsentimientos, idsFirmasGuardadas, consentimientosPendientes, documentosAFirmar } from "consentimientos";
 import { cargarApp } from "cargador-ui";
 
 // Identificadores públicos de los proyectos de Firebase (no son claves secretas, es normal que
@@ -1409,6 +1409,42 @@ async function leerConsentimientos(uid) {
   }));
   return registro;
 }
+
+// ---------- «Descargar mis datos»: lo que no pasa por window.storage ----------
+// La exportación completa (Ajustes → Privacidad; ui/ajustes/exportar.js y logica/exportacion.js) saca casi todo de
+// lo que la app ya tiene cargado, pero hay datos de la cuenta que solo viven aquí: lo que guarda Authentication, la
+// ficha `users/{uid}` (premium y cuotas, que escriben las funciones), las firmas y el buzón de avisos. Se leen en el
+// momento, del servidor, y se devuelven tal cual (las marcas de tiempo las pasa a texto logica/exportacion.js).
+// Las firmas, por su nombre (las reglas no dejan listar): las vigentes y las de versiones anteriores
+// (`idsFirmasGuardadas`). Un documento que no existe no es un error (nunca ha pagado, no tiene avisos); una lectura
+// que falla, sí: se lanza, y la descarga se para entera en vez de entregar un archivo incompleto como si fuera todo.
+window.leerCuentaParaExportar = async function () {
+  const user = auth.currentUser;
+  if (!user || !esLaCuentaDeAhora(window.cuentaId)) throw new Error("No hay una sesión iniciada.");
+  const uid = user.uid;
+  const ids = idsFirmasGuardadas();
+  const [ficha, buzon, ...firmas] = await Promise.all([
+    getDoc(doc(db, "users", uid)),
+    getDoc(refBuzon(uid)),
+    ...ids.map((id) => getDoc(refConsentimiento(uid, id))),
+  ]);
+  const consentimientos = {};
+  firmas.forEach((snap, i) => {
+    if (snap.exists()) consentimientos[ids[i]] = snap.data();
+  });
+  return {
+    autenticacion: {
+      email: user.email || null,
+      proveedor: (user.providerData[0] && user.providerData[0].providerId) || null,
+      emailVerificado: !!user.emailVerified,
+      creada: (user.metadata && user.metadata.creationTime) || null,
+      ultimoAcceso: (user.metadata && user.metadata.lastSignInTime) || null,
+    },
+    ficha: ficha.exists() ? ficha.data() : null,
+    buzon: buzon.exists() ? buzon.data() : null,
+    consentimientos,
+  };
+};
 
 // Todas las firmas pendientes en un solo lote, con la hora del servidor (las reglas no aceptan otra): o se guardan
 // todas o ninguna. Si la edad no llega (no debería: la pantalla no deja seguir), no se escribe nada.

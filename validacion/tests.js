@@ -41,7 +41,7 @@ import {
 } from "entreno-sesion";
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
-  elegirBorrador, encolar, quitarDeCola, sesionesACSV, CABECERA_CSV, migrarIndice, mesesAReconstruir, indiceVacio,
+  elegirBorrador, encolar, quitarDeCola, migrarIndice, mesesAReconstruir, indiceVacio,
   migrarLocalesEntreno, clavesLocalesEntreno,
 } from "entreno-almacen";
 import {
@@ -77,7 +77,16 @@ import {
 import {
   EDAD_MINIMA, EDAD_MAXIMA, VERSIONES, TIPOS, idsConsentimientos, consentimientosPendientes, evaluarAnioNacimiento,
   edadSuficiente, documentosAFirmar, anioDeclarado, rangoAnioNacimiento, resumenFirmas, fechaDeFirma,
+  VERSIONES_ANTERIORES, idsFirmasGuardadas,
 } from "consentimientos";
+import { crc32, crearZip, leerZip, fechaDos } from "zip";
+import {
+  FORMATO_EXPORTACION, VERSION_EXPORTACION, construirExportacion, archivosExportacion, sesionesParaExportar, marcasATexto,
+  isoDeTexto, valorNumero, campoCSV, textoCSV, CABECERAS, horaLocal as horaLocalExportacion, nombreArchivoExportacion,
+  textoLeeme, filasPesadas, filasCiclosPeso, filasComidasHechas, filasEntrenos, filasSeries, filasSuenoPasos, filasPeriodo,
+  filasAlimentos,
+} from "exportacion";
+import { columnaExcel, textoXml, celdaXml, partesXlsx, crearXlsx } from "xlsx";
 
 // Compara solo las claves presentes en `esperado` (no exige igualdad total del objeto), y admite
 // una tolerancia para comparar decimales que vienen de cálculos en coma flotante.
@@ -1456,6 +1465,9 @@ export function crearGrupos(mod, carga) {
     grupoBuzonAvisos(),
     grupoConsentimientos(),
     grupoFotosIA(),
+    grupoZip(),
+    grupoExportacion(),
+    grupoXlsx(),
   ];
 }
 
@@ -1616,7 +1628,7 @@ const PREFIJOS_NUEVOS = [
   "area.", "barra.", "header.tuEntreno", "header.tuCuerpo", "header.tuCuenta", "entreno.", "musculo.", "equipo.",
   "tipoEjercicio.", "tipoSerie.", "cuerpo.", "feedback.ejercicio", "fitdraft.", "antesDeEmpezar.",
   "perfilView.anioFueraDeRango", "ajustes.privacidad.", "privacidad.", "foto.", "premiumView.pendiente",
-  "premiumView.avisoMetodos",
+  "premiumView.avisoMetodos", "exportacion.",
 ];
 
 function clavesSinTraducir(claves) {
@@ -2519,17 +2531,6 @@ function grupoEntrenoAlmacen() {
           return comparar(
             { gana: elegirBorrador(local, nube).actualizado, soloNube: elegirBorrador(null, nube).actualizado, ninguno: elegirBorrador(null, null), cola: cola.length, ultima: cola[0].actualizado, vacia: quitarDeCola(cola, "ses_1").length },
             { gana: 200, soloNube: 100, ninguno: null, cola: 1, ultima: 300, vacia: 0 }
-          );
-        },
-      },
-      {
-        nombre: "sesionesACSV: cabecera fija, una fila por serie y comillas si el nombre lleva «;»",
-        ejecutar: () => {
-          const s = sesionAlmacen("c1", "2026-10-23T17:00:00.000Z", [[61.3, 10], [59, 6]], { nombre: "Torso; día A" });
-          const csv = sesionesACSV([s], () => "Press banca", "es").split("\n");
-          return comparar(
-            { cabecera: csv[0], filas: csv.length - 1, entreno: csv[1].split(";")[1], kg: csv[1].includes(";61,3;10;") },
-            { cabecera: CABECERA_CSV, filas: 2, entreno: '"Torso', kg: true }
           );
         },
       },
@@ -4020,6 +4021,430 @@ function grupoConsentimientos() {
             }
           );
         },
+      },
+    ],
+  };
+}
+
+// ---------- ZIP sin comprimir (etapa 4 de la auditoría, punto 12b) ----------
+// Las cuentas, a mano. Un ZIP con «a.txt» («hola», 4 bytes) y «b.csv» (vacío): cabeceras locales 30 + 5 + 4 = 39 y
+// 30 + 5 + 0 = 35 (la segunda empieza en el byte 39); directorio central 2 × (46 + 5) = 102, que empieza en 39 + 35 = 74;
+// registro de cierre de 22 bytes en 74 + 102 = 176; total 198. Fecha 16-nov-2026 18:45:31: hora MS-DOS
+// 18·2048 + 45·32 + 31/2 (15) = 36 864 + 1 440 + 15 = 38 319; fecha (2026 − 1980 = 46)·512 + 11·32 + 16 =
+// 23 552 + 352 + 16 = 23 920. El CRC-32 se comprueba con su valor de referencia («123456789» → CBF43926, el de la
+// especificación); que Python (`zipfile.testzip`) y el «Extraer todo» de Windows aceptan estos ZIP se comprobó a mano.
+function grupoZip() {
+  const fecha = new Date(2026, 10, 16, 18, 45, 31);
+  const zip = crearZip([{ nombre: "a.txt", contenido: "hola" }, { nombre: "b.csv", contenido: "" }], fecha);
+  const v = new DataView(zip.buffer);
+  const lanza = (fn) => { try { fn(); return ""; } catch (e) { return e.message; } };
+  return {
+    grupo: "Descargar mis datos: el ZIP",
+    casos: [
+      {
+        nombre: "CRC-32 de referencia: «123456789» → CBF43926; vacío → 0",
+        ejecutar: () => comparar(
+          { ref: crc32(new TextEncoder().encode("123456789")).toString(16), vacio: crc32(new Uint8Array(0)) },
+          { ref: "cbf43926", vacio: 0 }
+        ),
+      },
+      {
+        nombre: "Estructura: tamaños y posiciones de cabeceras, directorio y cierre; sin comprimir y nombres en UTF-8",
+        ejecutar: () => comparar(
+          {
+            total: zip.length, local1: v.getUint32(0, true), indicadores: v.getUint16(6, true), metodo: v.getUint16(8, true),
+            hora: v.getUint16(10, true), dia: v.getUint16(12, true), tam1: v.getUint32(18, true), local2: v.getUint32(39, true),
+            central: v.getUint32(74, true), cierre: v.getUint32(176, true), entradas: v.getUint16(186, true),
+            tamCentral: v.getUint32(188, true), inicioCentral: v.getUint32(192, true),
+          },
+          {
+            total: 198, local1: 0x04034b50, indicadores: 0x0800, metodo: 0, hora: 38319, dia: 23920, tam1: 4,
+            local2: 0x04034b50, central: 0x02014b50, cierre: 0x06054b50, entradas: 2, tamCentral: 102, inicioCentral: 74,
+          }
+        ),
+      },
+      {
+        nombre: "Leer lo escrito: mismos nombres y contenidos (también un nombre con ñ y un archivo binario)",
+        ejecutar: () => {
+          const leido = leerZip(zip);
+          const otro = leerZip(crearZip([{ nombre: "sueño.txt", contenido: "z" }, { nombre: "x.bin", contenido: new Uint8Array([0, 255]) }]));
+          return comparar(
+            {
+              nombres: leido.map((a) => a.nombre).join("|"), hola: new TextDecoder().decode(leido[0].contenido), vacio: leido[1].contenido.length,
+              conEnie: otro[0].nombre, bytes: Array.from(otro[1].contenido).join(","),
+            },
+            { nombres: "a.txt|b.csv", hola: "hola", vacio: 0, conEnie: "sueño.txt", bytes: "0,255" }
+          );
+        },
+      },
+      {
+        nombre: "Errores: un byte cambiado se detecta por el CRC; nombres repetidos o vacíos no se escriben; antes de 1980, 1-ene-1980",
+        ejecutar: () => {
+          const roto = zip.slice();
+          roto[35] ^= 0xff; // el primer byte de «hola» (30 de cabecera + 5 del nombre)
+          return comparar(
+            {
+              crc: lanza(() => leerZip(roto)).startsWith("CRC-32 incorrecto"),
+              repetido: lanza(() => crearZip([{ nombre: "x", contenido: "1" }, { nombre: "x", contenido: "2" }])).startsWith("Archivo repetido"),
+              sinNombre: lanza(() => crearZip([{ nombre: "", contenido: "1" }])) !== "",
+              antiguo: JSON.stringify(fechaDos(new Date(1975, 0, 1))),
+            },
+            { crc: true, repetido: true, sinNombre: true, antiguo: '{"hora":0,"dia":33}' }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- «Descargar mis datos»: la exportación completa (etapa 4, punto 12b) ----------
+// Una cuenta inventada con un poco de todo. Las horas de los entrenos se construyen en hora local (`L`), para que la
+// hora local esperada no dependa de la zona del ordenador que pasa las pruebas; la UTC se compara con el mismo valor.
+// Las tablas dan valores en bruto (números como números, `null` = vacío); `unirFilas` los junta con «;» solo para
+// compararlos (`join` deja `null` como vacío). El CSV de verdad (comas, punto decimal, comillas) se prueba aparte.
+// Valores esperados, a mano:
+// - s1: de 18:00 a 19:10 con una pausa de 18:30 a 18:40 → 70 − 10 = 60 min = 3600 s. s3 (importado sin hora de fin)
+//   → fin = inicio → 0 s.
+// - s2 está en un mes (actualizado 1, sin nota) y en la cola (actualizado 5, «corregida»): gana la de la cola.
+// - Orden por inicio: s3 (30-oct) → s1 (2-nov) → s2 (5-nov). Pendientes de subir: las de la cola, s2 y s3.
+// - Números tal cual, con punto, en todos los idiomas: 82.5 · 84.1 · 81.95 · −0.5 · 45.5 · 70.25 · 22.5 · 7.25 · 3.5.
+// - Comidas del 2-nov: Desayuno antes que Cena (orden del reparto de cinco). La Cena lleva un cambio → con_cambios 1;
+//   el Desayuno y la Comida del 1-nov son registros antiguos sin detalle → macros y con_cambios vacíos, no 0.
+// - Press de banca con mancuernas lleva pareja (×2) → 1; el propio «Mi remo», no → 0. La serie unilateral 10/11
+//   guarda reps = 10 (el lado más débil). La nota «agarre, cerrado» y el alimento «Pan, integral» llevan coma → en el
+//   CSV, entre comillas.
+// - Pasos 0 el 2-nov es «no anduve» (0); el 1-nov no hay sueño → vacío.
+const L = (mes, dia, h, m) => new Date(2026, mes, dia, h, m).toISOString();
+function escenarioExportacion() {
+  const serie = (id, tipo, kg, reps, extra = {}) => ({ id, tipo, kg, reps, seg: null, km: null, rir: null, hecha: true, ...extra });
+  const s1 = {
+    id: "s1", nombre: "Torso", rutinaId: "rt_1", inicio: L(10, 2, 18, 0), fin: L(10, 2, 19, 10),
+    pausas: [{ inicio: L(10, 2, 18, 30), fin: L(10, 2, 18, 40) }], esfuerzo: 4, nota: "", gimnasio: "Basic-Fit",
+    origen: "app", lote: null, actualizado: 1,
+    ejercicios: [
+      { inst: "e1", ejercicioId: "ex_press_banca_mancuernas", sustituyeA: null, nota: "", descansoSeg: 120, superserie: null,
+        series: [serie("r1", "calentamiento", 10, 12), serie("r2", "normal", 22.5, 8, { rir: 2 })] },
+      { inst: "e2", ejercicioId: "exp_ab", sustituyeA: "ex_remo_maquina", nota: "agarre, cerrado", descansoSeg: 90, superserie: "ss_1",
+        series: [serie("r3", "normal", 50, 10, { lados: true, repsIzq: 10, repsDer: 11 })] },
+    ],
+  };
+  const s2 = { id: "s2", nombre: "Pierna", rutinaId: null, inicio: L(10, 5, 9, 0), fin: L(10, 5, 9, 30), pausas: [], esfuerzo: null, nota: "", origen: "app", lote: null, actualizado: 1, ejercicios: [] };
+  const s3 = { id: "s3", nombre: "Importado", rutinaId: null, inicio: L(9, 30, 10, 0), fin: L(9, 30, 10, 0), pausas: [], esfuerzo: null, nota: "", origen: "importado:hevy", lote: "lot_1", actualizado: 2, ejercicios: [] };
+  return {
+    ahora: new Date(2026, 10, 16, 18, 45).getTime(),
+    zonaHoraria: "Europe/Madrid",
+    idioma: "es",
+    cuenta: {
+      autenticacion: { email: "prueba@example.com", proveedor: "password", emailVerificado: true, creada: "Tue, 03 Mar 2026 17:55:00 GMT", ultimoAcceso: null },
+      ficha: { premium: { active: true, pendiente: false, updatedAt: { toDate: () => new Date(Date.UTC(2026, 10, 1, 10, 0)) } }, usoFotos: { mes: "2026-11", contador: 2 } },
+      buzon: null,
+      consentimientos: { edad: { tipo: "edad", anioNacimiento: 1990, fecha: { toDate: () => new Date(Date.UTC(2026, 10, 10, 8, 30)) } } },
+    },
+    datos: {
+      perfil: { sexo: "hombre", peso: 82 },
+      pesoTracking: {
+        historial: [
+          { id: "p2", fecha: "2026-10-04", peso: 84.1, atipico: true, motivo: "Viaje" },
+          { id: "p1", fecha: "2026-10-01", peso: 82.5, atipico: false, motivo: "" },
+        ],
+        entradas: [{ id: "p3", fecha: "2026-11-02", peso: 81.95, atipico: false, motivo: "" }],
+        historialCiclos: [{ inicio: "2026-10-01", fin: "2026-10-22", pctSemana: -0.5, nivel: "optimo", ajusteKcalAplicado: 0, pesoActualizado: true, pausas: [] }],
+      },
+      comidasCompletadas: {
+        "2026-11-02": {
+          Cena: { hecha: true, slotId: "m9", macros: { kcal: 650, prot: 45.5, fat: 20, carb: 70.25 }, cambios: { protein: { foodId: "f_atun", gramos: 120 } } },
+          Desayuno: { hecha: true },
+        },
+        "2026-11-01": { Comida: true },
+      },
+      foods: [{ id: "f_x", name: "Pan, integral", categoria: "panes", kcal: 250, prot: 9, fat: 3.5, carb: 45, fuente: "Etiqueta" }],
+    },
+    menus: { completo: { menu: [{ id: "m9" }], historial: [] }, simple: { menu: null, historial: [] } },
+    despensa: { version: 1, items: [] },
+    entreno: {
+      catalogo: { propios: [{ id: "exp_ab", nombre: "Mi remo", tipo: "peso_reps", musculo: "dorsales", secundarios: [], equipo: "maquina", archivado: false }], personalizados: {} },
+      meses: [{ version: 1, mes: "2026-11", sesiones: [s1, s2] }],
+      cola: [{ ...s2, actualizado: 5, nota: "corregida" }, s3],
+      enCurso: null,
+    },
+    cuerpo: { diario: { version: 1, dias: { "2026-11-02": { sueno: { horas: 7.25, calidad: null }, pasos: 0 }, "2026-11-01": { pasos: 10234 } } }, favoritos: { version: 1, lista: [] } },
+    periodo: { version: 1, regla: ["2026-11-03", "2026-11-02"], relaciones: ["2026-11-02"] },
+  };
+}
+const unirFilas = (filas) => filas.map((f) => f.join(";")).join("\n");
+
+function grupoExportacion() {
+  const f = escenarioExportacion();
+  const exp = construirExportacion(f);
+  return {
+    grupo: "Descargar mis datos: la exportación completa",
+    casos: [
+      {
+        nombre: "datos.json: formato, cuenta (fechas de Authentication y marcas de Firestore como texto ISO) y sin tocar lo recibido",
+        ejecutar: () => comparar(
+          {
+            formato: exp.formato, version: exp.versionFormato, exportadoEn: exp.exportadoEn === new Date(f.ahora).toISOString(),
+            zona: exp.zonaHorariaDelAparato, kg: exp.unidades.peso,
+            creada: exp.cuenta.autenticacion.creada, ultimo: exp.cuenta.autenticacion.ultimoAcceso, verificado: exp.cuenta.autenticacion.emailVerificado,
+            premium: exp.cuenta.ficha.premium.updatedAt, firmaEdad: exp.cuenta.consentimientos.edad.fecha, buzon: exp.cuenta.avisosPush,
+            menuSimple: exp.menus.simple.menu, periodo: exp.soloEsteAparato.periodo.regla.length,
+            originalIntacto: typeof f.cuenta.ficha.premium.updatedAt.toDate === "function" && f.entreno.meses[0].sesiones.length === 2 && f.entreno.meses[0].sesiones[1].nota === "",
+          },
+          {
+            formato: FORMATO_EXPORTACION, version: VERSION_EXPORTACION, exportadoEn: true, zona: "Europe/Madrid", kg: "kg",
+            creada: "2026-03-03T17:55:00.000Z", ultimo: null, verificado: true,
+            premium: "2026-11-01T10:00:00.000Z", firmaEdad: "2026-11-10T08:30:00.000Z", buzon: null,
+            menuSimple: null, periodo: 2, originalIntacto: true,
+          }
+        ),
+      },
+      {
+        nombre: "Sesiones: meses + cola de este aparato, gana la de «actualizado» mayor (a igualdad, la de la cola), por inicio",
+        ejecutar: () => {
+          const empate = sesionesParaExportar([{ sesiones: [{ id: "a", actualizado: 3, nota: "mes" }] }], [{ id: "a", actualizado: 3, nota: "cola" }]);
+          const vieja = sesionesParaExportar([{ sesiones: [{ id: "a", actualizado: 3, nota: "mes" }] }], [{ id: "a", actualizado: 2, nota: "cola" }]);
+          return comparar(
+            {
+              orden: exp.entreno.sesiones.map((s) => s.id).join(","), nota: exp.entreno.sesiones[2].nota,
+              pendientes: exp.entreno.pendientesDeSubir.join(","), empate: empate[0].nota, vieja: vieja[0].nota,
+            },
+            { orden: "s3,s1,s2", nota: "corregida", pendientes: "s2,s3", empate: "cola", vieja: "mes" }
+          );
+        },
+      },
+      {
+        nombre: "Pesadas, ciclos de peso y comidas hechas: números como números, 1/0 y «sin dato» vacío (no 0)",
+        ejecutar: () => {
+          const p = filasPesadas(exp);
+          return comparar(
+            {
+              pesadas: unirFilas(p), tipos: [typeof p[0][1], typeof p[0][2], p[0][3]].join(","),
+              ciclos: unirFilas(filasCiclosPeso(exp)), comidas: unirFilas(filasComidasHechas(exp)),
+            },
+            {
+              pesadas: "2026-10-01;82.5;0;;cerrado\n2026-10-04;84.1;1;Viaje;cerrado\n2026-11-02;81.95;0;;en_curso",
+              tipos: "number,number,",
+              ciclos: "2026-10-01;2026-10-22;-0.5;optimo;0;1",
+              comidas: "2026-11-01;Comida;1;;;;;;\n2026-11-02;Desayuno;1;;;;;;\n2026-11-02;Cena;1;650;45.5;20;70.25;1;m9",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Entrenos y series: hora local y UTC, duración sin pausas, ×2, unilateral y sustituido",
+        ejecutar: () => {
+          const ent = filasEntrenos(exp);
+          const series = filasSeries(exp, "es");
+          return comparar(
+            {
+              s3: ent[0].join(";"), s1: ent[1].join(";"), series: unirFilas(series),
+              tipos: [typeof ent[1][5], typeof series[1][2], typeof series[1][9]].join(","),
+            },
+            {
+              s3: `s3;2026-10-30 10:00;2026-10-30 10:00;${L(9, 30, 10, 0)};${L(9, 30, 10, 0)};0;Importado;;;;importado:hevy;lot_1;`,
+              s1: `s1;2026-11-02 18:00;2026-11-02 19:10;${L(10, 2, 18, 0)};${L(10, 2, 19, 10)};3600;Torso;rt_1;4;Basic-Fit;app;;`,
+              series: [
+                "s1;2026-11-02 18:00;1;ex_press_banca_mancuernas;Press de banca con mancuernas;peso_reps;1;1;calentamiento;10;12;;;;;;;;",
+                "s1;2026-11-02 18:00;1;ex_press_banca_mancuernas;Press de banca con mancuernas;peso_reps;1;2;normal;22.5;8;;;;;2;;;",
+                "s1;2026-11-02 18:00;2;exp_ab;Mi remo;peso_reps;0;1;normal;50;10;10;11;;;;ex_remo_maquina;ss_1;agarre, cerrado",
+              ].join("\n"),
+              tipos: "number,number,number",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Sueño y pasos, período (por fecha) y alimentos (lo que falta, vacío)",
+        ejecutar: () => comparar(
+          { sueno: unirFilas(filasSuenoPasos(exp)), periodo: unirFilas(filasPeriodo(exp)), alimentos: unirFilas(filasAlimentos(exp)) },
+          {
+            sueno: "2026-11-01;;;10234\n2026-11-02;7.25;;0",
+            periodo: "2026-11-02;regla\n2026-11-02;relaciones\n2026-11-03;regla",
+            alimentos: "f_x;Pan, integral;panes;250;9;3.5;45;;;;;Etiqueta",
+          }
+        ),
+      },
+      {
+        nombre: "CSV estándar (RFC 4180): comas, punto decimal, comillas solo si hace falta (dobladas), BOM y CRLF, igual en todos los idiomas",
+        ejecutar: () => {
+          const csvSeries = textoCSV(CABECERAS.series, filasSeries(exp, "es"));
+          const csvAlimentos = textoCSV(CABECERAS.alimentos, filasAlimentos(exp));
+          return comparar(
+            {
+              campos: [campoCSV(null), campoCSV(3.5), campoCSV("a,b"), campoCSV('di "hola"'), campoCSV("línea\nnueva"), campoCSV("a;b"), campoCSV(0)].join("|"),
+              remo: csvSeries.split("\r\n")[3],
+              alimento: csvAlimentos.split("\r\n")[1],
+              enIngles: textoCSV(CABECERAS.alimentos, filasAlimentos(construirExportacion({ ...f, idioma: "en" }))) === csvAlimentos,
+              bomYFin: csvSeries.startsWith("﻿sesion_id,inicio_local,") && csvSeries.endsWith("\r\n"),
+            },
+            {
+              campos: '|3.5|"a,b"|"di ""hola"""|"línea\nnueva"|a;b|0',
+              remo: 's1,2026-11-02 18:00,2,exp_ab,Mi remo,peso_reps,0,1,normal,50,10,10,11,,,,ex_remo_maquina,ss_1,"agarre, cerrado"',
+              alimento: 'f_x,"Pan, integral",panes,250,9,3.5,45,,,,,Etiqueta',
+              enIngles: true, bomYFin: true,
+            }
+          );
+        },
+      },
+      {
+        nombre: "Utilidades: valorNumero, horaLocal, isoDeTexto, marcasATexto y el nombre del archivo",
+        ejecutar: () => {
+          const m = marcasATexto({ a: [{ toDate: () => new Date(Date.UTC(2026, 0, 5, 9, 30)) }], b: "x", c: null, d: new Date("no"), e: { f: 3 } });
+          return comparar(
+            {
+              n: JSON.stringify([valorNumero(22.5), valorNumero("7.25"), valorNumero(""), valorNumero(null), valorNumero(undefined), valorNumero(true), valorNumero("abc"), valorNumero(0), valorNumero(-0.5)]),
+              hora: horaLocalExportacion(new Date(2026, 0, 5, 7, 3).getTime()), sinHora: horaLocalExportacion(null),
+              iso: isoDeTexto("no es una fecha"), isoVacio: isoDeTexto(""),
+              marcas: JSON.stringify(m),
+              archivo: nombreArchivoExportacion(new Date(2026, 10, 16, 23, 59).getTime()),
+            },
+            {
+              n: '[22.5,7.25,null,null,null,"true","abc",0,-0.5]', hora: "2026-01-05 07:03", sinHora: "", iso: null, isoVacio: null,
+              marcas: '{"a":["2026-01-05T09:30:00.000Z"],"b":"x","c":null,"d":null,"e":{"f":3}}',
+              archivo: "fooddraft-datos-2026-11-16.zip",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Los archivos del ZIP: nombres y orden, el Excel con una hoja por tabla, LEEME en 5 idiomas y lectura de vuelta",
+        ejecutar: () => {
+          const archivos = archivosExportacion(exp, "es");
+          const porNombre = Object.fromEntries(archivos.map((a) => [a.nombre, a.contenido]));
+          const leido = leerZip(crearZip(archivos, new Date(f.ahora)));
+          const json = new TextDecoder().decode(leido.find((a) => a.nombre === "datos.json").contenido);
+          const libro = leerZip(porNombre["datos.xlsx"]);
+          const hojaLibro = new TextDecoder().decode(libro.find((a) => a.nombre === "xl/workbook.xml").contenido);
+          const leemes = ["es", "en", "ca", "gl", "eu"].map((i) => textoLeeme(exp, i));
+          return comparar(
+            {
+              nombres: archivos.map((a) => a.nombre).join("|"),
+              pesadas: porNombre["pesadas.csv"],
+              partesLibro: libro.length,
+              hojas: [...hojaLibro.matchAll(/<sheet name="([^"]+)"/g)].map((x) => x[1]).join(","),
+              leemeEs: leemes[0].startsWith("﻿FoodDraft · tus datos, descargados el 2026-11-16 18:45") && leemes[0].includes("«Gestionar mi suscripción»") && leemes[0].includes("datos.xlsx"),
+              leemeSinClaves: leemes.every((x) => !x.includes("exportacion.leeme")),
+              releidos: leido.length, jsonIgual: json === porNombre["datos.json"], sesionesJson: JSON.parse(json).entreno.sesiones.length,
+            },
+            {
+              nombres: "LEEME.txt|datos.json|datos.xlsx|pesadas.csv|ciclos-peso.csv|comidas-hechas.csv|entrenos.csv|series.csv|sueno-pasos.csv|periodo.csv|alimentos.csv",
+              pesadas: "﻿fecha,peso_kg,atipica,motivo,ciclo\r\n2026-10-01,82.5,0,,cerrado\r\n2026-10-04,84.1,1,Viaje,cerrado\r\n2026-11-02,81.95,0,,en_curso\r\n",
+              partesLibro: 13, hojas: "pesadas,ciclos-peso,comidas-hechas,entrenos,series,sueno-pasos,periodo,alimentos",
+              leemeEs: true, leemeSinClaves: true, releidos: 11, jsonIgual: true, sesionesJson: 3,
+            }
+          );
+        },
+      },
+      {
+        nombre: "Una cuenta sin nada (recién creada): no falla y cada tabla sale solo con su cabecera",
+        ejecutar: () => {
+          const vacia = construirExportacion({ ahora: f.ahora, idioma: "es", cuenta: {}, datos: {}, menus: {}, entreno: {}, cuerpo: {} });
+          const archivos = archivosExportacion(vacia, "es");
+          const lineas = archivos.filter((a) => a.nombre.endsWith(".csv")).map((a) => a.contenido.split("\r\n").filter(Boolean).length);
+          return comparar(
+            { lineas: lineas.join(","), sesiones: vacia.entreno.sesiones.length, ficha: vacia.cuenta.ficha, periodo: vacia.soloEsteAparato.periodo, libro: leerZip(archivos[2].contenido).length },
+            { lineas: "1,1,1,1,1,1,1,1", sesiones: 0, ficha: null, periodo: null, libro: 13 }
+          );
+        },
+      },
+      {
+        nombre: "Firmas que se leen al exportar: la edad, las vigentes y las de versiones anteriores, sin repetir",
+        ejecutar: () => {
+          const V = { terminos: "2026-11-10", salud: "2026-11-10" };
+          return comparar(
+            {
+              conAnterior: idsFirmasGuardadas(V, { terminos: ["2026-01-01"], salud: [] }).join(","),
+              repetida: idsFirmasGuardadas(V, { terminos: ["2026-11-10"], salud: [] }).length,
+              listas: Array.isArray(VERSIONES_ANTERIORES.terminos) && Array.isArray(VERSIONES_ANTERIORES.salud),
+              porDefecto: idsFirmasGuardadas()[0],
+            },
+            { conAnterior: "edad,terminos-2026-11-10,salud-2026-11-10,terminos-2026-01-01", repetida: 3, listas: true, porDefecto: "edad" }
+          );
+        },
+      },
+    ],
+  };
+}
+
+// ---------- El Excel de «Descargar mis datos» (logica/xlsx.js) ----------
+// Las cuentas, a mano:
+// - Columnas: 0 → A, 25 → Z, 26 → AA, 27 → AB, 51 → AZ (52 = 26·2: «A» y luego «Z»), 52 → BA, 701 → ZZ (702 = 26·27),
+//   702 → AAA.
+// - Anchos de un libro con [["fecha", "peso_kg"], ["2026-10-01", 82.5]]: columna 1, el más largo es «2026-10-01»
+//   (10) + 2 = 12; columna 2, «peso_kg» (7) + 2 = 9 (más que el mínimo de 8).
+// - Partes: 5 fijas + una por hoja (con 2 hojas, 7); el último rId de las relaciones del libro es el de los estilos
+//   (rId3 con 2 hojas).
+// Que Excel (Windows en inglés) abre el libro con sus hojas, números como números y la cabecera en negrita se comprobó
+// a mano con un libro generado por este módulo.
+function grupoXlsx() {
+  const lanza = (fn) => { try { fn(); return ""; } catch (e) { return e.message; } };
+  const partes = partesXlsx([
+    { nombre: "pesadas", filas: [["fecha", "peso_kg"], ["2026-10-01", 82.5]] },
+    { nombre: "alimentos", filas: [["id"]] },
+  ]);
+  const de = (nombre) => partes.find((p) => p.nombre === nombre).contenido;
+  return {
+    grupo: "Descargar mis datos: el Excel (.xlsx)",
+    casos: [
+      {
+        nombre: "Letras de columna: A, Z, AA, AB, AZ, BA, ZZ, AAA",
+        ejecutar: () => comparar(
+          { letras: [0, 25, 26, 27, 51, 52, 701, 702].map(columnaExcel).join(",") },
+          { letras: "A,Z,AA,AB,AZ,BA,ZZ,AAA" }
+        ),
+      },
+      {
+        nombre: "Celdas: número, texto en línea, vacía (no se escribe), cabecera en negrita y texto escapado y limpio para XML",
+        ejecutar: () => comparar(
+          {
+            numero: celdaXml(3.5, "B2"), texto: celdaXml("Viaje", "D3"), nula: celdaXml(null, "A1"), vacia: celdaXml("", "A1"),
+            cabecera: celdaXml("fecha", "A1", 1),
+            escapado: textoXml("a<b & \"c\" 'd' >e\u0001f"),
+          },
+          {
+            numero: '<c r="B2"><v>3.5</v></c>',
+            texto: '<c r="D3" t="inlineStr"><is><t xml:space="preserve">Viaje</t></is></c>',
+            nula: "", vacia: "",
+            cabecera: '<c r="A1" s="1" t="inlineStr"><is><t xml:space="preserve">fecha</t></is></c>',
+            escapado: "a&lt;b &amp; &quot;c&quot; &apos;d&apos; &gt;ef",
+          }
+        ),
+      },
+      {
+        nombre: "Partes del libro: orden, hojas en el libro, relaciones (estilos al final), tipos, anchos y XML bien formado",
+        ejecutar: () => {
+          const malFormados = partes.filter((p) => new DOMParser().parseFromString(p.contenido, "application/xml").getElementsByTagName("parsererror").length).map((p) => p.nombre);
+          return comparar(
+            {
+              nombres: partes.map((p) => p.nombre).join("|"),
+              hojas: de("xl/workbook.xml").includes('<sheet name="pesadas" sheetId="1" r:id="rId1"/><sheet name="alimentos" sheetId="2" r:id="rId2"/>'),
+              estilos: de("xl/_rels/workbook.xml.rels").includes('Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"'),
+              tipos: de("[Content_Types].xml").includes('PartName="/xl/worksheets/sheet2.xml"'),
+              anchos: de("xl/worksheets/sheet1.xml").includes('<cols><col min="1" max="1" width="12" customWidth="1"/><col min="2" max="2" width="9" customWidth="1"/></cols>'),
+              fila2: de("xl/worksheets/sheet1.xml").includes('<row r="2"><c r="A2" t="inlineStr"><is><t xml:space="preserve">2026-10-01</t></is></c><c r="B2"><v>82.5</v></c></row>'),
+              fija: de("xl/worksheets/sheet1.xml").includes('<pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'),
+              malFormados: malFormados.join(","),
+            },
+            {
+              nombres: "[Content_Types].xml|_rels/.rels|xl/workbook.xml|xl/_rels/workbook.xml.rels|xl/styles.xml|xl/worksheets/sheet1.xml|xl/worksheets/sheet2.xml",
+              hojas: true, estilos: true, tipos: true, anchos: true, fila2: true, fija: true, malFormados: "",
+            }
+          );
+        },
+      },
+      {
+        nombre: "Nombres de hoja que Excel no acepta (más de 31 caracteres, «/», repetidos sin mirar mayúsculas, ninguno) y el ZIP de vuelta",
+        ejecutar: () => comparar(
+          {
+            largo: lanza(() => partesXlsx([{ nombre: "a".repeat(32), filas: [] }])) !== "",
+            barra: lanza(() => partesXlsx([{ nombre: "a/b", filas: [] }])) !== "",
+            repetida: lanza(() => partesXlsx([{ nombre: "Pesadas", filas: [] }, { nombre: "pesadas", filas: [] }])) !== "",
+            ninguna: lanza(() => partesXlsx([])) !== "",
+            treintaYUno: lanza(() => partesXlsx([{ nombre: "a".repeat(31), filas: [] }])),
+            releido: leerZip(crearXlsx([{ nombre: "x", filas: [["a"], [1]] }])).length,
+          },
+          { largo: true, barra: true, repetida: true, ninguna: true, treintaYUno: "", releido: 6 }
+        ),
       },
     ],
   };

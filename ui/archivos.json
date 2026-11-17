@@ -1,6 +1,7 @@
 [
   "ui/ajustes/ajustes.jsx",
   "ui/ajustes/compartir.jsx",
+  "ui/ajustes/exportar.js",
   "ui/ajustes/licencias.jsx",
   "ui/ajustes/privacidad.jsx",
   "ui/catalogo/alimentos.jsx",

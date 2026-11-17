@@ -2,8 +2,6 @@
 // Ajustes: idioma, notificaciones, descarga de datos, repetir el cuestionario, los ajustes de entreno, la
 // privacidad (lo firmado y retirar el consentimiento de salud), cerrar sesión y eliminar la cuenta.
 import React, { useState, useEffect, useRef } from "react";
-import { Download } from "lucide-react";
-import { descargarDatosJSON } from "peso";
 import { t, guardarIdiomaLocal } from "i18n";
 import { quiereAvisos, avisoEsteAparato, datosPesajeBuzon } from "buzon-avisos";
 import { ModalShell, Field, inputStyle, ModalBtn } from "../comun/modal.jsx";
@@ -98,8 +96,9 @@ export function DeleteAccountModal({ onClose, idioma }) {
 }
 
 // ---------- Ajustes ----------
-// Reúne lo que antes vivía repartido dentro de Perfil (idioma, notificaciones, eliminar cuenta) más
-// la descarga de datos que antes vivía en la tarjeta raíz de Perfil. A diferencia de Perfil (que
+// Reúne lo que antes vivía repartido dentro de Perfil (idioma, notificaciones, eliminar cuenta). «Descargar mis
+// datos» está en la sección Privacidad (ui/ajustes/privacidad.jsx), el único sitio de la app que descarga los datos:
+// el botón que había aquí solo bajaba los datos principales. A diferencia de Perfil (que
 // tiene su propio botón "Guardar cambios"), aquí cada ajuste se aplica al momento de tocarlo — no
 // hay nada que "confirmar" después, igual que ya hacía el interruptor de notificaciones.
 // Importante: onSave siempre parte de `{ ...perfil, ... }` en vez de construir un objeto desde
@@ -109,7 +108,9 @@ export function DeleteAccountModal({ onClose, idioma }) {
 // Los ajustes de entreno van como sección propia antes de lo de la cuenta (cerrar sesión, eliminarla), que
 // queda siempre lo último. Con `params.seccion === "entreno"` (el enlace «Ajustes de entreno» de la
 // pantalla Entrenar) la pantalla se abre ya desplazada hasta esa sección.
-export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entreno, params, idioma }) {
+// `fuentes`: los hooks con todos los datos de la cuenta, para «Descargar mis datos» (data, menuCompleto, menuSimple,
+// despensa, entreno, cuerpo).
+export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entreno, fuentes, params, idioma }) {
   const refEntreno = useRef(null);
   const irAEntreno = params && params.seccion === "entreno";
   useEffect(() => {
@@ -323,17 +324,6 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
             )}
           </div>
         )}
-
-        <button
-          onClick={() => descargarDatosJSON(data)}
-          style={{
-            display: "flex", alignItems: "center", gap: 6, background: "none", border: "none",
-            cursor: "pointer", padding: 0, marginTop: 4,
-            fontFamily: FUENTE_TEXTO, fontSize: 12, fontWeight: 700, color: "var(--ink-soft)",
-          }}
-        >
-          <Download size={13} /> {t(idioma, "perfilRoot.descargarDatos")}
-        </button>
       </div>
 
       <div style={{ border: "1px solid var(--mustard-dark)", borderRadius: 12, padding: "16px 18px", marginTop: 24, maxWidth: 480 }}>
@@ -370,9 +360,9 @@ export function SettingsView({ perfil, data, onSave, onRepetirCuestionario, entr
         </div>
       )}
 
-      {/* Privacidad (etapa 2 de la auditoría): lo firmado en «Antes de empezar» y retirar el consentimiento de salud,
-          que lleva a la misma ventana de «Eliminar cuenta» de abajo. */}
-      <SeccionPrivacidad idioma={idioma} data={data} onEliminarCuenta={() => setShowDeleteAccount(true)} />
+      {/* Privacidad (etapa 2 de la auditoría): lo firmado en «Antes de empezar», «Descargar mis datos» (etapa 4) y
+          retirar el consentimiento de salud, que lleva a la misma ventana de «Eliminar cuenta» de abajo. */}
+      <SeccionPrivacidad idioma={idioma} fuentes={fuentes} onEliminarCuenta={() => setShowDeleteAccount(true)} />
 
       {/* Licencias de terceros (26-oct-2026): al final, justo antes de cerrar sesión. */}
       <SeccionLicencias idioma={idioma} />

@@ -10,19 +10,67 @@
 // que se lleva también las firmas). Sin un camino propio de borrado, no hay dos formas de borrar que mantener.
 //
 // Las firmas llegan de auth-bootstrap.jsx (`window.consentimientos`, leídas al entrar, con la hora del servidor).
+//
+// «Descargar mis datos» vive aquí y en ningún otro sitio de la app (etapa 4 de la auditoría, punto 12b): un ZIP con
+// todo lo de la cuenta (ui/ajustes/exportar.js). El mismo botón sale también dentro de la ventana de retirar el
+// consentimiento, que ofrece guardar una copia antes de borrarlo todo: es el mismo sitio y la misma descarga.
 import React, { useState } from "react";
 import { ShieldCheck, Download } from "lucide-react";
 import { t } from "i18n";
 import { resumenFirmas, fechaDeFirma } from "consentimientos";
-import { descargarDatosJSON } from "peso";
 import { ModalShell, ModalBtn } from "../comun/modal.jsx";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
+import { descargarTodosMisDatos } from "./exportar.js";
 
 const estiloLinea = { fontFamily: FUENTE_TEXTO, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink)", margin: "0 0 6px" };
 const estiloEnlace = { fontFamily: FUENTE_TEXTO, fontSize: 12.5, color: "var(--green-dark)", fontWeight: 700 };
 
-// `onEliminarCuenta`: abre la ventana de «Eliminar cuenta» de Ajustes. `data`: los datos de la cuenta, para la copia.
-export function SeccionPrivacidad({ idioma, data, onEliminarCuenta }) {
+// El botón de la descarga, con su estado: preparando (no se puede pulsar otra vez), descargado o el error. `fuentes`:
+// los hooks con los datos de la cuenta (ver descargarTodosMisDatos).
+function DescargarMisDatos({ fuentes, idioma }) {
+  const [estado, setEstado] = useState(null); // null | "preparando" | { ok: nombre } | { error: "lectura" | "otro" }
+  const preparando = estado === "preparando";
+
+  async function descargar() {
+    if (preparando) return;
+    setEstado("preparando");
+    try {
+      const { nombre } = await descargarTodosMisDatos(fuentes, idioma);
+      setEstado({ ok: nombre });
+    } catch (e) {
+      if (!(e && e.lectura)) console.warn("Descargar mis datos:", (e && e.message) || e);
+      setEstado({ error: e && e.lectura ? "lectura" : "otro" });
+    }
+  }
+
+  return (
+    <div>
+      <button
+        onClick={descargar}
+        disabled={preparando}
+        style={{
+          display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: 0,
+          cursor: preparando ? "default" : "pointer", opacity: preparando ? 0.6 : 1,
+          fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)",
+        }}
+      >
+        <Download size={14} aria-hidden="true" /> {t(idioma, "perfilRoot.descargarDatos")}
+      </button>
+      {estado && (
+        <div role="status" style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, lineHeight: 1.45, marginTop: 6, color: estado.error ? "var(--rust)" : "var(--ink-soft)" }}>
+          {preparando && t(idioma, "ajustes.privacidad.preparando")}
+          {estado.ok && t(idioma, "ajustes.privacidad.descargado", { archivo: estado.ok })}
+          {estado.error === "lectura" && t(idioma, "ajustes.privacidad.errorLectura")}
+          {estado.error === "otro" && t(idioma, "ajustes.privacidad.errorDescarga")}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// `onEliminarCuenta`: abre la ventana de «Eliminar cuenta» de Ajustes. `fuentes`: los hooks con los datos de la
+// cuenta, para la descarga (data, menuCompleto, menuSimple, despensa, entreno, cuerpo).
+export function SeccionPrivacidad({ idioma, fuentes, onEliminarCuenta }) {
   const [retirando, setRetirando] = useState(false);
   const firmas = resumenFirmas(window.consentimientos);
   // Una fecha que faltara (no debería: las firmas se releen del servidor al entrar) sale como «—», sin inventarla.
@@ -53,6 +101,13 @@ export function SeccionPrivacidad({ idioma, data, onEliminarCuenta }) {
         <a href="privacidad.html" target="_blank" rel="noopener" style={estiloEnlace}>{t(idioma, "login.privacidad")}</a>
       </div>
 
+      <div style={{ borderTop: "1px solid var(--line)", padding: "12px 0 14px" }}>
+        <DescargarMisDatos fuentes={fuentes} idioma={idioma} />
+        <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12, lineHeight: 1.45, color: "var(--ink-soft)", margin: "6px 0 0" }}>
+          {t(idioma, "ajustes.privacidad.descargarAyuda", { donde: t(idioma, "premiumView.gestionarSuscripcion") })}
+        </p>
+      </div>
+
       <button
         onClick={() => setRetirando(true)}
         style={{
@@ -72,15 +127,7 @@ export function SeccionPrivacidad({ idioma, data, onEliminarCuenta }) {
           <p style={{ fontFamily: FUENTE_TEXTO, fontSize: 12.5, lineHeight: 1.5, color: "var(--ink-soft)", margin: "0 0 8px" }}>
             {t(idioma, "ajustes.privacidad.retirarCopia")}
           </p>
-          <button
-            onClick={() => descargarDatosJSON(data)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", padding: 0,
-              fontFamily: FUENTE_TEXTO, fontSize: 12.5, fontWeight: 700, color: "var(--green-dark)",
-            }}
-          >
-            <Download size={14} /> {t(idioma, "perfilRoot.descargarDatos")}
-          </button>
+          <DescargarMisDatos fuentes={fuentes} idioma={idioma} />
           <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 18 }}>
             <ModalBtn onClick={() => setRetirando(false)} variant="ghost">{t(idioma, "common.cancelar")}</ModalBtn>
             <ModalBtn

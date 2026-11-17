@@ -245,8 +245,13 @@ const PANTALLAS = {
 
   // Con `params: { seccion: "entreno" }` se abre ya en los ajustes de entreno (que viven aquí desde el
   // 25-oct-2026; antes eran el destino `entreno-ajustes`, que ya no existe).
-  ajustes: ({ data, idioma, perfil, entreno, params }) => (
-    <SettingsView perfil={data.perfil} data={data} onSave={perfil.savePerfil} onRepetirCuestionario={perfil.repetirCuestionarioCatalogo} entreno={entreno} params={params} idioma={idioma} />
+  // `fuentes`: para «Descargar mis datos» (Ajustes → Privacidad), todo lo de la cuenta que ya tienen cargado los hooks.
+  ajustes: ({ data, idioma, perfil, entreno, params, menuCompleto, menuSimple, despensa, cuerpo }) => (
+    <SettingsView
+      perfil={data.perfil} data={data} onSave={perfil.savePerfil} onRepetirCuestionario={perfil.repetirCuestionarioCatalogo}
+      entreno={entreno} params={params} idioma={idioma}
+      fuentes={{ data, menuCompleto, menuSimple, despensa, entreno, cuerpo }}
+    />
   ),
 
   compartir: ({ idioma }) => <CompartirView idioma={idioma} />,
