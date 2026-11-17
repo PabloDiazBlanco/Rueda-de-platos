@@ -140,16 +140,19 @@ hook la reescribía (auditoría de noviembre de 2026, R12 y el primer paso de R1
   (lo leído al cargar cuenta, también un «no existe»). Casi todos los hooks ya lo cumplen; el borrador del entreno
   no, porque se sube aunque su lectura fallara sin conexión, y así una copia vieja lo escribía encima de uno de
   una versión mayor sin verlo. Ahora esa primera escritura lee antes: con una versión mayor bloquea; sin conexión
-  falla (el borrador se queda «pendiente» en el aparato, como ya pasaba). Dos escrituras seguidas de la misma
-  clave esperan a la misma lectura, para no adelantarse. La copia de los datos antiguos del navegador
-  (`migrateLocalDataIfNeeded`) también escribe por aquí.
+  falla (el borrador se queda «pendiente» en el aparato, como ya pasaba). Mientras esa lectura está en marcha,
+  toda escritura de la misma clave la espera (aunque otra lectura la haya dado por leída entretanto), para que
+  ninguna se adelante a otra pedida antes. «Eliminar cuenta» pausa además las escrituras que estuvieran
+  esperándola (`pausarEscrituras`): si no, saldrían después del borrado y volverían a crear documentos. La copia de
+  los datos antiguos del navegador (`migrateLocalDataIfNeeded`) también escribe por aquí.
 - **Lo que no pasa por `window.storage`**: el buzón de avisos y las firmas (no son claves). Con el bloqueo,
   `app.jsx` deja de sincronizar el buzón; cerrar sesión desde «Actualiza FoodDraft» sí quita este aparato del
   buzón (no toca nada más).
 - **Capa 2, las migraciones**: todas (`migrateData`, `migrarDespensa`, las cuatro del entreno, `migrarDiario`,
   `migrarFavoritos`, `migrarPeriodo`) llaman a `exigirVersionConocida`: con una versión mayor lanzan en vez de
   rebajarla. Con la capa 1 no les llega ninguna; están por si alguna vez se lee por otro camino, y entonces
-  `useCargaInicial` bloquea igual (`bloquearPorVersion`) para que salga la misma pantalla.
+  `useCargaInicial` (y el entreno, que recoge sus propios errores de lectura) bloquean igual
+  (`bloquearPorVersion`) para que salga la misma pantalla.
 - **El período**, que vive en `localStorage` y no pasa por `window.storage`: `ui/cuerpo/periodo.jsx` mira la
   versión al leer y otra vez justo antes de escribir, y bloquea con `window.storage.bloquearPorVersion`.
   «Descargar mis datos» lo lee en modo estricto: con una versión mayor, falla en vez de exportarlo vacío.

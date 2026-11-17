@@ -133,7 +133,9 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
   Auth. Activar (checkout) sí lo crea.
 - El cliente (`window.deleteAccount`) bloquea las escrituras de `window.storage` mientras la función trabaja,
   para que un guardado automático pendiente no recree documentos de la cuenta borrada; si la función falla,
-  las devuelve. Lo mismo con el buzón de avisos, que no pasa por `window.storage`: la marca `cuentaBorrandose`
+  las devuelve. Además pausa el almacén de dentro (`pausarEscrituras`, `logica/versiones.js`), porque una
+  escritura que ya esperaba su lectura previa (el borrador del entreno, `datos.md`, «Versiones y copias viejas de
+  la app») lo usa por dentro y saldría después del borrado. Lo mismo con el buzón de avisos, que no pasa por `window.storage`: la marca `cuentaBorrandose`
   para la fila del buzón de esa cuenta («Notificaciones push», abajo). Después limpia las claves de
   `localStorage` de esa cuenta (las que acaban en `:<uid>`) y cierra la sesión. Si la función falla, no se borra
   nada: no hay borrado a medias desde el cliente.
