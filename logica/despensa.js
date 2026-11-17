@@ -25,8 +25,10 @@
 // la lista de la compra basta con saber si hay o no.
 import { uid } from "comun";
 import { CATEGORIAS_ALIMENTOS } from "datos-iniciales";
+import { VERSIONES, exigirVersionConocida } from "versiones";
 
-export const DESPENSA_VERSION = 1;
+// La versión vive en logica/versiones.js, con las de las demás claves (R12): subirla es cambiarla allí.
+export const DESPENSA_VERSION = VERSIONES.despensa;
 
 // Orden en el que se enseñan las zonas (el mismo del título de la pantalla).
 export const ZONAS = ["despensa", "nevera", "congelador"];
@@ -84,10 +86,13 @@ export function stockAlimento(despensa, foodId) {
 // - octubre de 2026: `limpieza` (lista vacía si falta) y `actualizado` en cada entrada. A lo que ya
 //   estaba apuntado sin fecha se le pone `hoy` (el día en que se carga por primera vez con esta
 //   versión): no se sabe cuándo se tocó de verdad, y empezar a contar desde ahí es lo más honesto.
+// Una despensa de una versión más nueva de la app no se toca (R12, logica/versiones.js): se lanza el error y
+// useDespensa no escribe nada encima.
 export function migrarDespensa(guardado, hoy) {
   if (!guardado || typeof guardado !== "object" || Array.isArray(guardado)) {
     return { despensa: despensaVacia(), changed: true };
   }
+  exigirVersionConocida(guardado, DESPENSA_VERSION, "rueda-de-platos:despensa-v1");
   const items = (Array.isArray(guardado.items) ? guardado.items : [])
     .filter((i) => i && i.foodId)
     .map((i) => {

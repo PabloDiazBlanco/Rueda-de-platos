@@ -42,8 +42,16 @@ import {
 import {
   claveMes, mesDe, migrarCatalogo, anadirSesionAMes, fusionarMeses, reconstruirIndice, actualizarIndiceConSesion,
   elegirBorrador, encolar, quitarDeCola, migrarIndice, mesesAReconstruir, indiceVacio,
-  migrarLocalesEntreno, clavesLocalesEntreno,
+  migrarLocalesEntreno, clavesLocalesEntreno, migrarMes, migrarBorrador, VERSION_BORRADOR,
 } from "entreno-almacen";
+import {
+  VERSIONES as VERSIONES_DATOS, versionConocida, versionGuardada, esVersionMayor, revisarLectura, protegerVersiones,
+  leerMenuGuardado, leerHistorialGuardado,
+} from "versiones";
+import { initialData } from "datos-iniciales";
+import { DESPENSA_VERSION } from "despensa";
+import { VERSION_DIARIO, VERSION_FAVORITOS } from "cuerpo-diario";
+import { VERSION_PERIODO } from "periodo";
 import {
   lineasComida, redondearRazonable, propuestaGramos, opcionesCambio, comidaReal, registroComida, necesidadesComidaReal,
   estaHecha, registroDeSlot, totalesDiaReal,
@@ -1468,6 +1476,7 @@ export function crearGrupos(mod, carga) {
     grupoZip(),
     grupoExportacion(),
     grupoXlsx(),
+    grupoVersiones(carga),
   ];
 }
 
@@ -4445,6 +4454,350 @@ function grupoXlsx() {
           },
           { largo: true, barra: true, repetida: true, ninguna: true, treintaYUno: "", releido: 6 }
         ),
+      },
+    ],
+  };
+}
+
+// ---------- Versiones de lo guardado: copias viejas de la app (R12 y el primer paso de R13, noviembre de 2026) ----------
+// logica/versiones.js. Lo que se prueba es la regla «una copia de la app nunca escribe encima de datos de una versión
+// mayor que la que conoce», en sus dos capas (window.storage protegido y las migraciones), y que con los datos de hoy
+// (todos de la versión 1, o sin versión) no cambia nada. Todas las versiones conocidas son la 1, así que los valores
+// esperados salen de leer la regla: bloquea solo un número estrictamente mayor que 1 (2, 1,5...); sin versión, una
+// lista, 0 o un texto como "2" no bloquean. Los casos de window.storage usan un almacén falso en memoria y son
+// asíncronos, como el de verdad.
+function almacenFalso(docs) {
+  const escritos = [];
+  const borrados = [];
+  return {
+    escritos,
+    borrados,
+    async get(clave) { return Object.prototype.hasOwnProperty.call(docs, clave) ? { key: clave, value: docs[clave], shared: false } : null; },
+    async set(clave, valor) { escritos.push(clave); docs[clave] = valor; return { key: clave, value: valor, shared: false }; },
+    async delete(clave) { borrados.push(clave); delete docs[clave]; return { key: clave, deleted: true, shared: false }; },
+  };
+}
+// Qué pasa al ejecutar `fn` (asíncrona o no): "ok", "versionMayor" o el mensaje de otro error.
+async function resultadoDe(fn) {
+  try {
+    await fn();
+    return "ok";
+  } catch (e) {
+    return e && e.versionMayor ? "versionMayor" : String((e && e.message) || e);
+  }
+}
+const MES_NOV = "rueda-de-platos:entreno-2026-11-v1";
+
+function grupoVersiones(carga) {
+  return {
+    grupo: "Versiones: copias viejas de la app (R12 y R13)",
+    casos: [
+      {
+        nombre: "Leer la versión: solo cuenta un número; sin versión, una lista, 0 o un texto no son «mayor»",
+        ejecutar: () => comparar(
+          {
+            dos: versionGuardada({ version: 2 }), sinCampo: versionGuardada({}), lista: versionGuardada([1, 2]), texto: versionGuardada({ version: "2" }),
+            nulo: versionGuardada(null),
+            mayor2: esVersionMayor({ version: 2 }, 1), igual: esVersionMayor({ version: 1 }, 1), mayorDecimal: esVersionMayor({ version: 1.5 }, 1),
+            cero: esVersionMayor({ version: 0 }, 1), sinVersion: esVersionMayor({}, 1), deLista: esVersionMayor([], 1),
+            deTexto: esVersionMayor({ version: "9" }, 1), sinConocida: esVersionMayor({ version: 2 }, undefined),
+            revisarRoto: revisarLectura("rueda-de-platos:data-v1", "{roto"), revisarMayor: (revisarLectura(MES_NOV, '{"version":3}') || {}).guardada,
+          },
+          {
+            dos: 2, sinCampo: null, lista: null, texto: null, nulo: null,
+            mayor2: true, igual: false, mayorDecimal: true, cero: false, sinVersion: false, deLista: false, deTexto: false, sinConocida: false,
+            revisarRoto: null, revisarMayor: 3,
+          }
+        ),
+      },
+      {
+        nombre: "Cada clave de la nube tiene su versión conocida (hoy, todas la 1); los meses del entreno, por su forma; una desconocida no se comprueba",
+        ejecutar: () => {
+          const claves = [
+            "rueda-de-platos:data-v1", "rueda-de-platos:menu-v1", "rueda-de-platos:menu-simple-v1", "rueda-de-platos:history-v1",
+            "rueda-de-platos:history-simple-v1", "rueda-de-platos:despensa-v1", "rueda-de-platos:entreno-catalogo-v1",
+            "rueda-de-platos:entreno-indice-v1", "rueda-de-platos:entreno-borrador-v1", "rueda-de-platos:cuerpo-diario-v1",
+            "rueda-de-platos:informes-favoritos-v1", MES_NOV, claveMes("1999-01"),
+          ];
+          return comparar(
+            {
+              conocidas: claves.map(versionConocida).join(","),
+              retirada: versionConocida("rueda-de-platos:push-token-v1"), mesMalFormado: versionConocida("rueda-de-platos:entreno-2026-1-v1"),
+              otra: versionConocida("fooddraft:idioma"), sinClave: versionConocida(undefined),
+            },
+            { conocidas: "1,1,1,1,1,1,1,1,1,1,1,1,1", retirada: null, mesMalFormado: null, otra: null, sinClave: null }
+          );
+        },
+      },
+      {
+        nombre: "Una sola tabla de versiones: cada migración y cada documento nuevo toman la suya de logica/versiones.js",
+        ejecutar: () => comparar(
+          {
+            datos: initialData().version === VERSIONES_DATOS.datos && migrateData({}).data.version === VERSIONES_DATOS.datos,
+            despensa: DESPENSA_VERSION === VERSIONES_DATOS.despensa && despensaVacia().version === VERSIONES_DATOS.despensa,
+            catalogo: migrarCatalogo(null).valor.version === VERSIONES_DATOS.entrenoCatalogo,
+            indice: indiceVacio().version === VERSIONES_DATOS.entrenoIndice,
+            borrador: VERSION_BORRADOR === VERSIONES_DATOS.entrenoBorrador && migrarBorrador(null).valor.version === VERSIONES_DATOS.entrenoBorrador,
+            mes: migrarMes(null, "2026-11").valor.version === VERSIONES_DATOS.entrenoMes,
+            diario: VERSION_DIARIO === VERSIONES_DATOS.cuerpoDiario && migrarDiario(null).diario.version === VERSIONES_DATOS.cuerpoDiario,
+            favoritos: VERSION_FAVORITOS === VERSIONES_DATOS.informesFavoritos && migrarFavoritos(null).favoritos.version === VERSIONES_DATOS.informesFavoritos,
+            periodo: VERSION_PERIODO === VERSIONES_DATOS.periodo && migrarPeriodo(null).version === VERSIONES_DATOS.periodo,
+            congelada: Object.isFrozen(VERSIONES_DATOS),
+          },
+          { datos: true, despensa: true, catalogo: true, indice: true, borrador: true, mes: true, diario: true, favoritos: true, periodo: true, congelada: true }
+        ),
+      },
+      {
+        // Lo que se lee de window.storage es exactamente lo de siempre, y se escribe como siempre: un JSON roto se deja
+        // pasar (lo decide su hook: «ilegible»), igual que una clave desconocida aunque diga versión 9 o una versión "2"
+        // en texto.
+        nombre: "window.storage protegido, con los datos de hoy: lee y guarda igual que siempre y no avisa de nada",
+        ejecutar: async () => {
+          const docs = {
+            "rueda-de-platos:data-v1": JSON.stringify({ foods: [] }),
+            "rueda-de-platos:menu-v1": JSON.stringify([{ id: "a" }]),
+            "rueda-de-platos:history-v1": JSON.stringify({ version: 1, lista: [] }),
+            "rueda-de-platos:despensa-v1": JSON.stringify({ version: 1, items: [] }),
+            [MES_NOV]: JSON.stringify({ version: 1, mes: "2026-11", sesiones: [] }),
+            "rueda-de-platos:cuerpo-diario-v1": "{roto",
+            "rueda-de-platos:push-token-v1": JSON.stringify({ version: 9 }),
+            "rueda-de-platos:informes-favoritos-v1": JSON.stringify({ version: "2", lista: [] }),
+          };
+          const copia = { ...docs };
+          const avisos = [];
+          const falso = almacenFalso(docs);
+          const w = protegerVersiones(falso, (info) => avisos.push(info));
+          let iguales = true;
+          for (const clave of Object.keys(copia)) {
+            const res = await w.get(clave);
+            if (!res || res.value !== copia[clave]) iguales = false;
+          }
+          const noExiste = await w.get("rueda-de-platos:entreno-catalogo-v1");
+          const guardado = await resultadoDe(() => w.set("rueda-de-platos:data-v1", JSON.stringify({ version: 1, foods: [] })));
+          const borrado = await resultadoDe(() => w.delete("rueda-de-platos:push-token-v1"));
+          return comparar(
+            { iguales, noExiste, guardado, borrado, escritos: falso.escritos.join(","), avisos: avisos.length, bloqueo: w.versionMayor() },
+            { iguales: true, noExiste: null, guardado: "ok", borrado: "ok", escritos: "rueda-de-platos:data-v1", avisos: 0, bloqueo: null }
+          );
+        },
+      },
+      {
+        // Lo programado antes del aviso (el guardado de la despensa) sí llega; desde el aviso, nada: ni esa clave ni
+        // ninguna otra, ni borrar. Leer sigue funcionando. Se avisa una sola vez aunque se vuelva a leer el mes.
+        nombre: "window.storage protegido: un mes del entreno de la versión 2 bloquea todo lo que se guarda o se borra y avisa una vez",
+        ejecutar: async () => {
+          const docs = {
+            "rueda-de-platos:data-v1": JSON.stringify({ version: 1, foods: [] }),
+            "rueda-de-platos:despensa-v1": JSON.stringify({ version: 1, items: [] }),
+            [MES_NOV]: JSON.stringify({ version: 2, mes: "2026-11", sesiones: [], algoNuevo: true }),
+          };
+          const avisos = [];
+          const falso = almacenFalso(docs);
+          const w = protegerVersiones(falso, (info) => avisos.push(info));
+          const antes = await resultadoDe(() => w.set("rueda-de-platos:despensa-v1", JSON.stringify({ version: 1, items: [] })));
+          let infoError = null;
+          const leerMes = await resultadoDe(async () => {
+            try { await w.get(MES_NOV); } catch (e) { infoError = e.info; throw e; }
+          });
+          const leerDatos = await resultadoDe(() => w.get("rueda-de-platos:data-v1"));
+          const guardarDatos = await resultadoDe(() => w.set("rueda-de-platos:data-v1", "{}"));
+          const guardarMes = await resultadoDe(() => w.set(MES_NOV, JSON.stringify({ version: 1, mes: "2026-11", sesiones: [] })));
+          const borrar = await resultadoDe(() => w.delete("rueda-de-platos:despensa-v1"));
+          const otraVez = await resultadoDe(() => w.get(MES_NOV));
+          const b = w.versionMayor();
+          return comparar(
+            {
+              antes, leerMes, leerDatos, guardarDatos, guardarMes, borrar, otraVez,
+              escritos: falso.escritos.join(","), borrados: falso.borrados.length, mesIntacto: JSON.parse(docs[MES_NOV]).algoNuevo,
+              avisos: avisos.length, aviso: avisos[0] && `${avisos[0].clave}|${avisos[0].guardada}|${avisos[0].conocida}`,
+              error: infoError && `${infoError.clave}|${infoError.guardada}|${infoError.conocida}`, bloqueo: b && `${b.clave}|${b.guardada}|${b.conocida}`,
+            },
+            {
+              antes: "ok", leerMes: "versionMayor", leerDatos: "ok", guardarDatos: "versionMayor", guardarMes: "versionMayor", borrar: "versionMayor", otraVez: "versionMayor",
+              escritos: "rueda-de-platos:despensa-v1", borrados: 0, mesIntacto: true,
+              avisos: 1, aviso: `${MES_NOV}|2|1`, error: `${MES_NOV}|2|1`, bloqueo: `${MES_NOV}|2|1`,
+            }
+          );
+        },
+      },
+      {
+        // Los menús: la lista suelta de siempre y el sobre de la versión 1 se leen; el sobre de la versión 2, no. El
+        // período bloquea desde fuera (bloquearPorVersion; el segundo aviso ya no cuenta). Una copia con `{ ...almacen }`
+        // (la de «Eliminar cuenta») comparte el bloqueo, porque las funciones no usan `this`.
+        nombre: "window.storage protegido: menús en sus dos formas, el sobre de la versión 2, el bloqueo desde fuera y la copia con {...}",
+        ejecutar: async () => {
+          const docs = {
+            "rueda-de-platos:menu-v1": JSON.stringify({ version: 1, slots: [] }),
+            "rueda-de-platos:menu-simple-v1": JSON.stringify([]),
+            "rueda-de-platos:history-simple-v1": JSON.stringify({ version: 2, lista: [] }),
+          };
+          const avisosA = [];
+          const a = protegerVersiones(almacenFalso(docs), (info) => avisosA.push(info));
+          const sobre1 = await resultadoDe(() => a.get("rueda-de-platos:menu-v1"));
+          const lista = await resultadoDe(() => a.get("rueda-de-platos:menu-simple-v1"));
+          const sobre2 = await resultadoDe(() => a.get("rueda-de-platos:history-simple-v1"));
+          const avisosB = [];
+          const b = protegerVersiones(almacenFalso({}), (info) => avisosB.push(info));
+          const copia = { ...b };
+          const antesDeBloquear = await resultadoDe(() => copia.set("rueda-de-platos:data-v1", "{}"));
+          b.bloquearPorVersion({ clave: "fooddraft:periodo-v1", guardada: 3, conocida: 1 });
+          b.bloquearPorVersion({ clave: "otra", guardada: 4, conocida: 1 });
+          const trasBloquear = await resultadoDe(() => copia.set("rueda-de-platos:data-v1", "{}"));
+          return comparar(
+            {
+              sobre1, lista, sobre2, avisosA: avisosA.length, antesDeBloquear, trasBloquear,
+              avisosB: avisosB.length, claveB: b.versionMayor().clave, guardadaB: copia.versionMayor().guardada,
+            },
+            { sobre1: "ok", lista: "ok", sobre2: "versionMayor", avisosA: 1, antesDeBloquear: "ok", trasBloquear: "versionMayor", avisosB: 1, claveB: "fooddraft:periodo-v1", guardadaB: 3 }
+          );
+        },
+      },
+      {
+        // La segunda capa: ninguna migración rebaja una versión mayor a la suya (antes, `version !== 1` la «arreglaba» y
+        // el hook la reescribía). Con la versión 1, sin versión o con un valor raro, siguen como siempre.
+        nombre: "Las migraciones se niegan a tocar un documento de la versión 2, y con la 1, sin versión o con un valor raro siguen igual",
+        ejecutar: async () => {
+          const v2 = { version: 2 };
+          const lanzan = await Promise.all([
+            resultadoDe(() => migrateData({ ...v2, foods: [] })),
+            resultadoDe(() => migrarDespensa({ ...v2, items: [] }, "2026-11-17")),
+            resultadoDe(() => migrarCatalogo({ ...v2 })),
+            resultadoDe(() => migrarIndice({ ...v2, meses: {} })),
+            resultadoDe(() => migrarMes({ ...v2, sesiones: [] }, "2026-11")),
+            resultadoDe(() => migrarBorrador({ ...v2, sesion: null })),
+            resultadoDe(() => migrarDiario({ ...v2, dias: {} })),
+            resultadoDe(() => migrarFavoritos({ ...v2, lista: [] })),
+            resultadoDe(() => migrarPeriodo({ ...v2, regla: [] })),
+          ]);
+          return comparar(
+            {
+              lanzan: lanzan.join(","),
+              despensaSinVersion: migrarDespensa({ items: [] }, "2026-11-17").despensa.version,
+              mesTexto: migrarMes({ version: "2", sesiones: [] }, "2026-11").valor.version,
+              catalogoUno: migrarCatalogo({ version: 1 }).valor.version,
+              periodoCero: migrarPeriodo({ version: 0, regla: [] }).version,
+              datosTexto: migrateData({ version: "x" }).data.version,
+              datosCero: migrateData({ version: 0 }).data.version,
+            },
+            {
+              lanzan: "versionMayor,versionMayor,versionMayor,versionMayor,versionMayor,versionMayor,versionMayor,versionMayor,versionMayor",
+              despensaSinVersion: 1, mesTexto: 1, catalogoUno: 1, periodoCero: 1, datosTexto: 1, datosCero: 1,
+            }
+          );
+        },
+      },
+      {
+        // data-v1 era la única clave sin `version` (H11). Ahora la recibe una vez (changed) y después no cambia. Las copias
+        // de antes la conservan porque migrateData copia el documento entero: lo prueba un campo cualquiera que no conoce.
+        nombre: "data-v1 recibe version: 1 una sola vez; una cuenta nueva ya nace con ella; migrateData conserva lo que no conoce",
+        ejecutar: () => {
+          const alDia = migrateData({ perfil: { nombre: "X" }, pesoTracking: { entradas: [] } }).data;
+          const sinVersion = { ...alDia };
+          delete sinVersion.version;
+          const primera = migrateData(JSON.parse(JSON.stringify(sinVersion)));
+          const segunda = migrateData(JSON.parse(JSON.stringify(primera.data)));
+          return comparar(
+            {
+              primeraCambia: primera.changed, version: primera.data.version, segundaCambia: segunda.changed,
+              nueva: initialData().version, conserva: migrateData({ campoNuevo: { a: 1 } }).data.campoNuevo.a,
+            },
+            { primeraCambia: true, version: 1, segundaCambia: false, nueva: 1, conserva: 1 }
+          );
+        },
+      },
+      {
+        // Día 10: el sueño con una `fuente` (como la de un reloj, H5) y un campo `peso` en el día; día 11: solo un campo
+        // desconocido; día 12: lo de siempre. Nada cambia (changed: false) y todo se queda. Corregir a mano el sueño del
+        // día 10 lo rehace sin `fuente` (lo apuntado a mano no viene de ningún aparato), pero el `peso` del día sigue.
+        nombre: "Sueño y pasos conservan lo que no conocen (un día, un sueño, el documento); corregir a mano rehace el sueño",
+        ejecutar: () => {
+          const guardado = {
+            version: 1, extra: "x",
+            dias: {
+              "2026-11-10": { sueno: { horas: 7, calidad: 6, fuente: "reloj" }, pasos: 5000, peso: 70 },
+              "2026-11-11": { nota: "solo esto" },
+              "2026-11-12": { sueno: { horas: 7, calidad: 8 } },
+            },
+          };
+          const { diario, changed } = migrarDiario(JSON.parse(JSON.stringify(guardado)));
+          const corregido = apuntarSueno(diario, "2026-11-10", 8, 8).dias["2026-11-10"];
+          return comparar(
+            {
+              changed, extra: diario.extra, fuente: diario.dias["2026-11-10"].sueno.fuente, horas: diario.dias["2026-11-10"].sueno.horas,
+              peso: diario.dias["2026-11-10"].peso, pasos: diario.dias["2026-11-10"].pasos, nota: diario.dias["2026-11-11"].nota,
+              fechas: Object.keys(diario.dias).join(","), igual: JSON.stringify(diario) === JSON.stringify(guardado),
+              corregidoFuente: corregido.sueno.fuente, corregidoHoras: corregido.sueno.horas, corregidoPeso: corregido.peso,
+            },
+            {
+              changed: false, extra: "x", fuente: "reloj", horas: 7, peso: 70, pasos: 5000, nota: "solo esto",
+              fechas: "2026-11-10,2026-11-11,2026-11-12", igual: true,
+              corregidoFuente: undefined, corregidoHoras: 8, corregidoPeso: 70,
+            }
+          );
+        },
+      },
+      {
+        // Favoritos: se conservan el campo `orden` del documento y los campos de más de los favoritos bien formados; el
+        // de tipo desconocido se quita (changed, porque la lista baja de 3 a 2). Período: se conserva `ciclos`, también
+        // al marcar un día.
+        nombre: "Favoritos y período conservan lo que no conocen; un favorito de un tipo desconocido sí se quita",
+        ejecutar: () => {
+          const { favoritos, changed } = migrarFavoritos({
+            version: 1, orden: "manual",
+            lista: [{ id: "a", tipo: "pre", color: "verde" }, { id: "b", tipo: "cons", spec: { pregunta: "libre" }, nota: "x" }, { id: "c", tipo: "nuevo" }],
+          });
+          const p = migrarPeriodo({ version: 1, regla: ["2026-11-01"], relaciones: [], ciclos: { media: 28 } });
+          const marcado = alternarDia(p, "regla", "2026-11-02");
+          return comparar(
+            {
+              orden: favoritos.orden, ids: favoritos.lista.map((f) => f.id).join(","), color: favoritos.lista[0].color, nota: favoritos.lista[1].nota,
+              pregunta: favoritos.lista[1].spec.pregunta, changed,
+              ciclos: p.ciclos.media, regla: p.regla.join(","), version: p.version, marcadoCiclos: marcado.ciclos.media, marcadoRegla: marcado.regla.join(","),
+            },
+            {
+              orden: "manual", ids: "a,b", color: "verde", nota: "x", pregunta: "libre", changed: true,
+              ciclos: 28, regla: "2026-11-01", version: 1, marcadoCiclos: 28, marcadoRegla: "2026-11-01,2026-11-02",
+            }
+          );
+        },
+      },
+      {
+        // R13, primer paso: se leen la lista suelta de siempre y el sobre; cualquier otra forma, null (se ignora).
+        nombre: "Menús e historial: se leen en lista suelta y en sobre { version, slots } / { version, lista }; otra forma, nada",
+        ejecutar: () => comparar(
+          {
+            menuLista: leerMenuGuardado([{ id: "a" }]).length, menuSobre: leerMenuGuardado({ version: 1, slots: [{ id: "a" }, { id: "b" }] }).length,
+            menuSinSlots: leerMenuGuardado({ version: 1 }), menuVacio: leerMenuGuardado({}), menuNulo: leerMenuGuardado(null), menuTexto: leerMenuGuardado("x"),
+            histLista: leerHistorialGuardado([{ id: "h" }]).length, histSobre: leerHistorialGuardado({ version: 1, lista: [{ id: "h" }, { id: "i" }, { id: "j" }] }).length,
+            histSlots: leerHistorialGuardado({ version: 1, slots: [] }), histNulo: leerHistorialGuardado(null),
+          },
+          { menuLista: 1, menuSobre: 2, menuSinSlots: null, menuVacio: null, menuNulo: null, menuTexto: null, histLista: 1, histSobre: 3, histSlots: null, histNulo: null }
+        ),
+      },
+      {
+        // Una clave nueva en la nube tiene que entrar en la tabla de logica/versiones.js (si no, no se protegería el día
+        // que suba su versión). Se lee el código de la app (app.jsx, auth-bootstrap.jsx, los archivos de ui/archivos.json
+        // y los módulos de logica/ del importmap de index.html) y se buscan todos los «rueda-de-platos:…-v1» escritos
+        // enteros. Los meses del entreno se forman con una plantilla y no aparecen así. Solo se admite sin versión la
+        // retirada push-token-v1.
+        nombre: "Todas las claves «rueda-de-platos:…-v1» que aparecen en el código tienen su versión en logica/versiones.js",
+        ejecutar: async () => {
+          const html = await fetch("../index.html", { cache: "no-store" }).then((r) => r.text());
+          const mapa = JSON.parse(html.match(/<script type="importmap">([\s\S]*?)<\/script>/)[1]).imports;
+          const logica = Object.values(mapa).filter((ruta) => ruta.startsWith("./logica/")).map((ruta) => ruta.slice(2));
+          const ui = (carga && carga.archivosLista) || [];
+          const archivos = ["app.jsx", "auth-bootstrap.jsx", ...ui, ...logica];
+          const encontradas = new Set();
+          for (const archivo of archivos) {
+            const texto = await fetch("../" + archivo, { cache: "no-store" }).then((r) => r.text());
+            (texto.match(/rueda-de-platos:[a-z0-9-]+-v1\b/g) || []).forEach((c) => encontradas.add(c));
+          }
+          const sinVersion = [...encontradas].filter((c) => versionConocida(c) === null && c !== "rueda-de-platos:push-token-v1").sort();
+          return comparar(
+            { leidos: archivos.length > 40 && logica.length > 30, hayClaves: encontradas.size >= 11, sinVersion: sinVersion.join(",") },
+            { leidos: true, hayClaves: true, sinVersion: "" }
+          );
+        },
       },
     ],
   };

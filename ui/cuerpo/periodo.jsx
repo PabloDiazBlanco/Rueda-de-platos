@@ -10,18 +10,53 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Droplet, Heart, Lock, Info } from "lucide-react";
 import { t } from "i18n";
-import { periodoVacio, migrarPeriodo, alternarDia, prediccionPeriodo } from "periodo";
+import { periodoVacio, migrarPeriodo, alternarDia, prediccionPeriodo, VERSION_PERIODO } from "periodo";
+import { esVersionMayor, versionGuardada, errorVersionMayor, EVENTO_VERSION_MAYOR } from "versiones";
 import { FUENTE_TEXTO, FUENTE_TITULOS } from "../estilos.js";
 import { nombreMes, DIAS_CORTOS, fechaDia } from "../entreno/comun.jsx";
 
 const claveLocal = () => `fooddraft:periodo-v1:${window.cuentaId || "sin-cuenta"}`;
-function leer() {
-  try { return migrarPeriodo(JSON.parse(localStorage.getItem(claveLocal()) || "null")); } catch (e) { return periodoVacio(); }
+// Lo guardado tal cual, o null si no hay nada o no es JSON.
+function leerGuardado() {
+  try { return JSON.parse(localStorage.getItem(claveLocal()) || "null"); } catch (e) { return null; }
+}
+
+// Un período guardado por una versión más nueva de la app (R12, logica/versiones.js): no se escribe encima y la
+// app entera pasa a «Actualiza FoodDraft», como con las claves de la nube. El período no pasa por window.storage,
+// así que el bloqueo se pide a mano (`bloquearPorVersion`, que corta también todo lo que se guarda en la nube).
+// Con un setTimeout porque `leer` se llama mientras React pinta (el estado inicial de la pantalla, las gráficas de
+// Cuerpo), y cambiar ahí el estado de la app entera sería cambiar otro componente a mitad de pintar. En la clave del
+// aviso no va el uid: no hace falta para nada.
+function avisarVersionMayor(guardado) {
+  const info = { clave: "fooddraft:periodo-v1", guardada: versionGuardada(guardado), conocida: VERSION_PERIODO };
+  setTimeout(() => {
+    if (window.storage && typeof window.storage.bloquearPorVersion === "function") window.storage.bloquearPorVersion(info);
+    else window.dispatchEvent(new CustomEvent(EVENTO_VERSION_MAYOR, { detail: info }));
+  }, 0);
+  return info;
+}
+
+// Para pintar, un período de una versión más nueva se enseña vacío (esta copia no sabe leerlo, y en un momento la
+// app pasa a la pantalla de actualizar). `estricto` (la descarga de los datos) lanza en vez de dar uno vacío: una
+// copia sin el período presentada como completa sería peor que un error.
+function leer({ estricto = false } = {}) {
+  const guardado = leerGuardado();
+  if (esVersionMayor(guardado, VERSION_PERIODO)) {
+    const info = avisarVersionMayor(guardado);
+    if (estricto) throw errorVersionMayor(info);
+    return periodoVacio();
+  }
+  try { return migrarPeriodo(guardado); } catch (e) { return periodoVacio(); }
 }
 // Lo leen también los informes cruzados y el constructor, que calculan las fases del ciclo **en el móvil** con
-// esto (ui/cuerpo/graficas.jsx, useSerieCuerpo); nunca se sube ni se guarda en otro sitio.
-export const leerPeriodoLocal = () => leer();
+// esto (ui/cuerpo/graficas.jsx, useSerieCuerpo), y «Descargar mis datos» (`{ estricto: true }`); nunca se sube ni
+// se guarda en otro sitio.
+export const leerPeriodoLocal = (opciones) => leer(opciones);
+// Antes de escribir se vuelve a mirar lo guardado: si mientras tanto lo ha escrito una versión más nueva (otra
+// pestaña de este navegador), no se pisa.
 function guardar(p) {
+  const guardado = leerGuardado();
+  if (esVersionMayor(guardado, VERSION_PERIODO)) { avisarVersionMayor(guardado); return; }
   try { localStorage.setItem(claveLocal(), JSON.stringify(p)); } catch (e) { /* sin localStorage no se guarda; se avisa abajo */ }
 }
 

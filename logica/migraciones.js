@@ -8,10 +8,16 @@ import { FOODS_SEED } from "datos-iniciales";
 import { REPARTO_COMIDAS } from "objetivos";
 import { defaultPesoTracking } from "peso";
 import { DEFAULT_IDIOMA } from "i18n";
+import { VERSIONES, exigirVersionConocida } from "versiones";
 
 // Parchea datos ya guardados que se crearon con una versión anterior del código,
 // para que se beneficien de mejoras estructurales sin perder tus ediciones ni tener que rehacer nada a mano.
 export function migrateData(rawData) {
+  // Datos de una versión más nueva de la app (R12, logica/versiones.js): no se tocan. No debería llegar ninguno
+  // (window.storage los para al leer), pero si llegara, rebajarlo a la versión de esta copia y guardarlo sería
+  // perder lo que la versión nueva haya añadido. useDatos lo trata como un documento que no se puede usar: no
+  // escribe nada encima.
+  exigirVersionConocida(rawData, VERSIONES.datos, "rueda-de-platos:data-v1");
   let changed = false;
   const data = {
     ...rawData,
@@ -189,6 +195,17 @@ export function migrateData(rawData) {
   // aunque no coincida con el sexo: es una elección del usuario.
   if (data.perfil && data.perfil.avatar !== "mujer" && data.perfil.avatar !== "hombre") {
     data.perfil.avatar = data.perfil.sexo === "mujer" ? "mujer" : "hombre";
+    changed = true;
+  }
+
+  // Versión de los datos principales (R12, noviembre de 2026). Hasta entonces data-v1 era la única clave sin
+  // `version` (H11 del diccionario de datos): sin ella es la 1, lo de siempre. Desde ahora se escribe, para que el
+  // día que la forma cambie de verdad se pueda subir y las copias viejas lo noten (logica/versiones.js). Es inocua
+  // para las copias de antes: migrateData copia el documento entero (`...rawData`), así que conservan el campo
+  // aunque no lo conozcan. Un valor que no sea un número (no lo escribe la app) queda en la 1; uno mayor no llega
+  // hasta aquí (arriba).
+  if (data.version !== VERSIONES.datos) {
+    data.version = VERSIONES.datos;
     changed = true;
   }
 

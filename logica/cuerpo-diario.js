@@ -25,9 +25,30 @@
 //    No se guarda el título: se vuelve a escribir en el idioma de cada momento.
 //
 // Ninguno de los dos pasa por migrateData (como la despensa o el entreno, cada clave tiene su migración).
+//
+// Las migraciones (R12, noviembre de 2026, logica/versiones.js):
+// - No tocan un documento de una versión más nueva de la app: lanzan el error y el hook no escribe nada.
+// - **Conservan lo que no conocen.** Antes rehacían cada documento solo con lo que sabían (un día con `sueno` y
+//   `pasos`, un sueño con `horas` y `calidad`, un favorito con `id`, `tipo` y `spec`), así que una copia vieja de
+//   la app borraba al abrirse cualquier campo que hubiera añadido una versión más nueva (como la `fuente` de una
+//   medida que llegue de un reloj, H5 del diccionario de datos). Ahora lo conocido se sigue limpiando igual y lo
+//   demás se queda como está. Corregir a mano un sueño sí lo rehace entero (apuntarSueno), sin esos campos: lo
+//   apuntado a mano no viene de ningún aparato. Un tipo de favorito desconocido también se quita: esta copia no
+//   sabría enseñarlo, y una versión que añada uno tiene que subir VERSIONES.informesFavoritos.
 
-export const VERSION_DIARIO = 1;
-export const VERSION_FAVORITOS = 1;
+import { VERSIONES, exigirVersionConocida } from "versiones";
+
+// Las versiones viven en logica/versiones.js, con las de las demás claves: subirlas es cambiarlas allí.
+export const VERSION_DIARIO = VERSIONES.cuerpoDiario;
+export const VERSION_FAVORITOS = VERSIONES.informesFavoritos;
+
+// Los campos de `objeto` que no están en `conocidos`, en su orden (lo que una versión más nueva haya añadido).
+function desconocidos(objeto, conocidos) {
+  const fuera = {};
+  if (!objeto || typeof objeto !== "object" || Array.isArray(objeto)) return fuera;
+  Object.keys(objeto).forEach((k) => { if (!conocidos.includes(k)) fuera[k] = objeto[k]; });
+  return fuera;
+}
 
 export const SUENO_MIN = 3;
 export const SUENO_MAX = 11;
@@ -75,19 +96,24 @@ export function diarioVacio() {
 
 // Completa lo que falte sin perder nada: fuera fechas mal escritas, valores imposibles y días vacíos.
 // Devuelve { diario, changed } como migrarDespensa: `changed` dice si hay que volver a guardar.
+// Lo desconocido (de un día, de su sueño o del documento) se conserva tal cual (cabecera); un día que solo tenga
+// campos desconocidos también se queda.
 export function migrarDiario(guardado) {
   if (!guardado || typeof guardado !== "object") return { diario: diarioVacio(), changed: !!guardado };
+  exigirVersionConocida(guardado, VERSION_DIARIO, "rueda-de-platos:cuerpo-diario-v1");
   const dias = {};
   Object.entries(guardado.dias && typeof guardado.dias === "object" ? guardado.dias : {}).forEach(([fecha, d]) => {
     if (!esFecha(fecha) || !d || typeof d !== "object") return;
     const limpio = {};
     const s = limpiarSueno(d.sueno);
     const p = limpiarPasos(d.pasos);
-    if (s) limpio.sueno = s;
+    if (s) limpio.sueno = { ...s, ...desconocidos(d.sueno, ["horas", "calidad"]) };
     if (p !== null) limpio.pasos = p;
+    Object.assign(limpio, desconocidos(d, ["sueno", "pasos"]));
     if (Object.keys(limpio).length) dias[fecha] = limpio;
   });
-  const diario = { version: VERSION_DIARIO, dias };
+  // `...guardado` primero: lo desconocido se queda, y en el mismo orden (version y dias se sustituyen en su sitio).
+  const diario = { ...guardado, version: VERSION_DIARIO, dias };
   return { diario, changed: guardado.version !== VERSION_DIARIO || JSON.stringify(dias) !== JSON.stringify(guardado.dias || {}) };
 }
 
@@ -159,8 +185,11 @@ export function favoritosVacios() {
   return { version: VERSION_FAVORITOS, lista: [] };
 }
 
+// Lo desconocido de cada favorito bien formado, y del documento, se conserva (cabecera).
+const CAMPOS_FAVORITO = ["id", "tipo", "spec"];
 export function migrarFavoritos(guardado) {
   if (!guardado || typeof guardado !== "object") return { favoritos: favoritosVacios(), changed: !!guardado };
+  exigirVersionConocida(guardado, VERSION_FAVORITOS, "rueda-de-platos:informes-favoritos-v1");
   const vistos = new Set();
   const lista = (Array.isArray(guardado.lista) ? guardado.lista : []).filter((f) => {
     if (!f || typeof f.id !== "string" || !f.id || vistos.has(f.id)) return false;
@@ -168,8 +197,10 @@ export function migrarFavoritos(guardado) {
     if (f.tipo === "cons" && (!f.spec || typeof f.spec !== "object" || typeof f.spec.pregunta !== "string")) return false;
     vistos.add(f.id);
     return true;
-  }).map((f) => (f.tipo === "pre" ? { id: f.id, tipo: "pre" } : { id: f.id, tipo: "cons", spec: f.spec }));
-  const favoritos = { version: VERSION_FAVORITOS, lista };
+  }).map((f) => (f.tipo === "pre"
+    ? { id: f.id, tipo: "pre", ...desconocidos(f, CAMPOS_FAVORITO) }
+    : { id: f.id, tipo: "cons", spec: f.spec, ...desconocidos(f, CAMPOS_FAVORITO) }));
+  const favoritos = { ...guardado, version: VERSION_FAVORITOS, lista };
   return { favoritos, changed: guardado.version !== VERSION_FAVORITOS || lista.length !== (guardado.lista || []).length };
 }
 

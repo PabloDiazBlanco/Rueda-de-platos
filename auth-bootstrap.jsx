@@ -37,6 +37,7 @@ import {
   planSincronizacion, decidirBuzon, firmaAlQuitarAvisos, decidirAlSalir, camposBuzon,
 } from "buzon-avisos";
 import { TIPOS, idsConsentimientos, idsFirmasGuardadas, consentimientosPendientes, documentosAFirmar } from "consentimientos";
+import { protegerVersiones, EVENTO_VERSION_MAYOR } from "versiones";
 import { cargarApp } from "cargador-ui";
 
 // Identificadores públicos de los proyectos de Firebase (no son claves secretas, es normal que
@@ -1515,7 +1516,13 @@ async function entrarEnLaApp(user) {
   window.authProvider = user.providerData[0]?.providerId === "google.com" ? "google" : "password";
   // Las firmas que vea la app (el año declarado para el asistente de perfil; las fechas, para Ajustes).
   window.consentimientos = await asegurarConsentimientos(user, mod);
-  window.storage = makeFirestoreStorage(user.uid);
+  // Protegido ante datos de una versión más nueva de la app (R12, logica/versiones.js): si una lectura encuentra
+  // una `version` mayor que la que conoce esta copia, deja de guardar todo y avisa a la app (useVersionMayor, que
+  // enseña «Actualiza FoodDraft»). En la consola queda qué clave fue, sin ningún dato de la cuenta.
+  window.storage = protegerVersiones(makeFirestoreStorage(user.uid), (info) => {
+    console.warn(`Datos de una versión más nueva de la app en ${info.clave} (versión ${info.guardada}; esta copia conoce la ${info.conocida}): no se guarda nada hasta actualizar.`);
+    window.dispatchEvent(new CustomEvent(EVENTO_VERSION_MAYOR, { detail: info }));
+  });
   // Identificador de la cuenta para lo que se guarda solo en el dispositivo y no debe ver otra cuenta que
   // inicie sesión en el mismo móvil (hoy, el período: ui/cuerpo/periodo.jsx).
   window.cuentaId = user.uid;

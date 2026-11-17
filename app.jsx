@@ -13,7 +13,7 @@ import { calcularResumenMensual, pesoEnMes } from "resumen-mensual";
 import { t, guardarIdiomaLocal } from "i18n";
 import { datosPesajeBuzon } from "buzon-avisos";
 import { anioDeclarado } from "consentimientos";
-import { useDatos, usePremium, useCargaInicial } from "./ui/estado/datos.js";
+import { useDatos, usePremium, useCargaInicial, useVersionMayor } from "./ui/estado/datos.js";
 import { useMenu, useComidasCompletadas, MENU_COMPLETO, MENU_SIMPLE } from "./ui/estado/menu.js";
 import { useCatalogo } from "./ui/estado/catalogo.js";
 import { usePerfil } from "./ui/estado/perfil.js";
@@ -28,7 +28,7 @@ import { ProfileOnboarding } from "./ui/onboarding/asistente-perfil.jsx";
 import { PantallaAntesDeEmpezar } from "./ui/onboarding/antes-de-empezar.jsx";
 import { CatalogoOnboarding } from "./ui/onboarding/cuestionario.jsx";
 import { BotonCerrarSesionAlta } from "./ui/comun/cerrar-sesion.jsx";
-import { ErrorCarga } from "./ui/comun/error-carga.jsx";
+import { ErrorCarga, ActualizaApp } from "./ui/comun/error-carga.jsx";
 import { BackLink } from "./ui/comun/tarjetas.jsx";
 import { Pantalla, DESTINOS } from "./ui/pantallas.jsx";
 import { AREAS, COMUNES, TITULO_COMUN, areaDe, pestanaDe, areaPorClave } from "./ui/marco/navegacion.js";
@@ -115,6 +115,9 @@ export default function RuedaDePlatos() {
   // enseña «No se han podido cargar tus datos · Reintentar» (ver useCargaInicial y ui/comun/error-carga.jsx).
   // `null` sin error; «conexion» o «ilegible» (se leyó, pero lo guardado no se puede usar) para el texto.
   const [errorCarga, setErrorCarga] = useState(null);
+  // Datos guardados por una versión más nueva de la app (R12, logica/versiones.js): `null` o lo encontrado. Si lo
+  // hay, window.storage ya no deja guardar nada y la app entera se cambia por «Actualiza FoodDraft» (abajo).
+  const versionMayor = useVersionMayor();
 
   const premium = usePremium();
   const { data, setData, saveState, idioma, idiomaFallback, cargar: cargarDatos } = useDatos(loading);
@@ -157,8 +160,9 @@ export default function RuedaDePlatos() {
   // vigilan esos tres valores sueltos y no `pesoTracking` entero: solo cambian con la primera pesada de un día,
   // al pausar o reanudar, al cambiar la frecuencia y al cerrar el ciclo (no al corregir el peso de hoy, por
   // ejemplo), y con el recordatorio apagado no cambian nunca.
-  // En validacion/ no existe el puente con Firebase y no hace nada.
-  const perfilListo = !loading && !errorCarga && !!(data && data.perfil);
+  // En validacion/ no existe el puente con Firebase y no hace nada. Con datos de una versión más nueva de la app
+  // (R12) tampoco: esta copia no escribe nada, y el buzón no pasa por window.storage.
+  const perfilListo = !loading && !errorCarga && !versionMayor && !!(data && data.perfil);
   const avisoPesaje = !!(data && data.perfil && data.perfil.notificacionesPush);
   const avisoDescongelar = !!(data && data.perfil && data.perfil.avisoDescongelar);
   const { pesoVecesSemana, pesoPausado, ultimaPesada } = datosPesajeBuzon({ pesaje: avisoPesaje, pesoTracking: data && data.pesoTracking });
@@ -166,6 +170,17 @@ export default function RuedaDePlatos() {
     if (!perfilListo || typeof window.sincronizarBuzonAvisos !== "function") return;
     window.sincronizarBuzonAvisos({ idioma, pesaje: avisoPesaje, descongelar: avisoDescongelar, pesoVecesSemana, pesoPausado, ultimaPesada });
   }, [perfilListo, idioma, avisoPesaje, avisoDescongelar, pesoVecesSemana, pesoPausado, ultimaPesada]);
+
+  // Antes que el error de carga: con datos de una versión más nueva, los cargadores también fallan (su lectura no
+  // pasa), pero reintentar no lo arreglaría; lo que hace falta es la versión nueva de la app. Los hooks siguen
+  // montados debajo, pero nada de lo que intenten guardar llega a la nube (ni lo programado antes del aviso).
+  if (versionMayor) {
+    return (
+      <Shell>
+        <ActualizaApp idioma={idioma} />
+      </Shell>
+    );
+  }
 
   if (errorCarga) {
     return (

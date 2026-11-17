@@ -53,6 +53,7 @@
     "zip": "../logica/zip.js",
     "xlsx": "../logica/xlsx.js",
     "exportacion": "../logica/exportacion.js",
+    "versiones": "../logica/versiones.js",
     "cargador-ui": "../cargador-ui.js"
   }
 }
@@ -149,23 +150,25 @@
     return cargarApp({ base: "../", cacheTransformado: false });
   }
 
-  function renderResultados(grupos) {
+  // Un caso puede ser asíncrono (devolver una promesa): se espera a que termine. Desde noviembre de 2026 (R12), para
+  // probar window.storage protegido (logica/versiones.js), que trabaja con promesas, y para leer el código fuente.
+  async function renderResultados(grupos) {
     const cont = document.getElementById("resultados");
     let total = 0, ok = 0;
     cont.innerHTML = "";
 
-    grupos.forEach((g) => {
+    for (const g of grupos) {
       const div = document.createElement("div");
       div.className = "grupo";
       const h2 = document.createElement("h2");
       h2.textContent = g.grupo;
       div.appendChild(h2);
 
-      g.casos.forEach((c) => {
+      for (const c of g.casos) {
         total++;
         let resultado;
         try {
-          resultado = c.ejecutar();
+          resultado = await c.ejecutar();
         } catch (err) {
           resultado = { ok: false, diffs: [], error: err.message };
         }
@@ -199,10 +202,10 @@
         }
 
         div.appendChild(casoDiv);
-      });
+      }
 
       cont.appendChild(div);
-    });
+    }
 
     const resumen = document.getElementById("resumen");
     resumen.style.display = "flex";
@@ -223,7 +226,7 @@
       const lista = await fetch("../ui/archivos.json").then((r) => r.json());
       const grupos = crearGrupos(mod, { archivosCargados: archivosCargados(), archivosLista: lista });
       document.getElementById("estado-carga").style.display = "none";
-      renderResultados(grupos);
+      await renderResultados(grupos);
     } catch (err) {
       document.getElementById("estado-carga").textContent =
         "No se pudo cargar app.jsx: " + err.message;

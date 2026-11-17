@@ -4,6 +4,7 @@
 // principio de app.jsx; se sacó en la reestructuración de octubre de 2026 para que migraciones.js
 // y cuestionario.js (y Validacion) puedan usarlo sin depender del archivo de interfaz.
 import { defaultPesoTracking } from "peso";
+import { VERSIONES } from "versiones";
 
 // ---------- Base de datos de alimentos (macros por 100 g) ----------
 // Ids fijos (no aleatorios) para que las migraciones puedan reconocerlos entre versiones.
@@ -114,8 +115,11 @@ export const CATEGORIAS_ALIMENTOS = [
 // foods (el catálogo nutricional en sí) SÍ se mantiene compartido para todo el mundo, igual que
 // antes: es la base de datos de la que tira el cuestionario, y se sigue actualizando sola con
 // alimentos nuevos vía migrateData, sin tocar nada de esto.
+// `version` (R12, logica/versiones.js): una cuenta nueva empieza ya con la de esta copia de la app, como las demás
+// claves; las de antes la reciben de migrateData.
 export const initialData = () => {
   return {
+    version: VERSIONES.datos,
     foods: FOODS_SEED.map((f) => ({ ...f })),
     rules: [],
     ingredients: [],

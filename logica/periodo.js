@@ -8,8 +8,10 @@
 // informativo: no sirve como método anticonceptivo, y así se dice en pantalla.
 //
 // Forma de lo guardado: { version: 1, regla: ["AAAA-MM-DD", ...], relaciones: ["AAAA-MM-DD", ...] }.
+import { VERSIONES, exigirVersionConocida } from "versiones";
 
-export const VERSION_PERIODO = 1;
+// La versión vive en logica/versiones.js, con las de las claves de la nube (R12): subirla es cambiarla allí.
+export const VERSION_PERIODO = VERSIONES.periodo;
 export const CICLO_POR_DEFECTO = 28;
 
 export function periodoVacio() {
@@ -19,10 +21,15 @@ export function periodoVacio() {
 const esFecha = (f) => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f);
 const limpia = (lista) => [...new Set((Array.isArray(lista) ? lista : []).filter(esFecha))].sort();
 
-// Completa lo que falte sin perder nada (fechas mal formadas fuera, sin repetidas y en orden).
+// Completa lo que falte sin perder nada (fechas mal formadas fuera, sin repetidas y en orden). R12 (noviembre de
+// 2026, logica/versiones.js): un período de una versión más nueva de la app no se toca (se lanza el error; la
+// pantalla, ui/cuerpo/periodo.jsx, no escribe encima), y lo que no se conoce se conserva, en vez de rehacer el
+// documento solo con `regla` y `relaciones`: una copia vieja de la app no borra lo que haya añadido una nueva.
 export function migrarPeriodo(guardado) {
-  if (!guardado || typeof guardado !== "object") return periodoVacio();
-  return { version: VERSION_PERIODO, regla: limpia(guardado.regla), relaciones: limpia(guardado.relaciones) };
+  if (!guardado || typeof guardado !== "object" || Array.isArray(guardado)) return periodoVacio();
+  exigirVersionConocida(guardado, VERSION_PERIODO, "fooddraft:periodo-v1");
+  // `...guardado` primero: lo desconocido se queda, en el mismo orden.
+  return { ...guardado, version: VERSION_PERIODO, regla: limpia(guardado.regla), relaciones: limpia(guardado.relaciones) };
 }
 
 // Pone o quita un día de una de las dos listas («regla» o «relaciones»).

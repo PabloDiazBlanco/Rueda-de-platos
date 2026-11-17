@@ -45,7 +45,9 @@ export function useDespensa(data, menu) {
       if (res && res.value) guardado = JSON.parse(res.value);
       ({ despensa: migrada, changed } = migrarDespensa(guardado, hoy()));
     } catch (e) {
-      e.ilegible = true; // leída pero inservible: no es la conexión (ver useCargaInicial)
+      // Leída pero inservible: no es la conexión (ver useCargaInicial). Una despensa de una versión más nueva de la
+      // app (R12) tampoco se escribe, pero no está dañada: no se marca.
+      if (!e.versionMayor) e.ilegible = true;
       throw e;
     }
     ultimoGuardado.current = guardado && changed ? null : JSON.stringify(migrada);

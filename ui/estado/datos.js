@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { leerIdiomaGuardado } from "i18n";
 import { initialData } from "datos-iniciales";
 import { migrateData } from "migraciones";
+import { EVENTO_VERSION_MAYOR } from "versiones";
 
 export const STORAGE_KEY = "rueda-de-platos:data-v1";
 
@@ -42,11 +43,12 @@ export function useDatos(loading) {
       // Que se haya leído pero no se pueda usar (JSON roto, un parche de migrateData que falla) tampoco es una
       // cuenta nueva, pero no es la conexión: se marca para que la pantalla de reintento lo diga
       // (`ilegible`, ver useCargaInicial). Se sigue sin escribir nada encima.
+      // Unos datos de una versión más nueva de la app (R12) tampoco se escriben, pero no están dañados: no se marcan.
       let migrated, changed;
       try {
         ({ data: migrated, changed } = migrateData(JSON.parse(res.value)));
       } catch (e) {
-        e.ilegible = true;
+        if (!e.versionMayor) e.ilegible = true;
         throw e;
       }
       cargaFiable.current = true;
@@ -141,4 +143,23 @@ export function useCargaInicial(cargadores, alTerminar) {
 
   useEffect(() => { ejecutar(); }, []);
   return ejecutar;
+}
+
+// ¿Hay en la cuenta datos guardados por una versión más nueva de la app? (R12, logica/versiones.js). Lo detecta
+// window.storage al leer (protegerVersiones, puesto por auth-bootstrap.jsx), que desde ese momento no deja guardar
+// nada, y lo avisa con EVENTO_VERSION_MAYOR; el período, que vive en el aparato, lo avisa su pantalla. Devuelve
+// lo encontrado (`{ clave, guardada, conocida }`) o null, y app.jsx cambia entonces la app entera por
+// «Actualiza FoodDraft». Puede pasar al abrir (los cargadores iniciales) o a mitad de uso (el entreno lee meses
+// bajo demanda). Se mira también lo que ya sabe window.storage al montar, por si se detectó antes del efecto.
+export function useVersionMayor() {
+  const yaDetectado = () => (window.storage && typeof window.storage.versionMayor === "function" ? window.storage.versionMayor() : null);
+  const [info, setInfo] = useState(yaDetectado);
+  useEffect(() => {
+    const alDetectar = (e) => setInfo((e && e.detail) || yaDetectado() || {});
+    window.addEventListener(EVENTO_VERSION_MAYOR, alDetectar);
+    const ya = yaDetectado();
+    if (ya) setInfo(ya);
+    return () => window.removeEventListener(EVENTO_VERSION_MAYOR, alDetectar);
+  }, []);
+  return info;
 }

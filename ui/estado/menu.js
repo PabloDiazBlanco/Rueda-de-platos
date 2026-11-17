@@ -9,6 +9,7 @@ import { useState, useRef } from "react";
 import { uid } from "comun";
 import { generateMenu, lastPicksFromHistory } from "menu-generador";
 import { fechaISO } from "peso";
+import { leerMenuGuardado, leerHistorialGuardado } from "versiones";
 
 export const HISTORY_MAX = 8;
 
@@ -54,15 +55,27 @@ export function useMenu({ claveMenu, claveHistorial, campoLista }, data, setData
   // (JSON roto) no bloquea la app, que sería desproporcionado para un menú: se ignora como antes. Un historial
   // ilegible cuenta como leído (y vacío): no hay nada que proteger en él, y si no se pudiera volver a escribir
   // el motor dejaría de evitar repeticiones entre ciclos para siempre, sin que nadie se enterase.
+  // Se leen las dos formas (R13, primer paso: logica/versiones.js): la lista suelta de siempre y el sobre con
+  // `version` que se guardará más adelante; se sigue guardando la lista suelta. Uno con otra forma se ignora,
+  // como uno ilegible (antes llegaba tal cual a las pantallas, que esperan una lista). Unos de una versión más nueva
+  // de la app no llegan aquí: window.storage hace fallar la lectura, y entonces no se escribe nada.
   async function cargar() {
     const [menuRes, historyRes] = await Promise.all([window.storage.get(claveMenu, false), window.storage.get(claveHistorial, false)]);
     try {
-      if (menuRes && menuRes.value) setMenu(JSON.parse(menuRes.value));
+      if (menuRes && menuRes.value) {
+        const huecos = leerMenuGuardado(JSON.parse(menuRes.value));
+        if (huecos) setMenu(huecos);
+        else console.warn("Menú guardado con una forma desconocida (" + claveMenu + "), se ignora");
+      }
     } catch (e) {
       console.warn("Menú guardado ilegible (" + claveMenu + "):", e.message);
     }
     try {
-      if (historyRes && historyRes.value) setHistorial(JSON.parse(historyRes.value));
+      if (historyRes && historyRes.value) {
+        const lista = leerHistorialGuardado(JSON.parse(historyRes.value));
+        if (lista) setHistorial(lista);
+        else console.warn("Historial guardado con una forma desconocida (" + claveHistorial + "), se empieza de nuevo");
+      }
     } catch (e) {
       console.warn("Historial guardado ilegible (" + claveHistorial + "), se empieza de nuevo:", e.message);
     }

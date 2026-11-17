@@ -69,7 +69,8 @@ export async function descargarTodosMisDatos({ data, menuCompleto, menuSimple, d
     despensa: despensa.despensa,
     entreno: { catalogo: entreno.catalogo, meses, cola: entreno.cola, enCurso: entreno.borrador },
     cuerpo: { diario: cuerpo.diario, favoritos: cuerpo.favoritos },
-    periodo: leerPeriodoLocal(),
+    // Estricto: un período de una versión más nueva de la app (R12) hace fallar la descarga en vez de salir vacío.
+    periodo: leerPeriodoLocal({ estricto: true }),
   });
   const archivos = archivosExportacion(exportacion, idioma);
   const zip = crearZip(archivos, new Date(ahora));

@@ -17,6 +17,7 @@
 //
 // Como la despensa, estas claves tienen su propia versión y su propia migración: no pasan por migrateData.
 import { fechaLocal, mejoresDeEjercicioEnSesion } from "entreno-calculo";
+import { VERSIONES, exigirVersionConocida } from "versiones";
 
 // Todas con el prefijo de siempre (ver la nota sobre el nombre en CLAUDE.md).
 export const CLAVE_CATALOGO = "rueda-de-platos:entreno-catalogo-v1";
@@ -28,7 +29,13 @@ export const claveMes = (mesISO) => `rueda-de-platos:entreno-${mesISO}-v1`;
 // que empieza a las 00:30 del 1 de noviembre en España es de noviembre, aunque en UTC aún sea octubre.
 export const mesDe = (fecha) => fechaLocal(fecha).slice(0, 7);
 
-const VERSION = 1;
+// Las versiones viven en logica/versiones.js, con las de las demás claves (R12). Hasta noviembre de 2026 las cuatro
+// claves compartían una sola (`VERSION = 1`); ahora cada una tiene la suya, para que cambiar la forma de una (los
+// meses, por ejemplo) no obligue a subir las otras tres ni bloquee por ellas a las copias viejas de la app.
+const V_CATALOGO = VERSIONES.entrenoCatalogo;
+const V_INDICE = VERSIONES.entrenoIndice;
+const V_BORRADOR = VERSIONES.entrenoBorrador;
+const V_MES = VERSIONES.entrenoMes;
 
 export const AJUSTES_POR_DEFECTO = {
   unidadPeso: "kg", unidadDistancia: "km", precargar: true, mostrarEsfuerzo: false,
@@ -42,7 +49,7 @@ export const AJUSTES_POR_DEFECTO = {
 
 export function catalogoVacio() {
   return {
-    version: VERSION, propios: [], personalizados: {}, rutinas: [],
+    version: V_CATALOGO, propios: [], personalizados: {}, rutinas: [],
     ajustes: { ...AJUSTES_POR_DEFECTO },
     // `grupos` (G8): por grupo muscular, el día en que se cerró su aviso de «sin entrenar».
     aviso: { pausa: null, silenciadoHasta: null, descartadoEl: null, grupos: {} },
@@ -54,9 +61,13 @@ export function catalogoVacio() {
 // ---------- Migraciones ----------
 // Todas devuelven { valor, changed } y siguen el patrón de migrateData: completar lo que falte sin pisar
 // nunca lo que ya hubiera (un `precargar: false` elegido por el usuario se queda en false).
+// Un documento de una versión más nueva de la app no se toca (R12, logica/versiones.js): se lanza el error en vez
+// de rebajarlo a la versión de esta copia, que era lo que pasaba antes (`version !== VERSION` lo «arreglaba»). El
+// hook lo trata como una lectura fallida: no escribe nada encima.
 
 export function migrarCatalogo(guardado) {
   if (!guardado || typeof guardado !== "object") return { valor: catalogoVacio(), changed: true };
+  exigirVersionConocida(guardado, V_CATALOGO, CLAVE_CATALOGO);
   const base = catalogoVacio();
   let changed = false;
   const valor = { ...guardado };
@@ -89,19 +100,20 @@ export function migrarCatalogo(guardado) {
     return { ...r, ejercicios: r.ejercicios.map((re) => (sinDescanso(re) ? { ...re, descansoSeg: descansoPropio(re.ejercicioId) ?? ajustes.descansoSeg } : re)) };
   });
   if (rutinasTocadas) { valor.rutinas = rutinas; changed = true; }
-  if (valor.version !== VERSION) { valor.version = VERSION; changed = true; }
+  if (valor.version !== V_CATALOGO) { valor.version = V_CATALOGO; changed = true; }
   return { valor, changed };
 }
 
 const porInicio = (a, b) => new Date(a.inicio) - new Date(b.inicio);
 
 export function migrarMes(guardado, mes) {
-  if (!guardado || typeof guardado !== "object") return { valor: { version: VERSION, mes, sesiones: [] }, changed: true };
+  if (!guardado || typeof guardado !== "object") return { valor: { version: V_MES, mes, sesiones: [] }, changed: true };
+  exigirVersionConocida(guardado, V_MES, claveMes(mes));
   let changed = false;
   const valor = { ...guardado };
   if (!Array.isArray(valor.sesiones)) { valor.sesiones = []; changed = true; }
   if (!valor.mes) { valor.mes = mes; changed = true; }
-  if (valor.version !== VERSION) { valor.version = VERSION; changed = true; }
+  if (valor.version !== V_MES) { valor.version = V_MES; changed = true; }
   return { valor, changed };
 }
 
@@ -111,7 +123,7 @@ export function migrarMes(guardado, mes) {
 const CALCULO_INDICE = 2;
 
 export function indiceVacio() {
-  return { version: VERSION, calculo: CALCULO_INDICE, meses: {}, ejercicios: {}, rutinas: {} };
+  return { version: V_INDICE, calculo: CALCULO_INDICE, meses: {}, ejercicios: {}, rutinas: {} };
 }
 
 // `reconstruir`: el índice guardado es de antes de que existiera `rutinas` (G4): no se puede completar
@@ -119,6 +131,7 @@ export function indiceVacio() {
 // última vez a secas, como hasta ahora.
 export function migrarIndice(guardado) {
   if (!guardado || typeof guardado !== "object") return { valor: indiceVacio(), changed: true, reconstruir: false };
+  exigirVersionConocida(guardado, V_INDICE, CLAVE_INDICE);
   let changed = false;
   let reconstruir = false;
   const valor = { ...guardado };
@@ -127,21 +140,24 @@ export function migrarIndice(guardado) {
   if (!valor.rutinas || typeof valor.rutinas !== "object") { valor.rutinas = {}; changed = true; reconstruir = true; }
   // Récords calculados con una regla anterior (ver CALCULO_INDICE): se rehacen releyendo los meses.
   if (valor.calculo !== CALCULO_INDICE) { valor.calculo = CALCULO_INDICE; changed = true; reconstruir = true; }
-  if (valor.version !== VERSION) { valor.version = VERSION; changed = true; }
+  if (valor.version !== V_INDICE) { valor.version = V_INDICE; changed = true; }
   return { valor, changed, reconstruir };
 }
 
-// El borrador se guarda como { version, sesion } (sesion null = no hay entreno en curso).
+// El borrador se guarda como { version, sesion, actualizado } (sesion null = no hay entreno en curso; lo escribe
+// subirBorrador, ui/estado/entreno.js, con VERSION_BORRADOR).
+export const VERSION_BORRADOR = V_BORRADOR;
 export function migrarBorrador(guardado) {
-  if (!guardado || typeof guardado !== "object") return { valor: { version: VERSION, sesion: null }, changed: !!guardado };
+  if (!guardado || typeof guardado !== "object") return { valor: { version: V_BORRADOR, sesion: null }, changed: !!guardado };
+  exigirVersionConocida(guardado, V_BORRADOR, CLAVE_BORRADOR);
   let changed = false;
   const valor = { ...guardado };
   if (valor.sesion === undefined) {
     // Por si algún día se guardó la sesión suelta, sin envoltorio.
-    if (valor.id && valor.inicio) return { valor: { version: VERSION, sesion: guardado }, changed: true };
+    if (valor.id && valor.inicio) return { valor: { version: V_BORRADOR, sesion: guardado }, changed: true };
     valor.sesion = null; changed = true;
   }
-  if (valor.version !== VERSION) { valor.version = VERSION; changed = true; }
+  if (valor.version !== V_BORRADOR) { valor.version = V_BORRADOR; changed = true; }
   return { valor, changed };
 }
 

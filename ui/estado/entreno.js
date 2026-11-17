@@ -22,6 +22,7 @@ import {
   CLAVE_CATALOGO, CLAVE_INDICE, CLAVE_BORRADOR, claveMes, mesDe, migrarCatalogo, migrarMes, migrarIndice,
   migrarBorrador, anadirSesionAMes, quitarSesionDeMes, reconstruirIndice, actualizarIndiceConSesion,
   elegirBorrador, encolar, quitarDeCola, mesesAReconstruir, indiceVacio, clavesLocalesEntreno, migrarLocalesEntreno,
+  VERSION_BORRADOR,
 } from "entreno-almacen";
 
 // Copias de este dispositivo (comodidad y red de seguridad, ver la excepción documentada en el diseño:
@@ -285,7 +286,7 @@ export function useEntreno(data) {
     clearTimeout(temporizadorNube.current);
     temporizadorNube.current = null;
     const sesion = ref.current.borrador;
-    const envoltorio = { version: 1, sesion, actualizado: sesion ? sesion.actualizado : Date.now() };
+    const envoltorio = { version: VERSION_BORRADOR, sesion, actualizado: sesion ? sesion.actualizado : Date.now() };
     escribirNube(CLAVE_BORRADOR, envoltorio).then(
       () => setNube(leerLocal(LOCAL_COLA, []).length ? "pendiente" : "ok"),
       () => setNube("pendiente")
