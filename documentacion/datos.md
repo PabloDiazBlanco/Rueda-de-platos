@@ -3,6 +3,10 @@
 Léelo antes de cambiar la forma de algo guardado, de añadir una clave o de tocar `window.storage`
 (`auth-bootstrap.jsx`), `logica/migraciones.js` o cualquier hook de `ui/estado/`.
 
+Lo que guarda cada clave, campo a campo (qué es, unidad, si puede faltar, si es de salud, de dónde sale, si es
+decisión o medida, y lo que le falta para estudios), está en `diccionario-datos.md`. Es la referencia de «Descargar
+mis datos» y de los estudios: **si cambias la forma de algo guardado, actualízalo en el mismo commit.**
+
 ## Reglas de esta área
 
 - **Si cambia la forma de algo guardado**: parche de migración que compruebe si falta algo y lo complete **sin
@@ -206,7 +210,9 @@ alguna, enseña «Antes de empezar» (`ui/onboarding/antes-de-empezar.jsx`) con 
   firmar **solo ese texto**; la firma anterior se queda como prueba de lo que se aceptó entonces. Las reglas aceptan
   cualquier versión con forma `AAAA-MM-DD` (no una lista), para que subirla no obligue a publicar también las reglas;
   una prueba de las reglas comprueba que las de la app tienen esa forma. Un **tipo** nuevo (el de estudios, cuando haya
-  un estudio concreto) sí va en las reglas y se publica antes de subir la app.
+  un estudio concreto) sí va en las reglas y se publica antes de subir la app. **Al subir una versión, la que había
+  pasa a `VERSIONES_ANTERIORES`**: las reglas no dejan listar, así que sin esa lista «Descargar mis datos» no sabría
+  el nombre de las firmas de antes (`idsFirmasGuardadas`).
 - **Ajustes → «Privacidad»** (`ui/ajustes/privacidad.jsx`) enseña lo firmado, con su fecha (como número: día/mes/año;
   en euskera, año/mes/día, `fechaDeFirma`) y su versión (`resumenFirmas`), y los enlaces a los términos y la política.
 - **Retirar el consentimiento de salud equivale a eliminar la cuenta** (sin esos datos la app no funciona): el botón
@@ -216,6 +222,29 @@ alguna, enseña «Antes de empezar» (`ui/onboarding/antes-de-empezar.jsx`) con 
   con «Reintentar», como en la carga de datos.
 - Pruebas: reglas en `functions/pruebas-reglas/` (`npm run test:reglas`) y decisiones de la app en `validacion/`
   (grupo «Consentimientos y edad mínima»).
+
+## «Descargar mis datos» (Ajustes → Privacidad)
+
+El único sitio de la app que descarga los datos de la cuenta (derechos de acceso y portabilidad; auditoría de
+noviembre de 2026, etapa 4, punto 12b): un ZIP `fooddraft-datos-AAAA-MM-DD.zip` con `datos.json` (todo, con las
+secciones de `diccionario-datos.md`, §13), las tablas de medidas en un `datos.xlsx` (una hoja por tabla: se abre bien
+en cualquier Excel) y en un CSV por tabla (formato internacional: comas y punto decimal, para los programas), y un
+`LEEME.txt` en el idioma de la app. Gratis para todos. Piezas: `logica/exportacion.js` (qué va y con qué forma),
+`logica/xlsx.js` (el Excel), `logica/zip.js` (el ZIP, sin comprimir),
+`ui/ajustes/exportar.js` (reunir, empaquetar, releer y descargar) y el puente `window.leerCuentaParaExportar`
+(`auth-bootstrap.jsx`).
+
+- **De dónde sale**: casi todo, de lo que ya tienen cargado los hooks (lo mismo que se ve en pantalla). Los meses del
+  entreno, con `cargarTodosLosMeses` (estricto); la ficha `users/{uid}`, las firmas, el buzón y lo de Authentication,
+  del servidor en el momento; el período y la cola del entreno, de este aparato. El índice del entreno no va (es una
+  caché).
+- **Si una lectura falla, no se descarga nada** y la pantalla lo dice: una copia incompleta presentada como completa
+  es peor que un error. Antes de entregar el ZIP se relee entero (cada CRC-32) y se compara con lo que se quería meter.
+- **Nada se escribe**: la descarga no guarda ni migra nada en la nube.
+- **Al añadir una clave o un campo**: si es de la cuenta, tiene que llegar a la exportación (en `datos.json` sale
+  solo si lo lleva un hook que ya se exporta; una clave nueva necesita su sitio en `construirExportacion`) y a su
+  tabla en `diccionario-datos.md`. Si cambia la forma de `datos.json` o de una tabla (CSV y hoja del Excel), sube `VERSION_EXPORTACION`.
+- Pruebas: `validacion/`, grupos «Descargar mis datos: el ZIP», «… la exportación completa» y «… el Excel (.xlsx)».
 
 La primera vez que una cuenta entra en un navegador con datos antiguos en `localStorage`,
 `migrateLocalDataIfNeeded` (`auth-bootstrap.jsx`) ofrece copiar a la nube las claves `rueda-de-platos:*` que

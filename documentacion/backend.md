@@ -112,8 +112,8 @@ que necesitan las funciones de notificaciones están en `firestore.indexes.json`
   hasta el siguiente cambio de la suscripción).
 - Los métodos de pago del Checkout los decide el panel de Stripe (Configuración → Métodos de pago); el código no los fija.
 - **Gratis**: generador de menús, objetivos, catálogo, Menú simple, lista de la compra, despensa, todo el
-  entreno (sin límites: rutinas, ejercicios propios, historial, gráficas, récords, exportar e importar), el
-  resumen mensual (nutrición y entreno), sueño, pasos y período.
+  entreno (sin límites: rutinas, ejercicios propios, historial, gráficas, récords e importar), el
+  resumen mensual (nutrición y entreno), sueño, pasos, período y «Descargar mis datos» (es un derecho: nunca premium).
 - **Premium**: seguimiento de peso (y con él el apartado de peso del resumen), las funciones de Gemini y los
   informes cruzados y el constructor del área Cuerpo.
 

@@ -72,7 +72,7 @@ hasta, inst, avisado }`.
    de sus meses y los del calculado (`mesesAReconstruir`): un índice calculado sobre uno vacío nunca se
    escribe tal cual, porque dejaría huérfanos los meses que no conoce.
 5. Un mes que no se puede leer no se guarda en memoria como vacío. `cargarMes(mes, { estricto: true })`
-   lanza el error; lo usan reconstruir, exportar, deshacer una importación y corregir o borrar una sesión
+   lanza el error; lo usan reconstruir, «Descargar mis datos», deshacer una importación y corregir o borrar una sesión
    pasada, que avisan de que hace falta conexión en vez de seguir con meses que faltan. Lo que solo pinta
    (ficha, Progreso, informes y constructor de Cuerpo, por `useTodasLasSesiones`) usa
    `leerMesesDisponibles`: lee todos los que puede y, si falta alguno, enseña `AvisoMesesSinLeer`
@@ -118,8 +118,9 @@ hasta, inst, avisado }`.
   corregible).
 - **Los ajustes del entreno** no son un destino: son la sección «FitDraft» de Ajustes (título
   `fitdraft.area`; el avatar y `SeccionAjustesEntreno`, `ui/entreno/ajustes.jsx`), antes de cerrar sesión y
-  eliminar la cuenta: unidades, interruptores (también el paseo del descanso), descansos, exportar CSV/JSON,
-  importar y recalcular el índice. El enlace «Ajustes de entreno» de Entrenar abre Ajustes con `params: {
+  eliminar la cuenta: unidades, interruptores (también el paseo del descanso), descansos,
+  importar y recalcular el índice. Exportar los entrenos ya no está aquí: van con todo lo demás en «Descargar mis
+  datos» (Ajustes → Privacidad), con una tabla de entrenos y otra de series (`logica/exportacion.js`). El enlace «Ajustes de entreno» de Entrenar abre Ajustes con `params: {
   seccion: "entreno" }`, que la desplaza hasta ella.
 - **El entreno en curso no es un destino**: es una capa a pantalla completa (`sesion.jsx`, z-index 45) que
   pinta `app.jsx` cuando `entreno.sesionVisible`; ˅ la minimiza y queda la **pastilla** (`pastilla.jsx`,

@@ -166,7 +166,7 @@ entreno-calculo.js     1RM (Epley), volumen, duración con pausas, récords, «a
                          validarSerie, semanas, resumenEntrenoMes, conversiones de libras y millas
 entreno-sesion.js      operaciones puras de la sesión en curso (series, descanso, sustituir hoy, pausa,
                          terminar), superseries y rutinas (aplicarARutina, rutinaDesdeSesion)
-entreno-almacen.js     claves, migraciones, meses, índice, borrador, cola de envíos y CSV
+entreno-almacen.js     claves, migraciones, meses, índice, borrador y cola de envíos
 entreno-importar.js    importar de Hevy y Lyfta: leerCSV, adaptadores, emparejar con la biblioteca,
                          prepararImportacion (vista previa) y construirImportacion
 informes.js            informes cruzados del área Cuerpo: los 15 predefinidos (INFORMES, informesVisibles)
@@ -200,9 +200,20 @@ consentimientos.js     las firmas de consentimiento y la edad mínima sin Fireba
                          evaluarAnioNacimiento y edadSuficiente (vale, preguntar si ya los ha cumplido, menor,
                          inválido), documentosAFirmar (el lote que se escribe), anioDeclarado (para el asistente
                          de perfil), rangoAnioNacimiento (límites del campo de Perfil con el año de hoy) y
-                         resumenFirmas y fechaDeFirma (lo firmado, para Ajustes). Lo importan auth-bootstrap.jsx,
-                         app.jsx, ui/onboarding/antes-de-empezar.jsx, ui/perfil/campos.jsx,
-                         ui/perfil/perfil.jsx y ui/ajustes/privacidad.jsx
+                         resumenFirmas y fechaDeFirma (lo firmado, para Ajustes), VERSIONES_ANTERIORES e
+                         idsFirmasGuardadas (todas las firmas que puede tener una cuenta, para «Descargar mis
+                         datos»). Lo importan auth-bootstrap.jsx, app.jsx, ui/onboarding/antes-de-empezar.jsx,
+                         ui/perfil/campos.jsx, ui/perfil/perfil.jsx y ui/ajustes/privacidad.jsx
+zip.js                 ZIP sin comprimir escrito a mano (no hay librerías): crearZip, leerZip (relee y comprueba
+                         cada CRC-32), crc32 y fechaDos. Lo usa «Descargar mis datos»
+xlsx.js                libro de Excel sencillo escrito a mano (un ZIP de XML): crearXlsx, partesXlsx, celdaXml,
+                         textoXml, columnaExcel. Una hoja por tabla, números como números, cabecera en negrita y fija
+exportacion.js         «Descargar mis datos» (etapa 4 de la auditoría, 12b): construirExportacion (datos.json, con
+                         las secciones de documentacion/diccionario-datos.md), sesionesParaExportar (meses + cola),
+                         las tablas con valores en bruto (TABLAS: filasPesadas, filasSeries...), textoCSV (formato
+                         internacional), textoLeeme y archivosExportacion (también datos.xlsx).
+                         Lo usa ui/ajustes/exportar.js, que reúne los datos de los hooks y del puente
+                         window.leerCuentaParaExportar (auth-bootstrap.jsx)
 ```
 
 ### Imports entre módulos de `logica/`
@@ -229,9 +240,11 @@ nada:
 | `cuerpo-series` | entreno-calculo, periodo |
 | `gimnasio` | entreno-calculo (fechas) |
 | `buzon-avisos` | peso (`fechaISO`, `PESO_FRECUENCIAS`) |
+| `exportacion` | entreno-calculo, entreno-ejercicios, entreno-nombres, i18n, objetivos (`PRESETS_COMIDAS`, solo el orden de las comidas), xlsx |
+| `xlsx` | zip |
 
 No importan nada: `comun`, `macros`, `seleccion`, `objetivos`, `resumen-mensual`, `i18n`, `nevera`,
-`periodo`, `cuerpo-diario`, `mapa-corporal`, `consentimientos`, `entreno-ejercicios`, `entreno-nombres` y
+`periodo`, `cuerpo-diario`, `mapa-corporal`, `consentimientos`, `zip`, `entreno-ejercicios`, `entreno-nombres` y
 `entreno-calculo`.
 Los tres últimos del entreno reciben `ejercicioDe(id)` y `nombreDe` como funciones, para no depender de la
 biblioteca ni de los nombres. No hay ciclos.

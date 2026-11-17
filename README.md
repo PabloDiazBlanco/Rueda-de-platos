@@ -103,6 +103,7 @@ Rueda-de-platos/
 │   ├── entreno-calculo.js, entreno-sesion.js     1RM, volumen, récords; el entreno en curso
 │   ├── entreno-almacen.js, entreno-importar.js   entrenos por meses, índice y cola; importar CSV
 │   ├── gimnasio.js                               el gimnasio dibujado de FitDraft
+│   ├── exportacion.js, xlsx.js, zip.js           «Descargar mis datos»: todo en un ZIP (JSON, Excel y CSV)
 │   └── i18n.js                                   diccionario de textos ES/EN/CA/GL/EU
 │
 ├── functions/                       Cloud Functions de Firebase (Node 22, proyecto aparte)
