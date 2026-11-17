@@ -112,7 +112,7 @@ mis datos» y de los estudios: **si cambias la forma de algo guardado, actualíz
 listaCompra, listaCompraSimple, comidasCompletadas }` y crece con `comidasCompletadas` (≈ 150 KB al año
 marcando todas las comidas; el límite de un documento es 1 MiB). Las cuatro claves del entreno tienen cada una su
 versión en `VERSIONES` (`entrenoCatalogo`, `entrenoIndice`, `entrenoBorrador`, `entrenoMes`), para poder subir
-una sin las otras.
+una sin las otras (salvo la forma de una sesión, que va en dos de ellas: «Subir una versión», abajo).
 
 ## Versiones y copias viejas de la app
 
@@ -121,8 +121,9 @@ lo mismo sin pulsar nada: al cargar, una migración que encontraba una `version`
 hook la reescribía (auditoría de noviembre de 2026, R12 y el primer paso de R13; el detalle, en la cabecera de
 `logica/versiones.js`).
 
-- **La regla**: una copia de la app nunca escribe encima de datos de una versión mayor que la que conoce. Al
-  encontrar uno, deja de guardar **todo** (cualquier clave) y la app entera se cambia por «Actualiza FoodDraft»
+- **La regla**: una copia de la app nunca escribe encima de datos de una versión mayor que la que conoce. Desde que
+  encuentra uno, no guarda **nada más** en las claves de la cuenta (ninguna; lo que ya había salido antes, era de la
+  versión de siempre) y la app entera se cambia por «Actualiza FoodDraft»
   (`ActualizaApp`, `ui/comun/error-carga.jsx`): «Actualizar» recarga (el service worker es «red primero», así
   que con conexión eso trae la versión nueva) y una nota da el correo por si sigue saliendo. Leer sigue
   permitido. Bloquear la app entera (y no solo dejar de guardar esa parte) y el texto son decisiones de Pablo.
@@ -134,11 +135,21 @@ hook la reescribía (auditoría de noviembre de 2026, R12 y el primer paso de R1
   (`error.versionMayor`), desde entonces fallan todas las escrituras y borrados (también los guardados con
   retardo que estaban esperando), y se avisa una vez con `EVENTO_VERSION_MAYOR`, que escucha `useVersionMayor`
   (`ui/estado/datos.js`). Cubre también lo que el entreno lee a mitad de uso (meses, índice): la app pasa a la
-  pantalla de actualizar en ese momento. El buzón de avisos no pasa por `window.storage`: con el bloqueo,
-  `app.jsx` deja de sincronizarlo.
+  pantalla de actualizar en ese momento.
+- **Leer antes de escribir**: una clave de `CLAVES` no se escribe ni se borra sin haberla leído bien en esa sesión
+  (lo leído al cargar cuenta, también un «no existe»). Casi todos los hooks ya lo cumplen; el borrador del entreno
+  no, porque se sube aunque su lectura fallara sin conexión, y así una copia vieja lo escribía encima de uno de
+  una versión mayor sin verlo. Ahora esa primera escritura lee antes: con una versión mayor bloquea; sin conexión
+  falla (el borrador se queda «pendiente» en el aparato, como ya pasaba). Dos escrituras seguidas de la misma
+  clave esperan a la misma lectura, para no adelantarse. La copia de los datos antiguos del navegador
+  (`migrateLocalDataIfNeeded`) también escribe por aquí.
+- **Lo que no pasa por `window.storage`**: el buzón de avisos y las firmas (no son claves). Con el bloqueo,
+  `app.jsx` deja de sincronizar el buzón; cerrar sesión desde «Actualiza FoodDraft» sí quita este aparato del
+  buzón (no toca nada más).
 - **Capa 2, las migraciones**: todas (`migrateData`, `migrarDespensa`, las cuatro del entreno, `migrarDiario`,
   `migrarFavoritos`, `migrarPeriodo`) llaman a `exigirVersionConocida`: con una versión mayor lanzan en vez de
-  rebajarla. Con la capa 1 no les llega ninguna; están por si alguna vez se lee por otro camino.
+  rebajarla. Con la capa 1 no les llega ninguna; están por si alguna vez se lee por otro camino, y entonces
+  `useCargaInicial` bloquea igual (`bloquearPorVersion`) para que salga la misma pantalla.
 - **El período**, que vive en `localStorage` y no pasa por `window.storage`: `ui/cuerpo/periodo.jsx` mira la
   versión al leer y otra vez justo antes de escribir, y bloquea con `window.storage.bloquearPorVersion`.
   «Descargar mis datos» lo lee en modo estricto: con una versión mayor, falla en vez de exportarlo vacío.
@@ -151,7 +162,10 @@ hook la reescribía (auditoría de noviembre de 2026, R12 y el primer paso de R1
   sobre (`{ version: 1, slots }` el menú y `{ version: 1, lista }` el historial; `leerMenuGuardado` y
   `leerHistorialGuardado`), pero no lo escribe todavía: una copia anterior a esta protección no sabría abrirlo.
   **Paso 2, pendiente**: escribir el sobre, con el primer cambio de forma de los menús y cuando esta protección
-  lleve su tiempo en producción. Su versión será la 1, porque estas copias ya lo entienden entero.
+  lleve su tiempo en producción. Su versión puede ser la 1 **solo si el sobre no lleva nada más que `version` y
+  `slots` (o `lista`)**: estas copias guardan la lista suelta, así que cualquier otro campo del sobre (la fecha
+  que le falta al menú, H3) lo borrarían sin bloquearse; un sobre con algo más es ya la versión 2. Lo de dentro de
+  cada hueco sí lo conservan.
 - **Lo que no cubre**: una copia vieja que ya leyó los datos antes de que la nueva los cambiara y guarda desde
   la memoria (una pestaña o una PWA abierta en segundo plano desde antes de actualizar, en un segundo aparato).
   Es el caso de dos aparatos que se pisan (R4, punto 15 del plan), que se cierra comprobando antes de escribir.
@@ -169,8 +183,14 @@ hook la reescribía (auditoría de noviembre de 2026, R12 y el primer paso de R1
 5. **No se deshace volviendo al código anterior**: esa copia vería la versión nueva y se bloquearía sin tener a
    qué actualizar. Si algo falla, se arregla hacia delante, con otra versión nueva. Un cambio que no sube ninguna
    versión (como esta protección misma) se puede deshacer como siempre.
-6. Una clave nueva en la nube entra en `CLAVES` (`logica/versiones.js`): el grupo «Versiones» de `validacion/`
-   busca en el código todas las `rueda-de-platos:…-v1` y avisa si falta alguna.
+6. **La forma de una sesión del entreno** vive en cuatro sitios: los meses, el borrador de la nube y, en el
+   aparato, el borrador y la cola (estos dos sin `version`). Un cambio en ella sube a la vez `entrenoMes` y
+   `entrenoBorrador`, y la versión nueva tiene que aceptar sesiones de la forma anterior que le lleguen de la cola
+   y del borrador del aparato (los sube ella, tal cual).
+7. Si pruebas la subida en `localhost`, los datos de esa cuenta en el proyecto de pruebas se quedan en la versión
+   nueva, y cualquier rama sin la subida se bloqueará ahí. Déjalos como estaban al terminar.
+8. Una clave nueva en la nube entra en `CLAVES` (`logica/versiones.js`): el grupo «Versiones» de `validacion/`
+   busca en el código todas las `rueda-de-platos:…-vN` y avisa si falta alguna.
 
 ## Buzón de avisos (`users/{uid}/avisos/push`)
 

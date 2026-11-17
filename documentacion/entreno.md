@@ -51,10 +51,14 @@ tiene su propio documento (`fitdraft-gimnasio.md`). Diseño y porqué:
 | `localStorage` `fooddraft:entreno-borrador:<uid>` / `fooddraft:entreno-pendientes:<uid>` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube, de esa cuenta |
 
 Cada una de las cuatro claves de la nube tiene su propia `version` en `VERSIONES` de `logica/versiones.js`
-(`entrenoCatalogo`, `entrenoIndice`, `entrenoBorrador`, `entrenoMes`), para poder subir una sin las otras. Si la app
-lee una versión mayor que la suya (también a mitad de uso: un mes, el índice), no guarda nada y enseña «Actualiza
-FoodDraft»; lo terminado sin subir se queda en la cola del aparato y lo sube la versión nueva (`datos.md`,
-«Versiones y copias viejas de la app»). El `calculo` del índice va aparte y no bloquea: el índice es una caché.
+(`entrenoCatalogo`, `entrenoIndice`, `entrenoBorrador`, `entrenoMes`), para poder subir una sin las otras. Pero la
+forma de una sesión vive en los meses, en el borrador de la nube y en el borrador y la cola del aparato (estos dos,
+sin `version`): un cambio en ella sube a la vez `entrenoMes` y `entrenoBorrador`, y la versión nueva acepta las
+sesiones de la forma anterior que le lleguen de la cola o del borrador del aparato. Si la app lee una versión mayor
+que la suya (también a mitad de uso: un mes, el índice), no guarda nada y enseña «Actualiza FoodDraft»; lo terminado
+sin subir se queda en la cola del aparato y lo sube la versión nueva. El borrador de la nube no se sube sin haberlo
+leído antes en esa sesión (si su lectura falló sin conexión, se lee justo antes de subirlo). Todo, en `datos.md`,
+«Versiones y copias viejas de la app». El `calculo` del índice va aparte y no bloquea: el índice es una caché.
 
 Los ajustes del catálogo incluyen `paseoDescanso` (el mini-mapa del descanso; `true` por defecto, lo completa
 `migrarCatalogo`) y `gimnasio` (el habitual).

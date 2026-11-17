@@ -45,7 +45,9 @@ slots }`), sin campo `version` (cuenta como la 1) ni migración. `useMenu` lee t
 `leerHistorialGuardado` de `logica/versiones.js`), y cualquier otra forma se ignora como un menú ilegible. Escribir
 el sobre es el paso 2 de R13, pendiente: va con el primer cambio de forma de un hueco del menú, y no antes de que
 la protección de versiones lleve su tiempo en producción (una copia de antes no sabría abrir el sobre; `datos.md`,
-«Versiones y copias viejas de la app»). Las comidas hechas viven en `data.comidasCompletadas[fecha][tipo]` (ver
+«Versiones y copias viejas de la app»). El sobre de la versión 1 solo puede llevar `version` y `slots` (o `lista`):
+estas copias guardan la lista suelta y borrarían cualquier otro campo del sobre sin bloquearse, así que uno con algo
+más (la fecha del menú, por ejemplo) es ya la versión 2. Las comidas hechas viven en `data.comidasCompletadas[fecha][tipo]` (ver
 «Hecha y Cambié algo»).
 
 ## Cómo funciona
