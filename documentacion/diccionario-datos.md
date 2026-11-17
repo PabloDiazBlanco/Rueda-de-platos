@@ -138,12 +138,14 @@ peso: la fuente de verdad está en `data-v1`. Existe solo si hay algún aviso ac
 
 ## 5. `data-v1`: los datos principales
 
-Un solo documento con todo lo que no tiene clave propia. **No lleva `version`** (H11): su migración, `migrateData`,
-completa lo que falte mirando campo a campo. Una cuenta nueva empieza con `initialData()` (catálogo de alimentos,
-seguimiento de peso vacío y listas vacías); el perfil llega al terminar el alta.
+Un solo documento con todo lo que no tiene clave propia. Lleva `version` como las demás claves (era la única sin
+ella, H11); su migración, `migrateData`, completa lo que falte mirando campo a campo. Una cuenta nueva empieza con
+`initialData()` (versión, catálogo de alimentos, seguimiento de peso vacío y listas vacías); el perfil llega al
+terminar el alta.
 
 | Campo de primer nivel | Qué es | Si falta |
 |---|---|---|
+| `version` | Versión de la forma del documento (`VERSIONES.datos`, `logica/versiones.js`; `datos.md`, «Versiones y copias viejas de la app») | = 1 (lo de antes); `migrateData` la pone |
 | `perfil` | Datos personales y decisiones (5.1) | Sin perfil: alta saltada o sin terminar. No se inventa nada |
 | `perfilOnboardingDone` | El alta ya se terminó o se saltó | = no (se enseña el alta) |
 | `objetivos` | Objetivos de kcal y macros (5.2) | Perfil incompleto: no hay objetivos |
@@ -288,8 +290,10 @@ Una por cada menú. Clase T. Sin interés para estudios.
 ## 6. Menús
 
 Cuatro claves: el menú completo (`menu-v1`) y su historial (`history-v1`), y lo mismo del menú simple
-(`menu-simple-v1`, `history-simple-v1`). Son **lo planificado** de la nutrición. Ninguna lleva `version` ni
-migración (H3). Salud: s? (una dieta). Origen: A (el motor, con lo que decide la persona). Clase: C para el menú
+(`menu-simple-v1`, `history-simple-v1`). Son **lo planificado** de la nutrición. Se guardan como una lista suelta,
+sin campo `version` (cuenta como la 1) ni migración (H3); la app ya lee también el sobre `{ version, slots }` (menú) y
+`{ version, lista }` (historial), pero aún no lo escribe (`datos.md`, «Versiones y copias viejas de la app»). Salud:
+s? (una dieta). Origen: A (el motor, con lo que decide la persona). Clase: C para el menú
 en curso (se rehace al generar) y M para el historial.
 
 **El menú** es una lista de huecos (dos semanas × los días × las comidas del reparto). No lleva fecha: el
@@ -494,7 +498,7 @@ hecho · **8** `comidasCompletadas` en `data-v1`. «Nuevo» = no estaba en esa t
 |---|---|---|
 | **H1** Decisiones sin historial | Se sobrescriben: todo `perfil` (fase, `calibracionKcal`, `palBase`, `entrenamientos`, días y hora de entreno, reparto), `objetivos`, configuración del peso, rutinas, ajustes del entreno, catálogo y reglas del menú, estado premium. Solo `historialCiclos` guarda algo del pasado (las calibraciones aceptadas). | 1 |
 | **H2** Sin zona horaria | Ningún campo la guarda. Los días locales no dicen de qué zona; los instantes UTC del entreno no dicen qué hora local era. Lo importado se interpreta en la zona del aparato. | 2 |
-| **H3** Menús sin `version` y frágiles | Ninguna de las cuatro claves de menú tiene `version` ni migración. El menú en curso no tiene fecha. Los huecos nombran los ingredientes por **nombre** (renombrar uno rompe el vínculo). `slotId` apunta a un menú que desaparece tras 8 generaciones. | 3 |
+| **H3** Menús sin `version` y frágiles | Las cuatro claves de menú se guardan sin `version` ni migración: la app ya sabe leer el sobre con versión, pero no lo escribe hasta el paso 2 de R13. El menú en curso no tiene fecha. Los huecos nombran los ingredientes por **nombre** (renombrar uno rompe el vínculo). `slotId` apunta a un menú que desaparece tras 8 generaciones. | 3 |
 | **H4** «Sin dato» guardado como algo | kcal y macros vacíos de un alimento se guardan como 0; un entreno importado sin hora de fin queda con duración 0; las horas de sueño fuera de 3-11 se guardan como 3 u 11. (Bien resueltos: pasos, RIR, esfuerzo, calidad del sueño, `horaEntreno`.) | 4 |
 | **H5** Sin fuente de la medida | Pesadas, sueño y pasos no dicen si son a mano, de báscula o de un reloj (hoy todo es a mano). `foods[].fuente` existe, pero es texto libre. El entreno sí la tiene (`origen`). | 5 |
 | **H6** Propios sin equivalencia | Un `exp_…` no dice a qué `ex_…` se parece; los importados sin emparejar no tienen músculo. | 6 |
@@ -502,13 +506,14 @@ hecho · **8** `comidasCompletadas` en `data-v1`. «Nuevo» = no estaba en esa t
 | **H8** Comidas hechas en `data-v1` | Tope de 1 MiB por documento (R3). | 8 |
 | **H9** Recortes que pierden pasado | `historialCiclos` guarda 12 ciclos; el historial de menús, 8. | Nuevo (relacionado con 1 y 7) |
 | **H10** Pesadas solo de hoy y sin hora | No se puede apuntar una pesada de un día pasado ni se sabe a qué hora fue (en ayunas o no). | Nuevo (relacionado con 2) |
-| **H11** `data-v1` sin `version` | Las demás claves la llevan; la principal no, y una app sin actualizar la reescribiría igual (R12). | Nuevo (relacionado con 3) |
+| **H11** `data-v1` sin `version` | **Resuelto** (R12): lleva `version: 1`, y una copia de la app que lea una versión mayor que la suya no escribe nada (`datos.md`). | Nuevo (relacionado con 3) |
 | **H12** Fórmulas sin versión | `objetivos` no dice con qué versión de las fórmulas se calculó (cambian cuando se recalibran). | Nuevo (relacionado con 1) |
 
 Lo que **ya está bien** para estudios: el entreno en kg, km y segundos; ids fijos de la semilla de alimentos y
 ejercicios; los propios archivados en vez de borrados; las pesadas que nunca se borran; `origen` y `lote` en el
 entreno; el texto libre (notas, gimnasio, nombres, motivos de pausa) en campos propios, separado de los números; y
-las claves con `version` y migración (despensa, entreno, cuerpo, período).
+las claves con `version` y migración (datos principales, despensa, entreno, cuerpo, período), que no dejan a una copia
+vieja de la app escribir encima de una versión más nueva y conservan los campos que no conocen.
 
 ---
 

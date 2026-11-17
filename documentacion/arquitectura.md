@@ -58,7 +58,9 @@ modos (iniciar sesión, crear cuenta y recuperar la contraseña) y «Continuar c
 
 `entrarEnLaApp`, en este orden: carga la interfaz (`cargarApp`, solo código); comprueba las firmas de
 consentimiento (`asegurarConsentimientos`) y, si falta alguna, enseña «Antes de empezar» y espera; solo después
-crea `window.storage`, copia los datos antiguos del navegador (`migrateLocalDataIfNeeded`) y monta la app. Así
+crea `window.storage` (protegido con `protegerVersiones`, `logica/versiones.js`: si lee datos de una versión más
+nueva de la app, no deja guardar nada y la app enseña «Actualiza FoodDraft»; `datos.md`), copia los datos antiguos
+del navegador (`migrateLocalDataIfNeeded`) y monta la app. Así
 ningún dato de la cuenta se lee ni se guarda antes del consentimiento (`datos.md`, «Consentimientos»). La
 pantalla vive en `ui/onboarding/antes-de-empezar.jsx` y `app.jsx` la exporta (`PantallaAntesDeEmpezar`) para que
 `auth-bootstrap.jsx` la pinte con el mismo módulo de la interfaz, con su propio `Shell`. Si las firmas no se pueden
@@ -107,12 +109,12 @@ cargador y `sw.js`).
 ui/archivos.json        lista de TODOS los archivos de ui/
 ui/estilos.js           tipografías (FUENTE_TEXTO, FUENTE_TITULOS, FUENTE_MONO)
 ui/pantallas.jsx        tabla destino (`tab`) → pantalla (PANTALLAS)
-ui/estado/              hooks: datos.js (useDatos, usePremium, useCargaInicial), menu.js (useMenu, el mismo
+ui/estado/              hooks: datos.js (useDatos, usePremium, useCargaInicial, useVersionMayor), menu.js (useMenu, el mismo
                           para Menú completo y simple), catalogo.js, perfil.js, peso.js, despensa.js
                           (useDespensa), entreno.js (useEntreno), cuerpo.js (useCuerpo)
 ui/comun/               piezas reutilizadas: modal, tarjetas, idioma, categorias (iconos y colores),
                           cerrar-sesion, compartir (BotonCompartir), bloqueo-scroll (useBloqueoScroll), error-carga
-                          (pantalla de reintento), errores (mensajeErrorFuncion),
+                          (pantalla de reintento y «Actualiza FoodDraft»), errores (mensajeErrorFuncion),
                           mapa-corporal.jsx y sus trazados MIT (mapa-trazados.js), avatar.jsx (el chibi
                           de FitDraft y el monitor)
 ui/marco/               Shell (variables de tema y estilos de impresión, en cabecera.jsx), cabecera, menú
@@ -148,6 +150,11 @@ datos-iniciales.js     FOODS_SEED, CATEGORIAS_ALIMENTOS, initialData (cuenta nue
 cuestionario.js        opciones del cuestionario de alta y construirIngredientesDesdeCuestionario (con la
                          proteína predeterminada, que pasa a ser la «base» del motor, A9)
 migraciones.js         migrateData
+versiones.js           versiones de lo guardado (R12): VERSIONES (la tabla de todas las claves), versionConocida,
+                         esVersionMayor, exigirVersionConocida (para las migraciones), protegerVersiones (envuelve
+                         window.storage), EVENTO_VERSION_MAYOR y las dos formas de los menús (leerMenuGuardado,
+                         leerHistorialGuardado). Sin imports, para que auth-bootstrap.jsx no arrastre nada más al
+                         arrancar
 despensa.js            stock de la despensa: zonas, menú confirmado, descontar y devolver comidas, tachar y
                          destachar compras, queda poco (alertasStock), limpieza, fecha de cambio
                          (sellarCambios), migrarDespensa, lo que se manda a «¿Qué cocino?»

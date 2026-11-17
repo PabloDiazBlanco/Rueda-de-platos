@@ -33,7 +33,13 @@ gráficas, `local/ideas/esteticas/09-graficas.html`. El mapa corporal tiene su p
   botón verde «Gráfica»; un solo selector de rango (1 mes · 3 meses · 1 año · Todo).
 - Hambre y energía están **descartadas**: no existen como variables.
 - Claves propias con su versión y migración en `logica/cuerpo-diario.js` (grupo «Cuerpo: sueño, pasos y
-  favoritos» de `validacion/`): **no pasan por `migrateData`**.
+  favoritos» de `validacion/`): **no pasan por `migrateData`**. Las versiones viven en `VERSIONES`
+  (`logica/versiones.js`). Las migraciones del diario, los favoritos y el período **conservan lo que no conocen**
+  (un campo de un día o de un sueño, un favorito con algo de más), para que una copia vieja de la app no lo borre;
+  un favorito de un tipo desconocido sí se quita. Corregir a mano un sueño lo rehace entero.
+- El período comprueba su versión al leer y antes de escribir, porque no pasa por `window.storage`: con una
+  versión mayor no escribe y la app pasa a «Actualiza FoodDraft» (`datos.md`, «Versiones y copias viejas de la
+  app»).
 - Si cambias la regla de días sugeridos de pesaje (`esDiaSugeridoPeso` en `logica/peso.js`), cámbiala también
   en `functions/sendWeighInReminders.js` (ver `backend.md`).
 

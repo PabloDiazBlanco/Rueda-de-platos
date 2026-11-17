@@ -84,7 +84,10 @@ cambiar esas entradas: dentro, todo se importa por nombre corto.
 - Una lectura que falla no es una cuenta vacía: no escribas encima de un documento que no se ha podido leer.
 - Las reglas de Firestore viven en `firestore.rules` (nunca en la consola) y solo aceptan las claves que
   conocen: **clave nueva en la nube = añadirla ahí, `npm run test:reglas` en `functions/` y publicar las
-  reglas antes de subir la app**.
+  reglas antes de subir la app**. Y en `CLAVES` de `logica/versiones.js`.
+- La `version` de cada clave vive en `VERSIONES` (`logica/versiones.js`); una copia de la app que lee una mayor
+  no guarda nada. **Subir una versión** solo con esa protección una semana en producción, y **no se deshace con un
+  «volver atrás»** (esa copia se bloquearía): se arregla hacia delante. Las migraciones conservan lo que no conocen.
 - Claves, versiones, migraciones y Firestore: `documentacion/datos.md`.
 
 ## Textos en 5 idiomas

@@ -39,8 +39,13 @@ Léelo antes de tocar `ui/menu/`, `ui/estado/menu.js`, `logica/menu-generador.js
 | Completo | `rueda-de-platos:menu-v1` | `rueda-de-platos:history-v1` (máx. 8 ciclos) | neta, calculada con la despensa (ver `despensa.md`) |
 | Simple | `rueda-de-platos:menu-simple-v1` | `rueda-de-platos:history-simple-v1` | `data.listaCompraSimple`, con casillas |
 
-Estos cuatro documentos no tienen `version` ni migración: si cambia la forma de un hueco del menú, añade
-`version` en ese mismo cambio. Las comidas hechas viven en `data.comidasCompletadas[fecha][tipo]` (ver
+Estos cuatro documentos se guardan como una **lista suelta** (de huecos; el historial, de `{ id, generatedAt,
+slots }`), sin campo `version` (cuenta como la 1) ni migración. `useMenu` lee también el **sobre** con versión,
+`{ version: 1, slots }` el menú y `{ version: 1, lista }` el historial (`leerMenuGuardado`,
+`leerHistorialGuardado` de `logica/versiones.js`), y cualquier otra forma se ignora como un menú ilegible. Escribir
+el sobre es el paso 2 de R13, pendiente: va con el primer cambio de forma de un hueco del menú, y no antes de que
+la protección de versiones lleve su tiempo en producción (una copia de antes no sabría abrir el sobre; `datos.md`,
+«Versiones y copias viejas de la app»). Las comidas hechas viven en `data.comidasCompletadas[fecha][tipo]` (ver
 «Hecha y Cambié algo»).
 
 ## Cómo funciona

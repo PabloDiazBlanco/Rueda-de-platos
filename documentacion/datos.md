@@ -15,6 +15,13 @@ mis datos» y de los estudios: **si cambias la forma de algo guardado, actualíz
   el de `FOODS_SEED` y los campos añadidos después).
 - `migrateData` solo cubre la clave principal (`data-v1`). Despensa, entreno y Cuerpo tienen su propia clave,
   su `version` y su migración: **no pasan por `migrateData`**.
+- **Toda clave lleva `version`**, y la que conoce cada copia de la app está en una sola tabla, `VERSIONES` de
+  `logica/versiones.js` (las migraciones la toman de ahí). Una copia que lee una versión mayor que la suya no
+  guarda nada y enseña «Actualiza FoodDraft». **Subir una versión** tiene sus reglas (entre ellas, que no se
+  deshace volviendo al código anterior): «Versiones y copias viejas de la app», abajo.
+- Las migraciones **conservan lo que no conocen**: una copia vieja de la app no borra un campo que haya añadido
+  una más nueva. Al escribir una migración nueva, copia el documento entero (`...guardado`) y limpia solo lo que
+  conoce.
 - **Nunca `window.storage.list()`**: en Firestore lee la colección entera, con contenido.
 - Todas las claves de la cuenta empiezan por `rueda-de-platos:` (nombre histórico, no se cambia). Las
   comodidades del dispositivo, por `fooddraft:` en `localStorage`, siempre con try/catch.
@@ -29,9 +36,10 @@ mis datos» y de los estudios: **si cambias la forma de algo guardado, actualíz
 
 ## `window.storage` y Firestore
 
-- `window.storage` lo crea `auth-bootstrap.jsx` al iniciar sesión (`makeFirestoreStorage`). Solo habla con
-  Firestore: `get` (`getDoc`; `null` si no existe; cualquier error se propaga), `set` (`setDoc` del documento
-  entero, sin fusión ni reintentos) y `delete`.
+- `window.storage` lo crea `auth-bootstrap.jsx` al iniciar sesión (`makeFirestoreStorage`), envuelto en
+  `protegerVersiones` (`logica/versiones.js`: no deja guardar nada si lee datos de una versión más nueva, abajo).
+  Solo habla con Firestore: `get` (`getDoc`; `null` si no existe; cualquier error se propaga), `set` (`setDoc` del
+  documento entero, sin fusión ni reintentos) y `delete`.
 - Un único documento por clave en `users/{uid}/keys/{clave}`, con `value` = JSON serializado (como
   `localStorage`, pero en la nube). App Check aplicado para Firestore y Authentication en producción.
 - **Reglas de Firestore**: `firestore.rules`, en la raíz, es la única fuente (nunca se editan en la consola:
@@ -68,8 +76,11 @@ mis datos» y de los estudios: **si cambias la forma de algo guardado, actualíz
 - **Leído pero inservible** (JSON roto, una migración que falla) tampoco es una cuenta nueva, y tampoco es la
   conexión: el cargador marca el error con `error.ilegible = true` (datos principales, despensa y cuerpo) y la
   pantalla de reintento lo dice así, con el correo de contacto (`carga.error.textoIlegible`). No se escribe
-  nada encima. Los menús son la excepción: un menú o un historial ilegibles se ignoran (el historial se
-  empieza de nuevo), porque no hay nada que proteger en ellos.
+  nada encima. Los menús son la excepción: un menú o un historial ilegibles, o con una forma que no es ni la lista
+  suelta ni el sobre (abajo), se ignoran (el historial se empieza de nuevo), porque no hay nada que proteger en
+  ellos.
+- **Datos de una versión más nueva** de la app tampoco son una cuenta nueva ni algo dañado: la lectura falla, no
+  se guarda nada y la app enseña «Actualiza FoodDraft» en vez de «Reintentar» (abajo).
 - Si un guardado de los datos principales falla, la cabecera dice «Sin guardar» y se reintenta al volver la
   conexión; despensa y cuerpo lo dejan en la consola y lo reintentan con el siguiente cambio.
 - El documento padre `users/{uid}` guarda el estado premium (`premium { active, pendiente, stripeCustomerId,
@@ -85,9 +96,9 @@ mis datos» y de los estudios: **si cambias la forma de algo guardado, actualíz
 
 | Clave | Lo lleva | `version` | Migración | Casos en `validacion/` |
 |---|---|---|---|---|
-| `rueda-de-platos:data-v1` | `useDatos` (`ui/estado/datos.js`, `STORAGE_KEY`); también lo leen `auth-bootstrap.jsx` y `sendWeighInReminders` (solo de quien tiene el recordatorio de pesaje activado y un buzón sin los datos de pesaje, `backend.md`) | no | `migrateData` | sí, grupo «migrateData» |
-| `rueda-de-platos:menu-v1`, `history-v1` | `useMenu` (`MENU_COMPLETO`) | no | ninguna | no |
-| `rueda-de-platos:menu-simple-v1`, `history-simple-v1` | `useMenu` (`MENU_SIMPLE`) | no | ninguna | no |
+| `rueda-de-platos:data-v1` | `useDatos` (`ui/estado/datos.js`, `STORAGE_KEY`); también lo leen `auth-bootstrap.jsx` y `sendWeighInReminders` (solo de quien tiene el recordatorio de pesaje activado y un buzón sin los datos de pesaje, `backend.md`) | 1 (sin campo = 1: la añade `migrateData`) | `migrateData` | sí, grupos «migrateData» y «Versiones» |
+| `rueda-de-platos:menu-v1`, `history-v1` | `useMenu` (`MENU_COMPLETO`) | 1, sin campo: lista suelta (el sobre se lee, aún no se escribe) | ninguna (`leerMenuGuardado`, `leerHistorialGuardado`) | sí, grupo «Versiones» |
+| `rueda-de-platos:menu-simple-v1`, `history-simple-v1` | `useMenu` (`MENU_SIMPLE`) | ídem | ídem | ídem |
 | `rueda-de-platos:despensa-v1` | `useDespensa` | 1 | `migrarDespensa` (`logica/despensa.js`) | sí |
 | `rueda-de-platos:entreno-catalogo-v1` | `useEntreno` | 1 | `migrarCatalogo` (`entreno-almacen.js`) | sí |
 | `rueda-de-platos:entreno-indice-v1` | `useEntreno` | 1 + `calculo` (`CALCULO_INDICE`) | `migrarIndice` | sí |
@@ -97,9 +108,69 @@ mis datos» y de los estudios: **si cambias la forma de algo guardado, actualíz
 | `rueda-de-platos:informes-favoritos-v1` | `useCuerpo` | 1 | `migrarFavoritos` | sí |
 | `rueda-de-platos:push-token-v1` | nadie: `auth-bootstrap.jsx` solo lo borra (texto plano; retirado, R8: las reglas ya no lo aceptan) | — | — | no |
 
-`data-v1` lleva `{ foods, ingredients, blocks, rules, perfil, perfilOnboardingDone, objetivos, pesoTracking,
+`data-v1` lleva `{ version, foods, ingredients, blocks, rules, perfil, perfilOnboardingDone, objetivos, pesoTracking,
 listaCompra, listaCompraSimple, comidasCompletadas }` y crece con `comidasCompletadas` (≈ 150 KB al año
-marcando todas las comidas; el límite de un documento es 1 MiB).
+marcando todas las comidas; el límite de un documento es 1 MiB). Las cuatro claves del entreno tienen cada una su
+versión en `VERSIONES` (`entrenoCatalogo`, `entrenoIndice`, `entrenoBorrador`, `entrenoMes`), para poder subir
+una sin las otras.
+
+## Versiones y copias viejas de la app
+
+Un Word antiguo que abre un documento de un Word nuevo pierde, al guardar, lo que no entiende. Con la app pasaba
+lo mismo sin pulsar nada: al cargar, una migración que encontraba una `version` mayor la rebajaba a la suya, y el
+hook la reescribía (auditoría de noviembre de 2026, R12 y el primer paso de R13; el detalle, en la cabecera de
+`logica/versiones.js`).
+
+- **La regla**: una copia de la app nunca escribe encima de datos de una versión mayor que la que conoce. Al
+  encontrar uno, deja de guardar **todo** (cualquier clave) y la app entera se cambia por «Actualiza FoodDraft»
+  (`ActualizaApp`, `ui/comun/error-carga.jsx`): «Actualizar» recarga (el service worker es «red primero», así
+  que con conexión eso trae la versión nueva) y una nota da el correo por si sigue saliendo. Leer sigue
+  permitido. Bloquear la app entera (y no solo dejar de guardar esa parte) y el texto son decisiones de Pablo.
+- **Qué es «mayor»** (`esVersionMayor`): solo un número estrictamente mayor que el conocido. Sin `version`, una
+  lista suelta (los menús), 0 o un texto como `"2"` no bloquean: el riesgo de esta pieza no es perder datos,
+  sino un bloqueo falso para todas las cuentas.
+- **Capa 1, `window.storage`** (`protegerVersiones`, puesto por `auth-bootstrap.jsx`): cada lectura de una clave
+  de `CLAVES` (y de los meses del entreno, por su forma) se comprueba. Con una versión mayor, esa lectura falla
+  (`error.versionMayor`), desde entonces fallan todas las escrituras y borrados (también los guardados con
+  retardo que estaban esperando), y se avisa una vez con `EVENTO_VERSION_MAYOR`, que escucha `useVersionMayor`
+  (`ui/estado/datos.js`). Cubre también lo que el entreno lee a mitad de uso (meses, índice): la app pasa a la
+  pantalla de actualizar en ese momento. El buzón de avisos no pasa por `window.storage`: con el bloqueo,
+  `app.jsx` deja de sincronizarlo.
+- **Capa 2, las migraciones**: todas (`migrateData`, `migrarDespensa`, las cuatro del entreno, `migrarDiario`,
+  `migrarFavoritos`, `migrarPeriodo`) llaman a `exigirVersionConocida`: con una versión mayor lanzan en vez de
+  rebajarla. Con la capa 1 no les llega ninguna; están por si alguna vez se lee por otro camino.
+- **El período**, que vive en `localStorage` y no pasa por `window.storage`: `ui/cuerpo/periodo.jsx` mira la
+  versión al leer y otra vez justo antes de escribir, y bloquea con `window.storage.bloquearPorVersion`.
+  «Descargar mis datos» lo lee en modo estricto: con una versión mayor, falla en vez de exportarlo vacío.
+- **Lo que no se conoce, se conserva**: sueño y pasos, favoritos y período ya no rehacen el documento solo con
+  lo que conocen (las demás claves ya copiaban el documento entero). Así, añadir un campo opcional no obliga a
+  subir la versión.
+- **`data-v1`** lleva `version: 1` (era la única clave sin ella, H11 del diccionario): `migrateData` la añade una
+  vez y `initialData` la trae de serie. Las copias de antes la conservan, porque copian el documento entero.
+- **Menús (R13)**: se guardan como siempre, en una lista suelta (versión 1, sin campo). La app ya lee también el
+  sobre (`{ version: 1, slots }` el menú y `{ version: 1, lista }` el historial; `leerMenuGuardado` y
+  `leerHistorialGuardado`), pero no lo escribe todavía: una copia anterior a esta protección no sabría abrirlo.
+  **Paso 2, pendiente**: escribir el sobre, con el primer cambio de forma de los menús y cuando esta protección
+  lleve su tiempo en producción. Su versión será la 1, porque estas copias ya lo entienden entero.
+- **Lo que no cubre**: una copia vieja que ya leyó los datos antes de que la nueva los cambiara y guarda desde
+  la memoria (una pestaña o una PWA abierta en segundo plano desde antes de actualizar, en un segundo aparato).
+  Es el caso de dos aparatos que se pisan (R4, punto 15 del plan), que se cierra comprobando antes de escribir.
+
+### Subir una versión
+
+1. Solo si una copia anterior estropearía la forma nueva al guardarla. Un campo opcional nuevo no la necesita:
+   las migraciones conservan lo que no conocen.
+2. Antes, esta protección tiene que llevar **al menos una semana en producción**: solo protege en los aparatos
+   que ya la tienen.
+3. Se cambia en `VERSIONES` (`logica/versiones.js`), con el parche de migración de la versión anterior a la
+   nueva (sin pisar lo editado) y sus casos en `validacion/`.
+4. Si la clave la leen las Cloud Functions (`data-v1`: `sendWeighInReminders`), revisa la función en el mismo
+   cambio.
+5. **No se deshace volviendo al código anterior**: esa copia vería la versión nueva y se bloquearía sin tener a
+   qué actualizar. Si algo falla, se arregla hacia delante, con otra versión nueva. Un cambio que no sube ninguna
+   versión (como esta protección misma) se puede deshacer como siempre.
+6. Una clave nueva en la nube entra en `CLAVES` (`logica/versiones.js`): el grupo «Versiones» de `validacion/`
+   busca en el código todas las `rueda-de-platos:…-v1` y avisa si falta alguna.
 
 ## Buzón de avisos (`users/{uid}/avisos/push`)
 
@@ -274,7 +345,6 @@ en el dispositivo desde el que se elimina, las claves de esa cuenta (las que aca
 
 - **Última escritura gana**: cada hook lee una vez al montar y luego escribe el documento entero. Dos
   dispositivos (o dos pestañas) abiertos a la vez se pisan. Las sesiones de entreno sí se fusionan por `id`.
-- Las migraciones no distinguen una `version` mayor que la conocida: el día que algo pase a `version: 2`, un
-  cliente viejo lo reescribiría como 1. Antes de subir una versión, haz que las migraciones no escriban un
-  documento de versión mayor.
+- Una copia vieja de la app que guarda desde la memoria lo que leyó antes de una versión nueva no se detecta
+  (ver «Versiones y copias viejas de la app»): es el caso de dos aparatos (R4).
 - Detalle de todos los riesgos: `local/diagnostico-2026-10/07-datos-y-deuda.md`.

@@ -47,8 +47,14 @@ tiene su propio documento (`fitdraft-gimnasio.md`). Diseño y porqué:
 | `rueda-de-platos:entreno-catalogo-v1` | ejercicios propios, personalización de los de fábrica (favorito, nota fija, descanso), rutinas, ajustes, estado de los avisos, importaciones hechas |
 | `rueda-de-platos:entreno-AAAA-MM-v1` | las sesiones **terminadas** de ese mes |
 | `rueda-de-platos:entreno-indice-v1` | caché reconstruible: sesiones por mes; por ejercicio, la última vez y sus récords; por rutina (`rutinas`), los ejercicios de su última sesión |
-| `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion }`: la sesión en curso (o `null`) |
+| `rueda-de-platos:entreno-borrador-v1` | `{ version, sesion, actualizado }`: la sesión en curso (o `null`) |
 | `localStorage` `fooddraft:entreno-borrador:<uid>` / `fooddraft:entreno-pendientes:<uid>` | copia inmediata del borrador y cola de sesiones terminadas sin confirmar en la nube, de esa cuenta |
+
+Cada una de las cuatro claves de la nube tiene su propia `version` en `VERSIONES` de `logica/versiones.js`
+(`entrenoCatalogo`, `entrenoIndice`, `entrenoBorrador`, `entrenoMes`), para poder subir una sin las otras. Si la app
+lee una versión mayor que la suya (también a mitad de uso: un mes, el índice), no guarda nada y enseña «Actualiza
+FoodDraft»; lo terminado sin subir se queda en la cola del aparato y lo sube la versión nueva (`datos.md`,
+«Versiones y copias viejas de la app»). El `calculo` del índice va aparte y no bloquea: el índice es una caché.
 
 Los ajustes del catálogo incluyen `paseoDescanso` (el mini-mapa del descanso; `true` por defecto, lo completa
 `migrarCatalogo`) y `gimnasio` (el habitual).
